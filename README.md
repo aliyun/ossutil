@@ -13,9 +13,9 @@
 > - linux, windows 
 
 ## 依赖的库 
-> - goopt(github.com/droundy/goopt) 
-> - configparser(github.com/alyu/configparser)
-> - oss(github.com/aliyun/aliyun-oss-go-sdk/oss)
+> - goopt (github.com/droundy/goopt) 
+> - configparser (github.com/alyu/configparser)
+> - oss (github.com/aliyun/aliyun-oss-go-sdk/oss)
 
 ## 快速使用
 #### 获取命令列表
@@ -63,7 +63,6 @@
 > - [阿里云OSS官方网站](http://oss.aliyun.com)
 > - [阿里云OSS官方论坛](http://bbs.aliyun.com)
 > - [阿里云OSS官方文档中心](http://www.aliyun.com/product/oss#Docs)
-> - 阿里云官方技术支持：[提交工单](https://workorder.console.aliyun.com/#/ticket/createIndex)
 
 ## 作者
 > - Ting Zhang 
