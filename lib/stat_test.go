@@ -1,0 +1,126 @@
+package lib 
+
+import (
+    . "gopkg.in/check.v1"
+)
+
+func (s *OssutilCommandSuite) rawGetStat(bucket, object string) (bool, error) {
+    args := []string{CloudURLToString(bucket, object)}
+    showElapse, err := s.rawGetStatWithArgs(args)
+    return showElapse, err 
+}
+
+func (s *OssutilCommandSuite) rawGetStatWithArgs(args []string) (bool, error) {
+    command := "stat"
+    str := ""
+    options := OptionMapType{
+        "endpoint": &str,
+        "accessKeyID": &str,
+        "accessKeySecret": &str,
+        "stsToken": &str,
+        "configFile": &configFile,
+    }
+    showElapse, err := cm.RunCommand(command, args, options)
+    return showElapse, err 
+}
+
+func (s *OssutilCommandSuite) TestStatErrArgc(c *C) {
+    bucket := bucketNamePrefix + "stat" 
+    s.putBucket(bucket, c)
+
+    command := "stat"
+    args := []string{CloudURLToString(bucket, ""), CloudURLToString(bucket, "")}
+    str := ""
+    options := OptionMapType{
+        "endpoint": &str,
+        "accessKeyID": &str,
+        "accessKeySecret": &str,
+        "stsToken": &str,
+        "configFile": &configFile,
+    }
+    showElapse, err := cm.RunCommand(command, args, options)
+    c.Assert(err, NotNil)
+    c.Assert(showElapse, Equals, false)
+}
+
+func (s *OssutilCommandSuite) TestGetBucketStat(c *C) {
+    bucket := bucketNamePrefix + "stat" 
+    s.putBucket(bucket, c)
+
+    // get bucket stat 
+    bucketStat := s.getStat(bucket, "", c) 
+    c.Assert(bucketStat[StatName], Equals, bucket)
+    c.Assert(bucketStat[StatLocation] != "", Equals, true)
+    c.Assert(bucketStat[StatCreationDate] != "", Equals, true)
+    c.Assert(bucketStat[StatExtranetEndpoint] != "", Equals, true)
+    c.Assert(bucketStat[StatIntranetEndpoint] != "", Equals, true)
+    c.Assert(bucketStat[StatACL], Equals, "private")
+    c.Assert(bucketStat[StatOwner] != "", Equals, true)
+}
+
+func (s *OssutilCommandSuite) TestGetObjectStat(c *C) {
+    bucket := bucketNamePrefix + "stat" 
+    s.putBucket(bucket, c)
+
+    object := "悠悠风来"
+    s.putObject(bucket, object, uploadFileName, c)
+
+    objectStat := s.getStat(bucket, object, c)
+    c.Assert(objectStat[StatACL], Equals, "default")
+    c.Assert(len(objectStat["Etag"]), Equals, 32)
+    c.Assert(objectStat["Last-Modified"] != "", Equals, true)
+    c.Assert(objectStat[StatOwner] != "", Equals, true)
+}
+
+func (s *OssutilCommandSuite) TestGetStatNotExist(c *C) {
+    bucket := bucketNamePrefix + "statnotexist"
+    showElapse, err := s.rawGetStat(bucket, "")
+    c.Assert(err, NotNil)
+    c.Assert(showElapse, Equals, false)
+
+    s.putBucket(bucket, c)
+    showElapse, err = s.rawGetStat(bucket, "")
+    c.Assert(err, IsNil)
+    c.Assert(showElapse, Equals, true)
+
+    object := "testobject"
+    showElapse, err = s.rawGetStat(bucket, object)
+    c.Assert(err, NotNil)
+    c.Assert(showElapse, Equals, false)
+
+    s.putObject(bucket, object, uploadFileName, c)
+    showElapse, err = s.rawGetStat(bucket, object)
+    c.Assert(err, IsNil)
+    c.Assert(showElapse, Equals, true)
+}
+
+func (s *OssutilCommandSuite) TestGetStatRetryTimes(c *C) {
+    bucket := bucketNamePrefix + "stat" 
+    s.putBucket(bucket, c)
+
+    command := "stat"
+    args := []string{CloudURLToString(bucket, "")}
+    str := ""
+    retryTimes := "1"
+    options := OptionMapType{
+        "endpoint": &str,
+        "accessKeyID": &str,
+        "accessKeySecret": &str,
+        "stsToken": &str,
+        "configFile": &configFile,
+        "retryTimes": &retryTimes,
+    }
+    showElapse, err := cm.RunCommand(command, args, options)
+    c.Assert(err, IsNil)
+    c.Assert(showElapse, Equals, true)
+}
+
+func (s *OssutilCommandSuite) TestGetStatErrSrc(c *C) {
+    showElapse, err := s.rawGetStat("", "")
+    c.Assert(err, NotNil)
+    c.Assert(showElapse, Equals, false)
+
+    showElapse, err = s.rawGetStatWithArgs([]string{"../"})
+    c.Assert(err, NotNil)
+    c.Assert(showElapse, Equals, false)
+}

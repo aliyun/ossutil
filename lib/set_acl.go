@@ -1,0 +1,404 @@
+package lib
+
+import (
+	"fmt"
+	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
+	"strings"
+)
+
+var aclMap = map[oss.ACLType][]string{
+	oss.ACLPublicReadWrite: []string{"prw"},
+	oss.ACLPublicRead:      []string{"pr"},
+	oss.ACLPrivate:         []string{"pri"},
+	oss.ACLDefault:         []string{"def"},
+}
+
+var bucketACLList = []oss.ACLType{
+	oss.ACLPublicReadWrite,
+	oss.ACLPublicRead,
+	oss.ACLPrivate,
+}
+
+var objectACLList = []oss.ACLType{
+	oss.ACLPublicReadWrite,
+	oss.ACLPublicRead,
+	oss.ACLPrivate,
+	oss.ACLDefault,
+}
+
+type setACLType int
+
+const (
+	bucketACL setACLType = iota
+	objectACL
+)
+
+func formatACLString(aclType setACLType, sep string) string {
+	var list []oss.ACLType
+	if aclType == bucketACL {
+		list = bucketACLList
+	} else {
+		list = objectACLList
+	}
+
+	strList := []string{}
+	for _, acl := range list {
+		str := string(acl)
+		if len(aclMap[acl]) != 0 {
+			str += "(" + strings.Join(aclMap[acl][:], ",") + ")"
+		}
+		strList = append(strList, str)
+	}
+	return strings.Join(strList, sep)
+}
+
+var specChineseSetACL = SpecText{
+
+	synopsisText: "设置bucket或者objects的acl",
+
+	paramText: "url [acl] [options]",
+
+	syntaxText: ` 
+    ossutil setacl oss://bucket[/prefix] [acl] [-r] [-b] [-f] [-c file] 
+`,
+
+	detailHelpText: ` 
+    该命令设置指定bucket或者objects的acl。使用命令时若缺失了acl信息时，ossutil会询问用户acl信息。
+
+        （1）设置bucket的acl，参考用法1)
+        （2）设置单个object的acl，参考用法2)
+        （3）批量设置objects的acl，不设置bucket的acl，参考用法3)
+
+    对bucket设置acl，需要添加--bucket选项，否则视为对其中的objects设置acl。
+    该命令不支持同时设置bucket和objects的acl，请分开操作。
+
+    结果：显示命令耗时前未报错，则表示成功设置。
+
+ACL：
+
+    bucket的acl有三种，括号里为ossutil额外支持的简写模式：
+        ` + formatACLString(bucketACL, "\n        ") + `
+
+    object的acl有四种：
+        ` + formatACLString(objectACL, "\n        ") + `
+
+    acl的详细信息请参见：https://help.aliyun.com/document_detail/31867.html?spm=5176.doc31960.6.147.8dVwsh中的权限控制。
+
+用法：
+
+    该命令有三种用法：
+
+    1) ossutil setacl oss://bucket [acl] -b [-c file]
+        当设置了--bucket选项时，ossutil会尝试设置bucket的acl，此时不支持--recursive选项，并且请
+    确保输入的url精确匹配想要设置acl的bucket，无论--force选项是否指定，都不会进行询问提示。如果
+    用户在命令行中缺失acl信息，会进入交互模式，询问用户的acl信息。 
+
+    2) ossutil setacl oss://bucket/object [acl] [-c file]
+        该用法设置指定单个object的acl，当指定object不存在时，ossutil会提示错误，此时请确保指定的
+    url精确匹配需要设置acl的object，并且不要指定--recursive选项（否则ossutil会进行前缀匹配，设置
+    多个objects的acl），无论--force选项是否指定，都不会进行询问提示。如果用户在命令行中缺失acl信
+    息，会进入交互模式，询问用户的acl信息。
+
+    3) ossutil setacl oss://bucket[/prefix] [acl] -r [-f] [-c file]
+        该用法可批量设置objects的acl，此时必须输入--recursive选项，ossutil会查找所有前缀匹配url的
+    objects，设置它们的acl，当错误出现时会终止命令。此时不支持--bucket选项，即ossutil不支持同时设
+    置bucket和其中objects的acl，如有需要，请分开操作。如果--force选项被指定，则不会进行询问提示。
+    如果用户在命令行中缺失acl信息，会进入交互模式，询问用户的acl信息。
+`,
+
+	sampleText: ` 
+    (1)ossutil setacl oss://bucket1 public-read-write -b 
+
+    (2)ossutil setacl oss://bucket1/obj1 pr 
+
+    (3)ossutil setacl oss://bucket1/obj def -r
+`,
+}
+
+var specEnglishSetACL = SpecText{
+
+	synopsisText: "Set acl on bucket or objects",
+
+	paramText: "url [acl] [options]",
+
+	syntaxText: ` 
+    ossutil setacl oss://bucket[/prefix] [acl] [-r] [-b] [-f] [-c file] 
+`,
+
+	detailHelpText: ` 
+    The command set acl on the specified bucket or objects. If you use the command 
+    witout acl information, ossutil will ask user for it.
+
+    (1) set acl on bucket, see useage 1)
+    (2) set acl on single object, see useage 2)
+    (3) batch set acl on many objects, see useage 3)
+
+    When set acl on bucket, the --bucket option must be specified. 
+    Set acl on bucket an objects inside simultaneously is not supported, please 
+    operate independently.
+
+    Result: if no error displayed before show elasped time, then the setting is completed successfully.
+
+ACL:
+
+    ossutil supports following bucket acls, shorthand versions in brackets:
+        ` + formatACLString(bucketACL, "\n        ") + `
+
+    ossutil support following objet acls:
+        ` + formatACLString(objectACL, "\n        ") + `
+
+    More information about acl see ACL Control in https://help.aliyun.com/document_detail/31867.html?spm=5176.doc31960.6.147.8dVwsh.
+
+Useage：
+
+    There are three useages:    
+
+    1) ossutil setacl oss://bucket [acl] -b [-c file]
+        If --bucket option is specified, ossutil will try to set acl on bucket. In the 
+    useage, please make sure url exactly specified the bucket you want to set acl on, 
+    and --recursive option is not supported here. No matter --force option is specified 
+    or not, ossutil will not show prompt question. If acl information is missed, ossutil 
+    will enter interactive mode and ask you for it. 
+
+    2) ossutil setacl oss://bucket/object [acl] [-c file]
+        The useage set acl on single object, if object not exist, error occurs. In the 
+    useage, please make sure url exactly specified the object you want to set acl on, 
+    and --recursive option is not specified(or ossutil will search for prefix-matching 
+    objects and set acl on those objects). No matter --force option is specified or not, 
+    ossutil will not show prompt question. If acl information is missed, ossutil will 
+    enter interactive mode and ask you for it. 
+
+    3) ossutil setacl oss://bucket[/prefix] [acl] -r [-f] [-c file]
+        The useage can set acl on many objects, --recursive option is required for the 
+    useage, ossutil will search for prefix-matching objects and set acl on those objects, 
+    if error occurs, the operation is terminated. In the useage, --bucket option is not 
+    supported, which means set acl on bucket an objects inside simultaneously is not 
+    supported. If --force option is specified, ossutil will not show prompt question. If 
+    acl information is missed, ossutil will enter interactive mode and ask you for it. 
+`,
+
+	sampleText: ` 
+    (1)ossutil setacl oss://bucket1 public-read-write -b 
+
+    (2)ossutil setacl oss://bucket1/obj1 pr 
+
+    (3)ossutil setacl oss://bucket1/obj def -r
+`,
+}
+
+// SetACLCommand is the command set acl 
+type SetACLCommand struct {
+	command Command
+}
+
+var setACLCommand = SetACLCommand{
+	command: Command{
+		name:        "setacl",
+		nameAlias:   []string{"set-acl", "set_acl"},
+		minArgc:     1,
+		maxArgc:     2,
+		specChinese: specChineseSetACL,
+		specEnglish: specEnglishSetACL,
+		group:       GroupTypeNormalCommand,
+		validOptionNames: []string{
+			OptionConfigFile,
+			OptionRecursion,
+			OptionBucket,
+			OptionForce,
+			OptionRetryTimes,
+			OptionRoutines,
+		},
+	},
+}
+
+// function for FormatHelper interface
+func (sc *SetACLCommand) formatHelpForWhole() string {
+	return sc.command.formatHelpForWhole()
+}
+
+func (sc *SetACLCommand) formatIndependHelp() string {
+	return sc.command.formatIndependHelp()
+}
+
+// Init simulate inheritance, and polymorphism
+func (sc *SetACLCommand) Init(args []string, options OptionMapType) error {
+	return sc.command.Init(args, options, sc)
+}
+
+// RunCommand simulate inheritance, and polymorphism
+func (sc *SetACLCommand) RunCommand() error {
+	recursive, _ := GetBool(OptionRecursion, sc.command.options)
+	toBucket, _ := GetBool(OptionBucket, sc.command.options)
+	force, _ := GetBool(OptionForce, sc.command.options)
+	routines, _ := GetInt(OptionRoutines, sc.command.options)
+
+	cloudURL, err := CloudURLFromString(sc.command.args[0])
+	if err != nil {
+		return err
+	}
+
+	if cloudURL.bucket == "" {
+		return fmt.Errorf("invalid cloud url: %s, miss bucket", sc.command.args[0])
+	}
+
+	bucket, err := sc.command.ossBucket(cloudURL.bucket)
+	if err != nil {
+		return err
+	}
+
+	if toBucket {
+		return sc.setBucketACL(&bucket.Client, cloudURL, recursive)
+	}
+	if !recursive {
+		return sc.setObjectACL(bucket, cloudURL)
+	}
+	return sc.batchSetObjectACL(bucket, cloudURL, force, routines)
+}
+
+func (sc *SetACLCommand) setBucketACL(client *oss.Client, cloudURL CloudURL, recursive bool) error {
+	if cloudURL.object != "" {
+		return fmt.Errorf("set bucket acl invalid url: %s, object not empty, if you mean set object acl, you should not use --bucket option", sc.command.args[0])
+	}
+
+	if recursive {
+		return fmt.Errorf("set bucket acl do not support --recursive option, if you mean set object acl recursivlly, you should not use --bucket option")
+	}
+
+	acl, err := sc.getACL(bucketACL)
+	if err != nil {
+		return err
+	}
+
+	return sc.ossSetBucketACLRetry(client, cloudURL.bucket, acl)
+}
+
+func (sc *SetACLCommand) getACL(aclType setACLType) (oss.ACLType, error) {
+	var acl string
+	if len(sc.command.args) == 2 {
+		acl = sc.command.args[1]
+	} else {
+		fmt.Printf("Please enter the acl you want to set on the bucket(%s):", formatACLString(aclType, ", "))
+		if _, err := fmt.Scanln(&acl); err != nil {
+			return "", fmt.Errorf("invalid acl: %s, please check", acl)
+		}
+	}
+
+	return sc.checkACL(acl, aclType)
+}
+
+func (sc *SetACLCommand) checkACL(acl string, aclType setACLType) (oss.ACLType, error) {
+	var list []oss.ACLType
+	if aclType == bucketACL {
+		list = bucketACLList
+	} else {
+		list = objectACLList
+	}
+
+	for _, acll := range list {
+		if acl == string(acll) {
+			return acll, nil
+		}
+		for _, aclll := range aclMap[acll] {
+			if acl == aclll {
+				return acll, nil
+			}
+		}
+	}
+	return "", fmt.Errorf("invalid acl: %s, please check", acl)
+}
+
+func (sc *SetACLCommand) ossSetBucketACLRetry(client *oss.Client, bucket string, acl oss.ACLType) error {
+	retryTimes, _ := GetInt(OptionRetryTimes, sc.command.options)
+	for i := 1; ; i++ {
+		err := client.SetBucketACL(bucket, acl)
+		if err == nil {
+			return err
+		}
+		if int64(i) >= retryTimes {
+			return BucketError{err, bucket}
+		}
+	}
+}
+
+func (sc *SetACLCommand) setObjectACL(bucket *oss.Bucket, cloudURL CloudURL) error {
+	if cloudURL.object == "" {
+		return fmt.Errorf("set object acl invalid url: %s, object not empty, if you mean set bucket acl, you should use --bucket option", sc.command.args[0])
+	}
+
+	acl, err := sc.getACL(objectACL)
+	if err != nil {
+		return err
+	}
+
+	return sc.ossSetObjectACLRetry(bucket, cloudURL.object, acl)
+}
+
+func (sc *SetACLCommand) ossSetObjectACLRetry(bucket *oss.Bucket, object string, acl oss.ACLType) error {
+	retryTimes, _ := GetInt(OptionRetryTimes, sc.command.options)
+	for i := 1; ; i++ {
+		err := bucket.SetObjectACL(object, acl)
+		if err == nil {
+			return err
+		}
+		if int64(i) >= retryTimes {
+			return ObjectError{err, object}
+		}
+	}
+}
+
+func (sc *SetACLCommand) batchSetObjectACL(bucket *oss.Bucket, cloudURL CloudURL, force bool, routines int64) error {
+	if !force {
+		var val string
+		fmt.Printf("Do you really mean to recursivlly set acl on objects of %s(y or n)? ", sc.command.args[0])
+		if _, err := fmt.Scanln(&val); err != nil || (val != "yes" && val != "y") {
+			fmt.Println("operation is canceled.")
+			return nil
+		}
+	}
+
+	acl, err := sc.getACL(objectACL)
+	if err != nil {
+		return err
+	}
+
+	// producer list objects
+	// consumer set acl
+	chObjects := make(chan string, ChannelBuf)
+	chFinishObjects := make(chan string, ChannelBuf)
+	chError := make(chan error, routines+1)
+	go sc.command.objectProducer(bucket, cloudURL, chObjects, chError)
+	for i := 0; int64(i) < routines; i++ {
+		go sc.setObjectACLConsumer(bucket, acl, chObjects, chFinishObjects, chError)
+	}
+
+	completed := 0
+	num := 0
+	for int64(completed) <= routines {
+		select {
+		case <-chFinishObjects:
+			num++
+			fmt.Printf("\rsetted object acl on %d objects...", num)
+		case err := <-chError:
+			if err != nil {
+				fmt.Printf("\rsetted object acl on %d objects, when error happens.\n", num)
+				return err
+			}
+			completed++
+		}
+	}
+	fmt.Printf("\rSucceed: scaned %d objects, setted object acl on %d objects.\n", num, num)
+	return nil
+}
+
+func (sc *SetACLCommand) setObjectACLConsumer(bucket *oss.Bucket, acl oss.ACLType, chObjects <-chan string, chFinishObjects chan<- string, chError chan<- error) {
+	for object := range chObjects {
+		err := sc.ossSetObjectACLRetry(bucket, object, acl)
+		if err != nil {
+			chError <- err
+			return
+		}
+		chFinishObjects <- object
+	}
+
+	chError <- nil
+}
