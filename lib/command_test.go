@@ -140,7 +140,7 @@ func (s *OssutilCommandSuite) listBuckets(shortFormat bool, c *C) ([]string) {
 
 func (s *OssutilCommandSuite) getBucketResults(c *C) ([]string) {
     result := s.getResult(c)
-    c.Assert(len(result) >= 2, Equals, true)
+    c.Assert(len(result) >= 1, Equals, true)
     buckets := []string{}
     for _, str := range result {
         pos := strings.Index(str, SchemePrefix)
@@ -199,7 +199,7 @@ func (s *OssutilCommandSuite) listObjects(bucket, prefix string, shortFormat, di
 
 func (s *OssutilCommandSuite) getObjectResults(c *C) ([]string) {
     result := s.getResult(c)
-    c.Assert(len(result) >= 2, Equals, true)
+    c.Assert(len(result) >= 1, Equals, true)
     objects := []string{}
     for _, str := range result {
         pos := strings.Index(str, SchemePrefix)

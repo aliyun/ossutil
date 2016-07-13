@@ -21,9 +21,9 @@ var specChineseConfig = SpecText{
     以访问OSS时提供访问信息（某命令是否需要配置项，参见其是否支持
     --config_file选项，具体可见该命令的帮助）。
 
-    配置文件路径可由用户指定，默认为~/.ossutilboto。如果配置文件存在，假设
-    其为:a，ossutil会将文件a另存为：a.bak，然后重新创建文件a并写入配置，此
-    时，如果a.bak存在，其会被文件a覆盖。
+    配置文件路径可由用户指定，默认为` + DefaultConfigFile + `。如果配置文件存在，假
+    设其为:a，ossutil会将文件a另存为：a.bak，然后重新创建文件a并写入配置，
+    此时，如果a.bak存在，其会被文件a覆盖。
 
 用法:
 
@@ -35,7 +35,7 @@ var specChineseConfig = SpecText{
     信息：
         (1) config file
             配置文件路径，如果用户键入回车，ossutil会使用默认的配置文件：
-        ~/.ossutilboto。
+        ` + DefaultConfigFile + `。
         (2) endpoint, accessKeyID, accessKeySecret
             回车代表着跳过相应配置项的设置。注意：endpoint应该为一个二级域
         名(SLD)。  
@@ -99,7 +99,7 @@ var specEnglishConfig = SpecText{
     information is useful to the command).
 
     The configuration file can be specified by user, which in default
-    is ~/.ossutilboto. If the configuration file exist, suppose the file 
+    is ` + DefaultConfigFile + `. If the configuration file exist, suppose the file 
     is: a, ossutil will save a as a.bak, and rewrite file a, at this time, 
     if file a.bak exists, a.bak will be rewrited.
 
@@ -239,9 +239,9 @@ func (cc *ConfigCommand) runCommandInteractive(configFile string) error {
 	fmt.Println("The command create a configuration file and stores credentials.")
 
 	if configFile == "" {
-		fmt.Println("\nPlease enter the config file(default ~/.ossutilboto):")
+		fmt.Println("\nPlease enter the config file(default " + DefaultConfigFile + "):")
 		if _, err := fmt.Scanln(&configFile); err != nil {
-			fmt.Println("No config file entered, will use the default config file ~/.ossutilboto\n")
+			fmt.Println("No config file entered, will use the default config file " + DefaultConfigFile + "\n")
 		}
 	}
 

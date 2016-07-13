@@ -203,10 +203,6 @@ func (lc *ListCommand) listBuckets(prefix string) error {
 		return err
 	}
 
-	if !shortFormat {
-		fmt.Printf("%-30s %20s%s%s\n", "CreateTime", "BucketLocation", FormatTAB, "BucketName")
-	}
-
 	// list all buckets
 	pre := oss.Prefix(prefix)
 	marker := oss.Marker("")
@@ -217,6 +213,9 @@ func (lc *ListCommand) listBuckets(prefix string) error {
 		}
 		pre = oss.Prefix(lbr.Prefix)
 		marker = oss.Marker(lbr.NextMarker)
+        if num == 0 && !shortFormat && len(lbr.Buckets) > 0 {
+            fmt.Printf("%-30s %20s%s%s\n", "CreateTime", "BucketLocation", FormatTAB, "BucketName")
+        }
 		for _, bucket := range lbr.Buckets {
 			if !shortFormat {
 				fmt.Printf("%-30s %20s%s%s\n", bucket.CreationDate, bucket.Location, FormatTAB, CloudURLToString(bucket.Name, ""))
@@ -225,7 +224,6 @@ func (lc *ListCommand) listBuckets(prefix string) error {
 			}
 		}
 		num += len(lbr.Buckets)
-		// show buckets
 		if !lbr.IsTruncated {
 			break
 		}
@@ -295,7 +293,7 @@ func (lc *ListCommand) listObjects(bucket *oss.Bucket, cloudURL CloudURL, shortF
 }
 
 func (lc *ListCommand) displayResult(lor oss.ListObjectsResult, bucket string, shortFormat bool, directory bool, i int) int {
-	if i == 0 && !shortFormat && !directory {
+	if i == 0 && !shortFormat && !directory && len(lor.Objects) > 0 {
 		fmt.Printf("%-30s %12s%s%-38s%s%s\n", "LastModifiedTime", "Size", "   ", "ETAG", "  ", "ObjectName")
 	}
 

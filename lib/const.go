@@ -38,11 +38,11 @@ const (
 const (
 	Package             string = "ossutil"
 	ChannelBuf          int    = 1000
-	Version             string = "1.0.0.Beta"
+	Version             string = "1.0.0Beta"
 	DefaultEndpoint     string = "oss.aliyuncs.com"
 	Language                   = "中文"
 	Scheme              string = "oss"
-    DefaultConfigFile          = "~/.ossutilboto"
+    DefaultConfigFile          = "~/.ossutilconfig"
 	MaxUint                    = ^uint(0)
 	MaxInt                     = int(MaxUint >> 1)
 	MaxUint64                  = ^uint64(0)
