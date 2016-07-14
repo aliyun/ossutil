@@ -16,7 +16,7 @@ func ParseAndRunCommand() (error) {
 
 	if len(args) == 0 {
 		if val, _ := GetBool(OptionVersion, options); val {
-            fmt.Sprintf("ossutil version: %s\n", Version)
+            fmt.Printf("ossutil version: %s\n", Version)
             return nil 
 		} 
 		args = append(args, "help")
