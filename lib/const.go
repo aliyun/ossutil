@@ -36,8 +36,8 @@ const (
 )
 
 const (
-    updateEndpoint      string = "oss-test.aliyun-inc.com"
-    updateBucket               = "ossutilupdate"
+    updateEndpoint      string = "oss-cn-hangzhou.aliyuncs.com"
+    updateBucket               = "ossutil-version-update"
     updateVersionObject        = "ossutilversion"         
     updateBinaryLinux          = "ossutil"
     updateBinaryWindow32       = "ossutil32.exe"
