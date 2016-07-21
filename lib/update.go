@@ -3,6 +3,7 @@ package lib
 import (
 	"fmt"
 	"strings"
+    "sort"
     "os"
     "io"
     "io/ioutil"
@@ -135,7 +136,7 @@ func (uc *UpdateCommand) RunCommand() error {
 
         var val string
         if _, err := fmt.Scanln(&val); err == nil && (val == "yes" || val == "y") {
-            return uc.updateVersion(language)
+            return uc.updateVersion(version, language)
         }
 
         if language == EnglishLanguage {
@@ -144,7 +145,7 @@ func (uc *UpdateCommand) RunCommand() error {
             fmt.Println("操作取消。")
         }
     } else {
-        return uc.updateVersion(language)
+        return uc.updateVersion(version, language)
     }
     return nil
 }
@@ -158,7 +159,16 @@ func (uc *UpdateCommand) getLastestVersion() (string, error) {
     if err != nil {
         return "", err
     }
-    version := strings.TrimSpace(strings.Trim(string(v), "\n"))
+    versionStr := strings.TrimSpace(strings.Trim(string(v), "\n"))
+
+    // get version list and sort
+    sli := strings.Split(versionStr, "\n")
+    vl := []string{}
+    for _, vstr := range sli {
+        vl = append(vl, strings.TrimSpace(strings.Trim(string(vstr), "\n")))
+    }
+    sort.Strings(vl)
+    version := vl[len(vl) - 1] 
 
     os.Remove(updateTmpVersionFile)
 
@@ -201,7 +211,7 @@ func (uc *UpdateCommand) ossAnonymousGetToFile(host, filePath string) error {
     return nil
 }
 
-func (uc *UpdateCommand) updateVersion(language string) error {
+func (uc *UpdateCommand) updateVersion(version, language string) error {
     // get binary path 
     filePath, renameFilePath := getBinaryPath()
 
@@ -217,10 +227,10 @@ func (uc *UpdateCommand) updateVersion(language string) error {
         return fmt.Errorf("update binary error, %s", err.Error())
     }
 
-    // download the lastest binary
-    if err := uc.getLastestBinary(filePath); err != nil {
+    // download the binary of the specified version
+    if err := uc.getBinary(filePath, version); err != nil {
         uc.revertRename(filePath, renameFilePath)
-        return fmt.Errorf("download lastest binary error, %s", err.Error())
+        return fmt.Errorf("download binary of version: %s error, %s", version, err.Error())
     }
 
     if err := os.Chmod(filePath, mode); err != nil {
@@ -249,7 +259,7 @@ func (uc *UpdateCommand) revertRename(filePath, renameFilePath string) {
     os.Rename(renameFilePath, filePath)
 }
 
-func (uc *UpdateCommand) getLastestBinary(filePath string) error {
+func (uc *UpdateCommand) getBinary(filePath, version string) error {
     // get os type
     var object string
     switch runtime.GOOS {
@@ -263,6 +273,8 @@ func (uc *UpdateCommand) getLastestBinary(filePath string) error {
     default:
         object = updateBinaryLinux
     }
+
+    object = version + "/" + object
 
     if err := uc.anonymousGetToFileRetry(updateBucket, object, filePath); err != nil {
         return err

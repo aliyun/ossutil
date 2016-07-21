@@ -226,6 +226,16 @@ func (s *OssutilCommandSuite) TestErrSetACL(c *C) {
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
 
+    args = []string{CloudURLToString(bucket, object)}
+    showElapse, err = s.rawSetACLWithArgs(args, false, true, true)
+    c.Assert(err, NotNil)
+    c.Assert(showElapse, Equals, false)
+
+    args = []string{CloudURLToString(bucket, object)}
+    showElapse, err = s.rawSetACLWithArgs(args, true, false, true)
+    c.Assert(err, NotNil)
+    c.Assert(showElapse, Equals, false)
+
     // miss object
     args = []string{CloudURLToString(bucket, ""), acl}
     showElapse, err = s.rawSetACLWithArgs(args, false, false, true)

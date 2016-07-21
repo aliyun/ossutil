@@ -30,12 +30,16 @@ func (s *OssutilCommandSuite) TestUpdate(c *C) {
 
     showElapse, err = s.rawUpdate(true, "English")
 
-    err = updateCommand.updateVersion("中文")
+    err = updateCommand.updateVersion(Version, "中文")
+
+    fileName := "ossutil_test_not_exist"
+    err = updateCommand.rewriteLoadConfig(fileName)
+    c.Assert(err, IsNil)
 }
 
 func (s *OssutilCommandSuite) TestDownloadLastestBinary(c *C) {
     tempBinaryFile := ".ossutil_test_update.temp"  
-    err := updateCommand.getLastestBinary(tempBinaryFile) 
+    err := updateCommand.getBinary(tempBinaryFile, Version) 
     c.Assert(err, IsNil)
 
     _ = os.Remove(tempBinaryFile)
