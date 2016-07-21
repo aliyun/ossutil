@@ -45,6 +45,32 @@ func (s *OssutilHelpSuite) TestHelp(c *C) {
     c.Assert(err, IsNil)
 }
 
+// test "help"
+func (s *OssutilHelpSuite) TestHelpChinese(c *C) {
+    command := "help" 
+    var args []string
+    language := DefaultLanguage 
+    options := OptionMapType {
+        "language": &language,
+    }
+    showElapse, err := cm.RunCommand(command, args, options)
+    c.Assert(showElapse, Equals, false)
+    c.Assert(err, IsNil)
+}
+
+// test "help"
+func (s *OssutilHelpSuite) TestHelpEnglish(c *C) {
+    command := "help" 
+    var args []string
+    language := EnglishLanguage
+    options := OptionMapType {
+        "language": &language,
+    }
+    showElapse, err := cm.RunCommand(command, args, options)
+    c.Assert(showElapse, Equals, false)
+    c.Assert(err, IsNil)
+}
+
 // test "help options"
 func (s *OssutilHelpSuite) TestHelpOption(c *C) {
     command := "help" 
@@ -80,16 +106,20 @@ type helpCommandTestCase struct {
     err error
 }
 
-var subCommands = []string{"help", "config", "mb", "ls", "rm", "stat", "setacl", "setmeta", "cp"}
+var subCommands = []string{"help", "config", "update", "mb", "ls", "rm", "stat", "setacl", "setmeta", "cp"}
 
 func (s *OssutilHelpSuite) TestHelpCommand(c *C) {
     command := "help" 
-    var options OptionMapType
-    for _, subCmd := range subCommands {   
-        args := []string{subCmd}
-        showElapse, err := cm.RunCommand(command, args, options)
-        c.Assert(showElapse, Equals, false)
-        c.Assert(err, IsNil)
+    for _, language := range []string{DefaultLanguage, EnglishLanguage} {
+        options := OptionMapType {
+            "language": &language,
+        }
+        for _, subCmd := range subCommands {   
+            args := []string{subCmd}
+            showElapse, err := cm.RunCommand(command, args, options)
+            c.Assert(showElapse, Equals, false)
+            c.Assert(err, IsNil)
+        }
     }
 }
 
@@ -121,3 +151,11 @@ func (s *OssutilHelpSuite) TestHelpCommandOption(c *C) {
     }
 }
 
+func (s *OssutilHelpSuite) TestHelpLoadConfig(c *C) {
+    fileName := "notexistconfigfile"
+    err := helpCommand.rewriteLoadConfig(fileName)
+    c.Assert(err, IsNil)
+
+    err = helpCommand.rewriteLoadConfig(configFile)
+    c.Assert(err, IsNil)
+}

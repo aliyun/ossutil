@@ -91,12 +91,19 @@ var helpCommand = HelpCommand{
 		specChinese:      specChineseHelp,
 		specEnglish:      specEnglishHelp,
 		group:            GroupTypeAdditionalCommand,
-		validOptionNames: []string{},
+		validOptionNames: []string{
+            OptionLanguage,
+        },
 	},
 }
 
 // function for RewriteLoadConfiger interface
 func (hc *HelpCommand) rewriteLoadConfig(configFile string) error {
+    // read config file, if error exist, do not print error
+    var err error
+    if hc.command.configOptions, err = LoadConfig(configFile); err != nil {
+        hc.command.configOptions = OptionMapType{}
+    }
 	return nil
 }
 

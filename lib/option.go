@@ -3,8 +3,9 @@ package lib
 import (
 	"errors"
 	"fmt"
-	goopt "github.com/droundy/goopt"
+    "strings"
 	"strconv"
+	goopt "github.com/droundy/goopt"
 )
 
 type optionType int
@@ -14,6 +15,7 @@ const (
 	OptionTypeString optionType = iota
 	OptionTypeInt64
 	OptionTypeFlagTrue
+    OptionTypeAlternative
 )
 
 // Option describe the component of a option
@@ -22,8 +24,8 @@ type Option struct {
 	nameAlias   string
 	def         string
 	optionType  optionType
-	minVal      string //empty means no check
-	maxVal      string //empty means no check
+	minVal      string // empty means no check, for OptionTypeAlternative, minVal is the alternative values connected by '|', eg: 中文|English
+	maxVal      string // empty means no check, for OptionTypeAlternative, maxVal is empty
 	helpChinese string
 	helpEnglish string
 }
@@ -36,9 +38,9 @@ var OptionMap = map[string]Option{
 	OptionEndpoint: Option{"-e", "--endpoint", DefaultEndpoint, OptionTypeString, "", "",
 		fmt.Sprintf("ossutil工具的基本endpoint配置（默认值为:%s，注意该值会被配置文件中设置的相应值覆盖），注意其必须为一个二级域名。", DefaultEndpoint),
 		fmt.Sprintf("Base endpoint for oss endpoint(default: %s, Notice the default value is lapsed in config command). Take notice that it should be second-level domain(SLD).", DefaultEndpoint)},
-	OptionAccessKeyID:      Option{"", "--access_key_id", "", OptionTypeString, "", "", "访问oss使用的AccessKeyID。", "AccessKeyID while access oss."},
-	OptionAccessKeySecret:  Option{"", "--access_key_secret", "", OptionTypeString, "", "", "访问oss使用的AccessKeySecret。", "AccessKeySecret while access oss."},
-	OptionSTSToken:         Option{"", "--sts_token", "", OptionTypeString, "", "", "访问oss使用的STSToken，非必须设置项。", "STSToken while access oss, not necessary."},
+	OptionAccessKeyID:      Option{"-I", "--access_key_id", "", OptionTypeString, "", "", "访问oss使用的AccessKeyID。", "AccessKeyID while access oss."},
+	OptionAccessKeySecret:  Option{"-K", "--access_key_secret", "", OptionTypeString, "", "", "访问oss使用的AccessKeySecret。", "AccessKeySecret while access oss."},
+	OptionSTSToken:         Option{"-T", "--sts_token", "", OptionTypeString, "", "", "访问oss使用的STSToken，非必须设置项。", "STSToken while access oss, not necessary."},
 	OptionACL:              Option{"", "--acl", "", OptionTypeString, "", "", "acl信息的配置。", "acl information."},
 	OptionShortFormat:      Option{"-s", "--short_format", "", OptionTypeFlagTrue, "", "", "显示精简格式，如果未指定该选项，默认显示长格式。", "Show by short format, if the option is not specified, show long format by default."},
 	OptionDirectory:        Option{"-d", "--directory", "", OptionTypeFlagTrue, "", "", "返回匹配的子目录名称，而非返回子目录下的所有object", "Return matching subdirectory names instead of contents of the subdirectory"},
@@ -48,21 +50,22 @@ var OptionMap = map[string]Option{
 	OptionUpdate:           Option{"", "--update", "", OptionTypeFlagTrue, "", "", "更新操作", "update"},
 	OptionDelete:           Option{"", "--delete", "", OptionTypeFlagTrue, "", "", "删除操作", "delete"},
 	OptionBigFileThreshold: Option{"", "--bigfile_threshold", strconv.Itoa(BigFileThreshold), OptionTypeInt64, strconv.FormatInt(MinBigFileThreshold, 10), strconv.FormatInt(MaxBigFileThreshold, 10), fmt.Sprintf("开启大文件断点续传的文件大小阀值，默认值:%dM，取值范围：%d-%d", BigFileThreshold/(1024*0124), MinBigFileThreshold, MaxBigFileThreshold), fmt.Sprintf("the threshold of file size, the file size larger than the threshold will use resume upload or download(default: %d), value range is: %d-%d", BigFileThreshold, MinBigFileThreshold, MaxBigFileThreshold)},
-	OptionCheckpointDir: Option{"", "--checkpoint_dir", CheckpointDir, OptionTypeString, "", "",
+	OptionCheckpointDir:    Option{"", "--checkpoint_dir", CheckpointDir, OptionTypeString, "", "",
 		fmt.Sprintf("checkpoint目录的路径(默认值为:%s)，断点续传时，操作失败ossutil会自动创建该目录，并在该目录下记录checkpoint信息，操作成功会删除该目录。如果指定了该选项，请确保所指定的目录可以被删除。", CheckpointDir),
 		fmt.Sprintf("Path of checkpoint directory(default:%s), the directory is used in resume upload or download, when operate failed, ossutil will create the directory automatically, and record the checkpoint information in the directory, when the operation is succeed, the directory will be removed, so when specify the option, please make sure the directory can be removed.", CheckpointDir)},
-	OptionRetryTimes: Option{"", "--retry_times", strconv.Itoa(RetryTimes), OptionTypeInt64, strconv.FormatInt(MinRetryTimes, 10), strconv.FormatInt(MaxRetryTimes, 10), fmt.Sprintf("当错误发生时的重试次数，默认值:%d，取值范围：%d-%d", RetryTimes, MinRetryTimes, MaxRetryTimes), fmt.Sprintf("retry times when fail(default: %d), value range is: %d-%d", RetryTimes, MinRetryTimes, MaxRetryTimes)},
-	OptionRoutines:   Option{"", "--routines", strconv.Itoa(Routines), OptionTypeInt64, strconv.FormatInt(MinRoutines, 10), strconv.FormatInt(MaxRoutines, 10), fmt.Sprintf("并发线程数，默认值:%d，取值范围：%d-%d", Routines, MinRoutines, MaxRoutines), fmt.Sprintf("amount of concurrency threads(default: %d), value range is: %d-%d", Routines, MinRoutines, MaxRoutines)},
-	OptionVersion:    Option{"-v", "--version", "", OptionTypeFlagTrue, "", "", fmt.Sprintf("显示ossutil的版本（%s）并退出。", Version), fmt.Sprintf("Show ossutil version (%s) and exit.", Version)},
-	OptionMan:        Option{"-?", "--man", "", OptionTypeFlagTrue, "", "", "显示ossutil所有命令的用法或某个命令的详细帮助。", "Provide the useage of all commands or provide help about the specified command."},
+	OptionRetryTimes:       Option{"", "--retry_times", strconv.Itoa(RetryTimes), OptionTypeInt64, strconv.FormatInt(MinRetryTimes, 10), strconv.FormatInt(MaxRetryTimes, 10), fmt.Sprintf("当错误发生时的重试次数，默认值：%d，取值范围：%d-%d", RetryTimes, MinRetryTimes, MaxRetryTimes), fmt.Sprintf("retry times when fail(default: %d), value range is: %d-%d", RetryTimes, MinRetryTimes, MaxRetryTimes)},
+	OptionRoutines:         Option{"", "--routines", strconv.Itoa(Routines), OptionTypeInt64, strconv.FormatInt(MinRoutines, 10), strconv.FormatInt(MaxRoutines, 10), fmt.Sprintf("并发线程数，默认值：%d，取值范围：%d-%d", Routines, MinRoutines, MaxRoutines), fmt.Sprintf("amount of concurrency threads(default: %d), value range is: %d-%d", Routines, MinRoutines, MaxRoutines)},
+    OptionLanguage:         Option{"-L", "--language", DefaultLanguage, OptionTypeAlternative, fmt.Sprintf("%s|%s", DefaultLanguage, EnglishLanguage), "", fmt.Sprintf("设置ossutil工具的语言，默认值：%s，取值范围：%s|%s", DefaultLanguage, DefaultLanguage, EnglishLanguage), fmt.Sprintf("set the language of ossutil(default: %s), value range is: %s|%s", DefaultLanguage, DefaultLanguage, EnglishLanguage)}, 
+	OptionVersion:          Option{"-v", "--version", "", OptionTypeFlagTrue, "", "", fmt.Sprintf("显示ossutil的版本（%s）并退出。", Version), fmt.Sprintf("Show ossutil version (%s) and exit.", Version)},
+	OptionMan:              Option{"-?", "--man", "", OptionTypeFlagTrue, "", "", "显示ossutil所有命令的用法或某个命令的详细帮助。", "Provide the useage of all commands or provide help about the specified command."},
 }
 
-func (T *Option) getHelp() string {
-	switch Language {
-	case "中文":
-		return T.helpChinese
-	default:
+func (T *Option) getHelp(language string) string {
+	switch language {
+	case EnglishLanguage:
 		return T.helpEnglish
+    default:
+		return T.helpChinese
 	}
 }
 
@@ -76,7 +79,6 @@ func ParseArgOptions() ([]string, OptionMapType, error) {
 	goopt.Description = func() string {
 		return "Simple tool for access OSS."
 	}
-	goopt.Summary = "ossutil [command] [args...] [options...]"
 	goopt.Parse(nil)
 	if err := checkOption(options); err != nil {
 		return nil, nil, err
@@ -94,6 +96,9 @@ func initOption() OptionMapType {
 		case OptionTypeFlagTrue:
 			val, _ := flagTrueOption(option)
 			m[name] = val
+        case OptionTypeAlternative:
+            val, _ := stringOption(option) 
+            m[name] = val
 		default:
 			val, _ := stringOption(option)
 			m[name] = val
@@ -105,8 +110,8 @@ func initOption() OptionMapType {
 func stringOption(option Option) (*string, error) {
 	names, err := makeNames(option)
     if err == nil {
-		// ignore option.def, but set it to "", will assemble it after
-		return goopt.String(names, "", option.getHelp()), nil
+		// ignore option.def, set it to "", will assemble it after
+		return goopt.String(names, "", option.getHelp(DefaultLanguage)), nil
 	}
 	return nil, err
 }
@@ -114,7 +119,7 @@ func stringOption(option Option) (*string, error) {
 func flagTrueOption(option Option) (*bool, error) {
 	names, err := makeNames(option)
     if err == nil {
-		return goopt.Flag(names, []string{}, option.getHelp(), ""), nil
+		return goopt.Flag(names, []string{}, option.getHelp(DefaultLanguage), ""), nil
 	}
 	return nil, err
 }
@@ -142,28 +147,36 @@ func makeNames(option Option) ([]string, error) {
 
 func checkOption(options OptionMapType) error {
 	for name, optionInfo := range OptionMap {
-		if optionInfo.optionType == OptionTypeInt64 {
-			if option, ok := options[name]; ok {
+		if option, ok := options[name]; ok {
+		    if optionInfo.optionType == OptionTypeInt64 {
 				if val, ook := option.(*string); ook && *val != "" {
 					num, err := strconv.ParseInt(*val, 10, 64)
 					if err != nil {
-						return fmt.Errorf("invalid option value of %s is: %s, which is not int64, please check", name, *val)
+						return fmt.Errorf("invalid option value of %s, the value: %s is not int64, please check", name, *val)
 					}
 
 					if optionInfo.minVal != "" {
 						minv, _ := strconv.ParseInt(optionInfo.minVal, 10, 64)
 						if num < minv {
-							return fmt.Errorf("invalid option value of %s is: %d, smaller than the min value range: %d", name, num, minv)
+							return fmt.Errorf("invalid option value of %s, the value: %d is smaller than the min value range: %d", name, num, minv)
 						}
 					}
 					if optionInfo.maxVal != "" {
 						maxv, _ := strconv.ParseInt(optionInfo.maxVal, 10, 64)
 						if num > maxv {
-							return fmt.Errorf("invalid option value of %s is: %d, bigger than the max value range: %d", name, num, maxv)
+							return fmt.Errorf("invalid option value of %s, the value: %d is bigger than the max value range: %d", name, num, maxv)
 						}
 					}
 				}
 			}
+            if optionInfo.optionType == OptionTypeAlternative {
+				if val, ook := option.(*string); ook && *val != "" {
+                    vals := strings.Split(optionInfo.minVal, "|")
+                    if FindPos(*val, vals) == -1 {
+                        return fmt.Errorf("invalid option value of %s, the value: %s is not anyone of %s", name, *val, optionInfo.minVal)
+                    }
+                }
+            }
 		}
 	}
 	return nil

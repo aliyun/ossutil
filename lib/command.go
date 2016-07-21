@@ -167,6 +167,8 @@ func (cmd *Command) assembleOptions(cmder interface{}) {
 					def, _ := strconv.ParseInt(OptionMap[name].def, 10, 64)
 					cmd.options[name] = &def
 				}
+            case OptionTypeAlternative: 
+                fallthrough
 			case OptionTypeString:
 				if val, _ := GetString(name, cmd.options); val == "" {
 					def := OptionMap[name].def
@@ -190,11 +192,12 @@ func (cmd *Command) formatHelpForWhole() string {
 }
 
 func (cmd *Command) getSpecText() SpecText {
-	switch Language {
-	case "中文":
-		return cmd.specChinese
-	default:
+    val, _ := GetString(OptionLanguage, helpCommand.command.options)
+	switch val {
+	case EnglishLanguage:
 		return cmd.specEnglish
+	default:
+		return cmd.specChinese
 	}
 }
 
@@ -246,8 +249,10 @@ func (cmd *Command) formatOption(option Option) string {
 		}
 	}
 
-	if option.getHelp() != "" {
-		text += fmt.Sprintf("\n%s%s%s\n\n", FormatTAB, FormatTAB, option.getHelp())
+    val, _ := GetString(OptionLanguage, helpCommand.command.options)
+    opHelp := option.getHelp(val)
+	if opHelp != "" {
+		text += fmt.Sprintf("\n%s%s%s\n\n", FormatTAB, FormatTAB, opHelp)
 	}
 
 	return text
@@ -321,6 +326,20 @@ func (cmd *Command) ossGetObjectStatRetry(bucket *oss.Bucket, object string) (ht
 	}
 }
 
+func (cmd *Command) ossDownloadFileRetry(bucket *oss.Bucket, objectName, fileName string) error {
+	retryTimes, _ := GetInt(OptionRetryTimes, cmd.options)
+	for i := 1; ; i++ {
+		err := bucket.GetObjectToFile(objectName, fileName)
+		if err == nil {
+			return err
+		}
+		if int64(i) >= retryTimes {
+			return ObjectError{err, objectName}
+		}
+	}
+}
+
+
 func (cmd *Command) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, chObjects chan<- string, chError chan<- error) {
 	pre := oss.Prefix(cloudURL.object)
 	marker := oss.Marker("")
@@ -357,5 +376,6 @@ func GetAllCommands() []interface{} {
 		&setACLCommand,
 		&setMetaCommand,
 		&copyCommand,
+        &updateCommand,
 	}
 }

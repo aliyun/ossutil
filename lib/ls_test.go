@@ -270,4 +270,9 @@ func (s *OssutilCommandSuite) TestErrList(c *C) {
     showElapse, err = s.rawList([]string{CloudURLToString(bucket, "")}, false, true)
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
+
+    // list buckets with -d
+    showElapse, err = s.rawList([]string{"oss://"}, false, true)
+    c.Assert(err, NotNil)
+    c.Assert(showElapse, Equals, false)
 }

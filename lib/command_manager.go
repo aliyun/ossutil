@@ -4,11 +4,16 @@ import (
 	"fmt"
     "time"
 	"reflect"
+    "os"
+    "runtime"
 )
 
 // ParseAndRunCommand parse command line user input, get command and options, then run command 
 func ParseAndRunCommand() (error) {
 	ts := time.Now().UnixNano()
+
+    clearEnv()
+
 	args, options, err := ParseArgOptions()
 	if err != nil {
         return err
@@ -42,6 +47,13 @@ func ParseAndRunCommand() (error) {
         return nil
 	}
     return nil
+}
+
+func clearEnv() {
+    if runtime.GOOS == "windows" {
+        _, renameFilePath := getBinaryPath()
+        os.Remove(renameFilePath)
+    }
 }
 
 // CommandManager is used to manager commands, such as build command map and run command

@@ -93,7 +93,8 @@ func (s *OssutilCommandSuite) configNonInteractive(c *C) {
 
     opts, err := LoadConfig(configFile) 
     c.Assert(err, IsNil)
-    c.Assert(len(opts), Equals, 3)
+    c.Assert(len(opts), Equals, 4)
+    c.Assert(opts[OptionLanguage], Equals, DefaultLanguage)
     c.Assert(opts[OptionEndpoint], Equals, endpoint)
     c.Assert(opts[OptionAccessKeyID], Equals, accessKeyID)
     c.Assert(opts[OptionAccessKeySecret], Equals, accessKeySecret)
@@ -367,6 +368,11 @@ func (s *OssutilCommandSuite) TestOptions(c *C) {
     err = checkOption(options)
     c.Assert(err, NotNil)
 
+    language := "unknown"
+    options = OptionMapType{OptionLanguage: &language}
+    err = checkOption(options)
+    c.Assert(err, NotNil)
+
     options = OptionMapType{OptionConfigFile: &configFile}
     ok, err := GetBool(OptionConfigFile, options)
     c.Assert(err, NotNil)
@@ -397,6 +403,11 @@ func (s *OssutilCommandSuite) TestOptions(c *C) {
     i, err = GetInt(OptionConfigFile, options)
     c.Assert(err, NotNil)
     c.Assert(i, Equals, int64(0))
+
+    options = OptionMapType{OptionConfigFile: "a"}
+    val, err := GetString(OptionConfigFile, options)
+    c.Assert(err, NotNil)
+    c.Assert(val, Equals, "")
 }
 
 func (s *OssutilCommandSuite) TestErrors(c *C) {
@@ -428,5 +439,15 @@ func (s *OssutilCommandSuite) TestStorageURL(c *C) {
     c.Assert(err, NotNil)
 
     _, err = CloudURLFromString("./file")
+    c.Assert(err, NotNil)
+}
+
+func (s *OssutilCommandSuite) TestErrOssDownloadFile(c *C) {
+    bucketName := bucketNamePrefix + "cmd"
+	bucket, err := copyCommand.command.ossBucket(bucketName)
+    c.Assert(err, IsNil)
+
+    object := "object"
+    err = copyCommand.command.ossDownloadFileRetry(bucket, object, object)
     c.Assert(err, NotNil)
 }

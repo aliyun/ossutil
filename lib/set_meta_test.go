@@ -7,13 +7,13 @@ import (
     . "gopkg.in/check.v1"
 )
 
-func (s *OssutilCommandSuite) rawSetMeta(bucket, object, meta string, update, delete, recursive, force bool) (bool, error) {
+func (s *OssutilCommandSuite) rawSetMeta(bucket, object, meta string, update, delete, recursive, force bool, language string) (bool, error) {
     args := []string{CloudURLToString(bucket, object), meta}
-    showElapse, err := s.rawSetMetaWithArgs(args, update, delete, recursive, force) 
+    showElapse, err := s.rawSetMetaWithArgs(args, update, delete, recursive, force, language) 
     return showElapse, err
 }
 
-func (s *OssutilCommandSuite) rawSetMetaWithArgs(args []string, update, delete, recursive, force bool) (bool, error) {
+func (s *OssutilCommandSuite) rawSetMetaWithArgs(args []string, update, delete, recursive, force bool, language string) (bool, error) {
     command := "setmeta"
     str := ""
     routines := strconv.Itoa(Routines)
@@ -28,13 +28,14 @@ func (s *OssutilCommandSuite) rawSetMetaWithArgs(args []string, update, delete, 
         "recursive": &recursive,
         "force": &force,
         "routines": &routines,
+        "language": &language,
     }
     showElapse, err := cm.RunCommand(command, args, options)
     return showElapse, err
 }
 
 func (s *OssutilCommandSuite) setObjectMeta(bucket, object, meta string, update, delete, recursive, force bool, c *C) {
-    showElapse, err := s.rawSetMeta(bucket, object, meta, update, delete, recursive, force) 
+    showElapse, err := s.rawSetMeta(bucket, object, meta, update, delete, recursive, force, DefaultLanguage) 
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true)
 }
@@ -43,7 +44,7 @@ func (s *OssutilCommandSuite) TestSetBucketMeta(c *C) {
     bucket := bucketNamePrefix + "setmeta"
     s.putBucket(bucket, c)
 
-    showElapse, err := s.rawSetMeta(bucket, "", "X-Oss-Meta-A:A", false, false, false, true)
+    showElapse, err := s.rawSetMeta(bucket, "", "X-Oss-Meta-A:A", false, false, false, true, DefaultLanguage)
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
 }
@@ -61,11 +62,20 @@ func (s *OssutilCommandSuite) TestSetObjectMeta(c *C) {
     c.Assert(ok, Equals, false)
 
     // update
-    s.setObjectMeta(bucket, object, "x-oss-object-acl:private#X-Oss-Meta-A:A", true, false, false, true, c)
+    s.setObjectMeta(bucket, object, "x-oss-object-acl:private#X-Oss-Meta-A:A#Expires:2006-01-02T15:04:05Z", true, false, false, true, c)
 
     objectStat = s.getStat(bucket, object, c) 
     c.Assert(objectStat[StatACL], Equals, "private") 
     c.Assert(objectStat["X-Oss-Meta-A"], Equals, "A")
+    c.Assert(objectStat["Expires"], Equals, "Mon, 02 Jan 2006 15:04:05 GMT")
+
+    // error expires
+    showElapse, err := s.rawSetMeta(bucket, object, "Expires:2006-01", true, false, false, true, DefaultLanguage)
+    c.Assert(err, NotNil)
+    c.Assert(showElapse, Equals, false)
+
+    objectStat = s.getStat(bucket, object, c) 
+    c.Assert(objectStat["Expires"], Equals, "Mon, 02 Jan 2006 15:04:05 GMT")
 
     // delete
     s.setObjectMeta(bucket, object, "x-oss-object-acl#X-Oss-Meta-A", false, true, false, true, c)
@@ -97,24 +107,32 @@ func (s *OssutilCommandSuite) TestSetObjectMeta(c *C) {
     c.Assert(objectStat["X-Oss-Meta-A"], Equals, "A")
 
     // without update, delete and force
-    showElapse, err := s.rawSetMeta(bucket, object, "x-oss-object-acl:default#X-Oss-Meta-A:A", false, false, false, false)
+    showElapse, err = s.rawSetMeta(bucket, object, "x-oss-object-acl:default#X-Oss-Meta-A:A", false, false, false, false, DefaultLanguage)
+    c.Assert(err, NotNil)
+    c.Assert(showElapse, Equals, false)
+
+    showElapse, err = s.rawSetMeta(bucket, object, "x-oss-object-acl:default#X-Oss-Meta-A:A", false, false, false, false, EnglishLanguage)
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
 
     // miss meta
     s.setObjectMeta(bucket, object, "", true, false, false, true, c)
 
+    showElapse, err = s.rawSetMeta(bucket, object, "", true, false, false, true, EnglishLanguage)
+    c.Assert(err, IsNil)
+    c.Assert(showElapse, Equals, true)
+
     // delete error meta
-    showElapse, err = s.rawSetMeta(bucket, object, "X-Oss-Meta-A:A", false, true, false, true)
+    showElapse, err = s.rawSetMeta(bucket, object, "X-Oss-Meta-A:A", false, true, false, true, DefaultLanguage)
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
 
     // update error meta
-    showElapse, err = s.rawSetMeta(bucket, object, "a:b", true, false, false, true)
+    showElapse, err = s.rawSetMeta(bucket, object, "a:b", true, false, false, true, DefaultLanguage)
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
 
-    showElapse, err = s.rawSetMeta(bucket, object, "x-oss-object-acl:private", true, false, false, true)
+    showElapse, err = s.rawSetMeta(bucket, object, "x-oss-object-acl:private", true, false, false, true, DefaultLanguage)
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true)
 }
@@ -125,7 +143,7 @@ func (s *OssutilCommandSuite) TestSetNotExistObjectMeta(c *C) {
 
     object := "testobject" 
     // set meta of not exist object
-    showElapse, err := s.rawSetMeta(bucket, object, "x-oss-object-acl:private#X-Oss-Meta-A:A", true, false, false, true)
+    showElapse, err := s.rawSetMeta(bucket, object, "x-oss-object-acl:private#X-Oss-Meta-A:A", true, false, false, true, DefaultLanguage)
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
 
@@ -213,22 +231,22 @@ func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
     }
 
     // error meta
-    showElapse, err := s.rawSetMeta(bucket, "设置元信息：", "X-Oss-Meta-c:c", false, true, true, true)
+    showElapse, err := s.rawSetMeta(bucket, "设置元信息：", "X-Oss-Meta-c:c", false, true, true, true, DefaultLanguage)
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
 
-    showElapse, err = s.rawSetMeta(bucket, "", "a:b", true, false, true, true)
+    showElapse, err = s.rawSetMeta(bucket, "", "a:b", true, false, true, true, DefaultLanguage)
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
 }
 
 func (s *OssutilCommandSuite) TestErrSetMeta(c *C) {
     args := []string{"os:/", ""}
-    showElapse, err := s.rawSetMetaWithArgs(args, false, false, false, true)
+    showElapse, err := s.rawSetMetaWithArgs(args, false, false, false, true, DefaultLanguage)
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
 
-    showElapse, err = s.rawSetMeta("", "", "", false, false, false, false)
+    showElapse, err = s.rawSetMeta("", "", "", false, false, false, false, DefaultLanguage)
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
 
@@ -237,24 +255,45 @@ func (s *OssutilCommandSuite) TestErrSetMeta(c *C) {
 
     object := "notexistobject"
 
-    showElapse, err = s.rawSetMeta(bucket, object, "x-oss-object-acl:private#X-Oss-Meta-A:A", true, true, false, true)
+    showElapse, err = s.rawSetMeta(bucket, object, "x-oss-object-acl:private#X-Oss-Meta-A:A", true, true, false, true, DefaultLanguage)
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
 
-    showElapse, err = s.rawSetMetaWithArgs([]string{CloudURLToString(bucket, object)}, false, false, false, true)
+    showElapse, err = s.rawSetMetaWithArgs([]string{CloudURLToString(bucket, object)}, false, false, false, true, EnglishLanguage)
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
 
-    showElapse, err = s.rawSetMetaWithArgs([]string{CloudURLToString(bucket, object)}, true, false, false, false)
+    showElapse, err = s.rawSetMetaWithArgs([]string{CloudURLToString(bucket, object)}, true, false, false, false, EnglishLanguage)
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
 
-    showElapse, err = s.rawSetMeta(bucket, object, "x-oss-object-acl:private#X-Oss-Meta-A:A", false, false, false, true)
+    showElapse, err = s.rawSetMetaWithArgs([]string{CloudURLToString(bucket, object)}, true, false, false, false, DefaultLanguage)
+    c.Assert(err, NotNil)
+    c.Assert(showElapse, Equals, false)
+
+    showElapse, err = s.rawSetMeta(bucket, object, "x-oss-object-acl:private#X-Oss-Meta-A:A", false, false, false, true, DefaultLanguage)
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
 
     object = "/object"
-    showElapse, err = s.rawSetMeta(bucket, object, "x-oss-object-acl:private#X-Oss-Meta-A:A", false, false, true, true)
+    showElapse, err = s.rawSetMeta(bucket, object, "x-oss-object-acl:private#X-Oss-Meta-A:A", false, false, true, true, DefaultLanguage)
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
+
+    showElapse, err = s.rawSetMetaWithArgs([]string{CloudURLToString("", "")}, true, false, false, false, DefaultLanguage)
+    c.Assert(err, NotNil)
+    c.Assert(showElapse, Equals, false)
+
+    showElapse, err = s.rawSetMeta(bucket, object, "unknown:a", true, false, false, true, EnglishLanguage)
+    c.Assert(err, NotNil)
+    c.Assert(showElapse, Equals, false)
+
+    showElapse, err = s.rawSetMeta(bucket, object, "Expires:a", true, false, false, true, EnglishLanguage)
+    c.Assert(err, NotNil)
+    c.Assert(showElapse, Equals, false)
+}
+
+func (s *OssutilCommandSuite) TestGetOSSOption(c *C) {
+    _, err := getOSSOption("unknown", "a")
+    c.Assert(err, NotNil)
 }

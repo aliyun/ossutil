@@ -2,6 +2,9 @@ package lib
 
 import (
 	"fmt"
+    "os"
+    "os/exec"
+    "path/filepath"
 )
 
 // Output print input string to stdout and add '\n'
@@ -17,4 +20,15 @@ func FindPos(elem string, elemArray []string) int {
 		}
 	}
 	return -1
+}
+
+func getBinaryPath() (string, string) {
+    filePath, _ := exec.LookPath(os.Args[0])
+    if path, err := os.Readlink(filePath); err == nil {
+        filePath = path
+    }
+
+    fileName := filepath.Base(filePath)
+    renameFilePath := ".temp_" + fileName
+    return filePath, renameFilePath
 }

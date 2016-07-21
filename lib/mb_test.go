@@ -25,6 +25,22 @@ func (s *OssutilCommandSuite) rawPutBucketWithACL(args []string, acl string) (bo
     return showElapse, err
 }
 
+func (s *OssutilCommandSuite) rawPutBucketWithACLLanguage(args []string, acl, language string) (bool, error) {
+    command := "mb"
+    str := ""
+    options := OptionMapType{
+        "endpoint": &str,
+        "accessKeyID": &str,
+        "accessKeySecret": &str,
+        "stsToken": &str,
+        "configFile": &configFile,
+        "acl": &acl,
+        "language": &language,
+    }
+    showElapse, err := cm.RunCommand(command, args, options)
+    return showElapse, err
+}
+
 func (s *OssutilCommandSuite) TestMakeBucket(c *C) {
     bucket := bucketNamePrefix + "mb" 
     s.putBucket(bucket, c)
@@ -84,14 +100,16 @@ func (s *OssutilCommandSuite) TestMakeBucketErrorName(c *C) {
 
 func (s *OssutilCommandSuite) TestMakeBucketErrorACL(c *C) {
     bucket := bucketNamePrefix + "mb" 
-    for _, acl := range []string{"default", "def", "erracl"} {
-        showElapse, err := s.putBucketWithACL(bucket, acl)
-        c.Assert(err, NotNil)
-        c.Assert(showElapse, Equals, false)
+    for _, language := range []string{DefaultLanguage, EnglishLanguage, "unknown"} {
+        for _, acl := range []string{"default", "def", "erracl"} {
+            showElapse, err := s.rawPutBucketWithACLLanguage([]string{CloudURLToString(bucket, "")}, acl, language)
+            c.Assert(err, NotNil)
+            c.Assert(showElapse, Equals, false)
 
-        showElapse, err = s.rawGetStat(bucket, "")
-        c.Assert(err, NotNil)
-        c.Assert(showElapse, Equals, false)
+            showElapse, err = s.rawGetStat(bucket, "")
+            c.Assert(err, NotNil)
+            c.Assert(showElapse, Equals, false)
+        }
     }
 }
 

@@ -19,6 +19,7 @@ const (
 	OptionCheckpointDir           = "checkpointDir"
 	OptionRetryTimes              = "retryTimes"
 	OptionRoutines                = "routines"
+    OptionLanguage                = "language"
 	OptionVersion                 = "version"
 	OptionMan                     = "man"
 )
@@ -34,13 +35,25 @@ const (
     StatOwner                      = "Owner"
 )
 
+const (
+    updateEndpoint      string = "oss-test.aliyun-inc.com"
+    updateBucket               = "ossutilupdate"
+    updateVersionObject        = "ossutilversion"         
+    updateBinaryLinux          = "ossutil"
+    updateBinaryWindow32       = "ossutil32.exe"
+    updateBinaryWindow64       = "ossutil64.exe"
+    updateBinaryMac64          = "ossutilmac64"
+    updateTmpVersionFile       = ".ossutil_tmp_vsersion"
+)
+
 // global public variable
 const (
 	Package             string = "ossutil"
 	ChannelBuf          int    = 1000
 	Version             string = "1.0.0.Beta"
-	DefaultEndpoint     string = "oss.aliyuncs.com"
-	Language                   = "中文"
+	DefaultEndpoint     string = "oss-cn-hangzhou.aliyuncs.com"
+	DefaultLanguage            = "中文"
+    EnglishLanguage            = "English"
 	Scheme              string = "oss"
     DefaultConfigFile          = "~/.ossutilconfig"
 	MaxUint                    = ^uint(0)

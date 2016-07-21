@@ -207,4 +207,24 @@ func (s *OssutilCommandSuite) TestErrRemove(c *C) {
     showElapse, err = s.rawRemove([]string{CloudURLToString(bucket, object)}, true, true, false)
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
+
+    // clear not exist bucket
+    bucketName := bucketNamePrefix + "rmnotexist"
+    showElapse, err = s.rawRemove([]string{CloudURLToString(bucketName, "")}, true, true, false)
+    c.Assert(err, NotNil)
+    c.Assert(showElapse, Equals, false)
+}
+
+func (s *OssutilCommandSuite) TestErrDeleteObject(c *C) {
+    bucketName := bucketNamePrefix + "rm"
+
+    bucket, err := removeCommand.command.ossBucket(bucketName)
+    c.Assert(err, IsNil)
+
+    object := "object"
+    err = removeCommand.ossDeleteObjectRetry(bucket, object)
+    c.Assert(err, NotNil)
+
+    _, err = removeCommand.ossBatchDeleteObjectsRetry(bucket, []string{object})
+    c.Assert(err, NotNil)
 }

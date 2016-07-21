@@ -1042,7 +1042,7 @@ func (cc *CopyCommand) downloadSingleFile(bucket *oss.Bucket, objectInfo objectI
 	}
 
 	if size < cpOption.threshold {
-		return false, cc.ossDownloadFileRetry(bucket, object, fileName)
+		return false, cc.command.ossDownloadFileRetry(bucket, object, fileName)
 	}
 
 	partSize, rt := cc.preparePartOption(size)
@@ -1084,19 +1084,6 @@ func (cc *CopyCommand) createParentDirectory(fileName string) error {
 	}
 	dir = strings.Replace(dir, "\\", "/", -1)
 	return os.MkdirAll(dir, 0777)
-}
-
-func (cc *CopyCommand) ossDownloadFileRetry(bucket *oss.Bucket, objectName, fileName string) error {
-	retryTimes, _ := GetInt(OptionRetryTimes, cc.command.options)
-	for i := 1; ; i++ {
-		err := bucket.GetObjectToFile(objectName, fileName)
-		if err == nil {
-			return err
-		}
-		if int64(i) >= retryTimes {
-			return ObjectError{err, objectName}
-		}
-	}
 }
 
 func (cc *CopyCommand) ossResumeDownloadRetry(bucket *oss.Bucket, objectName string, filePath string, size, partSize int64, options ...oss.Option) error {

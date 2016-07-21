@@ -264,7 +264,7 @@ func (sc *SetACLCommand) setBucketACL(client *oss.Client, cloudURL CloudURL, rec
 		return fmt.Errorf("set bucket acl do not support --recursive option, if you mean set object acl recursivlly, you should not use --bucket option")
 	}
 
-	acl, err := sc.getACL(bucketACL)
+	acl, err := sc.getACL(bucketACL, recursive)
 	if err != nil {
 		return err
 	}
@@ -272,12 +272,19 @@ func (sc *SetACLCommand) setBucketACL(client *oss.Client, cloudURL CloudURL, rec
 	return sc.ossSetBucketACLRetry(client, cloudURL.bucket, acl)
 }
 
-func (sc *SetACLCommand) getACL(aclType setACLType) (oss.ACLType, error) {
+func (sc *SetACLCommand) getACL(aclType setACLType, recursive bool) (oss.ACLType, error) {
 	var acl string
 	if len(sc.command.args) == 2 {
 		acl = sc.command.args[1]
 	} else {
-		fmt.Printf("Please enter the acl you want to set on the bucket(%s):", formatACLString(aclType, ", "))
+        str := "bucket"
+        if aclType == objectACL {
+            str = "object"
+            if recursive {
+                str = "objects"
+            }
+        }
+		fmt.Printf("Please enter the acl you want to set on the %s(%s):", str, formatACLString(aclType, ", "))
 		if _, err := fmt.Scanln(&acl); err != nil {
 			return "", fmt.Errorf("invalid acl: %s, please check", acl)
 		}
@@ -325,7 +332,7 @@ func (sc *SetACLCommand) setObjectACL(bucket *oss.Bucket, cloudURL CloudURL) err
 		return fmt.Errorf("set object acl invalid url: %s, object not empty, if you mean set bucket acl, you should use --bucket option", sc.command.args[0])
 	}
 
-	acl, err := sc.getACL(objectACL)
+	acl, err := sc.getACL(objectACL, false)
 	if err != nil {
 		return err
 	}
@@ -356,7 +363,7 @@ func (sc *SetACLCommand) batchSetObjectACL(bucket *oss.Bucket, cloudURL CloudURL
 		}
 	}
 
-	acl, err := sc.getACL(objectACL)
+	acl, err := sc.getACL(objectACL, true)
 	if err != nil {
 		return err
 	}

@@ -641,3 +641,28 @@ func (s *OssutilCommandSuite) TestErrCopy(c *C) {
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
 }
+
+func (s *OssutilCommandSuite) TestPreparePartOption(c *C) {
+    partSize, routines := copyCommand.preparePartOption(100000000000)
+    c.Assert(partSize, Equals, int64(250000000))
+    c.Assert(routines, Equals, 5)
+
+    partSize, routines = copyCommand.preparePartOption(80485760)
+    c.Assert(partSize, Equals, int64(12816225))
+    c.Assert(routines, Equals, 2)
+
+    partSize, routines = copyCommand.preparePartOption(MaxInt64)
+    fmt.Println(partSize, routines)
+    c.Assert(partSize, Equals, int64(922337203685478))
+    c.Assert(routines, Equals, 10)
+
+}
+
+func (s *OssutilCommandSuite) TestResumeDownloadRetry(c *C) {
+    bucketName := bucketNamePrefix + "cpnotexist"
+    bucket, err := copyCommand.command.ossBucket(bucketName)
+    c.Assert(err, IsNil)
+
+    err = copyCommand.ossResumeDownloadRetry(bucket, "", "", 0, 0)
+    c.Assert(err, NotNil)
+}

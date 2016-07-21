@@ -57,11 +57,39 @@ func (s *OssutilConfigSuite) TestConfigNonInteractive(c *C) {
 
     opts, err := LoadConfig(configFile) 
     c.Assert(err, IsNil)
-    c.Assert(len(opts), Equals, 4)
+    c.Assert(len(opts), Equals, 5)
+    c.Assert(opts[OptionLanguage], Equals, DefaultLanguage)
     c.Assert(opts[OptionEndpoint], Equals, endpoint)
     c.Assert(opts[OptionAccessKeyID], Equals, accessKeyID)
     c.Assert(opts[OptionAccessKeySecret], Equals, accessKeySecret)
     c.Assert(opts[OptionSTSToken], Equals, stsToken)
+}
+
+func (s *OssutilConfigSuite) TestConfigNonInteractiveLanguage(c *C) {
+    command := "config" 
+    var args []string
+    for _, language := range []string{DefaultLanguage, EnglishLanguage} {
+        options := OptionMapType{
+            "endpoint": &endpoint,
+            "stsToken": &stsToken,
+            "configFile": &configFile,
+            "language": &language,
+        }
+        showElapse, err := cm.RunCommand(command, args, options)
+        c.Assert(showElapse, Equals, false)
+        c.Assert(err, IsNil)
+
+        f, err := os.Stat(configFile)
+        c.Assert(err, IsNil)
+        c.Assert(f.Size() > 0, Equals, true)
+
+        opts, err := LoadConfig(configFile) 
+        c.Assert(err, IsNil)
+        c.Assert(len(opts), Equals, 3)
+        c.Assert(opts[OptionEndpoint], Equals, endpoint)
+        c.Assert(opts[OptionSTSToken], Equals, stsToken)
+        c.Assert(opts[OptionLanguage], Equals, language)
+    }
 }
 
 func (s *OssutilConfigSuite) TestConfigInteractive(c *C) {
@@ -80,14 +108,39 @@ func (s *OssutilConfigSuite) TestConfigInteractive(c *C) {
 
     opts, err := LoadConfig(configFile) 
     c.Assert(err, IsNil)
-    c.Assert(len(opts), Equals, 0)
+    c.Assert(len(opts), Equals, 1)
+    c.Assert(opts[OptionLanguage], Equals, DefaultLanguage)
 }
 
-func (s *OssutilConfigSuite) TestConfigInteractive1(c *C) {
+func (s *OssutilConfigSuite) TestConfigInteractiveLanguage(c *C) {
     command := "config" 
     var args []string
+    for _, language := range []string{DefaultLanguage, EnglishLanguage} {
+        options := OptionMapType{
+            "configFile": &configFile,
+            "language": &language,
+        }
+        showElapse, err := cm.RunCommand(command, args, options)
+        c.Assert(showElapse, Equals, false)
+        c.Assert(err, IsNil)
+    }
+
+    f, err := os.Stat(configFile)
+    c.Assert(err, IsNil)
+    c.Assert(f.Size() > 0, Equals, true)
+
+    opts, err := LoadConfig(configFile) 
+    c.Assert(err, IsNil)
+    c.Assert(len(opts), Equals, 1)
+}
+
+func (s *OssutilConfigSuite) TestConfigLanguage(c *C) {
+    command := "config" 
+    var args []string
+    language := "English"
     options := OptionMapType{
         "configFile": &configFile,
+        "language": &language,
     }
     showElapse, err := cm.RunCommand(command, args, options)
     c.Assert(showElapse, Equals, false)
@@ -99,9 +152,9 @@ func (s *OssutilConfigSuite) TestConfigInteractive1(c *C) {
 
     opts, err := LoadConfig(configFile) 
     c.Assert(err, IsNil)
-    c.Assert(len(opts), Equals, 0)
+    c.Assert(len(opts), Equals, 1)
+    c.Assert(opts[OptionLanguage], Equals, language)
 }
-
 
 // test option empty value
 func (s *OssutilConfigSuite) TestConfigOptionEmptyValue(c *C) {
@@ -126,9 +179,10 @@ func (s *OssutilConfigSuite) TestConfigOptionEmptyValue(c *C) {
 
     opts, err := LoadConfig(configFile) 
     c.Assert(err, IsNil)
-    c.Assert(len(opts), Equals, 2)
+    c.Assert(len(opts), Equals, 3)
     c.Assert(opts[OptionEndpoint], IsNil)
     c.Assert(opts[OptionAccessKeyID], IsNil)
+    c.Assert(opts[OptionLanguage], Equals, DefaultLanguage)
     c.Assert(opts[OptionAccessKeySecret], Equals, accessKeySecret)
     c.Assert(opts[OptionSTSToken], Equals, stsToken)
 }

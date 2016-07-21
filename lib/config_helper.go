@@ -24,6 +24,7 @@ type configOption struct {
 
 // CredOptionList is all options in Credentials section
 var CredOptionList = []string{
+    OptionLanguage,
     OptionEndpoint,
     OptionAccessKeyID,
     OptionAccessKeySecret,
@@ -32,6 +33,7 @@ var CredOptionList = []string{
 
 // CredOptionMap allows alias name for options in Credentials section 
 var CredOptionMap = map[string]configOption{
+    OptionLanguage:        configOption{[]string{"language", "Language"}, false},
 	OptionEndpoint:        configOption{[]string{"endpoint", "host"}, true},
 	OptionAccessKeyID:     configOption{[]string{"accessKeyID", "accessKeyId", "AccessKeyID", "AccessKeyId", "access_key_id", "access_id", "accessid"}, false},
 	OptionAccessKeySecret: configOption{[]string{"accessKeySecret", "AccessKeySecret", "access_key_secret", "access_key", "accesskey"}, false},
@@ -117,9 +119,15 @@ func checkConfig(configMap OptionMapType) error {
 		if option, ok := OptionMap[name]; ok {
 			if option.optionType == OptionTypeInt64 {
 				if _, err := strconv.ParseInt(opval.(string), 10, 64); err != nil {
-					return fmt.Errorf("error value of option \"%s\" is: %s in config file, which needs int64 type", name, opval)
+					return fmt.Errorf("error value of option \"%s\", the value is: %s in config file, which needs int64 type", name, opval)
 				}
 			}
+            if option.optionType == OptionTypeAlternative {
+                vals := strings.Split(option.minVal, "|") 
+                if FindPos(opval.(string), vals) == -1 {
+                    return fmt.Errorf("error value of option \"%s\", the value is: %s in config file, which is not anyone of %s", name, opval, option.minVal)
+                }
+            }
 		}
 	}
 	return nil

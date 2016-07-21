@@ -116,6 +116,7 @@ var makeBucketCommand = MakeBucketCommand{
 			OptionConfigFile,
             OptionACL,
 			OptionRetryTimes,
+            OptionLanguage,
 		},
 	},
 }
@@ -151,9 +152,10 @@ func (mc *MakeBucketCommand) RunCommand() error {
 	}
 
     aclStr, _ := GetString(OptionACL, mc.command.options) 
+    language, _ := GetString(OptionLanguage, mc.command.options)
     var op oss.Option
     if aclStr != "" {
-        acl, err := mc.getACL(aclStr)
+        acl, err := mc.getACL(aclStr, language)
         if err != nil {
             return err
         }
@@ -163,11 +165,16 @@ func (mc *MakeBucketCommand) RunCommand() error {
     return mc.ossCreateBucketRetry(client, cloudURL.bucket, op) 
 }
 
-func (mc *MakeBucketCommand) getACL(aclStr string) (oss.ACLType, error) {
+func (mc *MakeBucketCommand) getACL(aclStr, language string) (oss.ACLType, error) {
     acl, err := mc.checkACL(aclStr)
     if err != nil {
-        fmt.Printf("Invalid acl: %s\n", aclStr)
-        fmt.Printf("Acceptable acls:\n\t%s\nPlease enter the acl you want to set on the bucket:", formatACLString(bucketACL, "\n\t"))
+        if language == EnglishLanguage {
+            fmt.Printf("Invalid acl: %s\n", aclStr)
+            fmt.Printf("Acceptable acls:\n\t%s\nPlease enter the acl you want to set on the bucket:", formatACLString(bucketACL, "\n\t"))
+        } else {
+            fmt.Printf("acl: %s非法\n", aclStr)
+            fmt.Printf("合法的acl有:\n\t%s\n请输入你想设置的acl：", formatACLString(bucketACL, "\n\t"))
+        }
 		if _, err := fmt.Scanln(&aclStr); err != nil {
 			return "", fmt.Errorf("invalid acl: %s, please check", aclStr)
 		}
