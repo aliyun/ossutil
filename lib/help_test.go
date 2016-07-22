@@ -16,6 +16,7 @@ func (s *OssutilHelpSuite) SetUpSuite(c *C) {
     testLogger.Println("test help started")
     os.Stdout = testLogFile 
     os.Stderr = testLogFile 
+    SetUpCredential()
     cm.Init()
 }
 

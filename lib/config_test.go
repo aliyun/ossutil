@@ -16,6 +16,7 @@ func (s *OssutilConfigSuite) SetUpSuite(c *C) {
     os.Stdout = testLogFile 
     os.Stderr = testLogFile 
     testLogger.Println("test config started")
+    SetUpCredential()
     cm.Init()
 }
 

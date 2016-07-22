@@ -25,10 +25,10 @@ var _ = Suite(&OssutilCommandSuite{})
 
 var (
     // Update before running test
-    endpoint         = "<endpoint>" 
-    accessKeyID      = "<AccessKeyID>"
-    accessKeySecret  = "<AccessKeySecret>"
-    stsToken         = "<STSToken>"
+    endpoint         = "<testEndpoint>" 
+    accessKeyID      = "<testAccessKeyID>"
+    accessKeySecret  = "<testAccessKeySecret>"
+    stsToken         = "<testSTSToken>"
 )
 
 var (
@@ -53,9 +53,23 @@ func (s *OssutilCommandSuite) SetUpSuite(c *C) {
     os.Stdout = testLogFile 
     os.Stderr = testLogFile 
     testLogger.Println("test command started")
+    SetUpCredential()
+    fmt.Println("&&&&&&&&&&&", endpoint)
     cm.Init()
     s.configNonInteractive(c)
     s.createFile(uploadFileName, content, c)
+}
+
+func SetUpCredential() {
+    if endpoint == "<testEndpoint>" {
+        endpoint = os.Getenv("OSS_TEST_ENDPOINT") 
+    }
+    if accessKeyID == "<testAccessKeyID>" {
+        accessKeyID = os.Getenv("OSS_TEST_ACCESS_KEY_ID")
+    }
+    if accessKeySecret == "<testAccessKeySecret>" {
+        accessKeySecret = os.Getenv("OSS_TEST_ACCESS_KEY_SECRET")
+    }
 }
 
 // Run before each test or benchmark starts running
