@@ -54,7 +54,6 @@ func (s *OssutilCommandSuite) SetUpSuite(c *C) {
     os.Stderr = testLogFile 
     testLogger.Println("test command started")
     SetUpCredential()
-    fmt.Println("&&&&&&&&&&&", endpoint)
     cm.Init()
     s.configNonInteractive(c)
     s.createFile(uploadFileName, content, c)
