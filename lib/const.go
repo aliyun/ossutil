@@ -33,6 +33,7 @@ const (
     StatIntranetEndpoint           = "IntranetEndpoint"
     StatACL                        = "ACL"
     StatOwner                      = "Owner"
+    StatLastModified               = "Last-Modified"
 )
 
 const (

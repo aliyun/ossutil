@@ -72,6 +72,18 @@ func (s *OssutilHelpSuite) TestHelpEnglish(c *C) {
     c.Assert(err, IsNil)
 }
 
+func (s *OssutilHelpSuite) TestHelpLEnglish(c *C) {
+    command := "help" 
+    var args []string
+    language := LEnglishLanguage
+    options := OptionMapType {
+        "language": &language,
+    }
+    showElapse, err := cm.RunCommand(command, args, options)
+    c.Assert(showElapse, Equals, false)
+    c.Assert(err, IsNil)
+}
+
 // test "help options"
 func (s *OssutilHelpSuite) TestHelpOption(c *C) {
     command := "help" 
@@ -111,7 +123,7 @@ var subCommands = []string{"help", "config", "update", "mb", "ls", "rm", "stat",
 
 func (s *OssutilHelpSuite) TestHelpCommand(c *C) {
     command := "help" 
-    for _, language := range []string{DefaultLanguage, EnglishLanguage} {
+    for _, language := range []string{DefaultLanguage, EnglishLanguage, LEnglishLanguage} {
         options := OptionMapType {
             "language": &language,
         }

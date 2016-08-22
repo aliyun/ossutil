@@ -2,9 +2,11 @@ package lib
 
 import (
 	"fmt"
-	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"sort"
 	"strings"
+    "time"
+    "net/http"
+	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
 
 var specChineseStat = SpecText{
@@ -197,6 +199,9 @@ func (sc *StatCommand) objectStat(bucket *oss.Bucket, cloudURL CloudURL) error {
 	sortNames = append(sortNames, "ACL")
 	attrMap[StatOwner] = goar.Owner.ID
 	attrMap[StatACL] = goar.ACL
+    if lm, err := time.Parse(http.TimeFormat, attrMap[StatLastModified]); err == nil {
+        attrMap[StatLastModified] = fmt.Sprintf("%s", lm.UTC()) 
+    }
 
 	sort.Strings(sortNames)
 

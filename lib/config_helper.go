@@ -124,7 +124,7 @@ func checkConfig(configMap OptionMapType) error {
 			}
             if option.optionType == OptionTypeAlternative {
                 vals := strings.Split(option.minVal, "|") 
-                if FindPos(opval.(string), vals) == -1 {
+                if FindPosCaseInsen(opval.(string), vals) == -1 {
                     return fmt.Errorf("error value of option \"%s\", the value is: %s in config file, which is not anyone of %s", name, opval, option.minVal)
                 }
             }

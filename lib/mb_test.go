@@ -100,7 +100,7 @@ func (s *OssutilCommandSuite) TestMakeBucketErrorName(c *C) {
 
 func (s *OssutilCommandSuite) TestMakeBucketErrorACL(c *C) {
     bucket := bucketNamePrefix + "mb" 
-    for _, language := range []string{DefaultLanguage, EnglishLanguage, "unknown"} {
+    for _, language := range []string{DefaultLanguage, EnglishLanguage, LEnglishLanguage, "unknown"} {
         for _, acl := range []string{"default", "def", "erracl"} {
             showElapse, err := s.rawPutBucketWithACLLanguage([]string{CloudURLToString(bucket, "")}, acl, language)
             c.Assert(err, NotNil)

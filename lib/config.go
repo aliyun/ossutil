@@ -280,21 +280,22 @@ func (cc *ConfigCommand) filterNonInputOptions() {
 }
 
 func (cc *ConfigCommand) runCommandInteractive(configFile, language string) error {
-    if language == EnglishLanguage {
+    llanguage := strings.ToLower(language)
+    if llanguage == LEnglishLanguage {
 	    fmt.Println("The command creates a configuration file and stores credentials.")
     } else {
         fmt.Println("该命令创建将一个配置文件，在其中存储配置信息。")
     }
 
 	if configFile == "" {
-        if language == EnglishLanguage {
+        if llanguage == LEnglishLanguage {
 		    fmt.Printf("\nPlease enter the config file path(default " + DefaultConfigFile + ", carriage return will use the default path):")
         } else {
 		    fmt.Printf("\n请输入配置文件路径（默认为：" + DefaultConfigFile + "，回车将使用默认路径）：")
         }
 
 		if _, err := fmt.Scanln(&configFile); err != nil {
-            if language == EnglishLanguage {
+            if llanguage == LEnglishLanguage {
 			    fmt.Println("No config file entered, will use the default config file " + DefaultConfigFile + "\n")
             } else {
 		        fmt.Println("未输入配置文件路径，将使用默认配置文件：" + DefaultConfigFile + "。\n")
@@ -303,7 +304,7 @@ func (cc *ConfigCommand) runCommandInteractive(configFile, language string) erro
 	}
 
 	configFile = DecideConfigFile(configFile)
-    if language == EnglishLanguage {
+    if llanguage == LEnglishLanguage {
 	    fmt.Println("For the following settings, carriage return means skip the configuration. Please try \"help config\" to see the meaning of the settings.\n")
     } else {
         fmt.Println("对于下述配置，回车将跳过相关配置项的设置，配置项的具体含义，请使用\"help config\"命令查看。\n")
@@ -321,16 +322,17 @@ func (cc *ConfigCommand) configInteractive(configFile, language string) error {
 	section := config.NewSection(CREDSection)
 
     // if config file not exist, config Language
+    llanguage := strings.ToLower(language)
 	section.Add(OptionLanguage, language)
     if _, err := os.Stat(configFile); err != nil {
-        if language == EnglishLanguage {
+        if llanguage == LEnglishLanguage {
 		    fmt.Printf("Please enter language(%s):", OptionMap[OptionLanguage].minVal)
         } else {
             fmt.Printf("请输入语言(%s)：", OptionMap[OptionLanguage].minVal)
         }
 		if _, err := fmt.Scanln(&val); err == nil {
             vals := strings.Split(OptionMap[OptionLanguage].minVal, "|")
-            if FindPos(val, vals) == -1 {
+            if FindPosCaseInsen(val, vals) == -1 {
                 return fmt.Errorf("invalid option value of %s, the value: %s is not anyone of %s", OptionLanguage, val, OptionMap[OptionLanguage].minVal)
             }
 			section.Add(OptionLanguage, val)
@@ -339,7 +341,7 @@ func (cc *ConfigCommand) configInteractive(configFile, language string) error {
 
     credOptionList := CredOptionList[1:]
 	for _, name := range credOptionList {
-        if language == EnglishLanguage {
+        if llanguage == LEnglishLanguage {
 		    fmt.Printf("Please enter %s:", name)
         } else {
             fmt.Printf("请输入%s：", name)
@@ -350,7 +352,7 @@ func (cc *ConfigCommand) configInteractive(configFile, language string) error {
 	}
 
 	for _, sec := range []string{BucketEndpointSection, BucketCnameSection} {
-        if language == EnglishLanguage {
+        if llanguage == LEnglishLanguage {
 		    fmt.Printf("\nIs there any %s configurations(yes or no)?", sec)
         } else {
 		    fmt.Printf("\n是否需要配置：%s(y or n)?", sec)
@@ -361,13 +363,13 @@ func (cc *ConfigCommand) configInteractive(configFile, language string) error {
 			for {
 				bucket := ""
 				host := ""
-                if language == EnglishLanguage {
+                if llanguage == LEnglishLanguage {
 				    fmt.Printf("Please enter the %s:", nameList[0])
                 } else {
 				    fmt.Printf("请输入%s：", nameList[0])
                 }
 				if _, err := fmt.Scanln(&bucket); err != nil || "" == strings.TrimSpace(bucket) {
-                    if language == EnglishLanguage {
+                    if llanguage == LEnglishLanguage {
 					    fmt.Printf("No %s entered, the configuration of %s ended.\n", nameList[0], sec)
                     } else {
                         fmt.Printf("未输入%s，%s项的配置结束。\n", nameList[0], sec)

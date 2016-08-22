@@ -89,9 +89,9 @@ var specChineseCopy = SpecText{
 
 --force选项
 
-    如果dest_url指定的文件或objects已经存在，如果未指定--update选项，ossutil会询问是否进
-    行替换操作，如果指定了--force选项，则不询问，强制替换。该选项只有在未指定--update选项
-    时有效，否则按--update选项操作。
+    如果dest_url指定的文件或objects已经存在，并且未指定--update选项，ossutil会询问是否进
+    行替换操作（输入非法时默认不替换），如果指定了--force选项，则不询问，强制替换。该选项
+    只有在未指定--update选项时有效，否则按--update选项操作。
 
 
 大文件断点续传：
@@ -317,8 +317,9 @@ var specEnglishCopy = SpecText{
 --force option
 
     If the file dest_url specified is existed, and --update option is not specified, ossutil will 
-    ask if replace the file. If --force option is specified here, ossutil will not prompt, replace 
-    by force. The option is useful only when --update not specified. 
+    ask if replace the file(if the input is invalid, the file will not be replaced). If --force 
+    option is specified here, ossutil will not prompt, replace by force. The option is useful only 
+    when --update not specified. 
 
 
 Resume copy of big file:
@@ -883,7 +884,7 @@ func (cc *CopyCommand) confirm(str string) bool {
 	defer mu.Unlock()
 
 	var val string
-	fmt.Printf("\rcp: overwrite \"%s\"? ", str)
+	fmt.Printf("\rcp: overwrite \"%s\"(y or n)? ", str)
 	if _, err := fmt.Scanln(&val); err != nil || (val != "yes" && val != "y") {
 		return false
 	}

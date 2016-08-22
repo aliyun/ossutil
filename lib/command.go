@@ -193,8 +193,8 @@ func (cmd *Command) formatHelpForWhole() string {
 
 func (cmd *Command) getSpecText() SpecText {
     val, _ := GetString(OptionLanguage, helpCommand.command.options)
-	switch val {
-	case EnglishLanguage:
+	switch strings.ToLower(val) {
+	case LEnglishLanguage:
 		return cmd.specEnglish
 	default:
 		return cmd.specChinese
@@ -250,6 +250,7 @@ func (cmd *Command) formatOption(option Option) string {
 	}
 
     val, _ := GetString(OptionLanguage, helpCommand.command.options)
+    val = strings.ToLower(val)
     opHelp := option.getHelp(val)
 	if opHelp != "" {
 		text += fmt.Sprintf("\n%s%s%s\n\n", FormatTAB, FormatTAB, opHelp)

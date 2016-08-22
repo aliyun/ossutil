@@ -105,6 +105,7 @@ func (uc *UpdateCommand) Init(args []string, options OptionMapType) error {
 func (uc *UpdateCommand) RunCommand() error {
     force, _ := GetBool(OptionForce, uc.command.options)
     language, _ := GetString(OptionLanguage, uc.command.options)
+    language = strings.ToLower(language)
 
     // get lastest version
     version, err := uc.getLastestVersion()
@@ -112,13 +113,13 @@ func (uc *UpdateCommand) RunCommand() error {
         return fmt.Errorf("get lastest vsersion error, %s", err.Error())
     }
 
-    if language == EnglishLanguage {
+    if language == LEnglishLanguage {
         fmt.Printf("current version is: %s, the lastest version is: %s", Version, version)
     } else {
         fmt.Printf("当前版本为：%s，最新版本为：%s", Version, version)
     }
     if version == Version {
-        if language == EnglishLanguage {
+        if language == LEnglishLanguage {
             fmt.Println(", current version is the lastest version, no need to update.")
         } else {
             fmt.Println("，当前版本即为最新版本，无需更新。") 
@@ -128,7 +129,7 @@ func (uc *UpdateCommand) RunCommand() error {
     fmt.Println("")
 
     if !force {
-        if language == EnglishLanguage {
+        if language == LEnglishLanguage {
             fmt.Printf("sure to update ossutil(y or n)? ")
         } else {
             fmt.Printf("确定更新版本(y or n)? ")
@@ -139,7 +140,7 @@ func (uc *UpdateCommand) RunCommand() error {
             return uc.updateVersion(version, language)
         }
 
-        if language == EnglishLanguage {
+        if language == LEnglishLanguage {
             fmt.Printf("operation is canceled.")
         } else {
             fmt.Println("操作取消。")
@@ -246,7 +247,7 @@ func (uc *UpdateCommand) updateVersion(version, language string) error {
         }
     }
 
-    if language == EnglishLanguage {
+    if language == LEnglishLanguage {
         fmt.Println("Update Success!")
     } else {
         fmt.Println("更新成功!")

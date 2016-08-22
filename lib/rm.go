@@ -244,7 +244,11 @@ func (rc *RemoveCommand) removeBucket(bucket *oss.Bucket, cloudURL CloudURL, for
 		}
 	}
 
-	return rc.ossDeleteBucketRetry(&bucket.Client, cloudURL.bucket)
+	err := rc.ossDeleteBucketRetry(&bucket.Client, cloudURL.bucket)
+    if err == nil {
+		fmt.Printf("removed bucket: %s.\n", cloudURL.bucket)
+    }
+    return err
 }
 
 func (rc *RemoveCommand) ossDeleteBucketRetry(client *oss.Client, bucket string) error {

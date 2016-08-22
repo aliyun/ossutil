@@ -69,7 +69,7 @@ func (s *OssutilConfigSuite) TestConfigNonInteractive(c *C) {
 func (s *OssutilConfigSuite) TestConfigNonInteractiveLanguage(c *C) {
     command := "config" 
     var args []string
-    for _, language := range []string{DefaultLanguage, EnglishLanguage} {
+    for _, language := range []string{DefaultLanguage, EnglishLanguage, LEnglishLanguage} {
         options := OptionMapType{
             "endpoint": &endpoint,
             "stsToken": &stsToken,
@@ -116,7 +116,7 @@ func (s *OssutilConfigSuite) TestConfigInteractive(c *C) {
 func (s *OssutilConfigSuite) TestConfigInteractiveLanguage(c *C) {
     command := "config" 
     var args []string
-    for _, language := range []string{DefaultLanguage, EnglishLanguage} {
+    for _, language := range []string{DefaultLanguage, EnglishLanguage, LEnglishLanguage} {
         options := OptionMapType{
             "configFile": &configFile,
             "language": &language,

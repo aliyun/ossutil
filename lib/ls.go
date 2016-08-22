@@ -2,8 +2,8 @@ package lib
 
 import (
 	"fmt"
-	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"strings"
+	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
 
 var specChineseList = SpecText{
@@ -36,8 +36,8 @@ var specChineseList = SpecText{
     2) ossutil ls oss://bucket[/prefix] [-s] [-d]
         该用法列举指定bucket下的objects（如果指定了前缀，则列举拥有该前缀的objects），同时
     展示了object大小，最新更新时间和etag，但是如果指定了--short_format选项则只输出object名
-    称。如果指定了--directory选项，则返回指定bucket下以指定前缀开头的首级目录，此时默认为
-    精简格式。
+    称。如果指定了--directory选项，则返回指定bucket下以指定前缀开头的首级目录下的文件和子
+    目录，但是不递归显示所有子目录，此时默认为精简格式。
 `,
 
 	sampleText: ` 
@@ -59,7 +59,7 @@ var specChineseList = SpecText{
         Object Number is: 2
 
     4)ossutil ls oss://bucket1
-        LastModifiedTime                 Size                              ETAG  ObjectName
+        LastModifiedTime              Size(B)                              ETAG  ObjectName
         2016-04-08 14:50:47 +0000 UTC 6476984  4F16FDAE7AC404CEC8B727FCC67779D6  oss://bucket1/obj1
         2015-06-05 14:06:29 +0000 UTC  201933  7E2F4A7F1AC9D2F0996E8332D5EA5B41  oss://bucket1/dir1/obj11
         Object Number is: 2
@@ -123,7 +123,7 @@ Useage:
         Object Number is: 2
 
     4)ossutil ls oss://bucket1
-        LastModifiedTime                 Size                              ETAG  ObjectName
+        LastModifiedTime              Size(B)                              ETAG  ObjectName
         2016-04-08 14:50:47 +0000 UTC 6476984  4F16FDAE7AC404CEC8B727FCC67779D6  oss://bucket1/obj1
         2015-06-05 14:06:29 +0000 UTC  201933  7E2F4A7F1AC9D2F0996E8332D5EA5B41  oss://bucket1/dir1/obj11
         Object Number is: 2
@@ -294,7 +294,7 @@ func (lc *ListCommand) listObjects(bucket *oss.Bucket, cloudURL CloudURL, shortF
 
 func (lc *ListCommand) displayResult(lor oss.ListObjectsResult, bucket string, shortFormat bool, directory bool, i int) int {
 	if i == 0 && !shortFormat && !directory && len(lor.Objects) > 0 {
-		fmt.Printf("%-30s %12s%s%-38s%s%s\n", "LastModifiedTime", "Size", "   ", "ETAG", "  ", "ObjectName")
+		fmt.Printf("%-30s %12s%s%-38s%s%s\n", "LastModifiedTime", "Size(B)", "   ", "ETAG", "  ", "ObjectName")
 	}
 
 	var output string

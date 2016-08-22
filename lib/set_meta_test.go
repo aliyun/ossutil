@@ -115,10 +115,18 @@ func (s *OssutilCommandSuite) TestSetObjectMeta(c *C) {
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
 
+    showElapse, err = s.rawSetMeta(bucket, object, "x-oss-object-acl:default#X-Oss-Meta-A:A", false, false, false, false, LEnglishLanguage)
+    c.Assert(err, NotNil)
+    c.Assert(showElapse, Equals, false)
+
     // miss meta
     s.setObjectMeta(bucket, object, "", true, false, false, true, c)
 
     showElapse, err = s.rawSetMeta(bucket, object, "", true, false, false, true, EnglishLanguage)
+    c.Assert(err, IsNil)
+    c.Assert(showElapse, Equals, true)
+
+    showElapse, err = s.rawSetMeta(bucket, object, "", true, false, false, true, LEnglishLanguage)
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true)
 

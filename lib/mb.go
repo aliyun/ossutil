@@ -2,6 +2,7 @@ package lib
 
 import (
 	"fmt"
+    "strings"
 	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
 
@@ -153,6 +154,7 @@ func (mc *MakeBucketCommand) RunCommand() error {
 
     aclStr, _ := GetString(OptionACL, mc.command.options) 
     language, _ := GetString(OptionLanguage, mc.command.options)
+    language = strings.ToLower(language)
     var op oss.Option
     if aclStr != "" {
         acl, err := mc.getACL(aclStr, language)
@@ -168,7 +170,7 @@ func (mc *MakeBucketCommand) RunCommand() error {
 func (mc *MakeBucketCommand) getACL(aclStr, language string) (oss.ACLType, error) {
     acl, err := mc.checkACL(aclStr)
     if err != nil {
-        if language == EnglishLanguage {
+        if language == LEnglishLanguage {
             fmt.Printf("Invalid acl: %s\n", aclStr)
             fmt.Printf("Acceptable acls:\n\t%s\nPlease enter the acl you want to set on the bucket:", formatACLString(bucketACL, "\n\t"))
         } else {
