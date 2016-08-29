@@ -27,11 +27,6 @@ func ParseAndRunCommand() (error) {
 		args = append(args, "help")
 	}
 
-	if val, _ := GetBool(OptionMan, options); val {
-		args = append([]string{"help"}, args...)
-		options[OptionMan] = nil
-	}
-
 	command := args[0]
 	args = args[1:]
 

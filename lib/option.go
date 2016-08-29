@@ -60,7 +60,6 @@ var OptionMap = map[string]Option{
 	OptionRoutines:         Option{"", "--routines", strconv.Itoa(Routines), OptionTypeInt64, strconv.FormatInt(MinRoutines, 10), strconv.FormatInt(MaxRoutines, 10), fmt.Sprintf("并发协程数，默认值：%d，取值范围：%d-%d", Routines, MinRoutines, MaxRoutines), fmt.Sprintf("amount of concurrency goroutines(default: %d), value range is: %d-%d", Routines, MinRoutines, MaxRoutines)},
     OptionLanguage:         Option{"-L", "--language", DefaultLanguage, OptionTypeAlternative, fmt.Sprintf("%s|%s", DefaultLanguage, EnglishLanguage), "", fmt.Sprintf("设置ossutil工具的语言，默认值：%s，取值范围：%s|%s", DefaultLanguage, DefaultLanguage, EnglishLanguage), fmt.Sprintf("set the language of ossutil(default: %s), value range is: %s|%s", DefaultLanguage, DefaultLanguage, EnglishLanguage)}, 
 	OptionVersion:          Option{"-v", "--version", "", OptionTypeFlagTrue, "", "", fmt.Sprintf("显示ossutil的版本（%s）并退出。", Version), fmt.Sprintf("Show ossutil version (%s) and exit.", Version)},
-	OptionMan:              Option{"-?", "--man", "", OptionTypeFlagTrue, "", "", "显示ossutil所有命令的用法或某个命令的详细帮助。", "Provide the useage of all commands or provide help about the specified command."},
 }
 
 func (T *Option) getHelp(language string) string {

@@ -21,7 +21,6 @@ const (
 	OptionRoutines                = "routines"
     OptionLanguage                = "language"
 	OptionVersion                 = "version"
-	OptionMan                     = "man"
 )
 
 // the elements show in stat object
