@@ -23,8 +23,6 @@ func (s *OssutilConfigSuite) SetUpSuite(c *C) {
 // Run before each test or benchmark starts running
 func (s *OssutilConfigSuite) TearDownSuite(c *C) {
     testLogger.Println("test config completed")
-    //os.Stdout = out
-    //os.Stderr = errout
 }
 
 // Run after each test or benchmark runs

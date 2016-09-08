@@ -116,6 +116,7 @@ var makeBucketCommand = MakeBucketCommand{
 		validOptionNames: []string{
 			OptionConfigFile,
             OptionACL,
+            OptionEndpoint,
 			OptionRetryTimes,
             OptionLanguage,
 		},

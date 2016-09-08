@@ -1,6 +1,9 @@
 package lib 
 
 import (
+    "fmt"
+    "os"
+
     . "gopkg.in/check.v1"
 )
 
@@ -141,4 +144,38 @@ func (s *OssutilCommandSuite) TestErrMakeBucket(c *C) {
     showElapse, err = s.rawPutBucketWithACL([]string{CloudURLToString("", "")}, acl)
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
+}
+
+func (s *OssutilCommandSuite) TestMakeBucketEndpoint(c *C) {
+    bucket := bucketNamePrefix + "assembleoptions"
+
+    cfile := "ossutil_test.config_boto"
+    data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Endpoint]\n%s=%s", "abc", accessKeyID, accessKeySecret, bucket, "abc") 
+    s.createFile(cfile, data, c)
+
+    command := "mb"
+    str := ""
+    args := []string{CloudURLToString(bucket, "")}
+    options := OptionMapType{
+        "endpoint": &str,
+        "accessKeyID": &str,
+        "accessKeySecret": &str,
+        "stsToken": &str,
+        "configFile": &cfile,
+    }
+    showElapse, err := cm.RunCommand(command, args, options)
+    c.Assert(err, NotNil)
+
+    options = OptionMapType{
+        "endpoint": &endpoint,
+        "accessKeyID": &str,
+        "accessKeySecret": &str,
+        "stsToken": &str,
+        "configFile": &cfile,
+    }
+    showElapse, err = cm.RunCommand(command, args, options)
+    c.Assert(err, IsNil)
+    c.Assert(showElapse, Equals, true)
+
+    _ = os.Remove(cfile)
 }

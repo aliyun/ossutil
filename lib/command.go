@@ -154,7 +154,10 @@ func (cmd *Command) assembleOptions(cmder interface{}) {
 					opval := option.(string)
 					cmd.options[name] = &opval
 					delete(cmd.configOptions, name)
-				}
+				} else if name == OptionEndpoint {
+                    delete(cmd.configOptions, BucketCnameSection)
+                    delete(cmd.configOptions, BucketEndpointSection)
+                }
 			}
 		}
 	}

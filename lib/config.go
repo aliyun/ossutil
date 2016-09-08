@@ -47,7 +47,7 @@ var specChineseConfig = SpecText{
         或者非法，将采用默认语言：` + DefaultLanguage + `。
         (3) endpoint, accessKeyID, accessKeySecret
             回车代表着跳过相应配置项的设置。注意：endpoint应该为一个二级域
-        名(SLD)。  
+        名(SLD)，例如：oss.aliyuncs.com。  
         (4) bucket-endpoint
             ossutil询问用户是否有bucket-endpoint配对，请输入'y'或者'n'来进行
         配置或者跳过配置。如果用户在输入bucket信息时键入回车，则代表着结束
@@ -138,7 +138,7 @@ Usage:
         default language: ` + DefaultLanguage + `.
         (3) endpoint, accessKeyID, accessKeySecret
             Carriage return means skip the configuration of these options.
-        Notice that endpoint means a second-level domain(SLD).
+        Notice that endpoint means a second-level domain(SLD), eg: oss.aliyuncs.com.
         (4) bucket-endpoint
             ossutil ask you if there are any bucket-endpoint pairs, please
         enter 'y' or 'n' to configure the pairs or skip. If you enter carriage
