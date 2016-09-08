@@ -87,18 +87,18 @@ var specEnglishList = SpecText{
     provider, bucket, subdirectory, or object. If --short_format option is specified, 
     ossutil will show by short format. 
 
-Useage:
+Usage:
 
-    There are two useages:
+    There are two usages:
 
     1) ossutil ls [oss://] [-s]
         If you list without a url, ossutil lists all the buckets using the credentials
     in config file with last modified time and location in addition. --show_format option 
-    will ignore last modified time and location. The useage do not support --directory 
+    will ignore last modified time and location. The usage do not support --directory 
     option.
 
     2) ossutil ls oss://bucket[/prefix] [-s] [-d]
-        The useage list objects under the specified bucket(with the prefix if you specified), 
+        The usage list objects under the specified bucket(with the prefix if you specified), 
     with object size, last modified time and etag in addition, --short_format option ignores 
     all the additional information. --directory option returns top-level subdirectory names 
     instead of contents of the subdirectory, which in default show by short format. 

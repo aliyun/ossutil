@@ -129,9 +129,9 @@ var specEnglishSetACL = SpecText{
     The command set acl on the specified bucket or objects. If you use the command 
     witout acl information, ossutil will ask user for it.
 
-    (1) set acl on bucket, see useage 1)
-    (2) set acl on single object, see useage 2)
-    (3) batch set acl on many objects, see useage 3)
+    (1) set acl on bucket, see usage 1)
+    (2) set acl on single object, see usage 2)
+    (3) batch set acl on many objects, see usage 3)
 
     When set acl on bucket, the --bucket option must be specified. 
     Set acl on bucket an objects inside simultaneously is not supported, please 
@@ -149,29 +149,29 @@ ACL:
 
     More information about acl see ACL Control in https://help.aliyun.com/document_detail/31867.html?spm=5176.doc31960.6.147.8dVwsh.
 
-Useage：
+Usage：
 
-    There are three useages:    
+    There are three usages:    
 
     1) ossutil setacl oss://bucket [acl] -b [-c file]
         If --bucket option is specified, ossutil will try to set acl on bucket. In the 
-    useage, please make sure url exactly specified the bucket you want to set acl on, 
+    usage, please make sure url exactly specified the bucket you want to set acl on, 
     and --recursive option is not supported here. No matter --force option is specified 
     or not, ossutil will not show prompt question. If acl information is missed, ossutil 
     will enter interactive mode and ask you for it. 
 
     2) ossutil setacl oss://bucket/object [acl] [-c file]
-        The useage set acl on single object, if object not exist, error occurs. In the 
-    useage, please make sure url exactly specified the object you want to set acl on, 
+        The usage set acl on single object, if object not exist, error occurs. In the 
+    usage, please make sure url exactly specified the object you want to set acl on, 
     and --recursive option is not specified(or ossutil will search for prefix-matching 
     objects and set acl on those objects). No matter --force option is specified or not, 
     ossutil will not show prompt question. If acl information is missed, ossutil will 
     enter interactive mode and ask you for it. 
 
     3) ossutil setacl oss://bucket[/prefix] [acl] -r [-f] [-c file]
-        The useage can set acl on many objects, --recursive option is required for the 
-    useage, ossutil will search for prefix-matching objects and set acl on those objects, 
-    if error occurs, the operation is terminated. In the useage, --bucket option is not 
+        The usage can set acl on many objects, --recursive option is required for the 
+    usage, ossutil will search for prefix-matching objects and set acl on those objects, 
+    if error occurs, the operation is terminated. In the usage, --bucket option is not 
     supported, which means set acl on bucket an objects inside simultaneously is not 
     supported. If --force option is specified, ossutil will not show prompt question. If 
     acl information is missed, ossutil will enter interactive mode and ask you for it. 

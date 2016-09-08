@@ -161,12 +161,12 @@ var specEnglishSetMeta = SpecText{
     (2) Update meta: If --update option is specified, ossutil will update the specified 
         headers of objects to the values that user inputs(the values can be empty), other 
         meta data of the specified objects will not be changed. --delete option is not 
-        supported in the useage. 
+        supported in the usage. 
 
     (3) Delete meta: If --delete option is specified, ossutil will delete the specified 
-        headers of objects that user inputs, in this useage the value must be empty(like 
+        headers of objects that user inputs, in this usage the value must be empty(like 
         header: or header), other meta data of the specified objects will not be changed. 
-        --update option is not supported in the useage.
+        --update option is not supported in the usage.
 
     The meta data of bucket can not be setted by the command, please use other commands. 
     User can use stat command to check the meta information of bucket or objects.
@@ -179,22 +179,22 @@ Headers:
 
     Warning: headers are case-insensitive, but value are case-sensitive.
 
-Useage:
+Usage:
 
-    There are two useages:
+    There are two usages:
 
     1) ossutil setmeta oss://bucket/object [header:value#header:value...] [--update] [--delete] [-f] 
         If --recursive option is not specified, ossutil set meta on the specified single 
-    object. In the useage, please make sure url exactly specified the object you want to 
+    object. In the usage, please make sure url exactly specified the object you want to 
     set meta on, if object not exist, error occurs. If --force option is specified, ossutil 
     will not show prompt question. 
-        The useage of --update option and --delete option is showed in detailHelpText. 
+        The usage of --update option and --delete option is showed in detailHelpText. 
 
     2) ossutil setmeta oss://bucket[/prefix] [header:value#header:value...] -r [--update] [--delete] [-f]
         If --recursive option is specified, ossutil will search for prefix-matching objects 
     and set meta on these objects, if error occurs, the operation is terminated. If --force 
     option is specified, ossutil will not show prompt question.
-        The useage of --update option and --delete option is showed in detailHelpText.
+        The usage of --update option and --delete option is showed in detailHelpText.
 `,
 
 	sampleText: ` 

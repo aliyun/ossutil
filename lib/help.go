@@ -9,7 +9,7 @@ import (
 const (
 	FormatTAB         = "    "
 	MaxCommandNameLen = 15
-	UseageText        = "Useage: ossutil [command] [args...] [options...]"
+	UsageText        = "Usage: ossutil [command] [args...] [options...]"
 )
 
 var specChineseHelp = SpecText{
@@ -54,19 +54,19 @@ var specEnglishHelp = SpecText{
 `,
 
 	detailHelpText: ` 
-    The command provide the useage of all commands on which help is available, 
-    or the useage of the specified command.
+    The command provide the usage of all commands on which help is available, 
+    or the usage of the specified command.
 
-Useage:
+Usage:
 
-    There are two useages:
+    There are two usages:
 
     1) ossutil help
-        The useage provides a summary of all commands, each command shows the
+        The usage provides a summary of all commands, each command shows the
     synopsis and a simplified expression of the syntax.
 
     2) ossutil help command
-        The useage provides help about the specified command, which contains
+        The usage provides help about the specified command, which contains
     a detailed description of the command, include samples and optional options.
 `,
 
@@ -85,7 +85,7 @@ type HelpCommand struct {
 var helpCommand = HelpCommand{
 	command: Command{
 		name:             "help",
-		nameAlias:        []string{"?", "man"},
+		nameAlias:        []string{},
 		minArgc:          0,
 		maxArgc:          1,
 		specChinese:      specChineseHelp,
@@ -169,7 +169,7 @@ func (hc *HelpCommand) formatWholeHelp(groupCommandMap map[string][]interface{})
 			commandsText += cmd.(FormatHelper).formatHelpForWhole()
 		}
 	}
-	return fmt.Sprintf("%s\n%s", UseageText, commandsText)
+	return fmt.Sprintf("%s\n%s", UsageText, commandsText)
 }
 
 func (hc *HelpCommand) formatCommandHelp(subCommandMap map[string]interface{}) (string, error) {

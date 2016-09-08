@@ -287,7 +287,7 @@ var specEnglishCopy = SpecText{
         ossutil cp oss://src_bucket[/src_prefix] oss://dest_bucket[/dest_prefix] [-r] [-f] [--update] [--bigfile_threshold=size] [--checkpoint_dir=file]
 
     file_url means the file in local file system, it supports relative path and absolute 
-    path, the useage of file_url is same with your local file system. oss://bucket[/prefix] 
+    path, the usage of file_url is same with your local file system. oss://bucket[/prefix] 
     means object in oss, it supports prefix matching, but not support wildcard.
 
     ossutil sperate file of local system and oss objects by the prefix of oss://, which means 
@@ -300,7 +300,7 @@ var specEnglishCopy = SpecText{
 
     (2) When download objects or copy objects between oss:
         If --recursive option is not specified, ossutil download or copy the specified single 
-    object, in the useage, please make sure url exactly specified the object you want to set meta 
+    object, in the usage, please make sure url exactly specified the object you want to set meta 
     on, if object not exist, error occurs. 
         If --recursive option is specified, ossutil will search for prefix-matching objects and 
     download or copy these objects. If error occurs, the operation will be terminated, objects 
@@ -347,12 +347,12 @@ Resume copy of big file:
         option, please make sure the directory you specified can be removed.
 
 
-Useage:
+Usage:
 
-    There are three useages:
+    There are three usages:
 
     1) ossutil cp file_url oss://bucket[/prefix] [-r] [-f] [--update] [--bigfile_threshold=size] [--checkpoint_dir=file]
-        The useage upload file in local system to oss. file_url can be file or directory. If file_url 
+        The usage upload file in local system to oss. file_url can be file or directory. If file_url 
     is file, no matter --recursive option is specified or not will not affect the result. If file_url 
     is directory, even if the directory is empty or only contains one file, we must specify --recursive 
     option. Mind that, ossutil will upload all sub files and directories(include empty directory) inside 
@@ -364,7 +364,7 @@ Useage:
         If file_url is directory: if prefix is empty or end with "/", object name is: dest_url + file path relative to file_url.
         
     2) ossutil cp oss://bucket[/prefix] file_url [-r] [-f] [--update] [--bigfile_threshold=size] [--checkpoint_dir=file]
-        The useage download one or many objects to local system. If --recursive option is not specified, 
+        The usage download one or many objects to local system. If --recursive option is not specified, 
     ossutil considers src_url exactly specified the single object you want to download, prefix-matching 
     is not supported now, if the object not exists, error occurs. If --recursive option is specified, 
     ossutil will search for prefix-matching objects and batch download those objects, at this time file_url 
@@ -376,7 +376,7 @@ Useage:
     system, instead of creating a file.
 
     3) ossutil cp oss://src_bucket[/src_prefix] oss://dest_bucket[/dest_prefix] [-r] [-f] [--update] [--bigfile_threshold=size] [--checkpoint_dir=file]
-        The useage copy objects between oss. The src_bucket can be same with dest_bucket. Pay attention 
+        The usage copy objects between oss. The src_bucket can be same with dest_bucket. Pay attention 
     please, if src_url is the same with dest_url, ossutil will do nothing but exit after prompt. Set meta 
     please use "setmeta" command. If --recursive option is not specified, ossutil considers src_url exactly 
     specified the single object you want to copy. If --recursive option is specified, ossutil will search 

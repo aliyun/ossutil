@@ -59,7 +59,7 @@ func LoadConfig(configFile string) (OptionMapType, error) {
 	var err error
 	configMap, err = readConfigFromFile(configFile)
 	if err != nil {
-		return nil, fmt.Errorf("Read config file error, please check, try \"help config\" to set configuration or use \"--config_file\" option, error info: %s", err) 
+		return nil, fmt.Errorf("Read config file error: %s Please try \"help config\" to set configuration or use \"--config_file\" option", err) 
 	}
 	if err = checkConfig(configMap); err != nil {
 		return nil, err

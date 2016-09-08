@@ -54,7 +54,7 @@ ACL：
 
 var specEnglishMakeBucket = SpecText{
 
-	synopsisText: "Create Bucket",
+	synopsisText: "Make Bucket",
 
 	paramText: "url [options]",
 
@@ -79,9 +79,9 @@ ACL:
 
     More information about acl, see help setacl.
 
-Useage:
+Usage:
 
-    There are two useages:
+    There are two usages:
 
     1) ossutil mb oss://bucket [-c file]
         If you create bucket without --acl option, ossutil will create bucket under the 

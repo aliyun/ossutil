@@ -59,9 +59,9 @@ var specEnglishStat = SpecText{
     and size, last modify time. If not, ossutil will display the meta information of the 
     specified bucket or single object.
 
-Useage：
+Usage：
 
-    There are three useages:    
+    There are three usages:    
 
     1) ossutil stat oss://bucket
         If you use the command to bucket without --recursive option, ossutil will display 

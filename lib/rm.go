@@ -85,10 +85,10 @@ var specEnglishRemove = SpecText{
     Make sure the bucket and objects inside can be removed before useing the command 
     to remove bucket!
 
-    (1) Remove single object, see useage 1)
-    (2) Remove bucket, don't remove objects inside, see useage 2)
-    (3) Batch remove many objects, reserve bucket, see useage 3)
-    (4) Remove bucket and objects inside, see useage 4)
+    (1) Remove single object, see usage 1)
+    (2) Remove bucket, don't remove objects inside, see usage 2)
+    (3) Batch remove many objects, reserve bucket, see usage 3)
+    (4) Remove bucket and objects inside, see usage 4)
 
     When remove bucket, the --bucket option must be specified.
     If --force option is specified, remove silently without asking user to confirm the 
@@ -97,14 +97,14 @@ var specEnglishRemove = SpecText{
     Result: if no error displayed before show elasped time, then the target is removed 
     successfully.
 
-Useage:
+Usage:
 
-    There are four useages:
+    There are four usages:
 
     1) ossutil rm oss://bucket/object
         (Remove single object)
         If you remove without --recursive and --bucket option, ossutil remove the single 
-    object specified in url. In the useage, please make sure url exactly specified the 
+    object specified in url. In the usage, please make sure url exactly specified the 
     object you want to remove, ossutil will not treat object as prefix and remove prefix 
     matching objects. No matter --force is specified or not, ossutil will not show prompt 
     question.
@@ -112,7 +112,7 @@ Useage:
     2) ossutil rm oss://bucket -b [-f]
         (Remove bucket, don't remove objects inside)
         If you remove with --bucket option, without --recursive option, ossutil try to 
-    remove the bucket, if the bucket is not empty, error occurs. In the useage, please make 
+    remove the bucket, if the bucket is not empty, error occurs. In the usage, please make 
     sure url exactly specified the bucket you want to remove, or error occurs. If --force 
     option is specified, ossutil will not show prompt question. 
 
@@ -126,7 +126,7 @@ Useage:
         (Remove bucket and objects inside)
         If you remove with both --recursive and --bucket option, after ossutil removed all 
     the prefix-matching objects, ossutil will try to remove the bucket together. If user want 
-    to remove bucket and objects inside, the useage is recommended. If --force option is 
+    to remove bucket and objects inside, the usage is recommended. If --force option is 
     specified, ossutil will not show prompt question. 
 `,
 

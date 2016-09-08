@@ -13,7 +13,7 @@ import (
 
 var specChineseUpdate = SpecText{
 
-	synopsisText: "升级ossutil",
+	synopsisText: "更新ossutil",
 
 	paramText: "[options]",
 
@@ -66,8 +66,8 @@ var updateCommand = UpdateCommand{
 		nameAlias:   []string{""},
 		minArgc:     0,
 		maxArgc:     0,
-		specChinese: specChineseList,
-		specEnglish: specEnglishList,
+		specChinese: specChineseUpdate,
+		specEnglish: specEnglishUpdate,
 		group:       GroupTypeAdditionalCommand,
 		validOptionNames: []string{
 			OptionForce,

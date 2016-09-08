@@ -425,7 +425,7 @@ func (s *OssutilCommandSuite) TestOptions(c *C) {
 
 func (s *OssutilCommandSuite) TestErrors(c *C) {
     err := CommandError{"help", "abc"}
-    c.Assert(err.Error(), Equals, "invalid useage of \"help\" command, reason: abc, please try \"help help\" or \"help --man\" for more information", )
+    c.Assert(err.Error(), Equals, "invalid usage of \"help\" command, reason: abc, please try \"help help\" or \"help --man\" for more information", )
 
     berr := BucketError{err, "b"}
     c.Assert(berr.Error(), Equals, fmt.Sprintf("%s, Bucket=%s", err.Error(), "b"))

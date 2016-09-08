@@ -113,14 +113,14 @@ var specEnglishConfig = SpecText{
     is: a, ossutil will save a as a.bak, and rewrite file a, at this time, 
     if file a.bak exists, a.bak will be rewrited.
 
-Useage:
+Usage:
 
-    There are two useages for the command, one is interactive(shows
+    There are two usages for the command, one is interactive(shows
     in 1) ), which is recommended because of safety problem. another is
     non interactive(shows in 2) ).
 
     1) ossutil config [-c file]
-        The useage provides an interactive way to configure credentials.
+        The usage provides an interactive way to configure credentials.
     Interactively ossutil asks you for:
         (1) config file
             If user enter carriage return, ossutil use the default file.
