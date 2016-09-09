@@ -276,3 +276,72 @@ func (s *OssutilCommandSuite) TestErrList(c *C) {
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
 }
+
+func (s *OssutilCommandSuite) TestListIDKey(c *C) {
+    bucket := bucketNamePrefix + "lsidkey"
+
+    cfile := "ossutil_test.config_boto"
+    data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Endpoint]\n%s=%s[Bucket-Cname]\n%s=%s", "abc", "def", "ghi", bucket, "abc", bucket, "abc") 
+    s.createFile(cfile, data, c)
+
+    command := "ls"
+    str := ""
+    args := []string{"oss://"}
+    options := OptionMapType{
+        "endpoint": &str,
+        "accessKeyID": &str,
+        "accessKeySecret": &str,
+        "stsToken": &str,
+        "configFile": &cfile,
+    }
+    showElapse, err := cm.RunCommand(command, args, options)
+    c.Assert(err, NotNil)
+
+    options = OptionMapType{
+        "endpoint": &endpoint,
+        "accessKeyID": &accessKeyID,
+        "accessKeySecret": &accessKeySecret,
+        "stsToken": &str,
+        "configFile": &cfile,
+    }
+    showElapse, err = cm.RunCommand(command, args, options)
+    c.Assert(err, IsNil)
+    c.Assert(showElapse, Equals, true)
+
+    _ = os.Remove(cfile)
+}
+
+func (s *OssutilCommandSuite) TestListBucketIDKey(c *C) {
+    bucket := bucketNamePrefix + "lsidkey"
+    s.putBucket(bucket, c)
+
+    cfile := "ossutil_test.config_boto"
+    data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Endpoint]\n%s=%s[Bucket-Cname]\n%s=%s", "abc", "def", "ghi", bucket, "abc", bucket, "abc") 
+    s.createFile(cfile, data, c)
+
+    command := "ls"
+    str := ""
+    args := []string{CloudURLToString(bucket, "")}
+    options := OptionMapType{
+        "endpoint": &str,
+        "accessKeyID": &str,
+        "accessKeySecret": &str,
+        "stsToken": &str,
+        "configFile": &cfile,
+    }
+    showElapse, err := cm.RunCommand(command, args, options)
+    c.Assert(err, NotNil)
+
+    options = OptionMapType{
+        "endpoint": &endpoint,
+        "accessKeyID": &accessKeyID,
+        "accessKeySecret": &accessKeySecret,
+        "stsToken": &str,
+        "configFile": &cfile,
+    }
+    showElapse, err = cm.RunCommand(command, args, options)
+    c.Assert(err, IsNil)
+    c.Assert(showElapse, Equals, true)
+
+    _ = os.Remove(cfile)
+}

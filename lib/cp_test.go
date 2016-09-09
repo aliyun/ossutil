@@ -666,3 +666,57 @@ func (s *OssutilCommandSuite) TestResumeDownloadRetry(c *C) {
     err = copyCommand.ossResumeDownloadRetry(bucket, "", "", 0, 0)
     c.Assert(err, NotNil)
 }
+
+func (s *OssutilCommandSuite) TestCPIDKey(c *C) {
+    bucket := bucketNamePrefix + "cpidkey"
+    s.putBucket(bucket, c)
+
+    object := "testobject" 
+
+    ufile := "ossutil_test.cpidkey"
+    data := "欢迎使用ossutil"
+    s.createFile(ufile, data, c)
+
+    cfile := "ossutil_test.config_boto"
+    data = fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Endpoint]\n%s=%s[Bucket-Cname]\n%s=%s", "abc", "def", "ghi", bucket, "abc", bucket, "abc") 
+    s.createFile(cfile, data, c)
+
+    command := "cp"
+    str := ""
+    args := []string{ufile, CloudURLToString(bucket, object)}
+    ok := true
+    routines := strconv.Itoa(Routines)
+    thre := strconv.FormatInt(BigFileThreshold, 10)
+    cpDir := CheckpointDir
+    options := OptionMapType{
+        "endpoint": &str,
+        "accessKeyID": &str,
+        "accessKeySecret": &str,
+        "stsToken": &str,
+        "configFile": &cfile,
+        "force": &ok,
+        "bigfileThreshold": &thre,
+        "checkpointDir": &cpDir,
+        "routines": &routines,
+    }
+    showElapse, err := cm.RunCommand(command, args, options)
+    c.Assert(err, NotNil)
+
+    options = OptionMapType{
+        "endpoint": &endpoint,
+        "accessKeyID": &accessKeyID,
+        "accessKeySecret": &accessKeySecret,
+        "stsToken": &str,
+        "configFile": &cfile,
+        "force": &ok,
+        "bigfileThreshold": &thre,
+        "checkpointDir": &cpDir,
+        "routines": &routines,
+    }
+    showElapse, err = cm.RunCommand(command, args, options)
+    c.Assert(err, IsNil)
+    c.Assert(showElapse, Equals, true)
+
+    _ = os.Remove(ufile)
+    _ = os.Remove(cfile)
+}

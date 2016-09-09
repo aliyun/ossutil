@@ -114,9 +114,12 @@ var makeBucketCommand = MakeBucketCommand{
 		specEnglish: specEnglishMakeBucket,
 		group:       GroupTypeNormalCommand,
 		validOptionNames: []string{
-			OptionConfigFile,
             OptionACL,
+			OptionConfigFile,
             OptionEndpoint,
+            OptionAccessKeyID,
+            OptionAccessKeySecret,
+            OptionSTSToken,
 			OptionRetryTimes,
             OptionLanguage,
 		},

@@ -95,6 +95,10 @@ var statCommand = StatCommand{
 		group:       GroupTypeNormalCommand,
 		validOptionNames: []string{
 			OptionConfigFile,
+            OptionEndpoint,
+            OptionAccessKeyID,
+            OptionAccessKeySecret,
+            OptionSTSToken,
 			OptionRetryTimes,
 		},
 	},

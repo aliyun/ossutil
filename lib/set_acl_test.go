@@ -2,6 +2,7 @@ package lib
 
 import (
     "fmt"
+    "os"
     "strconv"
 
     . "gopkg.in/check.v1"
@@ -246,4 +247,47 @@ func (s *OssutilCommandSuite) TestErrSetACL(c *C) {
     showElapse, err = s.rawSetObjectACL(bucket, "/object", acl, true, true)
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
+}
+
+func (s *OssutilCommandSuite) TestSetACLIDKey(c *C) {
+    bucket := bucketNamePrefix + "setaclidkey"
+    s.putBucket(bucket, c)
+
+    cfile := "ossutil_test.config_boto"
+    data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Endpoint]\n%s=%s[Bucket-Cname]\n%s=%s", "abc", "def", "ghi", bucket, "abc", bucket, "abc") 
+    s.createFile(cfile, data, c)
+
+    command := "setacl"
+    str := ""
+    args := []string{CloudURLToString(bucket, ""), "public-read"}
+    routines := strconv.Itoa(Routines)
+    ok := true
+    options := OptionMapType{
+        "endpoint": &str,
+        "accessKeyID": &str,
+        "accessKeySecret": &str,
+        "stsToken": &str,
+        "configFile": &cfile,
+        "routines": &routines,
+        "bucket": &ok,
+        "force": &ok,
+    }
+    showElapse, err := cm.RunCommand(command, args, options)
+    c.Assert(err, NotNil)
+
+    options = OptionMapType{
+        "endpoint": &endpoint,
+        "accessKeyID": &accessKeyID,
+        "accessKeySecret": &accessKeySecret,
+        "stsToken": &str,
+        "configFile": &cfile,
+        "routines": &routines,
+        "bucket": &ok,
+        "force": &ok,
+    }
+    showElapse, err = cm.RunCommand(command, args, options)
+    c.Assert(err, IsNil)
+    c.Assert(showElapse, Equals, true)
+
+    _ = os.Remove(cfile)
 }

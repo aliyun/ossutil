@@ -2,6 +2,7 @@ package lib
 
 import (
     "fmt"
+    "os"
     "strconv"
 
     . "gopkg.in/check.v1"
@@ -304,4 +305,50 @@ func (s *OssutilCommandSuite) TestErrSetMeta(c *C) {
 func (s *OssutilCommandSuite) TestGetOSSOption(c *C) {
     _, err := getOSSOption("unknown", "a")
     c.Assert(err, NotNil)
+}
+
+func (s *OssutilCommandSuite) TestSetMetaIDKey(c *C) {
+    bucket := bucketNamePrefix + "setmetaidkey"
+    s.putBucket(bucket, c)
+
+    object := "testobject" 
+    s.putObject(bucket, object, uploadFileName, c)
+
+    cfile := "ossutil_test.config_boto"
+    data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Endpoint]\n%s=%s[Bucket-Cname]\n%s=%s", "abc", "def", "ghi", bucket, "abc", bucket, "abc") 
+    s.createFile(cfile, data, c)
+
+    command := "setmeta"
+    str := ""
+    args := []string{CloudURLToString(bucket, object), "x-oss-object-acl:private#X-Oss-Meta-A:A#Expires:2006-01-02T15:04:05Z"}
+    ok := true
+    routines := strconv.Itoa(Routines)
+    options := OptionMapType{
+        "endpoint": &str,
+        "accessKeyID": &str,
+        "accessKeySecret": &str,
+        "stsToken": &str,
+        "configFile": &cfile,
+        "update": &ok,
+        "force": &ok,
+        "routines": &routines,
+    }
+    showElapse, err := cm.RunCommand(command, args, options)
+    c.Assert(err, NotNil)
+
+    options = OptionMapType{
+        "endpoint": &endpoint,
+        "accessKeyID": &accessKeyID,
+        "accessKeySecret": &accessKeySecret,
+        "stsToken": &str,
+        "configFile": &cfile,
+        "update": &ok,
+        "force": &ok,
+        "routines": &routines,
+    }
+    showElapse, err = cm.RunCommand(command, args, options)
+    c.Assert(err, IsNil)
+    c.Assert(showElapse, Equals, true)
+
+    _ = os.Remove(cfile)
 }

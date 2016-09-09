@@ -1,6 +1,9 @@
 package lib 
 
 import (
+    "fmt"
+    "os"
+
     . "gopkg.in/check.v1"
 )
 
@@ -123,4 +126,42 @@ func (s *OssutilCommandSuite) TestGetStatErrSrc(c *C) {
     showElapse, err = s.rawGetStatWithArgs([]string{"../"})
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
+}
+
+func (s *OssutilCommandSuite) TestStatIDKey(c *C) {
+    bucket := bucketNamePrefix + "statidkey"
+    s.putBucket(bucket, c)
+
+    cfile := "ossutil_test.config_boto"
+    data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Endpoint]\n%s=%s[Bucket-Cname]\n%s=%s", "abc", "def", "ghi", bucket, "abc", bucket, "abc") 
+    s.createFile(cfile, data, c)
+
+    command := "stat"
+    str := ""
+    args := []string{CloudURLToString(bucket, "")}
+    retryTimes := "1"
+    options := OptionMapType{
+        "endpoint": &str,
+        "accessKeyID": &str,
+        "accessKeySecret": &str,
+        "stsToken": &str,
+        "configFile": &cfile,
+        "retryTimes": &retryTimes,
+    }
+    showElapse, err := cm.RunCommand(command, args, options)
+    c.Assert(err, NotNil)
+
+    options = OptionMapType{
+        "endpoint": &endpoint,
+        "accessKeyID": &accessKeyID,
+        "accessKeySecret": &accessKeySecret,
+        "stsToken": &str,
+        "configFile": &cfile,
+        "retryTimes": &retryTimes,
+    }
+    showElapse, err = cm.RunCommand(command, args, options)
+    c.Assert(err, IsNil)
+    c.Assert(showElapse, Equals, true)
+
+    _ = os.Remove(cfile)
 }

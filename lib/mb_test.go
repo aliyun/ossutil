@@ -146,11 +146,11 @@ func (s *OssutilCommandSuite) TestErrMakeBucket(c *C) {
     c.Assert(showElapse, Equals, false)
 }
 
-func (s *OssutilCommandSuite) TestMakeBucketEndpoint(c *C) {
+func (s *OssutilCommandSuite) TestMakeBucketIDKey(c *C) {
     bucket := bucketNamePrefix + "assembleoptions"
 
     cfile := "ossutil_test.config_boto"
-    data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Endpoint]\n%s=%s", "abc", accessKeyID, accessKeySecret, bucket, "abc") 
+    data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Endpoint]\n%s=%s", "abc", "def", "ghi", bucket, "abc") 
     s.createFile(cfile, data, c)
 
     command := "mb"
@@ -168,8 +168,8 @@ func (s *OssutilCommandSuite) TestMakeBucketEndpoint(c *C) {
 
     options = OptionMapType{
         "endpoint": &endpoint,
-        "accessKeyID": &str,
-        "accessKeySecret": &str,
+        "accessKeyID": &accessKeyID,
+        "accessKeySecret": &accessKeySecret,
         "stsToken": &str,
         "configFile": &cfile,
     }
