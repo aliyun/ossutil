@@ -52,8 +52,8 @@ const (
 	ChannelBuf          int    = 1000
 	Version             string = "1.0.0.Beta"
 	DefaultEndpoint     string = "oss.aliyuncs.com"
-	DefaultLanguage            = "中文"
-    EnglishLanguage            = "English"
+	DefaultLanguage            = "CH"
+    EnglishLanguage            = "EN"
 	Scheme              string = "oss"
     DefaultConfigFile          = "~/.ossutilconfig"
 	MaxUint                    = ^uint(0)

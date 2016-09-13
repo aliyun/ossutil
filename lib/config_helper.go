@@ -59,7 +59,7 @@ func LoadConfig(configFile string) (OptionMapType, error) {
 	var err error
 	configMap, err = readConfigFromFile(configFile)
 	if err != nil {
-		return nil, fmt.Errorf("Read config file error: %s Please try \"help config\" to set configuration or use \"--config_file\" option", err) 
+		return nil, fmt.Errorf("Read config file error: %s, please try \"help config\" to set configuration or use \"--config_file\" option", err) 
 	}
 	if err = checkConfig(configMap); err != nil {
 		return nil, err
@@ -123,7 +123,7 @@ func checkConfig(configMap OptionMapType) error {
 				}
 			}
             if option.optionType == OptionTypeAlternative {
-                vals := strings.Split(option.minVal, "|") 
+                vals := strings.Split(option.minVal, "/") 
                 if FindPosCaseInsen(opval.(string), vals) == -1 {
                     return fmt.Errorf("error value of option \"%s\", the value is: %s in config file, which is not anyone of %s", name, opval, option.minVal)
                 }

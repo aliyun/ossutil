@@ -24,7 +24,7 @@ type Option struct {
 	nameAlias   string
 	def         string
 	optionType  optionType
-	minVal      string // empty means no check, for OptionTypeAlternative, minVal is the alternative values connected by '|', eg: 中文|English
+	minVal      string // empty means no check, for OptionTypeAlternative, minVal is the alternative values connected by '/', eg: CN|EN
 	maxVal      string // empty means no check, for OptionTypeAlternative, maxVal is empty
 	helpChinese string
 	helpEnglish string
@@ -58,7 +58,7 @@ var OptionMap = map[string]Option{
 		fmt.Sprintf("Path of checkpoint directory(default:%s), the directory is used in resume upload or download, when operate failed, ossutil will create the directory automatically, and record the checkpoint information in the directory, when the operation is succeed, the directory will be removed, so when specify the option, please make sure the directory can be removed.", CheckpointDir)},
 	OptionRetryTimes:       Option{"", "--retry_times", strconv.Itoa(RetryTimes), OptionTypeInt64, strconv.FormatInt(MinRetryTimes, 10), strconv.FormatInt(MaxRetryTimes, 10), fmt.Sprintf("当错误发生时的重试次数，默认值：%d，取值范围：%d-%d", RetryTimes, MinRetryTimes, MaxRetryTimes), fmt.Sprintf("retry times when fail(default: %d), value range is: %d-%d", RetryTimes, MinRetryTimes, MaxRetryTimes)},
 	OptionRoutines:         Option{"", "--routines", strconv.Itoa(Routines), OptionTypeInt64, strconv.FormatInt(MinRoutines, 10), strconv.FormatInt(MaxRoutines, 10), fmt.Sprintf("并发协程数，默认值：%d，取值范围：%d-%d", Routines, MinRoutines, MaxRoutines), fmt.Sprintf("amount of concurrency goroutines(default: %d), value range is: %d-%d", Routines, MinRoutines, MaxRoutines)},
-    OptionLanguage:         Option{"-L", "--language", DefaultLanguage, OptionTypeAlternative, fmt.Sprintf("%s|%s", DefaultLanguage, EnglishLanguage), "", fmt.Sprintf("设置ossutil工具的语言，默认值：%s，取值范围：%s|%s", DefaultLanguage, DefaultLanguage, EnglishLanguage), fmt.Sprintf("set the language of ossutil(default: %s), value range is: %s|%s", DefaultLanguage, DefaultLanguage, EnglishLanguage)}, 
+    OptionLanguage:         Option{"-L", "--language", DefaultLanguage, OptionTypeAlternative, fmt.Sprintf("%s/%s", DefaultLanguage, EnglishLanguage), "", fmt.Sprintf("设置ossutil工具的语言，默认值：%s，取值范围：%s/%s", DefaultLanguage, DefaultLanguage, EnglishLanguage), fmt.Sprintf("set the language of ossutil(default: %s), value range is: %s/%s", DefaultLanguage, DefaultLanguage, EnglishLanguage)}, 
 	OptionVersion:          Option{"-v", "--version", "", OptionTypeFlagTrue, "", "", fmt.Sprintf("显示ossutil的版本（%s）并退出。", Version), fmt.Sprintf("Show ossutil version (%s) and exit.", Version)},
 }
 
@@ -173,7 +173,7 @@ func checkOption(options OptionMapType) error {
 			}
             if optionInfo.optionType == OptionTypeAlternative {
 				if val, ook := option.(*string); ook && *val != "" {
-                    vals := strings.Split(optionInfo.minVal, "|")
+                    vals := strings.Split(optionInfo.minVal, "/")
                     if FindPosCaseInsen(*val, vals) == -1 {
                         return fmt.Errorf("invalid option value of %s, the value: %s is not anyone of %s", name, *val, optionInfo.minVal)
                     }

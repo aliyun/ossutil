@@ -218,7 +218,7 @@ func (lc *ListCommand) listBuckets(prefix string) error {
 		pre = oss.Prefix(lbr.Prefix)
 		marker = oss.Marker(lbr.NextMarker)
         if num == 0 && !shortFormat && len(lbr.Buckets) > 0 {
-            fmt.Printf("%-30s %20s%s%s\n", "CreateTime", "Region", FormatTAB, "BucketName")
+            fmt.Printf("%-30s %20s%s%s\n", "CreationTime", "Region", FormatTAB, "BucketName")
         }
 		for _, bucket := range lbr.Buckets {
 			if !shortFormat {

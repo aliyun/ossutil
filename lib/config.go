@@ -22,9 +22,9 @@ var specChineseConfig = SpecText{
     以访问OSS时提供访问信息（某命令是否需要配置项，参见其是否支持
     --config_file选项，具体可见该命令的帮助）。
 
-    配置文件路径可由用户指定，默认为` + DefaultConfigFile + `。如果配置文件存在，假
-    设其为:a，ossutil会将文件a另存为：a.bak，然后重新创建文件a并写入配置，
-    此时，如果a.bak存在，其会被文件a覆盖。
+    配置文件路径可由用户指定，默认为` + DecideConfigFile("") + `。如果配置
+    文件存在，假设其为:a，ossutil会将文件a另存为：a.bak，然后重新创建文件a
+    并写入配置，此时，如果a.bak存在，其会被文件a覆盖。
 
 用法:
 
@@ -36,7 +36,7 @@ var specChineseConfig = SpecText{
     信息：
         (1) config file
             配置文件路径，如果用户键入回车，ossutil会使用默认的配置文件：
-        ` + DefaultConfigFile + `。
+        ` + DecideConfigFile("") + `。
         (2) language
             当首次配置（配置文件不存在）时，ossutil会向用户询问语言设置，可选
         为中文或者英文，如果不配置ossutil将根据用户输入的language选项配置，如
@@ -45,6 +45,8 @@ var specChineseConfig = SpecText{
         中的语言信息，配置该项，而不会询问。
             ossutil在运行时会从配置文件中读取该language选项，如果该选项不存在
         或者非法，将采用默认语言：` + DefaultLanguage + `。
+            注意：该配置项在此次config成功结束后才会生效，在执行config命令过程
+        中语言显示不会受用户的选择影响。
         (3) endpoint, accessKeyID, accessKeySecret
             回车代表着跳过相应配置项的设置。注意：endpoint应该为一个二级域
         名(SLD)，例如：oss.aliyuncs.com。  
@@ -75,7 +77,7 @@ var specChineseConfig = SpecText{
         accessKeyID = your_key_id
         accessKeySecret = your_key_secret
         stsToken = your_sts_token
-        language = 中文
+        language = CH 
     [Bucket-Endpoint]
         bucket1 = endpoint1
         bucket2 = endpoint2
@@ -109,9 +111,9 @@ var specEnglishConfig = SpecText{
     information is useful to the command).
 
     The configuration file can be specified by user, which in default
-    is ` + DefaultConfigFile + `. If the configuration file exist, suppose the file 
-    is: a, ossutil will save a as a.bak, and rewrite file a, at this time, 
-    if file a.bak exists, a.bak will be rewrited.
+    is ` + DecideConfigFile("") + `. If the configuration file exist, suppose
+    the file is: a, ossutil will save a as a.bak, and rewrite file a, at this 
+    time, if file a.bak exists, a.bak will be rewrited.
 
 Usage:
 
@@ -123,7 +125,8 @@ Usage:
         The usage provides an interactive way to configure credentials.
     Interactively ossutil asks you for:
         (1) config file
-            If user enter carriage return, ossutil use the default file.
+            If user enter carriage return, ossutil use the default file: 
+        ` + DecideConfigFile("") + `.
         (2) language
             When configure for the first time(config file not exit), ossutil 
         will ask user to set the language(support Chinese or English at this 
@@ -136,6 +139,8 @@ Usage:
             ossutil will read the language configuration when run command, if 
         the configuration does not exist or is invalid, ossutil will show in 
         default language: ` + DefaultLanguage + `.
+            Notice that the configuration will go into effect after the config 
+        command successfully executed, it's dimmed while execute the command.
         (3) endpoint, accessKeyID, accessKeySecret
             Carriage return means skip the configuration of these options.
         Notice that endpoint means a second-level domain(SLD), eg: oss.aliyuncs.com.
@@ -168,6 +173,7 @@ Credential File Format:
         accessKeyID = your_key_id
         accessKeySecret = your_key_secret
         stsToken = your_sts_token
+        language = EN 
     [Bucket-Endpoint]
         bucket1 = endpoint1
         bucket2 = endpoint2
@@ -289,16 +295,16 @@ func (cc *ConfigCommand) runCommandInteractive(configFile, language string) erro
 
 	if configFile == "" {
         if llanguage == LEnglishLanguage {
-		    fmt.Printf("\nPlease enter the config file path(default " + DefaultConfigFile + ", carriage return will use the default path):")
+		    fmt.Printf("\nPlease enter the config file path(default " + DecideConfigFile("") + ", carriage return will use the default path):")
         } else {
-		    fmt.Printf("\n请输入配置文件路径（默认为：" + DefaultConfigFile + "，回车将使用默认路径）：")
+		    fmt.Printf("\n请输入配置文件路径（默认为：" + DecideConfigFile("") + "，回车将使用默认路径）：")
         }
 
 		if _, err := fmt.Scanln(&configFile); err != nil {
             if llanguage == LEnglishLanguage {
-			    fmt.Println("No config file entered, will use the default config file " + DefaultConfigFile + "\n")
+			    fmt.Println("No config file entered, will use the default config file " + DecideConfigFile("") + "\n")
             } else {
-		        fmt.Println("未输入配置文件路径，将使用默认配置文件：" + DefaultConfigFile + "。\n")
+		        fmt.Println("未输入配置文件路径，将使用默认配置文件：" + DecideConfigFile("") + "。\n")
             }
 		}
 	}
@@ -326,12 +332,12 @@ func (cc *ConfigCommand) configInteractive(configFile, language string) error {
 	section.Add(OptionLanguage, language)
     if _, err := os.Stat(configFile); err != nil {
         if llanguage == LEnglishLanguage {
-		    fmt.Printf("Please enter language(%s):", OptionMap[OptionLanguage].minVal)
+		    fmt.Printf("Please enter language(%s, the configuration will go into effect after the command successfully executed):", OptionMap[OptionLanguage].minVal)
         } else {
-            fmt.Printf("请输入语言(%s)：", OptionMap[OptionLanguage].minVal)
+            fmt.Printf("请输入语言(%s，该配置项将在此次config命令成功结束后生效)：", OptionMap[OptionLanguage].minVal)
         }
 		if _, err := fmt.Scanln(&val); err == nil {
-            vals := strings.Split(OptionMap[OptionLanguage].minVal, "|")
+            vals := strings.Split(OptionMap[OptionLanguage].minVal, "/")
             if FindPosCaseInsen(val, vals) == -1 {
                 return fmt.Errorf("invalid option value of %s, the value: %s is not anyone of %s", OptionLanguage, val, OptionMap[OptionLanguage].minVal)
             }

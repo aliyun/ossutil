@@ -133,10 +133,10 @@ func (s *OssutilConfigSuite) TestConfigInteractiveLanguage(c *C) {
     c.Assert(len(opts), Equals, 1)
 }
 
-func (s *OssutilConfigSuite) TestConfigLanguage(c *C) {
+func (s *OssutilConfigSuite) TestConfigLanguageEN(c *C) {
     command := "config" 
     var args []string
-    language := "English"
+    language := "En"
     options := OptionMapType{
         "configFile": &configFile,
         "language": &language,
@@ -154,6 +154,29 @@ func (s *OssutilConfigSuite) TestConfigLanguage(c *C) {
     c.Assert(len(opts), Equals, 1)
     c.Assert(opts[OptionLanguage], Equals, language)
 }
+
+func (s *OssutilConfigSuite) TestConfigLanguageCH(c *C) {
+    command := "config" 
+    var args []string
+    language := "CH"
+    options := OptionMapType{
+        "configFile": &configFile,
+        "language": &language,
+    }
+    showElapse, err := cm.RunCommand(command, args, options)
+    c.Assert(showElapse, Equals, false)
+    c.Assert(err, IsNil)
+
+    f, err := os.Stat(configFile)
+    c.Assert(err, IsNil)
+    c.Assert(f.Size() > 0, Equals, true)
+
+    opts, err := LoadConfig(configFile) 
+    c.Assert(err, IsNil)
+    c.Assert(len(opts), Equals, 1)
+    c.Assert(opts[OptionLanguage], Equals, language)
+}
+
 
 // test option empty value
 func (s *OssutilConfigSuite) TestConfigOptionEmptyValue(c *C) {
