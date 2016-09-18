@@ -652,7 +652,6 @@ func (s *OssutilCommandSuite) TestPreparePartOption(c *C) {
     c.Assert(routines, Equals, 2)
 
     partSize, routines = copyCommand.preparePartOption(MaxInt64)
-    fmt.Println(partSize, routines)
     c.Assert(partSize, Equals, int64(922337203685478))
     c.Assert(routines, Equals, 10)
 

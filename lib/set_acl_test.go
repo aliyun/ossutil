@@ -55,7 +55,7 @@ func (s *OssutilCommandSuite) TestSetBucketACL(c *C) {
     }
 
     result := []string{"private", "public-read", "public-read-write"}
-    for i, acl := range []string{"pri", "pr", "prw"} {
+    for i, acl := range []string{"private", "public-read", "public-read-write"} {
         s.setBucketACL(bucket, acl, c)
         bucketStat := s.getStat(bucket, "", c)
         c.Assert(bucketStat[StatACL], Equals, result[i])
@@ -143,7 +143,7 @@ func (s *OssutilCommandSuite) TestSetObjectACL(c *C) {
     }
 
     result := []string{"default", "private", "public-read", "public-read-write"}
-    for i, acl := range []string{"def", "pri", "pr", "prw"} {
+    for i, acl := range []string{"default", "private", "public-read", "public-read-write"} {
         s.setObjectACL(bucket, object, acl, false, false, c)
         objectStat = s.getStat(bucket, object, c)
         c.Assert(objectStat[StatACL], Equals, result[i])
@@ -247,6 +247,44 @@ func (s *OssutilCommandSuite) TestErrSetACL(c *C) {
     showElapse, err = s.rawSetObjectACL(bucket, "/object", acl, true, true)
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
+}
+
+func (s *OssutilCommandSuite) TestErrBatchSetACL(c *C) {
+    bucket := bucketNamePrefix + "setacl"
+    s.putBucket(bucket, c)
+
+    // put objects
+    num := 10
+    objectNames := []string{}
+    for i := 0; i < num; i++ {
+        object := fmt.Sprintf("设置权限:%d", i)
+        s.putObject(bucket, object, uploadFileName, c)
+        objectNames = append(objectNames, object)
+    }
+
+    command := "setacl"
+    str := ""
+    str1 := "abc"
+    args := []string{CloudURLToString(bucket, ""), "public-read-write"}
+    routines := strconv.Itoa(Routines)
+    ok := true
+    options := OptionMapType{
+        "endpoint": &str1,
+        "accessKeyID": &str1,
+        "accessKeySecret": &str1,
+        "stsToken": &str,
+        "routines": &routines,
+        "recursive": &ok,
+        "force": &ok,
+    }
+    showElapse, err := cm.RunCommand(command, args, options)
+    c.Assert(err, NotNil)
+    c.Assert(showElapse, Equals, false)
+
+    for _, object := range objectNames {
+        objectStat := s.getStat(bucket, object, c)
+        c.Assert(objectStat[StatACL], Equals, "default")
+    }
 }
 
 func (s *OssutilCommandSuite) TestSetACLIDKey(c *C) {

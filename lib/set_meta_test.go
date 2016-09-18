@@ -249,6 +249,50 @@ func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
     c.Assert(showElapse, Equals, false)
 }
 
+func (s *OssutilCommandSuite) TestErrBatchSetMeta(c *C) {
+    bucket := bucketNamePrefix + "setmeta"
+    s.putBucket(bucket, c)
+
+    // put objects
+    num := 10
+    objectNames := []string{}
+    for i := 0; i < num; i++ {
+        object := fmt.Sprintf("设置元信息：%d", i)
+        s.putObject(bucket, object, uploadFileName, c)
+        objectNames = append(objectNames, object)
+    }
+
+    // update without force
+    meta := "content-type:abc#X-Oss-Meta-Update:update" 
+    args := []string{CloudURLToString(bucket, ""), meta}
+    command := "setmeta"
+    str := ""
+    str1 := "abc"
+    ok := true
+    routines := strconv.Itoa(Routines)
+    options := OptionMapType{
+        "endpoint": &str1,
+        "accessKeyID": &str1,
+        "accessKeySecret": &str1,
+        "stsToken": &str,
+        "update": &ok,
+        "recursive": &ok,
+        "force": &ok,
+        "routines": &routines,
+    }
+    showElapse, err := cm.RunCommand(command, args, options)
+    c.Assert(err, NotNil)
+    c.Assert(showElapse, Equals, false)
+
+    for _, object := range objectNames {
+        objectStat := s.getStat(bucket, object, c) 
+        c.Assert(objectStat["Content-Type"] != "abc", Equals, true) 
+        _, ok := objectStat["X-Oss-Meta-Update"]
+        c.Assert(ok, Equals, false)
+    }
+
+}
+
 func (s *OssutilCommandSuite) TestErrSetMeta(c *C) {
     args := []string{"os:/", ""}
     showElapse, err := s.rawSetMetaWithArgs(args, false, false, false, true, DefaultLanguage)

@@ -68,7 +68,7 @@ func (s *OssutilCommandSuite) TestMakeBucket(c *C) {
     }
 
     result := []string{"private", "public-read", "public-read-write"}
-    for i, str := range []string{"pri", "pr", "prw"} {
+    for i, str := range []string{"private", "public-read", "public-read-write"} {
         showElapse, err := s.putBucketWithACL(bucket, str)
         c.Assert(err, IsNil)
         c.Assert(showElapse, Equals, true)

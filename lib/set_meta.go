@@ -95,7 +95,7 @@ var specChineseSetMeta = SpecText{
         --update选项。
 
     该命令不支持bucket的meta设置，需要设置bucket的meta信息，请使用bucket相关操作。
-    查看bucket或者objects的meta信息，请使用stat命令。
+    查看bucket或者object的meta信息，请使用stat命令。
 
 Headers:
 

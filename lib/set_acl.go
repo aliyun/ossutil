@@ -7,10 +7,10 @@ import (
 )
 
 var aclMap = map[oss.ACLType][]string{
-	oss.ACLPublicReadWrite: []string{"prw"},
-	oss.ACLPublicRead:      []string{"pr"},
-	oss.ACLPrivate:         []string{"pri"},
-	oss.ACLDefault:         []string{"def"},
+	oss.ACLPublicReadWrite: []string{},
+	oss.ACLPublicRead:      []string{},
+	oss.ACLPrivate:         []string{},
+	oss.ACLDefault:         []string{},
 }
 
 var bucketACLList = []oss.ACLType{
@@ -73,6 +73,7 @@ var specChineseSetACL = SpecText{
     该命令不支持同时设置bucket和objects的acl，请分开操作。
 
     结果：显示命令耗时前未报错，则表示成功设置。
+    查看bucket或者object的acl信息，请使用stat命令。
 
 ACL：
 
@@ -138,6 +139,7 @@ var specEnglishSetACL = SpecText{
     operate independently.
 
     Result: if no error displayed before show elasped time, then the setting is completed successfully.
+    User can use stat command to check the acl information of bucket or objects.
 
 ACL:
 
