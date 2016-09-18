@@ -144,7 +144,7 @@ var specChineseCopy = SpecText{
 
     3) ossutil cp oss://src_bucket[/src_prefix] oss://dest_bucket[/dest_prefix] [-r] [-f] [--update] [--bigfile_threshold=size] [--checkpoint_dir=file]
         该用法在oss间进行object的拷贝。其中src_bucket与dest_bucket可以相同，注意，当src_url与
-    dest_url完全相同时，ossutil不会做任何事情，直接提示退出。设置meta请使用setmeta命令。如果未
+    dest_url完全相同时，ossutil不会做任何事情，直接提示退出。设置meta请使用set-meta命令。如果未
     指定--recursive选项，则认为src_url精确指定了待拷贝的单个object，此时不支持prefix匹配，如果
     object不存在则报错。如果指定了--recursive选项，ossutil会搜索prefix匹配的objects，批量拷贝这
     些objects。
@@ -378,7 +378,7 @@ Usage:
     3) ossutil cp oss://src_bucket[/src_prefix] oss://dest_bucket[/dest_prefix] [-r] [-f] [--update] [--bigfile_threshold=size] [--checkpoint_dir=file]
         The usage copy objects between oss. The src_bucket can be same with dest_bucket. Pay attention 
     please, if src_url is the same with dest_url, ossutil will do nothing but exit after prompt. Set meta 
-    please use "setmeta" command. If --recursive option is not specified, ossutil considers src_url exactly 
+    please use "set-meta" command. If --recursive option is not specified, ossutil considers src_url exactly 
     specified the single object you want to copy. If --recursive option is specified, ossutil will search 
     for prefix-matching objects and batch copy those objects. 
 
@@ -1217,7 +1217,7 @@ func (cc *CopyCommand) checkCopyFileArgs(srcURL, destURL CloudURL, cpOption copy
 	srcPrefix := srcURL.object
 	destPrefix := destURL.object
 	if srcPrefix == destPrefix {
-		return fmt.Errorf("\"%s\" and \"%s\" are the same, copy self will do nothing, set meta please use setmeta command", srcURL.ToString(), srcURL.ToString())
+		return fmt.Errorf("\"%s\" and \"%s\" are the same, copy self will do nothing, set meta please use set-meta command", srcURL.ToString(), srcURL.ToString())
 	}
 	if cpOption.recursive {
 		if strings.HasPrefix(destPrefix, srcPrefix) {
@@ -1236,7 +1236,7 @@ func (cc *CopyCommand) copySingleFile(bucket *oss.Bucket, objectInfo objectInfoT
 	destObject := cc.makeCopyObjectName(objectInfo.key, srcURL.object, destURL, cpOption)
 
 	if srcURL.bucket == destURL.bucket && srcObject == destObject {
-		return false, fmt.Errorf("\"%s\" and \"%s\" are the same, copy self will do nothing, set meta please use setmeta command", CloudURLToString(srcURL.bucket, srcObject), CloudURLToString(srcURL.bucket, srcObject))
+		return false, fmt.Errorf("\"%s\" and \"%s\" are the same, copy self will do nothing, set meta please use set-meta command", CloudURLToString(srcURL.bucket, srcObject), CloudURLToString(srcURL.bucket, srcObject))
 	}
 
 	//get object size

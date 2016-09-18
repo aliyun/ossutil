@@ -21,7 +21,7 @@ func (s *OssutilCommandSuite) rawSetObjectACL(bucket, object, acl string, recurs
 }
 
 func (s *OssutilCommandSuite) rawSetACLWithArgs(args []string, recursive, bucket, force bool) (bool, error) {
-    command := "setacl"
+    command := "set-acl"
     str := ""
     routines := strconv.Itoa(Routines)
     options := OptionMapType{
@@ -40,7 +40,7 @@ func (s *OssutilCommandSuite) rawSetACLWithArgs(args []string, recursive, bucket
 }
 
 func (s *OssutilCommandSuite) TestSetBucketACL(c *C) {
-    bucket := bucketNamePrefix + "setacl"
+    bucket := bucketNamePrefix + "set-acl"
     s.putBucket(bucket, c)
 
     // get acl
@@ -63,7 +63,7 @@ func (s *OssutilCommandSuite) TestSetBucketACL(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestSetBucketErrorACL(c *C) {
-    bucket := bucketNamePrefix + "setacl"
+    bucket := bucketNamePrefix + "set-acl"
     s.putBucket(bucket, c)
 
     for _, acl := range []string{"default", "def", "erracl", "私有"} {
@@ -107,7 +107,7 @@ func (s *OssutilCommandSuite) TestSetNotExistBucketACL(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestSetBucketEmptyACL(c *C) {
-    bucket := bucketNamePrefix + "setacl"
+    bucket := bucketNamePrefix + "set-acl"
     s.putBucket(bucket, c)
 
     object := "test"
@@ -119,7 +119,7 @@ func (s *OssutilCommandSuite) TestSetBucketEmptyACL(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestSetObjectACL(c *C) {
-    bucket := bucketNamePrefix + "setacl"
+    bucket := bucketNamePrefix + "set-acl"
     s.putBucket(bucket, c)
 
     object := "文件"
@@ -164,7 +164,7 @@ func (s *OssutilCommandSuite) TestSetObjectACL(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestBatchSetObjectACL(c *C) {
-    bucket := bucketNamePrefix + "setacl"
+    bucket := bucketNamePrefix + "set-acl"
     s.putBucket(bucket, c)
 
     // put objects
@@ -209,7 +209,7 @@ func (s *OssutilCommandSuite) TestErrSetACL(c *C) {
     showElapse, err = s.rawSetACLWithArgs(args, false, false, true)
 
     // error set bucket acl
-    bucket := bucketNamePrefix + "setacl"
+    bucket := bucketNamePrefix + "set-acl"
     object := "testobject"
     args = []string{CloudURLToString(bucket, object), acl}
     showElapse, err = s.rawSetACLWithArgs(args, false, true, true)
@@ -250,7 +250,7 @@ func (s *OssutilCommandSuite) TestErrSetACL(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestErrBatchSetACL(c *C) {
-    bucket := bucketNamePrefix + "setacl"
+    bucket := bucketNamePrefix + "set-acl"
     s.putBucket(bucket, c)
 
     // put objects
@@ -262,7 +262,7 @@ func (s *OssutilCommandSuite) TestErrBatchSetACL(c *C) {
         objectNames = append(objectNames, object)
     }
 
-    command := "setacl"
+    command := "set-acl"
     str := ""
     str1 := "abc"
     args := []string{CloudURLToString(bucket, ""), "public-read-write"}
@@ -288,14 +288,14 @@ func (s *OssutilCommandSuite) TestErrBatchSetACL(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestSetACLIDKey(c *C) {
-    bucket := bucketNamePrefix + "setaclidkey"
+    bucket := bucketNamePrefix + "set-aclidkey"
     s.putBucket(bucket, c)
 
     cfile := "ossutil_test.config_boto"
     data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Endpoint]\n%s=%s[Bucket-Cname]\n%s=%s", "abc", "def", "ghi", bucket, "abc", bucket, "abc") 
     s.createFile(cfile, data, c)
 
-    command := "setacl"
+    command := "set-acl"
     str := ""
     args := []string{CloudURLToString(bucket, ""), "public-read"}
     routines := strconv.Itoa(Routines)
