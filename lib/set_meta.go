@@ -74,7 +74,7 @@ var specChineseSetMeta = SpecText{
 	paramText: "url [meta] [options]",
 
 	syntaxText: ` 
-    ossutil set-meta oss://bucket[/prefix] [header:value#header:value...] [--update] [--delete] [-r] [-f] [-c file] 
+    ossutil setmeta oss://bucket[/prefix] [header:value#header:value...] [--update] [--delete] [-r] [-f] [-c file] 
 `,
 
 	detailHelpText: ` 
@@ -109,30 +109,30 @@ Headers:
 
     该命令有两种用法：
 
-    1) ossutil set-meta oss://bucket/object [header:value#header:value...] [--update] [--delete] [-f] 
+    1) ossutil setmeta oss://bucket/object [header:value#header:value...] [--update] [--delete] [-f] 
         如果未指定--recursive选项，ossutil设置指定的单个object的meta信息，此时请确保url
     精确指定了想要设置meta的object，当object不存在时会报错。如果指定了--force选项，则不
     会进行询问提示。如果用户未输入[header:value#header:value...]，相当于删除object的所有
     meta。
         --update选项和--delete选项的用法参考上文。
 
-    2) ossutil set-meta oss://bucket[/prefix] [header:value#header:value...] -r [--update] [--delete] [-f]
+    2) ossutil setmeta oss://bucket[/prefix] [header:value#header:value...] -r [--update] [--delete] [-f]
         如果指定了--recursive选项，ossutil会查找所有前缀匹配url的objects，批量设置这些
     objects的meta信息，当错误出现时终止命令。如果--force选项被指定，则不会进行询问提示。
         --update选项和--delete选项的用法参考上文。
 `,
 
 	sampleText: ` 
-    (1)ossutil set-meta oss://bucket1/obj1 Cache-Control:no-cache#Content-Encoding:gzip#X-Oss-Meta-a:b
+    (1)ossutil setmeta oss://bucket1/obj1 Cache-Control:no-cache#Content-Encoding:gzip#X-Oss-Meta-a:b
         设置obj1的Cache-Control，Content-Encoding和X-Oss-Meta-a头域
 
-    (2)ossutil set-meta oss://bucket1/o X-Oss-Meta-empty:#Content-Type:plain/text --update -r
+    (2)ossutil setmeta oss://bucket1/o X-Oss-Meta-empty:#Content-Type:plain/text --update -r
         批量更新以o开头的objects的X-Oss-Meta-empty和Content-Type头域
 
-    (3)ossutil set-meta oss://bucket1/obj1 X-Oss-Meta-delete --delete
+    (3)ossutil setmeta oss://bucket1/obj1 X-Oss-Meta-delete --delete
         删除obj1的X-Oss-Meta-delete头域
 
-    (4)ossutil set-meta oss://bucket/o -r
+    (4)ossutil setmeta oss://bucket/o -r
         批量设置以o开头的objects的meta为空
 `,
 }
@@ -144,7 +144,7 @@ var specEnglishSetMeta = SpecText{
 	paramText: "url [meta] [options]",
 
 	syntaxText: ` 
-    ossutil set-meta oss://bucket[/prefix] [header:value#header:value...] [--update] [--delete] [-r] [-f] [-c file] 
+    ossutil setmeta oss://bucket[/prefix] [header:value#header:value...] [--update] [--delete] [-r] [-f] [-c file] 
 `,
 
 	detailHelpText: ` 
@@ -183,14 +183,14 @@ Usage:
 
     There are two usages:
 
-    1) ossutil set-meta oss://bucket/object [header:value#header:value...] [--update] [--delete] [-f] 
+    1) ossutil setmeta oss://bucket/object [header:value#header:value...] [--update] [--delete] [-f] 
         If --recursive option is not specified, ossutil set meta on the specified single 
     object. In the usage, please make sure url exactly specified the object you want to 
     set meta on, if object not exist, error occurs. If --force option is specified, ossutil 
     will not show prompt question. 
         The usage of --update option and --delete option is showed in detailHelpText. 
 
-    2) ossutil set-meta oss://bucket[/prefix] [header:value#header:value...] -r [--update] [--delete] [-f]
+    2) ossutil setmeta oss://bucket[/prefix] [header:value#header:value...] -r [--update] [--delete] [-f]
         If --recursive option is specified, ossutil will search for prefix-matching objects 
     and set meta on these objects, if error occurs, the operation is terminated. If --force 
     option is specified, ossutil will not show prompt question.
@@ -198,16 +198,16 @@ Usage:
 `,
 
 	sampleText: ` 
-    (1)ossutil set-meta oss://bucket1/obj1 Cache-Control:no-cache#Content-Encoding:gzip#X-Oss-Meta-a:b
+    (1)ossutil setmeta oss://bucket1/obj1 Cache-Control:no-cache#Content-Encoding:gzip#X-Oss-Meta-a:b
         Set Cache-Control, Content-Encoding and X-Oss-Meta-a header for obj1
 
-    (2)ossutil set-meta oss://bucket1/o X-Oss-Meta-empty:#Content-Type:plain/text -u -r
+    (2)ossutil setmeta oss://bucket1/o X-Oss-Meta-empty:#Content-Type:plain/text -u -r
         Batch update X-Oss-Meta-empty and Content-Type header on objects that start with o
 
-    (3)ossutil set-meta oss://bucket1/obj1 X-Oss-Meta-delete -d
+    (3)ossutil setmeta oss://bucket1/obj1 X-Oss-Meta-delete -d
         Delete X-Oss-Meta-delete header of obj1 
 
-    (4)ossutil set-meta oss://bucket/o -r
+    (4)ossutil setmeta oss://bucket/o -r
         Batch set the meta of objects that start with o to empty
 `,
 }
@@ -219,8 +219,8 @@ type SetMetaCommand struct {
 
 var setMetaCommand = SetMetaCommand{
 	command: Command{
-		name:        "set-meta",
-		nameAlias:   []string{"set-meta", "set_meta"},
+		name:        "setmeta",
+		nameAlias:   []string{"setmeta", "set_meta"},
 		minArgc:     1,
 		maxArgc:     2,
 		specChinese: specChineseSetMeta,

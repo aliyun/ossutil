@@ -31,7 +31,7 @@ ACL：
         ` + formatACLString(bucketACL, "\n        ") + `
 
 
-    关于acl的更多信息请参考help set-acl。
+    关于acl的更多信息请参考help setacl。
 
 用法：
 
@@ -39,7 +39,7 @@ ACL：
 
     1) ossutil mb oss://bucket [-c file]
         当未指定--acl选项时，ossutil会在指定的身份凭证下创建指定bucket，所创建的bucket的acl
-    为默认private。如果需要更改acl信息，可以使用set-acl命令。
+    为默认private。如果需要更改acl信息，可以使用setacl命令。
 
     2) ossutil mb oss://bucket --acl=acl [-c file]
         如果指定了--acl选项，ossutil会检查指定acl的合法性，如果acl非法，会进入交互模式，提
@@ -77,7 +77,7 @@ ACL:
     ossutil supports following bucket acls, shorthand versions in brackets:
         ` + formatACLString(bucketACL, "\n        ") + `
 
-    More information about acl, see help set-acl.
+    More information about acl, see help setacl.
 
 Usage:
 
@@ -86,7 +86,7 @@ Usage:
     1) ossutil mb oss://bucket [-c file]
         If you create bucket without --acl option, ossutil will create bucket under the 
     specified credentials and the bucket acl is private, if you want to change acl, please 
-    use set-acl command. 
+    use setacl command. 
 
     2) ossutil mb oss://bucket --acl=acl [-c file]
         If you create bucket with --acl option, ossutil will check the validity of acl, if 
