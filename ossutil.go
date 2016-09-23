@@ -1,9 +1,10 @@
 package main
 
 import (
-	"lib"
     "os"
     "fmt"
+
+	"github.com/aliyun/ossutil/lib"
 )
 
 func main() {
