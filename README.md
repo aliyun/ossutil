@@ -16,6 +16,7 @@
 > - goopt (github.com/droundy/goopt) 
 > - configparser (github.com/alyu/configparser)
 > - oss (github.com/aliyun/aliyun-oss-go-sdk/oss)
+> - gopkg.in/check.v1 (gopkg.in/check.v1)
 
 ## 快速使用
 #### 获取命令列表
@@ -58,6 +59,9 @@
 ### 测试
 > - 修改lib/command_test.go里的endpoint、AccessKeyId、AccessKeySecret、STSToken等配置。
 > - 请在lib目录下执行`go test`。
+
+### 源码
+> - https://github.com/aliyun/ossutil
 
 ## 联系我们
 > - [阿里云OSS官方网站](http://oss.aliyun.com)
