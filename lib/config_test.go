@@ -11,6 +11,8 @@ type OssutilConfigSuite struct{}
 
 var _ = Suite(&OssutilConfigSuite{})
 
+var token = stsToken
+
 // Run once when the suite starts running
 func (s *OssutilConfigSuite) SetUpSuite(c *C) {
     os.Stdout = testLogFile 
@@ -27,11 +29,15 @@ func (s *OssutilConfigSuite) TearDownSuite(c *C) {
 
 // Run after each test or benchmark runs
 func (s *OssutilConfigSuite) SetUpTest(c *C) {
+    if stsToken == "" {
+        stsToken = "ststoken"
+    }
     _ = os.Remove(configFile)
 }
 
 // Run once after all tests or benchmarks have finished running
 func (s *OssutilConfigSuite) TearDownTest(c *C) {
+    stsToken = token
     _ = os.Remove(configFile)
 }
 
