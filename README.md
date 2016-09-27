@@ -52,12 +52,14 @@
 
 ## 注意事项
 ### 运行
-> - 拷贝代码文件到您的测试工程src目录下。
-> - 在src目录下build代码生成ossutil工具，例如：在linux下可以运行go build ossutil.go。
+> - 首先配置您的go工程目录。
+> - go get该工程依赖的库。
+> - go get github.com/aliyun/ossutil。
+> - 进入go工程目录下的src目录，build代码生成ossutil工具，例如：在linux下可以运行go build github.com/aliyun/ossutil/ossutil.go。
 > - 参考上面示例运行ossutil工具。
 
 ### 测试
-> - 修改lib/command_test.go里的endpoint、AccessKeyId、AccessKeySecret、STSToken等配置。
+> - 进入go工程目录下的src目录，修改github.com/aliyun/ossutil/lib/command_test.go里的endpoint、AccessKeyId、AccessKeySecret、STSToken等配置。
 > - 请在lib目录下执行`go test`。
 
 ### 源码
