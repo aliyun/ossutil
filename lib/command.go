@@ -269,7 +269,7 @@ func (cmd *Command) ossClient(bucket string) (*oss.Client, error) {
 	accessKeyID, _ := GetString(OptionAccessKeyID, cmd.options)
 	accessKeySecret, _ := GetString(OptionAccessKeySecret, cmd.options)
 	stsToken, _ := GetString(OptionSTSToken, cmd.options)
-	client, err := oss.New(endpoint, accessKeyID, accessKeySecret, oss.UseCname(isCname), oss.SecurityToken(stsToken))
+	client, err := oss.New(endpoint, accessKeyID, accessKeySecret, oss.UseCname(isCname), oss.SecurityToken(stsToken), oss.UserAgent(getUserAgent()))
 	if err != nil {
 		return nil, err
 	}

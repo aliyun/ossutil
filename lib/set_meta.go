@@ -84,15 +84,16 @@ var specChineseSetMeta = SpecText{
 
     （1）设置全量值：如果用户未指定--update选项和--delete选项，ossutil会设置指定objects的
         meta为用户输入的[header:value#header:value...]。当缺失[header:value#header:value...]
-        信息时，相当于删除全部meta信息。（此时ossutil会进入交互模式并要求用户确认meta信息）。
+        信息时，相当于删除全部meta信息（对于不可删除的headers，即：不以` + oss.HTTPHeaderOssMetaPrefix + `开头的headers，
+        其值不会改变）。此时ossutil会进入交互模式并要求用户确认meta信息。
 
     （2）更新meta：如果用户设置--update选项，ossutil会更新指定objects的指定header为输入
         的value值，其中value可以为空，指定objects的其他meta信息不会改变。此时不支持--delete
         选项。
 
-    （3）删除meta：如果用户设置--delete选项，ossutil会删除指定objects的指定header，此时
-        value必须为空（header:或者header），指定objects的其他meta信息不会改变。此时不支持
-        --update选项。
+    （3）删除meta：如果用户设置--delete选项，ossutil会删除指定objects的指定header（对于不可
+        删除的headers，即：不以` + oss.HTTPHeaderOssMetaPrefix + `开头的headers，该选项不起作用），该此时value必须
+        为空（header:或者header），指定objects的其他meta信息不会改变。此时不支持--update选项。
 
     该命令不支持bucket的meta设置，需要设置bucket的meta信息，请使用bucket相关操作。
     查看bucket或者object的meta信息，请使用stat命令。
@@ -156,7 +157,9 @@ var specEnglishSetMeta = SpecText{
     (1) Set full meta: If --update option and --delete option is not specified, ossutil 
         will set the meta of the specified objects to [header:value#header:value...], what
         user inputs. If [header:value#header:value...] is missing, it means clear the meta 
-        data of the specified objects(at the time ossutil will ask user to confirm the input).
+        data of the specified objects(to those headers which can not be deleted, that is, 
+        the headers do not start with: ` + oss.HTTPHeaderOssMetaPrefix + `, the value will not be changed), at the 
+        time ossutil will ask user to confirm the input.
 
     (2) Update meta: If --update option is specified, ossutil will update the specified 
         headers of objects to the values that user inputs(the values can be empty), other 
@@ -164,9 +167,11 @@ var specEnglishSetMeta = SpecText{
         supported in the usage. 
 
     (3) Delete meta: If --delete option is specified, ossutil will delete the specified 
-        headers of objects that user inputs, in this usage the value must be empty(like 
-        header: or header), other meta data of the specified objects will not be changed. 
-        --update option is not supported in the usage.
+        headers of objects that user inputs(to those headers which can not be deleted, 
+        that is, the headers do not start with: ` + oss.HTTPHeaderOssMetaPrefix + `, the value will not be changed), 
+        in this usage the value must be empty(like header: or header), other meta data 
+        of the specified objects will not be changed. --update option is not supported 
+        in the usage.
 
     The meta data of bucket can not be setted by the command, please use other commands. 
     User can use stat command to check the meta information of bucket or objects.
@@ -371,7 +376,7 @@ func (sc *SetMetaCommand) parseHeaders(str string, isDelete bool) (map[string]st
 			return nil, fmt.Errorf("delete meta for object do no support value for header:%s, please set value:%s to empty", name, value)
 		}
 		if _, err := fetchHeaderOptionMap(name); err != nil && !strings.HasPrefix(strings.ToLower(name), strings.ToLower(oss.HTTPHeaderOssMetaPrefix)) {
-			return nil, fmt.Errorf("unsupported header:%s, please try \"help %s\" or \"%s --man\" to see supported headers", name, sc.command.args[0], sc.command.args[0])
+			return nil, fmt.Errorf("unsupported header:%s, please try \"help %s\" to see supported headers", name, sc.command.name)
 		}
 		headers[name] = value
 	}

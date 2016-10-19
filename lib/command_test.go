@@ -464,3 +464,12 @@ func (s *OssutilCommandSuite) TestErrOssDownloadFile(c *C) {
     err = copyCommand.command.ossDownloadFileRetry(bucket, object, object)
     c.Assert(err, NotNil)
 }
+
+func (s *OssutilCommandSuite) TestUserAgent(c *C) {
+    userAgent := getUserAgent()
+    c.Assert(userAgent != "", Equals, true)
+
+    client, err := listCommand.command.ossClient("")
+    c.Assert(err, IsNil)
+    c.Assert(client, NotNil)
+}

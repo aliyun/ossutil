@@ -6,6 +6,9 @@ import (
     "os/exec"
     "path/filepath"
     "strings"
+    "bytes"
+    "runtime"
+    oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
 
 // Output print input string to stdout and add '\n'
@@ -42,4 +45,33 @@ func getBinaryPath() (string, string) {
     fileName := filepath.Base(filePath)
     renameFilePath := ".temp_" + fileName
     return filePath, renameFilePath
+}
+
+type sysInfo struct {
+	name    string // 操作系统名称windows/Linux
+	release string // 操作系统版本 2.6.32-220.23.2.ali1089.el5.x86_64等
+	machine string // 机器类型amd64/x86_64
+}
+
+// Get　system info
+// 获取操作系统信息、机器类型
+func getSysInfo() sysInfo {
+	name := runtime.GOOS
+	release := "-"
+	machine := runtime.GOARCH
+	if out, err := exec.Command("uname", "-s").CombinedOutput(); err == nil {
+		name = string(bytes.TrimSpace(out))
+	}
+	if out, err := exec.Command("uname", "-r").CombinedOutput(); err == nil {
+		release = string(bytes.TrimSpace(out))
+	}
+	if out, err := exec.Command("uname", "-m").CombinedOutput(); err == nil {
+		machine = string(bytes.TrimSpace(out))
+	}
+	return sysInfo{name: name, release: release, machine: machine}
+}
+
+func getUserAgent() string {
+    sys := getSysInfo()
+    return fmt.Sprintf("aliyun-sdk-go/%s (%s/%s/%s;%s)/%s-%s", oss.Version, sys.name, sys.release, sys.machine, runtime.Version(), Package, Version)
 }
