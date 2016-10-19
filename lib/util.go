@@ -8,6 +8,8 @@ import (
     "strings"
     "bytes"
     "runtime"
+    "time"
+
     oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
 
@@ -74,4 +76,8 @@ func getSysInfo() sysInfo {
 func getUserAgent() string {
     sys := getSysInfo()
     return fmt.Sprintf("aliyun-sdk-go/%s (%s/%s/%s;%s)/%s-%s", oss.Version, sys.name, sys.release, sys.machine, runtime.Version(), Package, Version)
+}
+
+func utcToLocalTime(utc time.Time) time.Time {
+    return utc.In(time.Local)
 }

@@ -222,7 +222,7 @@ func (lc *ListCommand) listBuckets(prefix string) error {
         }
 		for _, bucket := range lbr.Buckets {
 			if !shortFormat {
-				fmt.Printf("%-30s %20s%s%s\n", bucket.CreationDate, bucket.Location, FormatTAB, CloudURLToString(bucket.Name, ""))
+				fmt.Printf("%-30s %20s%s%s\n", utcToLocalTime(bucket.CreationDate), bucket.Location, FormatTAB, CloudURLToString(bucket.Name, ""))
 			} else {
 				fmt.Println(CloudURLToString(bucket.Name, ""))
 			}
@@ -320,7 +320,7 @@ func (lc *ListCommand) showObjects(lor oss.ListObjectsResult, bucket string, sho
 	for _, object := range lor.Objects {
 		if !shortFormat {
 			output += fmt.Sprintf(
-				"%-30s %12d%s%-38s%s%s\n", object.LastModified, object.Size, "   ",
+				"%-30s %12d%s%-38s%s%s\n", utcToLocalTime(object.LastModified), object.Size, "   ",
 				strings.Trim(object.ETag, "\""), "  ", CloudURLToString(bucket, object.Key),
 			)
 		} else {

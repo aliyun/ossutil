@@ -151,7 +151,7 @@ func (sc *StatCommand) bucketStat(bucket *oss.Bucket, cloudURL CloudURL) error {
     attrMap["Location"] = gbar.BucketInfo.Location
 	fmt.Printf("%-18s: %s\n", StatName, gbar.BucketInfo.Name)
 	fmt.Printf("%-18s: %s\n", StatLocation, gbar.BucketInfo.Location)
-	fmt.Printf("%-18s: %s\n", StatCreationDate, gbar.BucketInfo.CreationDate)
+	fmt.Printf("%-18s: %s\n", StatCreationDate, utcToLocalTime(gbar.BucketInfo.CreationDate))
 	fmt.Printf("%-18s: %s\n", StatExtranetEndpoint, gbar.BucketInfo.ExtranetEndpoint)
 	fmt.Printf("%-18s: %s\n", StatIntranetEndpoint, gbar.BucketInfo.IntranetEndpoint)
 	fmt.Printf("%-18s: %s\n", StatACL, gbar.BucketInfo.ACL)
@@ -204,7 +204,7 @@ func (sc *StatCommand) objectStat(bucket *oss.Bucket, cloudURL CloudURL) error {
 	attrMap[StatOwner] = goar.Owner.ID
 	attrMap[StatACL] = goar.ACL
     if lm, err := time.Parse(http.TimeFormat, attrMap[StatLastModified]); err == nil {
-        attrMap[StatLastModified] = fmt.Sprintf("%s", lm.UTC()) 
+        attrMap[StatLastModified] = fmt.Sprintf("%s", utcToLocalTime(lm.UTC())) 
     }
 
 	sort.Strings(sortNames)
