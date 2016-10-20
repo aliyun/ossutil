@@ -380,6 +380,7 @@ func GetAllCommands() []interface{} {
 		&setACLCommand,
 		&setMetaCommand,
 		&copyCommand,
+        &hashCommand,
         &updateCommand,
 	}
 }

@@ -492,7 +492,7 @@ func (sc *SetMetaCommand) batchSetObjectMeta(bucket *oss.Bucket, cloudURL CloudU
 			completed++
 		}
 	}
-	fmt.Printf("\rSucceed:scaned %d objects, setted object meta on %d objects.\n", num, num)
+	fmt.Printf("\rSucceed:scanned %d objects, setted object meta on %d objects.\n", num, num)
 	return nil
 }
 

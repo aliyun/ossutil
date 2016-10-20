@@ -59,6 +59,8 @@ var OptionMap = map[string]Option{
 	OptionRetryTimes:       Option{"", "--retry_times", strconv.Itoa(RetryTimes), OptionTypeInt64, strconv.FormatInt(MinRetryTimes, 10), strconv.FormatInt(MaxRetryTimes, 10), fmt.Sprintf("当错误发生时的重试次数，默认值：%d，取值范围：%d-%d", RetryTimes, MinRetryTimes, MaxRetryTimes), fmt.Sprintf("retry times when fail(default: %d), value range is: %d-%d", RetryTimes, MinRetryTimes, MaxRetryTimes)},
 	OptionRoutines:         Option{"", "--parallel", strconv.Itoa(Routines), OptionTypeInt64, strconv.FormatInt(MinRoutines, 10), strconv.FormatInt(MaxRoutines, 10), fmt.Sprintf("并发任务数，默认值：%d，取值范围：%d-%d", Routines, MinRoutines, MaxRoutines), fmt.Sprintf("amount of concurrency tasks(default: %d), value range is: %d-%d", Routines, MinRoutines, MaxRoutines)},
     OptionLanguage:         Option{"-L", "--language", DefaultLanguage, OptionTypeAlternative, fmt.Sprintf("%s/%s", DefaultLanguage, EnglishLanguage), "", fmt.Sprintf("设置ossutil工具的语言，默认值：%s，取值范围：%s/%s", DefaultLanguage, DefaultLanguage, EnglishLanguage), fmt.Sprintf("set the language of ossutil(default: %s), value range is: %s/%s", DefaultLanguage, DefaultLanguage, EnglishLanguage)}, 
+    OptionHashType:          Option{"", "--type", DefaultHashType, OptionTypeAlternative, fmt.Sprintf("%s/%s", DefaultHashType, MD5HashType), "", fmt.Sprintf("计算的类型, 默认值：%s, 取值范围: %s/%s", DefaultHashType, DefaultHashType, MD5HashType),
+                             fmt.Sprintf("hash type, Default: %s, value range is: %s/%s", DefaultHashType, DefaultHashType, MD5HashType)},
 	OptionVersion:          Option{"-v", "--version", "", OptionTypeFlagTrue, "", "", fmt.Sprintf("显示ossutil的版本（%s）并退出。", Version), fmt.Sprintf("Show ossutil version (%s) and exit.", Version)},
 }
 

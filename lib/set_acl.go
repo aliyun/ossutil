@@ -399,7 +399,7 @@ func (sc *SetACLCommand) batchSetObjectACL(bucket *oss.Bucket, cloudURL CloudURL
 			completed++
 		}
 	}
-	fmt.Printf("\rSucceed: scaned %d objects, setted object acl on %d objects.\n", num, num)
+	fmt.Printf("\rSucceed: scanned %d objects, setted object acl on %d objects.\n", num, num)
 	return nil
 }
 

@@ -20,6 +20,7 @@ const (
 	OptionRetryTimes              = "retryTimes"
 	OptionRoutines                = "routines"
     OptionLanguage                = "language"
+    OptionHashType                 = "hash"
 	OptionVersion                 = "version"
 )
 
@@ -33,6 +34,15 @@ const (
     StatACL                        = "ACL"
     StatOwner                      = "Owner"
     StatLastModified               = "Last-Modified"
+    StatContentMD5                 = "Content-Md5"
+    StatCRC64                      = "X-Oss-Hash-Crc64ecma"
+)
+
+// the elements show in hash file
+const (
+    HashCRC64                   = "CRC64-ECMA"
+    HashMD5                     = "MD5"  
+    HashContentMD5              = "Content-MD5"
 )
 
 const (
@@ -76,4 +86,6 @@ const (
 	Routines            int    = 3
 	MaxRoutines         int64  = 32
 	MinRoutines         int64  = 1
+	DefaultHashType     string = "crc64"
+	MD5HashType         string = "md5"
 )

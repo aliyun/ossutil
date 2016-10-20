@@ -295,6 +295,20 @@ func (s *OssutilCommandSuite) getStatResults(c *C) (map[string]string) {
     return stat 
 }
 
+func (s *OssutilCommandSuite) getHashResults(c *C) (map[string]string) {
+    result := s.getResult(c)
+    c.Assert(len(result) >= 1, Equals, true)
+    
+    stat := map[string]string{}
+    for _, str := range result {
+        sli := strings.SplitN(str, ":", 2)
+        if len(sli) == 2 {
+            stat[strings.TrimSpace(sli[0])] = strings.TrimSpace(sli[1])
+        }
+    }
+    return stat 
+}
+
 func (s *OssutilCommandSuite) setBucketACL(bucket, acl string, c *C) {
     args := []string{CloudURLToString(bucket, ""), acl}
     showElapse, err := s.rawSetACLWithArgs(args, false, true, false)

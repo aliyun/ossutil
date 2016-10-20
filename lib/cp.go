@@ -701,7 +701,7 @@ func (cc *CopyCommand) uploadFiles(srcURLList []StorageURLer, destURL CloudURL, 
 			completed++
 		}
 	}
-	fmt.Printf("\rSucceed: scaned %d files or directories, dealed %d files or directories(upload %d files, %d directories, skip %d files).\n", fnum+dnum+snum, fnum+dnum+snum, fnum, dnum, snum)
+	fmt.Printf("\rSucceed: scanned %d files or directories, dealed %d files or directories(upload %d files, %d directories, skip %d files).\n", fnum+dnum+snum, fnum+dnum+snum, fnum, dnum, snum)
 	return nil
 }
 
@@ -1149,7 +1149,7 @@ func (cc *CopyCommand) batchDownloadFiles(bucket *oss.Bucket, srcURL CloudURL, f
 			completed++
 		}
 	}
-	fmt.Printf("\rSucceed: scaned %d objects, download %d objects, skip %d objects.\n", num+snum, num, snum)
+	fmt.Printf("\rSucceed: scanned %d objects, download %d objects, skip %d objects.\n", num+snum, num, snum)
 	return nil
 }
 
@@ -1378,7 +1378,7 @@ func (cc *CopyCommand) batchCopyFiles(bucket *oss.Bucket, srcURL, destURL CloudU
 			completed++
 		}
 	}
-	fmt.Printf("\rSucceed: scaned %d objects, copy %d objects, skip %d objects.\n", num+snum, num, snum)
+	fmt.Printf("\rSucceed: scanned %d objects, copy %d objects, skip %d objects.\n", num+snum, num, snum)
 	return nil
 }
 
