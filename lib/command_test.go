@@ -331,7 +331,7 @@ func (s *OssutilCommandSuite) TestParseOptions(c *C) {
 
     // put object
     object := "中文" 
-    v := []string{"", "cp", uploadFileName, CloudURLToString(bucket, object), "-f", "--update", "--bigfile_threshold=1", "--checkpoint_dir=checkpoint_dir", "-c", configFile}
+    v := []string{"", "cp", uploadFileName, CloudURLToString(bucket, object), "-f", "--update", "--bigfile-threshold=1", "--checkpoint-dir=checkpoint_dir", "-c", configFile}
     os.Args = v
     err := ParseAndRunCommand()
     c.Assert(err, IsNil)

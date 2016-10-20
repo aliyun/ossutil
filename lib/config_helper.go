@@ -35,9 +35,9 @@ var CredOptionList = []string{
 var CredOptionMap = map[string]configOption{
     OptionLanguage:        configOption{[]string{"language", "Language"}, false},
 	OptionEndpoint:        configOption{[]string{"endpoint", "host"}, true},
-	OptionAccessKeyID:     configOption{[]string{"accessKeyID", "accessKeyId", "AccessKeyID", "AccessKeyId", "access_key_id", "access_id", "accessid"}, false},
-	OptionAccessKeySecret: configOption{[]string{"accessKeySecret", "AccessKeySecret", "access_key_secret", "access_key", "accesskey"}, false},
-	OptionSTSToken:        configOption{[]string{"stsToken", "ststoken", "sts_token"}, false},
+	OptionAccessKeyID:     configOption{[]string{"accessKeyID", "accessKeyId", "AccessKeyID", "AccessKeyId", "access_key_id", "access_id", "accessid", "access-key-id", "access-id"}, false},
+	OptionAccessKeySecret: configOption{[]string{"accessKeySecret", "AccessKeySecret", "access_key_secret", "access_key", "accesskey", "access-key-secret", "access-key"}, false},
+	OptionSTSToken:        configOption{[]string{"stsToken", "ststoken", "STSToken", "sts_token", "sts-token"}, false},
 }
 
 // DecideConfigFile return the config file, if user not specified, return default one 
@@ -59,7 +59,7 @@ func LoadConfig(configFile string) (OptionMapType, error) {
 	var err error
 	configMap, err = readConfigFromFile(configFile)
 	if err != nil {
-		return nil, fmt.Errorf("Read config file error: %s, please try \"help config\" to set configuration or use \"--config_file\" option", err) 
+		return nil, fmt.Errorf("Read config file error: %s, please try \"help config\" to set configuration or use \"--config-file\" option", err) 
 	}
 	if err = checkConfig(configMap); err != nil {
 		return nil, err

@@ -20,7 +20,7 @@ const (
 	OptionRetryTimes              = "retryTimes"
 	OptionRoutines                = "routines"
     OptionLanguage                = "language"
-    OptionHashType                 = "hash"
+    OptionHashType                = "hash"
 	OptionVersion                 = "version"
 )
 

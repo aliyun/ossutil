@@ -20,7 +20,7 @@ var specChineseConfig = SpecText{
 	detailHelpText: ` 
     该命令创建配置文件，将用户设置的配置项信息存储进该配置文件，配置项用
     以访问OSS时提供访问信息（某命令是否需要配置项，参见其是否支持
-    --config_file选项，具体可见该命令的帮助）。
+    --config-file选项，具体可见该命令的帮助）。
 
     配置文件路径可由用户指定，默认为` + DecideConfigFile("") + `。如果配置
     文件存在，假设其为:a，ossutil会将文件a另存为：a.bak，然后重新创建文件a
@@ -66,7 +66,7 @@ var specChineseConfig = SpecText{
         即优先级：bucket-cname > bucket-endpoint > endpoint > 默认endpoint
 
     2) ossutil config options
-        如果用户使用命令时输入了除--config_file之外的任何选项，则该命令进入非
+        如果用户使用命令时输入了除--config-file之外的任何选项，则该命令进入非
     交互式模式。所有的配置项应当使用选项指定。
 
 
@@ -107,7 +107,7 @@ var specEnglishConfig = SpecText{
 	detailHelpText: ` 
     The command create a configuration file and stores credentials
     information user specified. Credentials information is used when
-    access OSS(if a command supports --config_file option, then the 
+    access OSS(if a command supports --config-file option, then the 
     information is useful to the command).
 
     The configuration file can be specified by user, which in default
@@ -161,7 +161,7 @@ Usage:
         PRI: bucket-cname > bucket-endpoint > endpoint > default endpoint
 
     2) ossutil config options
-        If any options except --config_file is specified, the command enter
+        If any options except --config-file is specified, the command enter
     the non interactive mode. All the configurations should be specified by
     options.
 

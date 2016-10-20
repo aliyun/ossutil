@@ -19,7 +19,7 @@ var specChineseList = SpecText{
 	detailHelpText: ` 
     该命令列举指定身份凭证下的buckets，或该身份凭证下对应endpoint的objects。默认显示
     长格式，ossutil在列举buckets或者objects的同时展示它们的一些附加信息。如果指定了
-    --short_format选项，则显示精简格式。
+    --short-format选项，则显示精简格式。
 
     对于用户使用multipart方式上传且未complete的object，ossutil在显示objects或者目录时，
     不会显示这些objects。（关于multipart的更多信息请查看oss官网API文档。）
@@ -31,11 +31,11 @@ var specChineseList = SpecText{
     1) ossutil ls [oss://] [-s]
         如果用户列举时缺失url参数，则ossutil获取用户的身份凭证信息（从配置文件中读取），
     并列举该身份凭证下的所有buckets，并显示每个bucket的最新更新时间和位置信息。如果指定
-    了--short_format选项则只输出bucket名称。该用法不支持--directory选项。
+    了--short-format选项则只输出bucket名称。该用法不支持--directory选项。
 
     2) ossutil ls oss://bucket[/prefix] [-s] [-d]
         该用法列举指定bucket下的objects（如果指定了前缀，则列举拥有该前缀的objects），同时
-    展示了object大小，最新更新时间和etag，但是如果指定了--short_format选项则只输出object名
+    展示了object大小，最新更新时间和etag，但是如果指定了--short-format选项则只输出object名
     称。如果指定了--directory选项，则返回指定bucket下以指定前缀开头的首级目录下的文件和子
     目录，但是不递归显示所有子目录，此时默认为精简格式。
 `,
@@ -84,7 +84,7 @@ var specEnglishList = SpecText{
 	detailHelpText: ` 
     The command list buckets of the specified credentials. or objects of the specified 
     endpoint and credentials, with simple additional information, about each matching 
-    provider, bucket, subdirectory, or object. If --short_format option is specified, 
+    provider, bucket, subdirectory, or object. If --short-format option is specified, 
     ossutil will show by short format. 
 
 Usage:
@@ -99,7 +99,7 @@ Usage:
 
     2) ossutil ls oss://bucket[/prefix] [-s] [-d]
         The usage list objects under the specified bucket(with the prefix if you specified), 
-    with object size, last modified time and etag in addition, --short_format option ignores 
+    with object size, last modified time and etag in addition, --short-format option ignores 
     all the additional information. --directory option returns top-level subdirectory names 
     instead of contents of the subdirectory, which in default show by short format. 
 `,
