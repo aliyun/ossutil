@@ -15,7 +15,7 @@ func (s *OssutilCommandSuite) rawSetMeta(bucket, object, meta string, update, de
 }
 
 func (s *OssutilCommandSuite) rawSetMetaWithArgs(args []string, update, delete, recursive, force bool, language string) (bool, error) {
-    command := "setmeta"
+    command := "set-meta"
     str := ""
     routines := strconv.Itoa(Routines)
     options := OptionMapType{
@@ -42,7 +42,7 @@ func (s *OssutilCommandSuite) setObjectMeta(bucket, object, meta string, update,
 }
 
 func (s *OssutilCommandSuite) TestSetBucketMeta(c *C) {
-    bucket := bucketNamePrefix + "setmeta"
+    bucket := bucketNamePrefix + "set-meta"
     s.putBucket(bucket, c)
 
     showElapse, err := s.rawSetMeta(bucket, "", "X-Oss-Meta-A:A", false, false, false, true, DefaultLanguage)
@@ -51,7 +51,7 @@ func (s *OssutilCommandSuite) TestSetBucketMeta(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestSetObjectMeta(c *C) {
-    bucket := bucketNamePrefix + "setmeta"
+    bucket := bucketNamePrefix + "set-meta"
     s.putBucket(bucket, c)
 
     object := "testobject" 
@@ -147,7 +147,7 @@ func (s *OssutilCommandSuite) TestSetObjectMeta(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestSetNotExistObjectMeta(c *C) {
-    bucket := bucketNamePrefix + "setmeta"
+    bucket := bucketNamePrefix + "set-meta"
     s.putBucket(bucket, c)
 
     object := "testobject" 
@@ -173,7 +173,7 @@ func (s *OssutilCommandSuite) TestSetNotExistObjectMeta(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
-    bucket := bucketNamePrefix + "setmeta"
+    bucket := bucketNamePrefix + "set-meta"
     s.putBucket(bucket, c)
 
     // put objects
@@ -250,7 +250,7 @@ func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestErrBatchSetMeta(c *C) {
-    bucket := bucketNamePrefix + "setmeta"
+    bucket := bucketNamePrefix + "set-meta"
     s.putBucket(bucket, c)
 
     // put objects
@@ -265,7 +265,7 @@ func (s *OssutilCommandSuite) TestErrBatchSetMeta(c *C) {
     // update without force
     meta := "content-type:abc#X-Oss-Meta-Update:update" 
     args := []string{CloudURLToString(bucket, ""), meta}
-    command := "setmeta"
+    command := "set-meta"
     str := ""
     str1 := "abc"
     ok := true
@@ -303,7 +303,7 @@ func (s *OssutilCommandSuite) TestErrSetMeta(c *C) {
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
 
-    bucket := bucketNamePrefix + "setmeta"
+    bucket := bucketNamePrefix + "set-meta"
     s.putBucket(bucket, c)
 
     object := "notexistobject"
@@ -352,7 +352,7 @@ func (s *OssutilCommandSuite) TestGetOSSOption(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestSetMetaIDKey(c *C) {
-    bucket := bucketNamePrefix + "setmetaidkey"
+    bucket := bucketNamePrefix + "set-metaidkey"
     s.putBucket(bucket, c)
 
     object := "testobject" 
@@ -362,7 +362,7 @@ func (s *OssutilCommandSuite) TestSetMetaIDKey(c *C) {
     data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Endpoint]\n%s=%s[Bucket-Cname]\n%s=%s", "abc", "def", "ghi", bucket, "abc", bucket, "abc") 
     s.createFile(cfile, data, c)
 
-    command := "setmeta"
+    command := "set-meta"
     str := ""
     args := []string{CloudURLToString(bucket, object), "x-oss-object-acl:private#X-Oss-Meta-A:A#Expires:2006-01-02T15:04:05Z"}
     ok := true

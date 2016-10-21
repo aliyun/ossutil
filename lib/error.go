@@ -11,7 +11,7 @@ type CommandError struct {
 }
 
 func (e CommandError) Error() string {
-	return fmt.Sprintf("invalid usage of \"%s\" command, reason: %s, please try \"help %s\" or \"%s --man\" for more information", e.command, e.reason, e.command, e.command)
+	return fmt.Sprintf("invalid usage of \"%s\" command, reason: %s, please try \"help %s\" for more information", e.command, e.reason, e.command, e.command)
 }
 
 // BucketError happens when access bucket error

@@ -79,5 +79,5 @@ func (cm *CommandManager) RunCommand(commandName string, args []string, options 
         group := reflect.ValueOf(cmd).Elem().FieldByName("command").FieldByName("group").String()
         return group == GroupTypeNormalCommand, nil
 	}
-	return false, fmt.Errorf("no such command: \"%s\", please try \"help\" or \"--man\" for more information", commandName)
+	return false, fmt.Errorf("no such command: \"%s\", please try \"help\" for more information", commandName)
 }

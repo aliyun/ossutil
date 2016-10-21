@@ -177,5 +177,5 @@ func (hc *HelpCommand) formatCommandHelp(subCommandMap map[string]interface{}) (
 	if cmd, ok := subCommandMap[subCommandName]; ok {
 		return cmd.(FormatHelper).formatIndependHelp(), nil
 	}
-	return "", fmt.Errorf("no such command: \"%s\", please try \"help\" or \"--man\" for more information", subCommandName)
+	return "", fmt.Errorf("no such command: \"%s\", please try \"help\" for more information", subCommandName)
 }
