@@ -3,6 +3,7 @@ package lib
 import (
     "fmt"
     "os"
+    "time"
 
     . "gopkg.in/check.v1"
 )
@@ -45,6 +46,7 @@ func (s *OssutilCommandSuite) rawPutBucketWithACLLanguage(args []string, acl, la
 }
 
 func (s *OssutilCommandSuite) TestMakeBucket(c *C) {
+    s.SetUpBucketEnv(c)
     bucket := bucketNamePrefix + "mb" 
     s.putBucket(bucket, c)
 
@@ -61,6 +63,7 @@ func (s *OssutilCommandSuite) TestMakeBucket(c *C) {
         showElapse, err := s.putBucketWithACL(bucket, acl)
         c.Assert(err, IsNil)
         c.Assert(showElapse, Equals, true)
+        time.Sleep(sleepTime)
 
         bucketStat := s.getStat(bucket, "", c) 
         c.Assert(bucketStat[StatName], Equals, bucket)
@@ -72,11 +75,14 @@ func (s *OssutilCommandSuite) TestMakeBucket(c *C) {
         showElapse, err := s.putBucketWithACL(bucket, str)
         c.Assert(err, IsNil)
         c.Assert(showElapse, Equals, true)
+        time.Sleep(sleepTime)
 
         bucketStat := s.getStat(bucket, "", c) 
         c.Assert(bucketStat[StatName], Equals, bucket)
         c.Assert(bucketStat[StatACL], Equals, result[i])
     }
+
+    s.removeBucket(bucket, true, c)
 }
 
 func (s *OssutilCommandSuite) TestMakeBucketErrorName(c *C) {
@@ -108,6 +114,7 @@ func (s *OssutilCommandSuite) TestMakeBucketErrorACL(c *C) {
             showElapse, err := s.rawPutBucketWithACLLanguage([]string{CloudURLToString(bucket, "")}, acl, language)
             c.Assert(err, NotNil)
             c.Assert(showElapse, Equals, false)
+            time.Sleep(sleepTime)
 
             showElapse, err = s.rawGetStat(bucket, "")
             c.Assert(err, NotNil)
@@ -178,4 +185,6 @@ func (s *OssutilCommandSuite) TestMakeBucketIDKey(c *C) {
     c.Assert(showElapse, Equals, true)
 
     _ = os.Remove(cfile)
+
+    s.removeBucket(bucket, true, c)
 }

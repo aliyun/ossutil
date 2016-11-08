@@ -3,6 +3,7 @@ package lib
 import (
     "fmt"
     "os"
+    "time"
 
     . "gopkg.in/check.v1"
 )
@@ -25,6 +26,7 @@ func (s *OssutilCommandSuite) rawList(args []string, shortFormat, directory bool
 
 // test list buckets
 func (s *OssutilCommandSuite) TestListLoadConfig(c *C) {
+    s.SetUpBucketEnv(c)
     command := "ls"
     var args []string
     str := ""
@@ -135,6 +137,8 @@ func (s *OssutilCommandSuite) TestListWithBucketEndpoint(c *C) {
     c.Assert(showElapse, Equals, true)
 
     _ = os.Remove(cfile)
+    s.removeBucket(bucket, true, c) 
+    time.Sleep(sleepTime)
 }
 
 func (s *OssutilCommandSuite) TestListWithBucketCname(c *C) {
@@ -160,6 +164,8 @@ func (s *OssutilCommandSuite) TestListWithBucketCname(c *C) {
     c.Assert(showElapse, Equals, true)
 
     //_ = os.Remove(cfile)
+    s.removeBucket(bucket, true, c)
+    time.Sleep(sleepTime)
 }
 
 func (s *OssutilCommandSuite) TestListBuckets(c *C) {
@@ -174,6 +180,7 @@ func (s *OssutilCommandSuite) TestListBuckets(c *C) {
     // put bucket
     bucket := bucketNamePrefix + "ls" 
     s.putBucket(bucket, c)
+    time.Sleep(sleepTime)
 
     // get result
     buckets = s.listBuckets(false, c)
@@ -182,6 +189,7 @@ func (s *OssutilCommandSuite) TestListBuckets(c *C) {
 
     // remove bucket
     s.removeBucket(bucket, true, c)
+    time.Sleep(sleepTime)
 
     // get result
     buckets = s.listBuckets(false, c)
@@ -259,6 +267,9 @@ func (s *OssutilCommandSuite) TestListObjects(c *C) {
 
     objects = s.listObjects(bucket, "中文测试:#1/", false, true, c)
     c.Assert(len(objects), Equals, 2)
+
+    s.removeBucket(bucket, true, c)
+    time.Sleep(sleepTime)
 }
 
 func (s *OssutilCommandSuite) TestErrList(c *C) {
@@ -266,7 +277,7 @@ func (s *OssutilCommandSuite) TestErrList(c *C) {
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
 
-    bucket := bucketNamePrefix + "ls"
+    bucket := bucketNameNotExist 
     showElapse, err = s.rawList([]string{CloudURLToString(bucket, "")}, false, true)
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
@@ -344,4 +355,7 @@ func (s *OssutilCommandSuite) TestListBucketIDKey(c *C) {
     c.Assert(showElapse, Equals, true)
 
     _ = os.Remove(cfile)
+
+    s.removeBucket(bucket, true, c)
+    time.Sleep(sleepTime)
 }

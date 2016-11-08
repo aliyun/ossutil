@@ -2,6 +2,7 @@ package lib
 
 import (
     "os"
+    "time"
 
     . "gopkg.in/check.v1"
 )
@@ -18,6 +19,7 @@ func (s *OssutilCommandSuite) rawUpdate(force bool, language string) (bool, erro
 }
 
 func (s *OssutilCommandSuite) TestUpdate(c *C) {
+    s.SetUpBucketEnv(c)
     showElapse, err := s.rawUpdate(false, "中文")
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, false)
@@ -52,6 +54,7 @@ func (s *OssutilCommandSuite) TestAnonymousGetToFileError(c *C) {
     c.Assert(err, NotNil)
 
     s.putBucket(bucket, c)
+    time.Sleep(sleepTime)
     s.putObject(bucket, object, uploadFileName, c)
     fileName := "*"
     err = updateCommand.anonymousGetToFileRetry(bucket, object, fileName)

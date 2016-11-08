@@ -38,10 +38,10 @@ func (s *OssutilCommandSuite) rawCPWithArgs(args []string, recursive, force, upd
 }
 
 func (s *OssutilCommandSuite) TestCPObject(c *C) {
-    bucket := bucketNamePrefix + "cpsrc"
-    s.putBucket(bucket, c)
+    s.SetUpBucketEnv(c)
+    bucket := bucketNameExist 
 
-    destBucket := bucketNamePrefix + "cpdest"  
+    destBucket := bucketNameNotExist 
 
     // put object
     object := "中文" 
@@ -120,7 +120,7 @@ func (s *OssutilCommandSuite) TestCPObject(c *C) {
     c.Assert(showElapse, Equals, false)
 
     // corse bucket copy
-    s.putBucket(destBucket, c)
+    destBucket = bucketNameDest
 
     s.copyObject(bucket, object, destBucket, destObject, c)
 
@@ -163,8 +163,7 @@ func (s *OssutilCommandSuite) TestCPObject(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestErrorCP(c *C) {
-    bucket := bucketNamePrefix + "batchcp"
-    s.putBucket(bucket, c)
+    bucket := bucketNameExist 
 
     // error src_url
     showElapse, err := s.rawCP(uploadFileName, CloudURLToString("", ""), true, true, false, BigFileThreshold, CheckpointDir)
@@ -222,7 +221,7 @@ func (s *OssutilCommandSuite) TestErrorCP(c *C) {
 
 func (s *OssutilCommandSuite) TestUploadErrSrc(c *C) {
     srcBucket := bucketNamePrefix + "uploadsrc"
-    destBucket := bucketNamePrefix + "uploaddest"
+    destBucket := bucketNameNotExist 
     command := "cp"
     args := []string{uploadFileName, CloudURLToString(srcBucket, ""), CloudURLToString(destBucket, "")}
     str := ""
@@ -247,8 +246,7 @@ func (s *OssutilCommandSuite) TestUploadErrSrc(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestBatchCPObject(c *C) {
-    bucket := bucketNamePrefix + "batchcp"
-    s.putBucket(bucket, c)
+    bucket := bucketNameExist 
 
     // create local dir
     dir := "上传目录"
@@ -337,12 +335,12 @@ func (s *OssutilCommandSuite) TestBatchCPObject(c *C) {
     c.Assert(f.ModTime(), Equals, f1.ModTime())
 
     // copy files
-    destBucket := bucketNamePrefix + "destbatchcp"
+    destBucket := bucketNameNotExist 
     showElapse, err = s.rawCP(CloudURLToString(bucket, ""), CloudURLToString(destBucket, "123"), true, true, false, BigFileThreshold, CheckpointDir)
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
 
-    s.putBucket(destBucket, c)
+    destBucket = bucketNameDest
 
     showElapse, err = s.rawCP(CloudURLToString(bucket, ""), CloudURLToString(destBucket, "123"), true, true, false, BigFileThreshold, CheckpointDir)
     c.Assert(err, IsNil)
@@ -358,8 +356,7 @@ func (s *OssutilCommandSuite) TestBatchCPObject(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestCPObjectUpdate(c *C) {
-    bucket := bucketNamePrefix + "updatecp"
-    s.putBucket(bucket, c)
+    bucket := bucketNameExist 
 
     // create older file and newer file
     oldData := "old data"
@@ -432,8 +429,8 @@ func (s *OssutilCommandSuite) TestCPObjectUpdate(c *C) {
     c.Assert(str, Equals, downData)
 
     // copy object with update
-    destBucket := bucketNamePrefix + "updatedest"  
-    s.putBucket(destBucket, c)
+    //destBucket := bucketNamePrefix + "updatedest"  
+    destBucket := bucketNameDest 
 
     destData := "data for dest bucket"
     destFile := "destFile"
@@ -474,8 +471,7 @@ func (s *OssutilCommandSuite) TestResumeCPObject(c *C) {
     threshold = 1
     cpDir := "checkpoint目录" 
 
-    bucket := bucketNamePrefix + "resumecp"
-    s.putBucket(bucket, c)
+    bucket := bucketNameExist 
 
     data := "resume cp"
     s.createFile(uploadFileName, data, c)
@@ -501,7 +497,7 @@ func (s *OssutilCommandSuite) TestResumeCPObject(c *C) {
     c.Assert(str, Equals, data)
 
     // copy object
-    destBucket := bucketNamePrefix + "resumedest" 
+    destBucket := bucketNameDest 
     s.putBucket(destBucket, c)
 
     destObject := "destObject" 
@@ -516,8 +512,7 @@ func (s *OssutilCommandSuite) TestResumeCPObject(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestCPMulitSrc(c *C) {
-    bucket := bucketNamePrefix + "cpsrc"
-    s.putBucket(bucket, c)
+    bucket := bucketNameExist 
 
     // upload multi file 
     file1 := uploadFileName + "1"
@@ -540,8 +535,7 @@ func (s *OssutilCommandSuite) TestCPMulitSrc(c *C) {
     c.Assert(showElapse, Equals, false)
 
     // copy multi objects
-    destBucket := bucketNamePrefix + "multidest"
-    s.putBucket(destBucket, c)
+    destBucket := bucketNameDest 
     showElapse, err = s.rawCPWithArgs([]string{CloudURLToString(bucket, object1), CloudURLToString(bucket, object2), CloudURLToString(destBucket, "")}, false, true, false, BigFileThreshold, CheckpointDir)
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
@@ -549,8 +543,7 @@ func (s *OssutilCommandSuite) TestCPMulitSrc(c *C) {
 
 func (s *OssutilCommandSuite) TestErrUpload(c *C) {
     // src file not exist
-    bucket := bucketNamePrefix + "cpsrc"
-    s.putBucket(bucket, c)
+    bucket := bucketNameExist 
     
     showElapse, err := s.rawCP("notexistfile", CloudURLToString(bucket, ""), false, true, false, BigFileThreshold, CheckpointDir)
     c.Assert(err, NotNil)
@@ -587,8 +580,7 @@ func (s *OssutilCommandSuite) TestErrUpload(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestErrDownload(c *C) {
-    bucket := bucketNamePrefix + "cpsrc"
-    s.putBucket(bucket, c)
+    bucket := bucketNameExist 
  
     object := "object"
     s.putObject(bucket, object, uploadFileName, c)
@@ -610,11 +602,9 @@ func (s *OssutilCommandSuite) TestErrDownload(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestErrCopy(c *C) {
-    srcBucket := bucketNamePrefix + "errcpsrc"
-    s.putBucket(srcBucket, c)
+    srcBucket := bucketNameExist 
 
-    destBucket := bucketNamePrefix + "errcpdest"
-    s.putBucket(destBucket, c)
+    destBucket := bucketNameDest 
 
     // batch copy without -r
     showElapse, err := s.rawCP(CloudURLToString(srcBucket, ""), CloudURLToString(destBucket, ""), false, true, false, BigFileThreshold, CheckpointDir)
@@ -667,8 +657,7 @@ func (s *OssutilCommandSuite) TestResumeDownloadRetry(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestCPIDKey(c *C) {
-    bucket := bucketNamePrefix + "cpidkey"
-    s.putBucket(bucket, c)
+    bucket := bucketNameExist 
 
     object := "testobject" 
 

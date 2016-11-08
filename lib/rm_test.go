@@ -3,6 +3,7 @@ package lib
 import (
     "fmt"
     "os"
+    "time"
 
     . "gopkg.in/check.v1"
 )
@@ -25,8 +26,10 @@ func (s *OssutilCommandSuite) rawRemove(args []string, recursive, force, bucket 
 }
 
 func (s *OssutilCommandSuite) TestRemoveObject(c *C) {
-    bucket := bucketNamePrefix + "rm"
+    s.SetUpBucketEnv(c)
+    bucket := bucketNamePrefix + "rmb" 
     s.putBucket(bucket, c)
+    time.Sleep(sleepTime) 
 
     // put object
     object := "test_object"
@@ -43,11 +46,15 @@ func (s *OssutilCommandSuite) TestRemoveObject(c *C) {
     // list object
     objects = s.listObjects(bucket, "", false, false, c)
     c.Assert(len(objects), Equals, 0)
+
+    s.removeBucket(bucket, true, c)
+    time.Sleep(sleepTime) 
 }
 
 func (s *OssutilCommandSuite) TestRemoveObjects(c *C) {
-    bucket := bucketNamePrefix + "rm"
+    bucket := bucketNamePrefix + "rmb" 
     s.putBucket(bucket, c)
+    time.Sleep(sleepTime) 
 
     // put object
     num := 15
@@ -76,11 +83,15 @@ func (s *OssutilCommandSuite) TestRemoveObjects(c *C) {
     // list object
     objects = s.listObjects(bucket, "", false, false, c)
     c.Assert(len(objects), Equals, 0)
+
+    s.removeBucket(bucket, true, c)
+    time.Sleep(sleepTime) 
 }
 
 func (s *OssutilCommandSuite) TestRemoveBucket(c *C) {
-    bucket := bucketNamePrefix + "rm"
+    bucket := bucketNamePrefix + "rmb"
     s.putBucket(bucket, c)
+    time.Sleep(sleepTime) 
 
     // put object
     num := 15
@@ -97,6 +108,7 @@ func (s *OssutilCommandSuite) TestRemoveBucket(c *C) {
 
     // rm bucket
     s.removeBucket(bucket, true, c)
+    time.Sleep(sleepTime) 
 
     // list buckets
     buckets = s.listBuckets(false, c)
@@ -104,8 +116,9 @@ func (s *OssutilCommandSuite) TestRemoveBucket(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestRemoveEmptyBucket(c *C) {
-    bucket := bucketNamePrefix + "rm"
+    bucket := bucketNamePrefix + "rmb"
     s.putBucket(bucket, c)
+    time.Sleep(sleepTime)
 
     // list buckets
     buckets := s.listBuckets(false, c)
@@ -113,6 +126,7 @@ func (s *OssutilCommandSuite) TestRemoveEmptyBucket(c *C) {
 
     // rm bucket
     s.removeBucket(bucket, false, c)
+    time.Sleep(sleepTime)
 
     // list buckets
     buckets = s.listBuckets(false, c)
@@ -120,11 +134,12 @@ func (s *OssutilCommandSuite) TestRemoveEmptyBucket(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestRemoveNonEmptyBucket(c *C) {
-    bucket := bucketNamePrefix + "rm"
+    bucket := bucketNamePrefix + "rmb" 
     s.putBucket(bucket, c)
+    time.Sleep(sleepTime)
 
     // put object
-    object := "test_object"
+    object := "test_object_for_rm"
     s.putObject(bucket, object, uploadFileName, c)
 
     command := "rm"
@@ -147,11 +162,15 @@ func (s *OssutilCommandSuite) TestRemoveNonEmptyBucket(c *C) {
     objects := s.listObjects(bucket, "", false, false, c)
     c.Assert(len(objects), Equals, 1)
     c.Assert(objects[0], Equals, object)
+
+    s.removeBucket(bucket, true, c)
+    time.Sleep(sleepTime) 
 }
 
 func (s *OssutilCommandSuite) TestRemoveObjectBucketOption(c *C) {
-    bucket := bucketNamePrefix + "rm"
+    bucket := bucketNamePrefix + "rmb"
     s.putBucket(bucket, c)
+    time.Sleep(sleepTime)
 
     object := "test_object"
     command := "rm"
@@ -173,11 +192,13 @@ func (s *OssutilCommandSuite) TestRemoveObjectBucketOption(c *C) {
     // list buckets
     buckets := s.listBuckets(false, c)
     c.Assert(FindPos(bucket, buckets) != -1, Equals, true)
+
+    s.removeBucket(bucket, true, c)
+    time.Sleep(sleepTime) 
 }
 
 func (s *OssutilCommandSuite) TestErrRemove(c *C) {
-    bucket := bucketNamePrefix + "rm"
-    s.putBucket(bucket, c)
+    bucket := bucketNameExist 
 
     showElapse, err := s.rawRemove([]string{"oss://"}, false, true, true)
     c.Assert(err, NotNil)
@@ -217,7 +238,7 @@ func (s *OssutilCommandSuite) TestErrRemove(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestErrDeleteObject(c *C) {
-    bucketName := bucketNamePrefix + "rm"
+    bucketName := bucketNameNotExist 
 
     bucket, err := removeCommand.command.ossBucket(bucketName)
     c.Assert(err, IsNil)
@@ -233,6 +254,7 @@ func (s *OssutilCommandSuite) TestErrDeleteObject(c *C) {
 func (s *OssutilCommandSuite) TestRemoveIDKey(c *C) {
     bucket := bucketNamePrefix + "rmidkey"
     s.putBucket(bucket, c)
+    time.Sleep(sleepTime)
 
     cfile := "ossutil_test.config_boto"
     data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Endpoint]\n%s=%s[Bucket-Cname]\n%s=%s", "abc", "def", "ghi", bucket, "abc", bucket, "abc") 
@@ -268,4 +290,6 @@ func (s *OssutilCommandSuite) TestRemoveIDKey(c *C) {
     c.Assert(showElapse, Equals, true)
 
     _ = os.Remove(cfile)
+    s.removeBucket(bucket, true, c)
+    time.Sleep(sleepTime)
 }
