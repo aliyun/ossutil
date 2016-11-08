@@ -39,7 +39,7 @@ func (s *OssutilCommandSuite) TestUpdate(c *C) {
 
 func (s *OssutilCommandSuite) TestDownloadLastestBinary(c *C) {
     tempBinaryFile := ".ossutil_test_update.temp"  
-    err := updateCommand.getBinary(tempBinaryFile, Version) 
+    err := updateCommand.getBinary(tempBinaryFile, "1.0.0.Beta") 
     c.Assert(err, IsNil)
 
     _ = os.Remove(tempBinaryFile)
