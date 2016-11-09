@@ -25,7 +25,7 @@ var _ = Suite(&OssutilCommandSuite{})
 
 var (
     // Update before running test
-    endpoint         = "<testEndpoint>" 
+    endpoint         = "<testEndpoint>"
     accessKeyID      = "<testAccessKeyID>"
     accessKeySecret  = "<testAccessKeySecret>"
     stsToken         = "<testSTSToken>"
@@ -49,7 +49,7 @@ var (
     cm                  = CommandManager{}
     out                 = os.Stdout
     errout              = os.Stderr
-    sleepTime           = 3*time.Second
+    sleepTime           = 5*time.Second
 )
 
 // Run once when the suite starts running

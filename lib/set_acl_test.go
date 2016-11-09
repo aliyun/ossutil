@@ -53,6 +53,7 @@ func (s *OssutilCommandSuite) TestSetBucketACL(c *C) {
     // set acl
     for _, acl := range []string{"private", "public-read", "public-read-write"} {
         s.setBucketACL(bucket, acl, c)
+        time.Sleep(time.Second)
         bucketStat := s.getStat(bucket, "", c)
         c.Assert(bucketStat[StatACL], Equals, acl)
     }
@@ -100,6 +101,7 @@ func (s *OssutilCommandSuite) TestSetNotExistBucketACL(c *C) {
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true)
 
+    time.Sleep(sleepTime)
     bucketStat := s.getStat(bucket, "", c)
     c.Assert(bucketStat[StatACL], Equals, "public-read")
 
