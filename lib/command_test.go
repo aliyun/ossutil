@@ -39,6 +39,9 @@ var (
     resultPath          = "ossutil_test.result"
     testResultFile, _   = os.OpenFile(resultPath, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
     bucketNamePrefix    = "ossutil-test-"
+    bucketNameExist     = "nodelete-ossutil-test-normalcase"
+    bucketNameNotExist  = bucketNamePrefix + "notexistbucket"
+    bucketNameDest      = "nodelete-ossutil-test-dest"
     uploadFileName      = "ossutil_test.upload_file"
     downloadFileName    = "ossutil_test.download_file"
     inputFileName       = "ossutil_test.input_file"
@@ -46,6 +49,7 @@ var (
     cm                  = CommandManager{}
     out                 = os.Stdout
     errout              = os.Stderr
+    sleepTime           = 3*time.Second
 )
 
 // Run once when the suite starts running
@@ -57,6 +61,10 @@ func (s *OssutilCommandSuite) SetUpSuite(c *C) {
     cm.Init()
     s.configNonInteractive(c)
     s.createFile(uploadFileName, content, c)
+    s.removeBuckets(bucketNamePrefix, c)
+    s.putBucket(bucketNameExist, c)
+    s.putBucket(bucketNameDest, c)
+    time.Sleep(sleepTime)
 }
 
 func SetUpCredential() {
@@ -71,9 +79,17 @@ func SetUpCredential() {
     }
 }
 
+func (s *OssutilCommandSuite) SetUpBucketEnv(c *C) {
+    s.removeBuckets(bucketNamePrefix, c)
+    time.Sleep(sleepTime)
+}
+
 // Run before each test or benchmark starts running
 func (s *OssutilCommandSuite) TearDownSuite(c *C) {
     testLogger.Println("test command completed")
+    s.removeBucket(bucketNameExist, true, c)
+    s.removeBucket(bucketNameDest, true, c)
+    s.removeBuckets(bucketNamePrefix, c)
     _ = os.Remove(configFile)
     _ = os.Remove(resultPath)
     _ = os.Remove(uploadFileName)
@@ -84,7 +100,6 @@ func (s *OssutilCommandSuite) TearDownSuite(c *C) {
 
 // Run after each test or benchmark runs
 func (s *OssutilCommandSuite) SetUpTest(c *C) {
-    s.removeBuckets(bucketNamePrefix, c)
 }
 
 // Run once after all tests or benchmarks have finished running
@@ -324,7 +339,7 @@ func (s *OssutilCommandSuite) setObjectACL(bucket, object, acl string, recursive
 }
 
 func (s *OssutilCommandSuite) TestParseOptions(c *C) {
-    bucket := bucketNamePrefix + "cpsrc"
+    bucket := bucketNameExist 
     s.putBucket(bucket, c)
 
     s.createFile(uploadFileName, content, c)
