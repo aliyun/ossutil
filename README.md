@@ -1,4 +1,7 @@
 # Aliyun OSSUTIL 
+[![GitHub version](https://badge.fury.io/gh/aliyun%2Fossutil.svg)](https://badge.fury.io/gh/aliyun%2Fossutil)
+[![Build Status](https://travis-ci.org/aliyun/ossutil.svg?branch=master)](https://travis-ci.org/aliyun/ossutil)
+[![Coverage Status](https://coveralls.io/repos/github/aliyun/ossutil/badge.svg?branch=master)](https://coveralls.io/github/aliyun/ossutil?branch=master)
 ## 关于
 > - 此工具采用go语言，基于OSS[阿里云对象存储服务](http://www.aliyun.com/product/oss/)官方GO SDK 1.0.0 构建。
 > - 阿里云对象存储（Object Storage Service，简称OSS），是阿里云对外提供的海量，安全，低成本，高可靠的云存储服务。
