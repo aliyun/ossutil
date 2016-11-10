@@ -324,7 +324,7 @@ func (s *OssutilCommandSuite) TestBatchCPObject(c *C) {
 
     f1, err := os.Stat(downDir)
     c.Assert(err, IsNil)
-    c.Assert(f.ModTime() <= f1.ModTime(), Equals, True)
+    c.Assert(f.ModTime() <= f1.ModTime(), Equals, true)
 
     showElapse, err = s.rawCP(CloudURLToString(bucket, ""), downDir, true, false, true, BigFileThreshold, CheckpointDir)
     c.Assert(err, IsNil)
