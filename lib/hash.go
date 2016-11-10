@@ -124,24 +124,35 @@ var hashCommand = HashCommand{
         },
 	},
 }
-// function for FormatHelper interface
-func (cc *HashCommand) formatHelpForWhole() string {
-	return cc.command.formatHelpForWhole()
+
+// function for RewriteLoadConfiger interface
+func (hc *HashCommand) rewriteLoadConfig(configFile string) error {
+    // read config file, if error exist, do not print error
+    var err error
+    if hc.command.configOptions, err = LoadConfig(configFile); err != nil {
+        hc.command.configOptions = OptionMapType{}
+    }
+	return nil
 }
 
-func (cc *HashCommand) formatIndependHelp() string {
-	return cc.command.formatIndependHelp()
+// function for FormatHelper interface
+func (hc *HashCommand) formatHelpForWhole() string {
+	return hc.command.formatHelpForWhole()
+}
+
+func (hc *HashCommand) formatIndependHelp() string {
+	return hc.command.formatIndependHelp()
 }
 
 // Init simulate inheritance, and polymorphism 
-func (cc *HashCommand) Init(args []string, options OptionMapType) error {
-	return cc.command.Init(args, options, cc)
+func (hc *HashCommand) Init(args []string, options OptionMapType) error {
+	return hc.command.Init(args, options, hc)
 }
 
 // RunCommand simulate inheritance, and polymorphism
-func (cc *HashCommand) RunCommand() error {
-    hashType, _ := GetString(OptionHashType, cc.command.options)
-    path := cc.command.args[0]
+func (hc *HashCommand) RunCommand() error {
+    hashType, _ := GetString(OptionHashType, hc.command.options)
+    path := hc.command.args[0]
 
     f, err := os.Open(path)
     if err != nil {
