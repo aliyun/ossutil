@@ -11,6 +11,11 @@ import (
     "runtime"
 )
 
+var (
+    vUpdateEndpoint = updateEndpoint
+    vUpdateBucket = updateBucket
+)
+
 var specChineseUpdate = SpecText{
 
 	synopsisText: "更新ossutil",
@@ -152,7 +157,7 @@ func (uc *UpdateCommand) RunCommand() error {
 }
 
 func (uc *UpdateCommand) getLastestVersion() (string, error) {
-    if err := uc.anonymousGetToFileRetry(updateBucket, updateVersionObject, updateTmpVersionFile); err != nil {
+    if err := uc.anonymousGetToFileRetry(vUpdateBucket, vUpdateVersionObject, updateTmpVersionFile); err != nil {
         return "", err
     }
 
