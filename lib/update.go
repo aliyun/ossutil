@@ -157,7 +157,7 @@ func (uc *UpdateCommand) RunCommand() error {
 }
 
 func (uc *UpdateCommand) getLastestVersion() (string, error) {
-    if err := uc.anonymousGetToFileRetry(vUpdateBucket, vUpdateVersionObject, updateTmpVersionFile); err != nil {
+    if err := uc.anonymousGetToFileRetry(vUpdateBucket, updateVersionObject, updateTmpVersionFile); err != nil {
         return "", err
     }
 
@@ -182,7 +182,7 @@ func (uc *UpdateCommand) getLastestVersion() (string, error) {
 }
 
 func (uc *UpdateCommand) anonymousGetToFileRetry(bucketName, objectName, filePath string) error {
-    host := fmt.Sprintf("http://%s.%s/%s", bucketName, updateEndpoint, objectName)
+    host := fmt.Sprintf("http://%s.%s/%s", bucketName, vUpdateEndpoint, objectName)
 	retryTimes, _ := GetInt(OptionRetryTimes, uc.command.options)
 	for i := 1; ; i++ {
         err := uc.ossAnonymousGetToFile(host, filePath)
@@ -282,7 +282,7 @@ func (uc *UpdateCommand) getBinary(filePath, version string) error {
 
     object = version + "/" + object
 
-    if err := uc.anonymousGetToFileRetry(updateBucket, object, filePath); err != nil {
+    if err := uc.anonymousGetToFileRetry(vUpdateBucket, object, filePath); err != nil {
         return err
     }
 
