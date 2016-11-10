@@ -246,7 +246,9 @@ func (s *OssutilCommandSuite) TestUploadErrSrc(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestBatchCPObject(c *C) {
-    bucket := bucketNameExist 
+    bucket := bucketNamePrefix + "bcp" 
+    s.putBucket(bucket, c)
+    time.Sleep(sleepTime) 
 
     // create local dir
     dir := "上传目录"
@@ -352,6 +354,9 @@ func (s *OssutilCommandSuite) TestBatchCPObject(c *C) {
     // remove dir
     _ = os.RemoveAll(dir)
     _ = os.RemoveAll(downDir)
+
+    s.removeBucket(bucket, true, c)
+    time.Sleep(sleepTime) 
 }
 
 func (s *OssutilCommandSuite) TestCPObjectUpdate(c *C) {
