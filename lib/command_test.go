@@ -111,6 +111,7 @@ func (s *OssutilCommandSuite) TearDownSuite(c *C) {
     _ = os.Remove(downloadFileName)
     os.Stdout = out
     os.Stderr = errout
+    time.Sleep(sleepTime)
 }
 
 // Run after each test or benchmark runs
