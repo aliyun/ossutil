@@ -62,6 +62,9 @@ func (s *OssutilCommandSuite) SetUpSuite(c *C) {
     s.configNonInteractive(c)
     s.createFile(uploadFileName, content, c)
     s.removeBuckets(bucketNamePrefix, c)
+    s.removeBucket(bucketNameExist, true, c)
+    s.removeBucket(bucketNameDest, true, c)
+    time.Sleep(sleepTime)
     s.putBucket(bucketNameExist, c)
     s.putBucket(bucketNameDest, c)
     time.Sleep(sleepTime)
@@ -196,7 +199,11 @@ func (s *OssutilCommandSuite) removeBucket(bucket string, clearObjects bool, c *
     args := []string{CloudURLToString(bucket, "")}
     showElapse, err := s.rawRemove(args, clearObjects, true, true)
     if err != nil {
+        os.Stdout = out 
+        os.Stderr = errout 
         fmt.Println(err)
+        os.Stdout = testLogFile 
+        os.Stderr = testLogFile 
         c.Assert(err.(oss.ServiceError).Code == "NoSuchBucket", Equals, true)
         c.Assert(showElapse, Equals, false)
     } else {
