@@ -390,6 +390,7 @@ func (s *OssutilCommandSuite) TestCPObjectUpdate(c *C) {
     showElapse, err := s.rawCP(oldFile, CloudURLToString(bucket, object), false, false, true, BigFileThreshold, CheckpointDir)  
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true)
+    time.Sleep(time.Second)
 
     s.getObject(bucket, object, downloadFileName, c)
     str = s.readFile(downloadFileName, c) 

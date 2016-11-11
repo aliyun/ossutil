@@ -49,6 +49,7 @@ func (s *OssutilCommandSuite) TestMakeBucket(c *C) {
     s.SetUpBucketEnv(c)
     bucket := bucketNamePrefix + "mb" 
     s.putBucket(bucket, c)
+    time.Sleep(sleepTime)
 
     // put bucket already exists
     s.putBucket(bucket, c)
@@ -108,7 +109,7 @@ func (s *OssutilCommandSuite) TestMakeBucketErrorName(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestMakeBucketErrorACL(c *C) {
-    bucket := bucketNamePrefix + "mb" 
+    bucket := bucketNamePrefix + "mb1" 
     for _, language := range []string{DefaultLanguage, EnglishLanguage, LEnglishLanguage, "unknown"} {
         for _, acl := range []string{"default", "def", "erracl"} {
             showElapse, err := s.rawPutBucketWithACLLanguage([]string{CloudURLToString(bucket, "")}, acl, language)
@@ -124,7 +125,7 @@ func (s *OssutilCommandSuite) TestMakeBucketErrorACL(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestMakeBucketErrorOption(c *C) {
-    bucket := bucketNamePrefix + "mb"
+    bucket := bucketNamePrefix + "mb2"
     command := "mb"
     args := []string{CloudURLToString(bucket, "")}
     str := ""

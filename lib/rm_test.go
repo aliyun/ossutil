@@ -52,7 +52,7 @@ func (s *OssutilCommandSuite) TestRemoveObject(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestRemoveObjects(c *C) {
-    bucket := bucketNamePrefix + "rmb" 
+    bucket := bucketNamePrefix + "rmb1" 
     s.putBucket(bucket, c)
     time.Sleep(sleepTime) 
 
@@ -89,7 +89,7 @@ func (s *OssutilCommandSuite) TestRemoveObjects(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestRemoveBucket(c *C) {
-    bucket := bucketNamePrefix + "rmb"
+    bucket := bucketNamePrefix + "rmb2"
     s.putBucket(bucket, c)
     time.Sleep(sleepTime) 
 
@@ -116,7 +116,7 @@ func (s *OssutilCommandSuite) TestRemoveBucket(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestRemoveEmptyBucket(c *C) {
-    bucket := bucketNamePrefix + "rmb"
+    bucket := bucketNamePrefix + "rmb3"
     s.putBucket(bucket, c)
     time.Sleep(sleepTime)
 
@@ -134,7 +134,7 @@ func (s *OssutilCommandSuite) TestRemoveEmptyBucket(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestRemoveNonEmptyBucket(c *C) {
-    bucket := bucketNamePrefix + "rmb" 
+    bucket := bucketNamePrefix + "rmb4" 
     s.putBucket(bucket, c)
     time.Sleep(sleepTime)
 
@@ -168,7 +168,7 @@ func (s *OssutilCommandSuite) TestRemoveNonEmptyBucket(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestRemoveObjectBucketOption(c *C) {
-    bucket := bucketNamePrefix + "rmb"
+    bucket := bucketNamePrefix + "rmb5"
     s.putBucket(bucket, c)
     time.Sleep(sleepTime)
 

@@ -42,7 +42,7 @@ func (s *OssutilCommandSuite) rawSetACLWithArgs(args []string, recursive, bucket
 
 func (s *OssutilCommandSuite) TestSetBucketACL(c *C) {
     s.SetUpBucketEnv(c)
-    bucket := bucketNamePrefix + "acl" 
+    bucket := bucketNamePrefix + "acl1" 
     s.putBucket(bucket, c)
     time.Sleep(sleepTime)
 
@@ -71,7 +71,7 @@ func (s *OssutilCommandSuite) TestSetBucketACL(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestSetBucketErrorACL(c *C) {
-    bucket := bucketNamePrefix + "acl" 
+    bucket := bucketNamePrefix + "acl2" 
     s.putBucket(bucket, c)
 
     for _, acl := range []string{"default", "def", "erracl", "私有"} {
@@ -120,7 +120,7 @@ func (s *OssutilCommandSuite) TestSetNotExistBucketACL(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestSetBucketEmptyACL(c *C) {
-    bucket := bucketNamePrefix + "acl" 
+    bucket := bucketNamePrefix + "acl3" 
     s.putBucket(bucket, c)
     time.Sleep(sleepTime)
 
