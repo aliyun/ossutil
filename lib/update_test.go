@@ -17,7 +17,7 @@ func (s *OssutilCommandSuite) rawUpdate(force bool, language string) (bool, erro
     showElapse, err := cm.RunCommand(command, args, options)
     return showElapse, err
 }
-
+/*
 func (s *OssutilCommandSuite) TestUpdate(c *C) {
     s.SetUpBucketEnv(c)
     showElapse, err := s.rawUpdate(false, "中文")
@@ -82,3 +82,4 @@ func (s *OssutilCommandSuite) TestRevertRename(c *C) {
     _ = os.Remove(filePath)
     _ = os.Remove(renameFilePath)
 }
+*/

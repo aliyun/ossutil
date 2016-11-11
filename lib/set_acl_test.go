@@ -183,7 +183,7 @@ func (s *OssutilCommandSuite) TestSetObjectACL(c *C) {
 func (s *OssutilCommandSuite) TestBatchSetObjectACL(c *C) {
     bucket := bucketNamePrefix + "bsoal" 
     s.putBucket(bucket, c)
-    time.Sleep(sleepTime) 
+    time.Sleep(2*sleepTime) 
 
     // put objects
     num := 10

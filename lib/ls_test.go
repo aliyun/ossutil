@@ -180,7 +180,7 @@ func (s *OssutilCommandSuite) TestListBuckets(c *C) {
     // put bucket
     bucket := bucketNamePrefix + "ls2" 
     s.putBucket(bucket, c)
-    time.Sleep(sleepTime)
+    time.Sleep(2*sleepTime)
 
     // get result
     buckets = s.listBuckets(false, c)
@@ -219,7 +219,7 @@ func (s *OssutilCommandSuite) TestListObjectsBucketNotExist(c *C) {
 func (s *OssutilCommandSuite) TestListObjects(c *C) {
     bucket := bucketNamePrefix + "ls3"
     s.putBucket(bucket, c)
-    time.Sleep(sleepTime)
+    time.Sleep(2*sleepTime)
 
     // "ls oss://bucket"
     objects := s.listObjects(bucket, "", false, false, c)
