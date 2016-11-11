@@ -194,6 +194,11 @@ func (s *OssutilCommandSuite) TestBatchSetObjectACL(c *C) {
         objectNames = append(objectNames, object)
     }
 
+    for _, object := range objectNames {
+        objectStat := s.getStat(bucket, object, c)
+        c.Assert(objectStat[StatACL], Equals, "default")
+    }
+
     // without --force option
     s.setObjectACL(bucket, "", "public-read-write", true, false, c)
     time.Sleep(time.Second)

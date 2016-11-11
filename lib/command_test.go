@@ -94,7 +94,7 @@ func SetUpCredential() {
     }
     os.Stdout = out 
     os.Stderr = errout 
-    fmt.Println(endpoint)
+    fmt.Println("&&&&&&&&", endpoint)
     os.Stdout = testLogFile 
     os.Stderr = testLogFile 
 }
