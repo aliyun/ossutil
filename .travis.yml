@@ -10,7 +10,7 @@ install:
 - go get github.com/aliyun/aliyun-oss-go-sdk/oss
 script:
 - cd lib
-- go test -v -covermode=count -coverprofile=coverage.out
+- travis_wait 120 go test -v -covermode=count -coverprofile=coverage.out -timeout=120m
 - "$HOME/gopath/bin/goveralls -coverprofile=coverage.out -service=travis-ci"
 env:
   global:
