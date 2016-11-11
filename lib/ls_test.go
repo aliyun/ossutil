@@ -142,7 +142,7 @@ func (s *OssutilCommandSuite) TestListWithBucketEndpoint(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestListWithBucketCname(c *C) {
-    bucket := bucketNamePrefix + "ls"
+    bucket := bucketNamePrefix + "ls1"
     s.putBucket(bucket, c)
 
     cfile := "ossutil_test.config_boto"
@@ -178,7 +178,7 @@ func (s *OssutilCommandSuite) TestListBuckets(c *C) {
     c.Assert(len(buckets), Equals, bucketNum)
 
     // put bucket
-    bucket := bucketNamePrefix + "ls" 
+    bucket := bucketNamePrefix + "ls2" 
     s.putBucket(bucket, c)
     time.Sleep(sleepTime)
 
@@ -217,8 +217,9 @@ func (s *OssutilCommandSuite) TestListObjectsBucketNotExist(c *C) {
 
 // list objects
 func (s *OssutilCommandSuite) TestListObjects(c *C) {
-    bucket := bucketNamePrefix + "ls"
+    bucket := bucketNamePrefix + "ls3"
     s.putBucket(bucket, c)
+    time.Sleep(sleepTime)
 
     // "ls oss://bucket"
     objects := s.listObjects(bucket, "", false, false, c)
@@ -323,7 +324,7 @@ func (s *OssutilCommandSuite) TestListIDKey(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestListBucketIDKey(c *C) {
-    bucket := bucketNamePrefix + "lsidkey"
+    bucket := bucketNamePrefix + "lsidkey1"
     s.putBucket(bucket, c)
 
     cfile := "ossutil_test.config_boto"

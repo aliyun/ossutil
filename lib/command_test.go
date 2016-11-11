@@ -49,7 +49,7 @@ var (
     cm                  = CommandManager{}
     out                 = os.Stdout
     errout              = os.Stderr
-    sleepTime           = time.Second
+    sleepTime           = 3*time.Second
 )
 
 // Run once when the suite starts running
