@@ -50,8 +50,12 @@ func (s *OssutilCommandSuite) TestDownloadLastestBinary(c *C) {
 func (s *OssutilCommandSuite) TestAnonymousGetToFileError(c *C) {
     bucket := bucketNamePrefix + "update"
     object := "object"
+    os.Stdout = out 
+    os.Stderr = errout 
     err := updateCommand.anonymousGetToFileRetry(bucket, object, object)
     c.Assert(err, NotNil)
+    os.Stdout = testLogFile 
+    os.Stderr = testLogFile 
 
     s.putBucket(bucket, c)
     time.Sleep(sleepTime)

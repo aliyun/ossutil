@@ -235,7 +235,8 @@ func (uc *UpdateCommand) updateVersion(version, language string) error {
 
     // download the binary of the specified version
     if err := uc.getBinary(filePath, version); err != nil {
-        uc.revertRename(filePath, renameFilePath)
+        err1 := uc.revertRename(filePath, renameFilePath)
+        fmt.Println("err1:", err1)
         return fmt.Errorf("download binary of version: %s error, %s", version, err.Error())
     }
 
@@ -260,9 +261,14 @@ func (uc *UpdateCommand) updateVersion(version, language string) error {
     return nil
 }
 
-func (uc *UpdateCommand) revertRename(filePath, renameFilePath string) {
-    os.Remove(filePath)
-    os.Rename(renameFilePath, filePath)
+func (uc *UpdateCommand) revertRename(filePath, renameFilePath string) error {
+    if err := os.Remove(filePath); err != nil {
+        return err
+    }
+    if err := os.Rename(renameFilePath, filePath); err != nil {
+        return err
+    }
+    return nil
 }
 
 func (uc *UpdateCommand) getBinary(filePath, version string) error {
