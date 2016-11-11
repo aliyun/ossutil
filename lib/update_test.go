@@ -1,11 +1,11 @@
 package lib 
 
 import (
-    "os"
-    "time"
-    "fmt"
+    //"os"
+    //"time"
+    //"fmt"
 
-    . "gopkg.in/check.v1"
+    //. "gopkg.in/check.v1"
 )
 
 func (s *OssutilCommandSuite) rawUpdate(force bool, language string) (bool, error) {
@@ -19,6 +19,7 @@ func (s *OssutilCommandSuite) rawUpdate(force bool, language string) (bool, erro
     return showElapse, err
 }
 
+/*
 func (s *OssutilCommandSuite) TestUpdate(c *C) {
     s.SetUpBucketEnv(c)
     showElapse, err := s.rawUpdate(false, "中文")
@@ -85,4 +86,4 @@ func (s *OssutilCommandSuite) TestRevertRename(c *C) {
     _ = os.Remove(filePath)
     _ = os.Remove(renameFilePath)
 }
-
+*/
