@@ -146,7 +146,7 @@ func (s *OssutilCommandSuite) TestListWithBucketCname(c *C) {
     s.putBucket(bucket, c)
 
     cfile := "ossutil_test.config_boto"
-    data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Endpoint]\n%s=%s\n[Bucket-Cname]\n%s=%s", "abc", accessKeyID, accessKeySecret, bucket, "abc", bucket, bucket + "." +endpoint) 
+    data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Endpoint]\n%s=%s\n[Bucket-Cname]\n%s=%s", "abc", accessKeyID, accessKeySecret, bucket, "abc", bucket, bucket + "." + endpoint) 
     s.createFile(cfile, data, c)
 
     command := "ls"

@@ -74,6 +74,12 @@ func SetUpCredential() {
     if endpoint == "<testEndpoint>" {
         endpoint = os.Getenv("OSS_TEST_ENDPOINT") 
     }
+    if strings.HasPrefix(endpoint, "https://") {
+        endpoint = endpoint[8:]
+    }
+    if strings.HasPrefix(endpoint, "http://") {
+        endpoint = endpoint[7:]
+    }
     if accessKeyID == "<testAccessKeyID>" {
         accessKeyID = os.Getenv("OSS_TEST_ACCESS_KEY_ID")
     }
@@ -88,8 +94,7 @@ func SetUpCredential() {
     }
     os.Stdout = out 
     os.Stderr = errout 
-    fmt.Println(vUpdateEndpoint)
-    fmt.Println(vUpdateBucket)
+    fmt.Println(endpoint)
     os.Stdout = testLogFile 
     os.Stderr = testLogFile 
 }
