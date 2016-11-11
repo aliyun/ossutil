@@ -163,7 +163,7 @@ func (s *OssutilCommandSuite) TestListWithBucketCname(c *C) {
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true)
 
-    //_ = os.Remove(cfile)
+    _ = os.Remove(cfile)
     s.removeBucket(bucket, true, c)
     time.Sleep(sleepTime)
 }

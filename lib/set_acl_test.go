@@ -137,6 +137,8 @@ func (s *OssutilCommandSuite) TestSetBucketEmptyACL(c *C) {
 
 func (s *OssutilCommandSuite) TestSetObjectACL(c *C) {
     bucket := bucketNameExist 
+    s.putBucket(bucket, c)
+    time.Sleep(sleepTime)
 
     object := "未上传的文件"
 

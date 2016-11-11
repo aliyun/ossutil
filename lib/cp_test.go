@@ -309,6 +309,8 @@ func (s *OssutilCommandSuite) TestBatchCPObject(c *C) {
     os.Stdout = testLogFile 
     os.Stderr = testLogFile 
 
+    time.Sleep(2*sleepTime)
+
     for _, filePath := range filePaths {
         s.getStat(bucket, filePath, c)
     }
