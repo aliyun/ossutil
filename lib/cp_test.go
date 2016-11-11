@@ -282,6 +282,8 @@ func (s *OssutilCommandSuite) TestBatchCPObject(c *C) {
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true) 
 
+    time.Sleep(sleepTime)
+
     s.getStat(bucket, subdir + "/", c)
 
     // remove object
