@@ -222,6 +222,12 @@ func (s *OssutilCommandSuite) removeBucket(bucket string, clearObjects bool, c *
     args := []string{CloudURLToString(bucket, "")}
     showElapse, err := s.rawRemove(args, clearObjects, true, true)
     if err != nil {
+        os.Stdout = out 
+        os.Stderr = errout 
+        fmt.Println("bucket:", bucket) 
+        fmt.Println("err:", err) 
+        os.Stdout = testLogFile 
+        os.Stderr = testLogFile 
         c.Assert(err.(oss.ServiceError).Code == "NoSuchBucket", Equals, true)
         c.Assert(showElapse, Equals, false)
     } else {
