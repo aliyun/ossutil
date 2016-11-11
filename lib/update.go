@@ -236,7 +236,7 @@ func (uc *UpdateCommand) updateVersion(version, language string) error {
     // download the binary of the specified version
     if err := uc.getBinary(filePath, version); err != nil {
         fmt.Println("uc:", uc)
-        err1 := uc.revertRename(filePath, renameFilePath)
+        uc.revertRename(filePath, renameFilePath)
         return fmt.Errorf("download binary of version: %s error, %s", version, err.Error())
     }
 
