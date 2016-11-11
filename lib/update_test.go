@@ -3,6 +3,7 @@ package lib
 import (
     "os"
     "time"
+    "fmt"
 
     . "gopkg.in/check.v1"
 )
@@ -52,17 +53,19 @@ func (s *OssutilCommandSuite) TestAnonymousGetToFileError(c *C) {
     object := "object"
     os.Stdout = out 
     os.Stderr = errout 
+    fmt.Println("&&&&&&&1")
     err := updateCommand.anonymousGetToFileRetry(bucket, object, object)
     c.Assert(err, NotNil)
-    os.Stdout = testLogFile 
-    os.Stderr = testLogFile 
 
     s.putBucket(bucket, c)
     time.Sleep(sleepTime)
     s.putObject(bucket, object, uploadFileName, c)
     fileName := "*"
+    fmt.Println("&&&&&&&2")
     err = updateCommand.anonymousGetToFileRetry(bucket, object, fileName)
     c.Assert(err, NotNil)
+    os.Stdout = testLogFile 
+    os.Stderr = testLogFile 
 }
 
 func (s *OssutilCommandSuite) TestRevertRename(c *C) {

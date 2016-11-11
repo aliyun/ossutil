@@ -65,12 +65,7 @@ func (s *OssutilCommandSuite) SetUpSuite(c *C) {
     s.removeBucket(bucketNameExist, true, c)
     s.removeBucket(bucketNameDest, true, c)
     time.Sleep(sleepTime)
-    os.Stdout = out 
-    os.Stderr = errout 
     s.putBucket(bucketNameExist, c)
-    os.Stdout = testLogFile 
-    os.Stderr = testLogFile 
-
     s.putBucket(bucketNameDest, c)
     time.Sleep(sleepTime)
 }
@@ -97,11 +92,6 @@ func SetUpCredential() {
     if ub := os.Getenv("OSS_TEST_UPDATE_BUCKET"); ub != "" {
         vUpdateBucket = ub
     }
-    os.Stdout = out 
-    os.Stderr = errout 
-    fmt.Println("&&&&&&&&", endpoint)
-    os.Stdout = testLogFile 
-    os.Stderr = testLogFile 
 }
 
 func (s *OssutilCommandSuite) SetUpBucketEnv(c *C) {
