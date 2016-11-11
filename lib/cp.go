@@ -782,6 +782,7 @@ func (cc *CopyCommand) getFileList(dpath string) ([]string, error) {
         fileList = append(fileList, fileName)
         return nil
     })
+    fmt.Println(fileList)
     return fileList, err
 }
 

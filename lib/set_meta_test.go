@@ -221,6 +221,7 @@ func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
 
     // set all
     s.setObjectMeta(bucket, "非设置元信息", "X-Oss-Meta-c:c", false, false, true, true, c)
+    time.Sleep(1000000)
     for _, object := range objectNames {
         objectStat := s.getStat(bucket, object, c) 
         c.Assert(objectStat["X-Oss-Meta-A"], Equals, "A") 

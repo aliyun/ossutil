@@ -296,11 +296,17 @@ func (s *OssutilCommandSuite) TestBatchCPObject(c *C) {
         filePaths = append(filePaths, filePath)
     }
 
+    os.Stdout = out 
+    os.Stderr = errout 
+
     // upload files
     showElapse, err = s.rawCP(dir, CloudURLToString(bucket, ""), true, true, false, BigFileThreshold, CheckpointDir)
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true)
     
+    os.Stdout = testLogFile 
+    os.Stderr = testLogFile 
+
     for _, filePath := range filePaths {
         s.getStat(bucket, filePath, c)
     }
