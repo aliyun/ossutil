@@ -507,7 +507,7 @@ func (s *OssutilCommandSuite) TestStorageURL(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestErrOssDownloadFile(c *C) {
-    bucketName := bucketNamePrefix + "cmd"
+    bucketName := bucketNamePrefix + "b1"
 	bucket, err := copyCommand.command.ossBucket(bucketName)
     c.Assert(err, IsNil)
 

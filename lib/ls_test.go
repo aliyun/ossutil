@@ -199,7 +199,7 @@ func (s *OssutilCommandSuite) TestListBuckets(c *C) {
 
 // list objects with not exist bucket 
 func (s *OssutilCommandSuite) TestListObjectsBucketNotExist(c *C) {
-    bucket := bucketNamePrefix + "notexist"
+    bucket := bucketNamePrefix + "lsnotexist"
     command := "ls"
     args := []string{CloudURLToString(bucket, "")}
     str := ""

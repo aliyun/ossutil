@@ -148,8 +148,9 @@ func (s *OssutilCommandSuite) TestSetObjectMeta(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestSetNotExistObjectMeta(c *C) {
-    bucket := bucketNamePrefix + "noexit" 
+    bucket := bucketNamePrefix + "setmeta" 
     s.putBucket(bucket, c)
+    time.Sleep(sleepTime)
 
     object := "testobject-notexistone" 
     // set meta of not exist object
@@ -173,10 +174,13 @@ func (s *OssutilCommandSuite) TestSetNotExistObjectMeta(c *C) {
     c.Assert(objectStat["X-Oss-Meta-A"], Equals, "A")
 
     s.removeBucket(bucket, true, c) 
+    time.Sleep(sleepTime)
 }
 
 func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
-    bucket := bucketNameExist 
+    bucket := bucketNamePrefix + "setmeta1" 
+    s.putBucket(bucket, c)
+    time.Sleep(sleepTime)
 
     // put objects
     num := 10
@@ -253,6 +257,9 @@ func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
     showElapse, err = s.rawSetMeta(bucket, "", "a:b", true, false, true, true, DefaultLanguage)
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
+
+    s.removeBucket(bucket, true, c)
+    time.Sleep(sleepTime)
 }
 
 func (s *OssutilCommandSuite) TestErrBatchSetMeta(c *C) {
