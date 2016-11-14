@@ -356,6 +356,7 @@ func (s *OssutilCommandSuite) TestBatchCPObject(c *C) {
     showElapse, err = s.rawCP(CloudURLToString(bucket, ""), CloudURLToString(destBucket, "123"), true, true, false, BigFileThreshold, CheckpointDir)
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true)
+    time.Sleep(sleepTime)
 
     for _, filePath := range filePaths {
         s.getStat(destBucket, "123" + filePath, c)
