@@ -161,14 +161,6 @@ func (s *OssutilCommandSuite) TestSetObjectACL(c *C) {
         c.Assert(objectStat[StatACL], Equals, acl)
     }
 
-    result := []string{"default", "private", "public-read", "public-read-write"}
-    for i, acl := range []string{"default", "private", "public-read", "public-read-write"} {
-        s.setObjectACL(bucket, object, acl, false, false, c)
-        objectStat = s.getStat(bucket, object, c)
-        c.Assert(objectStat[StatACL], Equals, result[i])
-    }
-
-
     s.setObjectACL(bucket, object, "private", false, true, c)
 
     // set error acl
@@ -207,7 +199,7 @@ func (s *OssutilCommandSuite) TestBatchSetObjectACL(c *C) {
 
     for _, object := range objectNames {
         objectStat := s.getStat(bucket, object, c)
-        c.Assert(objectStat[StatACL], Equals, "default")
+        c.Assert(objectStat[StatACL], Equals, "public-read-write")
     }
 
     for _, acl := range []string{"default", "private", "public-read", "public-read-write"} {

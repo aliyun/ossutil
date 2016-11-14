@@ -44,7 +44,7 @@ func (s *OssutilCommandSuite) TestCPObject(c *C) {
     destBucket := bucketNameNotExist 
 
     // put object
-    object := "中文" 
+    object := "中文cp" 
     s.putObject(bucket, object, uploadFileName, c)
 
     // get object
