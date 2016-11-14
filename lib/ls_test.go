@@ -184,12 +184,12 @@ func (s *OssutilCommandSuite) TestListBuckets(c *C) {
 
     // put bucket
     s.putBucket(bucket, c)
-    time.Sleep(2*sleepTime)
+    time.Sleep(sleepTime)
 
     // get result
     buckets = s.listBuckets(false, c)
-    c.Assert(len(buckets), Equals, bucketNum + 1)
     c.Assert(FindPos(bucket, buckets) != -1, Equals, true)
+    c.Assert(len(buckets), Equals, bucketNum + 1)
 
     // remove bucket
     s.removeBucket(bucket, true, c)
@@ -223,7 +223,10 @@ func (s *OssutilCommandSuite) TestListObjectsBucketNotExist(c *C) {
 func (s *OssutilCommandSuite) TestListObjects(c *C) {
     bucket := bucketNamePrefix + "ls4"
     s.putBucket(bucket, c)
-    time.Sleep(2*sleepTime)
+    time.Sleep(sleepTime)
+
+    s.removeObjects(bucket, "", true, true, c) 
+    time.Sleep(sleepTime)
 
     // "ls oss://bucket"
     objects := s.listObjects(bucket, "", false, false, c)

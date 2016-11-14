@@ -78,6 +78,7 @@ func (s *OssutilCommandSuite) TestGetObjectStat(c *C) {
 
     object := "悠悠风来"
     s.putObject(bucket, object, uploadFileName, c)
+    time.Sleep(sleepTime)
 
     objectStat := s.getStat(bucket, object, c)
     c.Assert(objectStat[StatACL], Equals, "default")

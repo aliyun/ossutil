@@ -396,6 +396,7 @@ func (s *OssutilCommandSuite) TestCPObjectUpdate(c *C) {
     // put newer object
     object := "testobject"
     s.putObject(bucket, object, newFile, c)
+    time.Sleep(sleepTime)
 
     // get object
     s.getObject(bucket, object, downloadFileName, c)

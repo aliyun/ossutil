@@ -33,7 +33,7 @@ func (s *OssutilCommandSuite) rawSetMetaWithArgs(args []string, update, delete, 
         "language": &language,
     }
     showElapse, err := cm.RunCommand(command, args, options)
-    time.Sleep(time.Second)
+    time.Sleep(sleepTime)
     return showElapse, err
 }
 
@@ -285,6 +285,7 @@ func (s *OssutilCommandSuite) TestErrBatchSetMeta(c *C) {
         s.putObject(bucket, object, uploadFileName, c)
         objectNames = append(objectNames, object)
     }
+    time.Sleep(sleepTime)
 
     // update without force
     meta := "content-type:abc#X-Oss-Meta-Update:update" 
