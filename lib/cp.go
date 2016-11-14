@@ -788,9 +788,9 @@ func (cc *CopyCommand) getFileList(dpath string) ([]string, error) {
 
 func (cc *CopyCommand) uploadConsumer(bucket *oss.Bucket, destURL CloudURL, cpOption copyOptionType, chFiles <-chan fileInfoType, chFinishFiles, chSkipFiles chan<- fileInfoType, chError chan<- error) {
 	for file := range chFiles {
-        fmt.Println("file before filter": file)
+        fmt.Println("file before filter:", file)
 		if cc.filterFile(file, cpOption.cpDir) {
-            fmt.Println("file after filter": file)
+            fmt.Println("file after filter:", file)
 			skip, err := cc.uploadFile(bucket, destURL, cpOption, file)
 			if err != nil {
 				chError <- err
