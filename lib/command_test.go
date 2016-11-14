@@ -215,7 +215,7 @@ func (s *OssutilCommandSuite) removeBucket(bucket string, clearObjects bool, c *
         os.Stdout = out 
         os.Stderr = errout 
         fmt.Println("bucket:", bucket) 
-        fmt.Println("err:", err) 
+        fmt.Println("&&&err:", err) 
         os.Stdout = testLogFile 
         os.Stderr = testLogFile 
         c.Assert(err.(oss.ServiceError).Code == "NoSuchBucket" || err.(oss.ServiceError).Code == "BucketAlreadyExist", Equals, true)
