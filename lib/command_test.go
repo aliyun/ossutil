@@ -209,14 +209,11 @@ func (s *OssutilCommandSuite) getResult(c *C) ([]string) {
 }
 
 func (s *OssutilCommandSuite) removeBucket(bucket string, clearObjects bool, c *C) {
-    os.Stdout = out 
-    os.Stderr = errout 
-    if clearObjects {
-        vBucketObjectOPSleepTime = 0 
-    }
     args := []string{CloudURLToString(bucket, "")}
     showElapse, err := s.rawRemove(args, clearObjects, true, true)
     if err != nil {
+        os.Stdout = out 
+        os.Stderr = errout 
         fmt.Println("bucket:", bucket) 
         fmt.Println("err:", err) 
         os.Stdout = testLogFile 
