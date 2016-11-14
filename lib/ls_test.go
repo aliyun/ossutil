@@ -199,7 +199,7 @@ func (s *OssutilCommandSuite) TestListBuckets(c *C) {
 
 // list objects with not exist bucket 
 func (s *OssutilCommandSuite) TestListObjectsBucketNotExist(c *C) {
-    bucket := bucketNamePrefix + "lsnotexist"
+    bucket := bucketNamePrefix + "ls3"
     command := "ls"
     args := []string{CloudURLToString(bucket, "")}
     str := ""
@@ -217,7 +217,7 @@ func (s *OssutilCommandSuite) TestListObjectsBucketNotExist(c *C) {
 
 // list objects
 func (s *OssutilCommandSuite) TestListObjects(c *C) {
-    bucket := bucketNamePrefix + "ls3"
+    bucket := bucketNamePrefix + "ls4"
     s.putBucket(bucket, c)
     time.Sleep(2*sleepTime)
 
@@ -290,7 +290,7 @@ func (s *OssutilCommandSuite) TestErrList(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestListIDKey(c *C) {
-    bucket := bucketNamePrefix + "lsidkey"
+    bucket := bucketNamePrefix + "ls5"
 
     cfile := "ossutil_test.config_boto"
     data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Endpoint]\n%s=%s[Bucket-Cname]\n%s=%s", "abc", "def", "ghi", bucket, "abc", bucket, "abc") 
@@ -324,7 +324,7 @@ func (s *OssutilCommandSuite) TestListIDKey(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestListBucketIDKey(c *C) {
-    bucket := bucketNamePrefix + "lsidkey1"
+    bucket := bucketNamePrefix + "ls6"
     s.putBucket(bucket, c)
 
     cfile := "ossutil_test.config_boto"
