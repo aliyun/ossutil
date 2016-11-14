@@ -287,7 +287,7 @@ func (s *OssutilCommandSuite) TestBatchCPObject(c *C) {
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true) 
 
-    time.Sleep(sleepTime)
+    time.Sleep(2*sleepTime)
 
     s.getStat(bucket, subdir + "/", c)
 
