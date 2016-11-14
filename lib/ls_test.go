@@ -169,6 +169,10 @@ func (s *OssutilCommandSuite) TestListWithBucketCname(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestListBuckets(c *C) {
+    bucket := bucketNamePrefix + "ls2" 
+    s.removeBucket(bucket, true, c)
+    time.Sleep(sleepTime)
+
     // "ls" 
     buckets := s.listBuckets(false, c)
     bucketNum := len(buckets)
@@ -176,9 +180,9 @@ func (s *OssutilCommandSuite) TestListBuckets(c *C) {
     // "ls -s"
     buckets = s.listBuckets(true, c)
     c.Assert(len(buckets), Equals, bucketNum)
+    c.Assert(FindPos(bucket, buckets) != -1, Equals, true)
 
     // put bucket
-    bucket := bucketNamePrefix + "ls2" 
     s.putBucket(bucket, c)
     time.Sleep(2*sleepTime)
 
