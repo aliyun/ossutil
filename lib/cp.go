@@ -788,10 +788,10 @@ func (cc *CopyCommand) getFileList(dpath string) ([]string, error) {
 
 func (cc *CopyCommand) uploadConsumer(bucket *oss.Bucket, destURL CloudURL, cpOption copyOptionType, chFiles <-chan fileInfoType, chFinishFiles, chSkipFiles chan<- fileInfoType, chError chan<- error) {
 	for file := range chFiles {
-        fmt.Println("file before filter:", file)
 		if cc.filterFile(file, cpOption.cpDir) {
-            fmt.Println("file after filter:", file)
 			skip, err := cc.uploadFile(bucket, destURL, cpOption, file)
+            fmt.Println("file after filter:", file)
+            fmt.Println("error:", err)
 			if err != nil {
 				chError <- err
 				return
@@ -904,6 +904,7 @@ func (cc *CopyCommand) confirm(str string) bool {
 }
 
 func (cc *CopyCommand) ossPutObjectRetry(bucket *oss.Bucket, objectName string, content string) error {
+    fmt.Println("&&&:", objectName)
 	retryTimes, _ := GetInt(OptionRetryTimes, cc.command.options)
 	for i := 1; ; i++ {
 		err := bucket.PutObject(objectName, strings.NewReader(content))
@@ -917,6 +918,7 @@ func (cc *CopyCommand) ossPutObjectRetry(bucket *oss.Bucket, objectName string, 
 }
 
 func (cc *CopyCommand) ossUploadFileRetry(bucket *oss.Bucket, objectName string, filePath string) error {
+    fmt.Println("&&&:", objectName)
 	retryTimes, _ := GetInt(OptionRetryTimes, cc.command.options)
 	for i := 1; ; i++ {
 		err := bucket.PutObjectFromFile(objectName, filePath)

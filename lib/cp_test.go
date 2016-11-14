@@ -321,9 +321,9 @@ func (s *OssutilCommandSuite) TestBatchCPObject(c *C) {
 
     time.Sleep(10*time.Second)
 
-    for _, filePath := range filePaths {
+    /*for _, filePath := range filePaths {
         s.getStat(bucket, filePath, c)
-    }
+    }*/
 
     // get files
     downDir := "下载目录"
