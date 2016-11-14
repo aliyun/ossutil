@@ -102,9 +102,9 @@ func (s *OssutilCommandSuite) SetUpBucketEnv(c *C) {
 // Run before each test or benchmark starts running
 func (s *OssutilCommandSuite) TearDownSuite(c *C) {
     testLogger.Println("test command completed")
-    s.removeBucket(bucketNameExist, true, c)
-    s.removeBucket(bucketNameDest, true, c)
-    s.removeBuckets(bucketNamePrefix, c)
+    //s.removeBucket(bucketNameExist, true, c)
+    //s.removeBucket(bucketNameDest, true, c)
+    //s.removeBuckets(bucketNamePrefix, c)
     _ = os.Remove(configFile)
     _ = os.Remove(resultPath)
     _ = os.Remove(uploadFileName)
