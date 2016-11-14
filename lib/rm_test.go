@@ -84,6 +84,9 @@ func (s *OssutilCommandSuite) TestRemoveObjects(c *C) {
     objects = s.listObjects(bucket, "", false, false, c)
     c.Assert(len(objects), Equals, 0)
 
+    s.removeObjects(bucket, "", true, true, c)
+    time.Sleep(sleepTime)
+
     s.removeBucket(bucket, true, c)
     time.Sleep(sleepTime) 
 }
@@ -163,7 +166,11 @@ func (s *OssutilCommandSuite) TestRemoveNonEmptyBucket(c *C) {
     c.Assert(len(objects), Equals, 1)
     c.Assert(objects[0], Equals, object)
 
-    s.removeBucket(bucket, true, c)
+    // remove objects with buckets
+    args = []string{CloudURLToString(bucket, "")}
+    showElapse, err := s.rawRemove(args, true, true, true)
+    c.Assert(err, IsNil)
+    c.Assert(showElapse, Equals, true)
     time.Sleep(sleepTime) 
 }
 
