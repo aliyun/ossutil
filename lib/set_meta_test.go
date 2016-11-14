@@ -148,9 +148,7 @@ func (s *OssutilCommandSuite) TestSetObjectMeta(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestSetNotExistObjectMeta(c *C) {
-    bucket := bucketNamePrefix + "setmeta" 
-    s.putBucket(bucket, c)
-    time.Sleep(sleepTime)
+    bucket := bucketNameExist 
 
     object := "testobject-notexistone" 
     // set meta of not exist object
@@ -165,6 +163,7 @@ func (s *OssutilCommandSuite) TestSetNotExistObjectMeta(c *C) {
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
 
+    object = "testobject"
     s.putObject(bucket, object, uploadFileName, c)
 
     s.setObjectMeta(bucket, object, "x-oss-object-acl:private#X-Oss-Meta-A:A", true, false, false, true, c)
@@ -172,9 +171,6 @@ func (s *OssutilCommandSuite) TestSetNotExistObjectMeta(c *C) {
     objectStat := s.getStat(bucket, object, c) 
     c.Assert(objectStat[StatACL], Equals, "private") 
     c.Assert(objectStat["X-Oss-Meta-A"], Equals, "A")
-
-    s.removeBucket(bucket, true, c) 
-    time.Sleep(sleepTime)
 }
 
 func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
@@ -228,8 +224,12 @@ func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
     }
 
     // set all
+    os.Stdout = out 
+    os.Stderr = errout 
     s.setObjectMeta(bucket, "非设置元信息", "X-Oss-Meta-c:c", false, false, true, true, c)
     time.Sleep(2*sleepTime)
+    os.Stdout = testLogFile 
+    os.Stderr = testLogFile 
 
     for _, object := range objectNames {
         objectStat := s.getStat(bucket, object, c) 
