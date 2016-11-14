@@ -151,6 +151,7 @@ func (s *OssutilCommandSuite) TestSetObjectACL(c *C) {
 
     object = "newobject"
     s.putObject(bucket, object, uploadFileName, c)
+    time.Sleep(sleepTime)
 
     //get object acl
     objectStat := s.getStat(bucket, object, c)

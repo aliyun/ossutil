@@ -180,7 +180,7 @@ func (s *OssutilCommandSuite) TestListBuckets(c *C) {
     // "ls -s"
     buckets = s.listBuckets(true, c)
     c.Assert(len(buckets), Equals, bucketNum)
-    c.Assert(FindPos(bucket, buckets) != -1, Equals, true)
+    c.Assert(FindPos(bucket, buckets) == -1, Equals, true)
 
     // put bucket
     s.putBucket(bucket, c)
