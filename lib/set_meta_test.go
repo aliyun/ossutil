@@ -149,6 +149,8 @@ func (s *OssutilCommandSuite) TestSetObjectMeta(c *C) {
 
 func (s *OssutilCommandSuite) TestSetNotExistObjectMeta(c *C) {
     bucket := bucketNameExist 
+    s.putBucket(bucket, c)
+    time.Sleep(sleepTime)
 
     object := "testobject-notexistone" 
     // set meta of not exist object
@@ -364,6 +366,8 @@ func (s *OssutilCommandSuite) TestGetOSSOption(c *C) {
 
 func (s *OssutilCommandSuite) TestSetMetaIDKey(c *C) {
     bucket := bucketNameExist 
+    s.putBucket(bucket, c)
+    time.Sleep(sleepTime)
 
     object := "testobject" 
     s.putObject(bucket, object, uploadFileName, c)
