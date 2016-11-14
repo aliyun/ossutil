@@ -95,8 +95,8 @@ func SetUpCredential() {
 }
 
 func (s *OssutilCommandSuite) SetUpBucketEnv(c *C) {
-    s.removeBuckets(bucketNamePrefix, c)
-    time.Sleep(sleepTime)
+    //s.removeBuckets(bucketNamePrefix, c)
+    //time.Sleep(sleepTime)
 }
 
 // Run before each test or benchmark starts running
