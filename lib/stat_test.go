@@ -95,7 +95,7 @@ func (s *OssutilCommandSuite) TestGetStatNotExist(c *C) {
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
 
-    bucket := bucketNamePrefix + "stat4" 
+    bucket = bucketNamePrefix + "stat4" 
     s.putBucket(bucket, c)
     time.Sleep(sleepTime) 
 
