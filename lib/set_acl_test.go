@@ -211,7 +211,7 @@ func (s *OssutilCommandSuite) TestBatchSetObjectACL(c *C) {
     time.Sleep(2*sleepTime)
 
     for _, object := range objectNames {
-        objectStat := s.getStat(bucket, object, c)
+        s.getStat(bucket, object, c)
     }
 
     for _, acl := range []string{"default", "private", "public-read", "public-read-write"} {
