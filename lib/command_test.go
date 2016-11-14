@@ -207,7 +207,7 @@ func (s *OssutilCommandSuite) getResult(c *C) ([]string) {
     }
     return result 
 }
-/*
+
 func (s *OssutilCommandSuite) removeBucket(bucket string, clearObjects bool, c *C) {
     args := []string{CloudURLToString(bucket, "")}
     showElapse, err := s.rawRemove(args, clearObjects, true, true)
@@ -218,28 +218,7 @@ func (s *OssutilCommandSuite) removeBucket(bucket string, clearObjects bool, c *
         fmt.Println("err:", err) 
         os.Stdout = testLogFile 
         os.Stderr = testLogFile 
-        c.Assert(err.(oss.ServiceError).Code == "NoSuchBucket", Equals, true)
-        c.Assert(showElapse, Equals, false)
-    } else {
-        c.Assert(showElapse, Equals, true)
-    }
-}
-*/
-func (s *OssutilCommandSuite) removeBucket(bucket string, clearObjects bool, c *C) {
-    if clearObjects {
-        s.removeObjects(bucket, "", true, true, c) 
-        time.Sleep(time.Second)
-    }
-    args := []string{CloudURLToString(bucket, "")}
-    showElapse, err := s.rawRemove(args, false, true, true)
-    if err != nil {
-        os.Stdout = out 
-        os.Stderr = errout 
-        fmt.Println("bucket:", bucket) 
-        fmt.Println("err:", err) 
-        os.Stdout = testLogFile 
-        os.Stderr = testLogFile 
-        c.Assert(err.(oss.ServiceError).Code == "NoSuchBucket", Equals, true)
+        c.Assert(err.(oss.ServiceError).Code == "NoSuchBucket" || err.(oss.ServiceError).Code == "BucketAlreadyExist", Equals, true)
         c.Assert(showElapse, Equals, false)
     } else {
         c.Assert(showElapse, Equals, true)
