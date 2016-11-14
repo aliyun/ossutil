@@ -228,7 +228,7 @@ func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
     // set all
     os.Stdout = out 
     os.Stderr = errout 
-    s.setObjectMeta(bucket, "非设置元信息", "X-Oss-Meta-c:c", false, false, true, true, c)
+    s.setObjectMeta(bucket, "非设置元信息", "X-Oss-Meta-M:c", false, false, true, true, c)
     time.Sleep(2*sleepTime)
     os.Stdout = testLogFile 
     os.Stderr = testLogFile 
@@ -237,7 +237,7 @@ func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
         objectStat := s.getStat(bucket, object, c) 
         //c.Assert(objectStat["X-Oss-Meta-A"], Equals, "A") 
         //c.Assert(objectStat["X-Oss-Meta-B"], Equals, "b")
-        _, ok := objectStat["X-Oss-Meta-C"]
+        _, ok := objectStat["X-Oss-Meta-M"]
         c.Assert(ok, Equals, false)
     }
 
