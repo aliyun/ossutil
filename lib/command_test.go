@@ -49,7 +49,7 @@ var (
     cm                  = CommandManager{}
     out                 = os.Stdout
     errout              = os.Stderr
-    sleepTime           = 7*time.Second
+    sleepTime           = 5*time.Second
 )
 
 // Run once when the suite starts running
@@ -95,8 +95,8 @@ func SetUpCredential() {
 }
 
 func (s *OssutilCommandSuite) SetUpBucketEnv(c *C) {
-    //s.removeBuckets(bucketNamePrefix, c)
-    //time.Sleep(sleepTime)
+    s.removeBuckets(bucketNamePrefix, c)
+    time.Sleep(sleepTime)
 }
 
 // Run before each test or benchmark starts running
@@ -209,13 +209,16 @@ func (s *OssutilCommandSuite) getResult(c *C) ([]string) {
 }
 
 func (s *OssutilCommandSuite) removeBucket(bucket string, clearObjects bool, c *C) {
+    os.Stdout = out 
+    os.Stderr = errout 
+    if clearObjects {
+        vBucketObjectOPSleepTime = 0 
+    }
     args := []string{CloudURLToString(bucket, "")}
     showElapse, err := s.rawRemove(args, clearObjects, true, true)
     if err != nil {
-        os.Stdout = out 
-        os.Stderr = errout 
         fmt.Println("bucket:", bucket) 
-        fmt.Println("&&&err:", err) 
+        fmt.Println("err:", err) 
         os.Stdout = testLogFile 
         os.Stderr = testLogFile 
         c.Assert(err.(oss.ServiceError).Code == "NoSuchBucket" || err.(oss.ServiceError).Code == "BucketAlreadyExist", Equals, true)

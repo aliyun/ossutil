@@ -169,10 +169,6 @@ func (s *OssutilCommandSuite) TestListWithBucketCname(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestListBuckets(c *C) {
-    bucket := bucketNamePrefix + "ls2" 
-    s.removeBucket(bucket, true, c)
-    time.Sleep(sleepTime)
-
     // "ls" 
     buckets := s.listBuckets(false, c)
     bucketNum := len(buckets)
@@ -180,16 +176,16 @@ func (s *OssutilCommandSuite) TestListBuckets(c *C) {
     // "ls -s"
     buckets = s.listBuckets(true, c)
     c.Assert(len(buckets), Equals, bucketNum)
-    c.Assert(FindPos(bucket, buckets) == -1, Equals, true)
 
     // put bucket
+    bucket := bucketNamePrefix + "ls2" 
     s.putBucket(bucket, c)
-    time.Sleep(sleepTime)
+    time.Sleep(2*sleepTime)
 
     // get result
     buckets = s.listBuckets(false, c)
-    c.Assert(FindPos(bucket, buckets) != -1, Equals, true)
     c.Assert(len(buckets), Equals, bucketNum + 1)
+    c.Assert(FindPos(bucket, buckets) != -1, Equals, true)
 
     // remove bucket
     s.removeBucket(bucket, true, c)
@@ -203,7 +199,7 @@ func (s *OssutilCommandSuite) TestListBuckets(c *C) {
 
 // list objects with not exist bucket 
 func (s *OssutilCommandSuite) TestListObjectsBucketNotExist(c *C) {
-    bucket := bucketNamePrefix + "ls3"
+    bucket := bucketNamePrefix + "lsnotexist"
     command := "ls"
     args := []string{CloudURLToString(bucket, "")}
     str := ""
@@ -221,12 +217,9 @@ func (s *OssutilCommandSuite) TestListObjectsBucketNotExist(c *C) {
 
 // list objects
 func (s *OssutilCommandSuite) TestListObjects(c *C) {
-    bucket := bucketNamePrefix + "ls4"
+    bucket := bucketNamePrefix + "ls3"
     s.putBucket(bucket, c)
-    time.Sleep(sleepTime)
-
-    s.removeObjects(bucket, "", true, true, c) 
-    time.Sleep(sleepTime)
+    time.Sleep(2*sleepTime)
 
     // "ls oss://bucket"
     objects := s.listObjects(bucket, "", false, false, c)
@@ -297,7 +290,7 @@ func (s *OssutilCommandSuite) TestErrList(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestListIDKey(c *C) {
-    bucket := bucketNamePrefix + "ls5"
+    bucket := bucketNamePrefix + "lsidkey"
 
     cfile := "ossutil_test.config_boto"
     data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Endpoint]\n%s=%s[Bucket-Cname]\n%s=%s", "abc", "def", "ghi", bucket, "abc", bucket, "abc") 
@@ -331,7 +324,7 @@ func (s *OssutilCommandSuite) TestListIDKey(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestListBucketIDKey(c *C) {
-    bucket := bucketNamePrefix + "ls6"
+    bucket := bucketNamePrefix + "lsidkey1"
     s.putBucket(bucket, c)
 
     cfile := "ossutil_test.config_boto"

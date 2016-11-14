@@ -30,9 +30,7 @@ func (s *OssutilCommandSuite) rawGetStatWithArgs(args []string) (bool, error) {
 
 func (s *OssutilCommandSuite) TestStatErrArgc(c *C) {
     s.SetUpBucketEnv(c)
-    bucket := bucketNamePrefix + "stat1" 
-    s.putBucket(bucket, c)
-    time.Sleep(sleepTime) 
+    bucket := bucketNameExist 
 
     command := "stat"
     args := []string{CloudURLToString(bucket, ""), CloudURLToString(bucket, "")}
@@ -47,13 +45,10 @@ func (s *OssutilCommandSuite) TestStatErrArgc(c *C) {
     showElapse, err := cm.RunCommand(command, args, options)
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
-
-    s.removeBucket(bucket, true, c)
-    time.Sleep(sleepTime) 
 }
 
 func (s *OssutilCommandSuite) TestGetBucketStat(c *C) {
-    bucket := bucketNamePrefix + "stat2" 
+    bucket := bucketNamePrefix + "stat" 
     s.putBucket(bucket, c)
     time.Sleep(2*sleepTime)
 
@@ -72,22 +67,16 @@ func (s *OssutilCommandSuite) TestGetBucketStat(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestGetObjectStat(c *C) {
-    bucket := bucketNamePrefix + "stat3" 
-    s.putBucket(bucket, c)
-    time.Sleep(sleepTime) 
+    bucket := bucketNameExist 
 
     object := "悠悠风来"
     s.putObject(bucket, object, uploadFileName, c)
-    time.Sleep(sleepTime)
 
     objectStat := s.getStat(bucket, object, c)
     c.Assert(objectStat[StatACL], Equals, "default")
     c.Assert(len(objectStat["Etag"]), Equals, 32)
     c.Assert(objectStat["Last-Modified"] != "", Equals, true)
     c.Assert(objectStat[StatOwner] != "", Equals, true)
-
-    s.removeBucket(bucket, true, c)
-    time.Sleep(sleepTime) 
 }
 
 func (s *OssutilCommandSuite) TestGetStatNotExist(c *C) {
@@ -96,10 +85,7 @@ func (s *OssutilCommandSuite) TestGetStatNotExist(c *C) {
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
 
-    bucket = bucketNamePrefix + "stat4" 
-    s.putBucket(bucket, c)
-    time.Sleep(sleepTime) 
-
+    bucket = bucketNameExist
     showElapse, err = s.rawGetStat(bucket, "")
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true)
@@ -115,15 +101,10 @@ func (s *OssutilCommandSuite) TestGetStatNotExist(c *C) {
     c.Assert(showElapse, Equals, true)
 
     s.removeObjects(bucket, object, true, true, c)
-
-    s.removeBucket(bucket, true, c)
-    time.Sleep(sleepTime) 
 }
 
 func (s *OssutilCommandSuite) TestGetStatRetryTimes(c *C) {
-    bucket := bucketNamePrefix + "stat5" 
-    s.putBucket(bucket, c)
-    time.Sleep(sleepTime) 
+    bucket := bucketNameExist 
 
     command := "stat"
     args := []string{CloudURLToString(bucket, "")}
@@ -140,9 +121,6 @@ func (s *OssutilCommandSuite) TestGetStatRetryTimes(c *C) {
     showElapse, err := cm.RunCommand(command, args, options)
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true)
-
-    s.removeBucket(bucket, true, c)
-    time.Sleep(sleepTime) 
 }
 
 func (s *OssutilCommandSuite) TestGetStatErrSrc(c *C) {
@@ -156,9 +134,7 @@ func (s *OssutilCommandSuite) TestGetStatErrSrc(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestStatIDKey(c *C) {
-    bucket := bucketNamePrefix + "stat6" 
-    s.putBucket(bucket, c)
-    time.Sleep(sleepTime) 
+    bucket := bucketNameExist 
 
     cfile := "ossutil_test.config_boto"
     data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Endpoint]\n%s=%s[Bucket-Cname]\n%s=%s", "abc", "def", "ghi", bucket, "abc", bucket, "abc") 
@@ -192,6 +168,4 @@ func (s *OssutilCommandSuite) TestStatIDKey(c *C) {
     c.Assert(showElapse, Equals, true)
 
     _ = os.Remove(cfile)
-    s.removeBucket(bucket, true, c)
-    time.Sleep(sleepTime) 
 }

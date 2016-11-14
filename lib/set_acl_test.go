@@ -42,7 +42,7 @@ func (s *OssutilCommandSuite) rawSetACLWithArgs(args []string, recursive, bucket
 
 func (s *OssutilCommandSuite) TestSetBucketACL(c *C) {
     s.SetUpBucketEnv(c)
-    bucket := bucketNamePrefix + "b1" 
+    bucket := bucketNamePrefix + "acl1" 
     s.putBucket(bucket, c)
     time.Sleep(sleepTime)
 
@@ -71,9 +71,8 @@ func (s *OssutilCommandSuite) TestSetBucketACL(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestSetBucketErrorACL(c *C) {
-    bucket := bucketNamePrefix + "b2" 
+    bucket := bucketNamePrefix + "acl2" 
     s.putBucket(bucket, c)
-    time.Sleep(sleepTime)
 
     for _, acl := range []string{"default", "def", "erracl", "私有"} {
         showElapse, err := s.rawSetBucketACL(bucket, acl, false)
@@ -88,11 +87,10 @@ func (s *OssutilCommandSuite) TestSetBucketErrorACL(c *C) {
         c.Assert(bucketStat[StatACL], Equals, "private")
     }
     s.removeBucket(bucket, true, c)
-    time.Sleep(sleepTime)
 }
 
 func (s *OssutilCommandSuite) TestSetNotExistBucketACL(c *C) {
-    bucket := bucketNamePrefix + "b3"
+    bucket := bucketNamePrefix + "notexist"
 
     showElapse, err := s.rawGetStat(bucket, "")
     c.Assert(err, NotNil)
@@ -122,7 +120,7 @@ func (s *OssutilCommandSuite) TestSetNotExistBucketACL(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestSetBucketEmptyACL(c *C) {
-    bucket := bucketNamePrefix + "b4" 
+    bucket := bucketNamePrefix + "acl3" 
     s.putBucket(bucket, c)
     time.Sleep(sleepTime)
 
@@ -138,7 +136,7 @@ func (s *OssutilCommandSuite) TestSetBucketEmptyACL(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestSetObjectACL(c *C) {
-    bucket := bucketNamePrefix + "b5" 
+    bucket := bucketNameExist 
     s.putBucket(bucket, c)
     time.Sleep(sleepTime)
 
@@ -151,7 +149,6 @@ func (s *OssutilCommandSuite) TestSetObjectACL(c *C) {
 
     object = "newobject"
     s.putObject(bucket, object, uploadFileName, c)
-    time.Sleep(sleepTime)
 
     //get object acl
     objectStat := s.getStat(bucket, object, c)
@@ -171,6 +168,7 @@ func (s *OssutilCommandSuite) TestSetObjectACL(c *C) {
         c.Assert(objectStat[StatACL], Equals, result[i])
     }
 
+
     s.setObjectACL(bucket, object, "private", false, true, c)
 
     // set error acl
@@ -182,13 +180,10 @@ func (s *OssutilCommandSuite) TestSetObjectACL(c *C) {
         objectStat = s.getStat(bucket, object, c)
         c.Assert(objectStat[StatACL], Equals, "private")
     }
-
-    s.removeBucket(bucket, true, c)
-    time.Sleep(sleepTime)
 }
 
 func (s *OssutilCommandSuite) TestBatchSetObjectACL(c *C) {
-    bucket := bucketNamePrefix + "b6" 
+    bucket := bucketNamePrefix + "bsoal" 
     s.putBucket(bucket, c)
     time.Sleep(2*sleepTime) 
 
@@ -211,12 +206,13 @@ func (s *OssutilCommandSuite) TestBatchSetObjectACL(c *C) {
     time.Sleep(2*sleepTime)
 
     for _, object := range objectNames {
-        s.getStat(bucket, object, c)
+        objectStat := s.getStat(bucket, object, c)
+        c.Assert(objectStat[StatACL], Equals, "default")
     }
 
     for _, acl := range []string{"default", "private", "public-read", "public-read-write"} {
         s.setObjectACL(bucket, "设置权限", acl, true, true, c)
-        time.Sleep(sleepTime)
+        time.Sleep(time.Second)
 
         for _, object := range objectNames {
             objectStat := s.getStat(bucket, object, c)
@@ -243,7 +239,7 @@ func (s *OssutilCommandSuite) TestErrSetACL(c *C) {
     showElapse, err = s.rawSetACLWithArgs(args, false, false, true)
 
     // error set bucket acl
-    bucket := bucketNamePrefix + "b7"
+    bucket := bucketNamePrefix + "set-acl"
     object := "testobject"
     args = []string{CloudURLToString(bucket, object), acl}
     showElapse, err = s.rawSetACLWithArgs(args, false, true, true)
@@ -284,9 +280,7 @@ func (s *OssutilCommandSuite) TestErrSetACL(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestErrBatchSetACL(c *C) {
-    bucket := bucketNamePrefix + "b8"
-    s.putBucket(bucket, c)
-    time.Sleep(sleepTime)
+    bucket := bucketNameExist  
 
     // put objects
     num := 10
@@ -320,15 +314,10 @@ func (s *OssutilCommandSuite) TestErrBatchSetACL(c *C) {
         objectStat := s.getStat(bucket, object, c)
         c.Assert(objectStat[StatACL], Equals, "default")
     }
-
-    s.removeBucket(bucket, true, c)
-    time.Sleep(sleepTime)
 }
 
 func (s *OssutilCommandSuite) TestSetACLIDKey(c *C) {
-    bucket := bucketNamePrefix + "b9" 
-    s.putBucket(bucket, c)
-    time.Sleep(sleepTime)
+    bucket := bucketNameExist 
 
     cfile := "ossutil_test.config_boto"
     data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Endpoint]\n%s=%s[Bucket-Cname]\n%s=%s", "abc", "def", "ghi", bucket, "abc", bucket, "abc") 
@@ -367,6 +356,4 @@ func (s *OssutilCommandSuite) TestSetACLIDKey(c *C) {
     c.Assert(showElapse, Equals, true)
 
     _ = os.Remove(cfile)
-    s.removeBucket(bucket, true, c)
-    time.Sleep(sleepTime)
 }

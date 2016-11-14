@@ -33,7 +33,7 @@ func (s *OssutilCommandSuite) rawSetMetaWithArgs(args []string, update, delete, 
         "language": &language,
     }
     showElapse, err := cm.RunCommand(command, args, options)
-    time.Sleep(sleepTime)
+    time.Sleep(time.Second)
     return showElapse, err
 }
 
@@ -45,22 +45,15 @@ func (s *OssutilCommandSuite) setObjectMeta(bucket, object, meta string, update,
 
 func (s *OssutilCommandSuite) TestSetBucketMeta(c *C) {
     s.SetUpBucketEnv(c)
-    bucket := bucketNamePrefix + "s" 
-    s.putBucket(bucket, c)
-    time.Sleep(sleepTime)
+    bucket := bucketNameExist 
 
     showElapse, err := s.rawSetMeta(bucket, "", "X-Oss-Meta-A:A", false, false, false, true, DefaultLanguage)
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
-
-    s.removeBucket(bucket, true, c) 
-    time.Sleep(sleepTime)
 }
 
 func (s *OssutilCommandSuite) TestSetObjectMeta(c *C) {
-    bucket := bucketNamePrefix + "s1" 
-    s.putBucket(bucket, c)
-    time.Sleep(sleepTime)
+    bucket := bucketNameExist 
 
     object := "testobject" 
     s.putObject(bucket, object, uploadFileName, c)
@@ -113,7 +106,7 @@ func (s *OssutilCommandSuite) TestSetObjectMeta(c *C) {
 
     objectStat = s.getStat(bucket, object, c) 
     c.Assert(objectStat[StatACL], Equals, "default") 
-    //c.Assert(objectStat["X-Oss-Meta-A"], Equals, "A")
+    c.Assert(objectStat["X-Oss-Meta-A"], Equals, "A")
 
     // without update, delete and force
     showElapse, err = s.rawSetMeta(bucket, object, "x-oss-object-acl:default#X-Oss-Meta-A:A", false, false, false, false, DefaultLanguage)
@@ -152,13 +145,10 @@ func (s *OssutilCommandSuite) TestSetObjectMeta(c *C) {
     showElapse, err = s.rawSetMeta(bucket, object, "x-oss-object-acl:private", true, false, false, true, DefaultLanguage)
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true)
-
-    s.removeBucket(bucket, true, c) 
-    time.Sleep(sleepTime)
 }
 
 func (s *OssutilCommandSuite) TestSetNotExistObjectMeta(c *C) {
-    bucket := bucketNamePrefix + "s2" 
+    bucket := bucketNamePrefix + "setmeta" 
     s.putBucket(bucket, c)
     time.Sleep(sleepTime)
 
@@ -188,7 +178,7 @@ func (s *OssutilCommandSuite) TestSetNotExistObjectMeta(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
-    bucket := bucketNamePrefix + "s3" 
+    bucket := bucketNamePrefix + "setmeta1" 
     s.putBucket(bucket, c)
     time.Sleep(sleepTime)
 
@@ -273,9 +263,7 @@ func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestErrBatchSetMeta(c *C) {
-    bucket := bucketNamePrefix + "s4" 
-    s.putBucket(bucket, c)
-    time.Sleep(sleepTime)
+    bucket := bucketNameExist 
 
     // put objects
     num := 10
@@ -285,7 +273,6 @@ func (s *OssutilCommandSuite) TestErrBatchSetMeta(c *C) {
         s.putObject(bucket, object, uploadFileName, c)
         objectNames = append(objectNames, object)
     }
-    time.Sleep(sleepTime)
 
     // update without force
     meta := "content-type:abc#X-Oss-Meta-Update:update" 
@@ -316,8 +303,6 @@ func (s *OssutilCommandSuite) TestErrBatchSetMeta(c *C) {
         c.Assert(ok, Equals, false)
     }
 
-    s.removeBucket(bucket, true, c) 
-    time.Sleep(sleepTime)
 }
 
 func (s *OssutilCommandSuite) TestErrSetMeta(c *C) {
@@ -330,9 +315,7 @@ func (s *OssutilCommandSuite) TestErrSetMeta(c *C) {
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
 
-    bucket := bucketNamePrefix + "s5"
-    s.putBucket(bucket, c)
-    time.Sleep(sleepTime)
+    bucket := bucketNameExist 
 
     object := "notexistobject"
 
@@ -372,9 +355,6 @@ func (s *OssutilCommandSuite) TestErrSetMeta(c *C) {
     showElapse, err = s.rawSetMeta(bucket, object, "Expires:a", true, false, false, true, EnglishLanguage)
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
-
-    s.removeBucket(bucket, true, c)
-    time.Sleep(sleepTime)
 }
 
 func (s *OssutilCommandSuite) TestGetOSSOption(c *C) {
@@ -383,9 +363,7 @@ func (s *OssutilCommandSuite) TestGetOSSOption(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestSetMetaIDKey(c *C) {
-    bucket := bucketNamePrefix + "s6" 
-    s.putBucket(bucket, c)
-    time.Sleep(sleepTime)
+    bucket := bucketNameExist 
 
     object := "testobject" 
     s.putObject(bucket, object, uploadFileName, c)
@@ -427,7 +405,4 @@ func (s *OssutilCommandSuite) TestSetMetaIDKey(c *C) {
     c.Assert(showElapse, Equals, true)
 
     _ = os.Remove(cfile)
-
-    s.removeBucket(bucket, true, c)
-    time.Sleep(sleepTime)
 }

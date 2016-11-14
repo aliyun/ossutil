@@ -39,9 +39,7 @@ func (s *OssutilCommandSuite) rawCPWithArgs(args []string, recursive, force, upd
 
 func (s *OssutilCommandSuite) TestCPObject(c *C) {
     s.SetUpBucketEnv(c)
-    bucket := bucketNamePrefix + "c" 
-    s.putBucket(bucket, c)
-    time.Sleep(sleepTime)
+    bucket := bucketNameExist 
 
     destBucket := bucketNameNotExist 
 
@@ -162,15 +160,10 @@ func (s *OssutilCommandSuite) TestCPObject(c *C) {
     str = s.readFile(filePath, c) 
     c.Assert(str, Equals, data1)
     _ = os.Remove(filePath)
-
-    s.removeBucket(bucket, true, c) 
-    time.Sleep(sleepTime)
 }
 
 func (s *OssutilCommandSuite) TestErrorCP(c *C) {
-    bucket := bucketNamePrefix + "c1" 
-    s.putBucket(bucket, c)
-    time.Sleep(sleepTime)
+    bucket := bucketNameExist 
 
     // error src_url
     showElapse, err := s.rawCP(uploadFileName, CloudURLToString("", ""), true, true, false, BigFileThreshold, CheckpointDir)
@@ -224,13 +217,10 @@ func (s *OssutilCommandSuite) TestErrorCP(c *C) {
     showElapse, err = s.rawCP(uploadFileName, CloudURLToString(bucket, object), false, true, true, BigFileThreshold, configFile)
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
-
-    s.removeBucket(bucket, true, c)
-    time.Sleep(sleepTime)
 }
 
 func (s *OssutilCommandSuite) TestUploadErrSrc(c *C) {
-    srcBucket := bucketNamePrefix + "c2"
+    srcBucket := bucketNamePrefix + "uploadsrc"
     destBucket := bucketNameNotExist 
     command := "cp"
     args := []string{uploadFileName, CloudURLToString(srcBucket, ""), CloudURLToString(destBucket, "")}
@@ -256,7 +246,7 @@ func (s *OssutilCommandSuite) TestUploadErrSrc(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestBatchCPObject(c *C) {
-    bucket := bucketNamePrefix + "c3" 
+    bucket := bucketNamePrefix + "bcp" 
     s.putBucket(bucket, c)
     time.Sleep(sleepTime) 
 
@@ -321,9 +311,9 @@ func (s *OssutilCommandSuite) TestBatchCPObject(c *C) {
 
     time.Sleep(10*time.Second)
 
-    /*for _, filePath := range filePaths {
+    for _, filePath := range filePaths {
         s.getStat(bucket, filePath, c)
-    }*/
+    }
 
     // get files
     downDir := "下载目录"
@@ -380,7 +370,7 @@ func (s *OssutilCommandSuite) TestBatchCPObject(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestCPObjectUpdate(c *C) {
-    bucket := bucketNamePrefix + "c4" 
+    bucket := bucketNamePrefix + "cpupdate" 
     s.putBucket(bucket, c)
     time.Sleep(sleepTime) 
 
@@ -396,7 +386,6 @@ func (s *OssutilCommandSuite) TestCPObjectUpdate(c *C) {
     // put newer object
     object := "testobject"
     s.putObject(bucket, object, newFile, c)
-    time.Sleep(sleepTime)
 
     // get object
     s.getObject(bucket, object, downloadFileName, c)
@@ -457,6 +446,7 @@ func (s *OssutilCommandSuite) TestCPObjectUpdate(c *C) {
     c.Assert(str, Equals, downData)
 
     // copy object with update
+    //destBucket := bucketNamePrefix + "updatedest"  
     destBucket := bucketNameDest 
 
     destData := "data for dest bucket"
@@ -501,9 +491,7 @@ func (s *OssutilCommandSuite) TestResumeCPObject(c *C) {
     threshold = 1
     cpDir := "checkpoint目录" 
 
-    bucket := bucketNamePrefix + "c5" 
-    s.putBucket(bucket, c)
-    time.Sleep(sleepTime)
+    bucket := bucketNameExist 
 
     data := "resume cp"
     s.createFile(uploadFileName, data, c)
@@ -541,15 +529,10 @@ func (s *OssutilCommandSuite) TestResumeCPObject(c *C) {
     s.getObject(destBucket, destObject, downloadFileName, c)
     str = s.readFile(downloadFileName, c) 
     c.Assert(str, Equals, data)
-
-    s.removeBucket(bucket, true, c)
-    time.Sleep(sleepTime)
 }
 
 func (s *OssutilCommandSuite) TestCPMulitSrc(c *C) {
-    bucket := bucketNamePrefix + "c6" 
-    s.putBucket(bucket, c)
-    time.Sleep(sleepTime)
+    bucket := bucketNameExist 
 
     // upload multi file 
     file1 := uploadFileName + "1"
@@ -576,16 +559,11 @@ func (s *OssutilCommandSuite) TestCPMulitSrc(c *C) {
     showElapse, err = s.rawCPWithArgs([]string{CloudURLToString(bucket, object1), CloudURLToString(bucket, object2), CloudURLToString(destBucket, "")}, false, true, false, BigFileThreshold, CheckpointDir)
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
-
-    s.removeBucket(bucket, true, c)
-    time.Sleep(sleepTime)
 }
 
 func (s *OssutilCommandSuite) TestErrUpload(c *C) {
     // src file not exist
-    bucket := bucketNamePrefix + "c7" 
-    s.putBucket(bucket, c)
-    time.Sleep(sleepTime)
+    bucket := bucketNameExist 
     
     showElapse, err := s.rawCP("notexistfile", CloudURLToString(bucket, ""), false, true, false, BigFileThreshold, CheckpointDir)
     c.Assert(err, NotNil)
@@ -619,15 +597,10 @@ func (s *OssutilCommandSuite) TestErrUpload(c *C) {
 
     _ = os.RemoveAll(dir)
     _ = os.RemoveAll(subdir)
-
-    s.removeBucket(bucket, true, c)
-    time.Sleep(sleepTime)
 }
 
 func (s *OssutilCommandSuite) TestErrDownload(c *C) {
-    bucket := bucketNamePrefix + "c8" 
-    s.putBucket(bucket, c)
-    time.Sleep(sleepTime)
+    bucket := bucketNameExist 
  
     object := "object"
     s.putObject(bucket, object, uploadFileName, c)
@@ -646,15 +619,10 @@ func (s *OssutilCommandSuite) TestErrDownload(c *C) {
     showElapse, err = s.rawCP(CloudURLToString(bucket, object), configFile + string(os.PathSeparator) + downloadFileName, false, true, false, BigFileThreshold, CheckpointDir)
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
-
-    s.removeBucket(bucket, true, c)
-    time.Sleep(sleepTime)
 }
 
 func (s *OssutilCommandSuite) TestErrCopy(c *C) {
-    srcBucket := bucketNamePrefix + "c9" 
-    s.putBucket(srcBucket, c)
-    time.Sleep(sleepTime)
+    srcBucket := bucketNameExist 
 
     destBucket := bucketNameDest 
 
@@ -682,9 +650,6 @@ func (s *OssutilCommandSuite) TestErrCopy(c *C) {
     showElapse, err = s.rawCP(CloudURLToString(srcBucket, ""), CloudURLToString(destBucket, "/object"), true, true, false, 1, CheckpointDir)
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
-
-    s.removeBucket(srcBucket, true, c)
-    time.Sleep(sleepTime)
 }
 
 func (s *OssutilCommandSuite) TestPreparePartOption(c *C) {
@@ -703,7 +668,7 @@ func (s *OssutilCommandSuite) TestPreparePartOption(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestResumeDownloadRetry(c *C) {
-    bucketName := bucketNamePrefix + "c10"
+    bucketName := bucketNamePrefix + "cpnotexist"
     bucket, err := copyCommand.command.ossBucket(bucketName)
     c.Assert(err, IsNil)
 
@@ -712,9 +677,7 @@ func (s *OssutilCommandSuite) TestResumeDownloadRetry(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestCPIDKey(c *C) {
-    bucket := bucketNamePrefix + "c11" 
-    s.putBucket(bucket, c)
-    time.Sleep(sleepTime)
+    bucket := bucketNameExist 
 
     object := "testobject" 
 
@@ -764,7 +727,4 @@ func (s *OssutilCommandSuite) TestCPIDKey(c *C) {
 
     _ = os.Remove(ufile)
     _ = os.Remove(cfile)
-
-    s.removeBucket(bucket, true, c) 
-    time.Sleep(sleepTime)
 }

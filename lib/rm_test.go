@@ -27,7 +27,7 @@ func (s *OssutilCommandSuite) rawRemove(args []string, recursive, force, bucket 
 
 func (s *OssutilCommandSuite) TestRemoveObject(c *C) {
     s.SetUpBucketEnv(c)
-    bucket := bucketNamePrefix + "rm" 
+    bucket := bucketNamePrefix + "rmb" 
     s.putBucket(bucket, c)
     time.Sleep(sleepTime) 
 
@@ -52,7 +52,7 @@ func (s *OssutilCommandSuite) TestRemoveObject(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestRemoveObjects(c *C) {
-    bucket := bucketNamePrefix + "rm1" 
+    bucket := bucketNamePrefix + "rmb1" 
     s.putBucket(bucket, c)
     time.Sleep(sleepTime) 
 
@@ -92,7 +92,7 @@ func (s *OssutilCommandSuite) TestRemoveObjects(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestRemoveBucket(c *C) {
-    bucket := bucketNamePrefix + "rm2"
+    bucket := bucketNamePrefix + "rmb2"
     s.putBucket(bucket, c)
     time.Sleep(sleepTime) 
 
@@ -119,7 +119,7 @@ func (s *OssutilCommandSuite) TestRemoveBucket(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestRemoveEmptyBucket(c *C) {
-    bucket := bucketNamePrefix + "rm3"
+    bucket := bucketNamePrefix + "rmb3"
     s.putBucket(bucket, c)
     time.Sleep(sleepTime)
 
@@ -137,7 +137,7 @@ func (s *OssutilCommandSuite) TestRemoveEmptyBucket(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestRemoveNonEmptyBucket(c *C) {
-    bucket := bucketNamePrefix + "rm4" 
+    bucket := bucketNamePrefix + "rmb4" 
     s.putBucket(bucket, c)
     time.Sleep(sleepTime)
 
@@ -175,7 +175,7 @@ func (s *OssutilCommandSuite) TestRemoveNonEmptyBucket(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestRemoveObjectBucketOption(c *C) {
-    bucket := bucketNamePrefix + "rm5"
+    bucket := bucketNamePrefix + "rmb5"
     s.putBucket(bucket, c)
     time.Sleep(sleepTime)
 
@@ -238,7 +238,7 @@ func (s *OssutilCommandSuite) TestErrRemove(c *C) {
     c.Assert(showElapse, Equals, false)
 
     // clear not exist bucket
-    bucketName := bucketNamePrefix + "rm6"
+    bucketName := bucketNamePrefix + "rmnotexist"
     showElapse, err = s.rawRemove([]string{CloudURLToString(bucketName, "")}, true, true, false)
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
@@ -259,7 +259,7 @@ func (s *OssutilCommandSuite) TestErrDeleteObject(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestRemoveIDKey(c *C) {
-    bucket := bucketNamePrefix + "rm7"
+    bucket := bucketNamePrefix + "rmidkey"
     s.putBucket(bucket, c)
     time.Sleep(sleepTime)
 
