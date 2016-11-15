@@ -3,6 +3,7 @@ package lib
 import (
     "fmt"
     "os"
+    "time"
 
     . "gopkg.in/check.v1"
 )
@@ -79,7 +80,7 @@ func (s *OssutilCommandSuite) TestGetStatNotExist(c *C) {
     c.Assert(showElapse, Equals, false)
 
     bucket = bucketNameExist
-    s.removeObjects(bucket, object, true, true, c)
+    s.removeObjects(bucket, "", true, true, c)
     time.Sleep(sleepTime)
 
     showElapse, err = s.rawGetStat(bucket, "")
