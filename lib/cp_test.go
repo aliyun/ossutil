@@ -66,6 +66,12 @@ func (s *OssutilCommandSuite) TestCPObject(c *C) {
     str = s.readFile(downloadFileName, c) 
     c.Assert(str, Equals, data)
 
+    // get without specify dest file 
+    s.getObject(bucket, object, ".", c)
+    str = s.readFile(object, c) 
+    c.Assert(str, Equals, data)
+    _ = os.Remove(object)
+
     // put without specify dest object 
     data1 := "put without specify dest object"
     s.createFile(uploadFileName, data1, c)
@@ -73,12 +79,6 @@ func (s *OssutilCommandSuite) TestCPObject(c *C) {
     s.getObject(bucket, uploadFileName, downloadFileName, c)
     str = s.readFile(downloadFileName, c) 
     c.Assert(str, Equals, data1)
-
-    // get without specify dest file 
-    s.getObject(bucket, object, ".", c)
-    str = s.readFile(object, c) 
-    c.Assert(str, Equals, data)
-    _ = os.Remove(object)
 
     // get to file in not exist directory
     notexistdir := "不存在的目录"

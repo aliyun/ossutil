@@ -40,8 +40,8 @@ var (
     testResultFile, _   = os.OpenFile(resultPath, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
     bucketNamePrefix    = "ossutil-test-"
     bucketNameExist     = "nodelete-ossutil-test-normalcase"
-    bucketNameNotExist  = bucketNamePrefix + "notexistbucket"
     bucketNameDest      = "nodelete-ossutil-test-dest"
+    bucketNameNotExist  = bucketNamePrefix + "notexistbucket"
     uploadFileName      = "ossutil_test.upload_file"
     downloadFileName    = "ossutil_test.download_file"
     inputFileName       = "ossutil_test.input_file"

@@ -172,15 +172,15 @@ func (s *OssutilCommandSuite) TestListBuckets(c *C) {
     // "ls" 
     bucket := bucketNamePrefix + "ls2" 
     s.removeBucket(bucket, true, c)
-    time.Sleep(sleepTime)
+    time.Sleep(2*sleepTime)
 
     buckets := s.listBuckets(false, c)
     bucketNum := len(buckets)
 
     // "ls -s"
     buckets = s.listBuckets(true, c)
-    c.Assert(len(buckets), Equals, bucketNum)
     c.Assert(FindPos(bucket, buckets) == -1, Equals, true)
+    c.Assert(len(buckets), Equals, bucketNum)
 
     // put bucket
     s.putBucket(bucket, c)
@@ -188,8 +188,8 @@ func (s *OssutilCommandSuite) TestListBuckets(c *C) {
 
     // get result
     buckets = s.listBuckets(false, c)
-    c.Assert(len(buckets), Equals, bucketNum + 1)
     c.Assert(FindPos(bucket, buckets) != -1, Equals, true)
+    c.Assert(len(buckets), Equals, bucketNum + 1)
 
     // remove bucket
     s.removeBucket(bucket, true, c)
@@ -197,13 +197,13 @@ func (s *OssutilCommandSuite) TestListBuckets(c *C) {
 
     // get result
     buckets = s.listBuckets(false, c)
-    c.Assert(len(buckets), Equals, bucketNum)
     c.Assert(FindPos(bucket, buckets) == -1, Equals, true)
+    c.Assert(len(buckets), Equals, bucketNum)
 }
 
 // list objects with not exist bucket 
 func (s *OssutilCommandSuite) TestListObjectsBucketNotExist(c *C) {
-    bucket := bucketNamePrefix + "lsnotexist"
+    bucket := bucketNameNotExist 
     command := "ls"
     args := []string{CloudURLToString(bucket, "")}
     str := ""
@@ -221,9 +221,9 @@ func (s *OssutilCommandSuite) TestListObjectsBucketNotExist(c *C) {
 
 // list objects
 func (s *OssutilCommandSuite) TestListObjects(c *C) {
-    bucket := bucketNamePrefix + "ls3"
-    s.putBucket(bucket, c)
-    time.Sleep(2*sleepTime)
+    bucket := bucketNameExist 
+    s.removeObjects(bucket, "", true, true, c) 
+    time.Sleep(sleepTime)
 
     // "ls oss://bucket"
     objects := s.listObjects(bucket, "", false, false, c)
@@ -272,9 +272,6 @@ func (s *OssutilCommandSuite) TestListObjects(c *C) {
 
     objects = s.listObjects(bucket, "中文测试:#1/", false, true, c)
     c.Assert(len(objects), Equals, 2)
-
-    s.removeBucket(bucket, true, c)
-    time.Sleep(sleepTime)
 }
 
 func (s *OssutilCommandSuite) TestErrList(c *C) {

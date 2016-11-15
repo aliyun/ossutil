@@ -176,8 +176,8 @@ func (s *OssutilCommandSuite) TestSetNotExistObjectMeta(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
-    bucket := bucketNamePrefix + "setmeta1" 
-    s.putBucket(bucket, c)
+    bucket := bucketNameExist 
+    s.removeObjects(bucket, "", true, true, c)
     time.Sleep(sleepTime)
 
     // put objects
@@ -191,7 +191,6 @@ func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
 
     // update without force
     s.setObjectMeta(bucket, "", "content-type:abc#X-Oss-Meta-Update:update", true, false, true, false, c)
-    time.Sleep(sleepTime)
 
     /*for _, object := range objectNames {
         objectStat := s.getStat(bucket, object, c) 
@@ -228,15 +227,15 @@ func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
     // set all
     os.Stdout = out 
     os.Stderr = errout 
-    s.setObjectMeta(bucket, "非设置元信息", "X-Oss-Meta-M:c", false, false, true, true, c)
-    time.Sleep(2*sleepTime)
+    //s.setObjectMeta(bucket, "非设置元信息", "X-Oss-Meta-M:c", false, false, true, true, c)
+    s.setObjectMeta(bucket, "no设置元信息", "X-Oss-Meta-M:c", false, false, true, true, c)
     os.Stdout = testLogFile 
     os.Stderr = testLogFile 
 
     for _, object := range objectNames {
         objectStat := s.getStat(bucket, object, c) 
-        //c.Assert(objectStat["X-Oss-Meta-A"], Equals, "A") 
-        //c.Assert(objectStat["X-Oss-Meta-B"], Equals, "b")
+        c.Assert(objectStat["X-Oss-Meta-A"], Equals, "A") 
+        c.Assert(objectStat["X-Oss-Meta-B"], Equals, "b")
         _, ok := objectStat["X-Oss-Meta-M"]
         c.Assert(ok, Equals, false)
     }
@@ -259,9 +258,6 @@ func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
     showElapse, err = s.rawSetMeta(bucket, "", "a:b", true, false, true, true, DefaultLanguage)
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
-
-    s.removeBucket(bucket, true, c)
-    time.Sleep(sleepTime)
 }
 
 func (s *OssutilCommandSuite) TestErrBatchSetMeta(c *C) {

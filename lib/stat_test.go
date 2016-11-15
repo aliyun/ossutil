@@ -48,9 +48,7 @@ func (s *OssutilCommandSuite) TestStatErrArgc(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestGetBucketStat(c *C) {
-    bucket := bucketNamePrefix + "stat" 
-    s.putBucket(bucket, c)
-    time.Sleep(2*sleepTime)
+    bucket := bucketNameExist 
 
     // get bucket stat 
     bucketStat := s.getStat(bucket, "", c) 
@@ -61,9 +59,6 @@ func (s *OssutilCommandSuite) TestGetBucketStat(c *C) {
     c.Assert(bucketStat[StatIntranetEndpoint] != "", Equals, true)
     c.Assert(bucketStat[StatACL], Equals, "private")
     c.Assert(bucketStat[StatOwner] != "", Equals, true)
-
-    s.removeBucket(bucket, true, c)
-    time.Sleep(sleepTime)
 }
 
 func (s *OssutilCommandSuite) TestGetObjectStat(c *C) {
