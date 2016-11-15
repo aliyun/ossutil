@@ -46,7 +46,6 @@ func (s *OssutilCommandSuite) rawPutBucketWithACLLanguage(args []string, acl, la
 }
 
 func (s *OssutilCommandSuite) TestMakeBucket(c *C) {
-    s.SetUpBucketEnv(c)
     bucket := bucketNameExist 
 
     // put bucket already exists

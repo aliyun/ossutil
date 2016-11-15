@@ -26,7 +26,6 @@ func (s *OssutilCommandSuite) rawRemove(args []string, recursive, force, bucket 
 }
 
 func (s *OssutilCommandSuite) TestRemoveObject(c *C) {
-    s.SetUpBucketEnv(c)
     bucket := bucketNamePrefix + "rmb" 
     s.putBucket(bucket, c)
     time.Sleep(sleepTime) 

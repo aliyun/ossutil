@@ -28,7 +28,6 @@ func (s *OssutilCommandSuite) rawGetStatWithArgs(args []string) (bool, error) {
 }
 
 func (s *OssutilCommandSuite) TestStatErrArgc(c *C) {
-    s.SetUpBucketEnv(c)
     bucket := bucketNameExist 
 
     command := "stat"

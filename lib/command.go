@@ -266,7 +266,6 @@ func (cmd *Command) formatOption(option Option) string {
 // get oss client according to bucket(if bucket not empty)
 func (cmd *Command) ossClient(bucket string) (*oss.Client, error) {
 	endpoint, isCname := cmd.getEndpoint(bucket)
-    fmt.Println("endpoint:", endpoint)
 	accessKeyID, _ := GetString(OptionAccessKeyID, cmd.options)
 	accessKeySecret, _ := GetString(OptionAccessKeySecret, cmd.options)
 	stsToken, _ := GetString(OptionSTSToken, cmd.options)

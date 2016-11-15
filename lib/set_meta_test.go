@@ -44,7 +44,6 @@ func (s *OssutilCommandSuite) setObjectMeta(bucket, object, meta string, update,
 }
 
 func (s *OssutilCommandSuite) TestSetBucketMeta(c *C) {
-    s.SetUpBucketEnv(c)
     bucket := bucketNameExist 
 
     showElapse, err := s.rawSetMeta(bucket, "", "X-Oss-Meta-A:A", false, false, false, true, DefaultLanguage)
@@ -225,12 +224,7 @@ func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
     }
 
     // set all
-    os.Stdout = out 
-    os.Stderr = errout 
-    //s.setObjectMeta(bucket, "非设置元信息", "X-Oss-Meta-M:c", false, false, true, true, c)
     s.setObjectMeta(bucket, "no设置元信息", "X-Oss-Meta-M:c", false, false, true, true, c)
-    os.Stdout = testLogFile 
-    os.Stderr = testLogFile 
 
     for _, object := range objectNames {
         objectStat := s.getStat(bucket, object, c) 

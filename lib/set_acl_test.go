@@ -41,7 +41,6 @@ func (s *OssutilCommandSuite) rawSetACLWithArgs(args []string, recursive, bucket
 }
 
 func (s *OssutilCommandSuite) TestSetBucketACL(c *C) {
-    s.SetUpBucketEnv(c)
     bucket := bucketNameExist 
 
     // set acl

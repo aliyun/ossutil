@@ -94,11 +94,6 @@ func SetUpCredential() {
     }
 }
 
-func (s *OssutilCommandSuite) SetUpBucketEnv(c *C) {
-    //s.removeBuckets(bucketNamePrefix, c)
-    //time.Sleep(sleepTime)
-}
-
 // Run before each test or benchmark starts running
 func (s *OssutilCommandSuite) TearDownSuite(c *C) {
     testLogger.Println("test command completed")
@@ -212,12 +207,6 @@ func (s *OssutilCommandSuite) removeBucket(bucket string, clearObjects bool, c *
     args := []string{CloudURLToString(bucket, "")}
     showElapse, err := s.rawRemove(args, clearObjects, true, true)
     if err != nil {
-        os.Stdout = out 
-        os.Stderr = errout 
-        fmt.Println("bucket:", bucket) 
-        fmt.Println("err:", err) 
-        os.Stdout = testLogFile 
-        os.Stderr = testLogFile 
         c.Assert(err.(oss.ServiceError).Code == "NoSuchBucket" || err.(oss.ServiceError).Code == "BucketAlreadyExist", Equals, true)
         c.Assert(showElapse, Equals, false)
     } else {
