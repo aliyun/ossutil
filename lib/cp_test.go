@@ -40,11 +40,12 @@ func (s *OssutilCommandSuite) rawCPWithArgs(args []string, recursive, force, upd
 func (s *OssutilCommandSuite) TestCPObject(c *C) {
     bucket := bucketNameExist 
     s.removeObjects(bucket, "", true, true, c)
-    time.Sleep(sleepTime)
+    time.Sleep(2*sleepTime)
 
     destBucket := bucketNameNotExist 
 
     // put object
+    s.createFile(uploadFileName, content, c)
     object := "中文cp" 
     s.putObject(bucket, object, uploadFileName, c)
 
@@ -371,7 +372,7 @@ func (s *OssutilCommandSuite) TestBatchCPObject(c *C) {
 func (s *OssutilCommandSuite) TestCPObjectUpdate(c *C) {
     bucket := bucketNameExist 
     s.removeObjects(bucket, "", true, true, c)
-    time.Sleep(sleepTime) 
+    time.Sleep(2*sleepTime) 
 
     // create older file and newer file
     oldData := "old data"
@@ -379,7 +380,7 @@ func (s *OssutilCommandSuite) TestCPObjectUpdate(c *C) {
     newData := "new data"
     newFile := "newFile"
     s.createFile(oldFile, oldData, c)
-    time.Sleep(10)
+    time.Sleep(1)
     s.createFile(newFile, newData, c)
 
     // put newer object
@@ -395,7 +396,7 @@ func (s *OssutilCommandSuite) TestCPObjectUpdate(c *C) {
     showElapse, err := s.rawCP(oldFile, CloudURLToString(bucket, object), false, false, true, BigFileThreshold, CheckpointDir)  
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true)
-    time.Sleep(2*sleepTime)
+    time.Sleep(sleepTime)
 
     s.getObject(bucket, object, downloadFileName, c)
     str = s.readFile(downloadFileName, c) 

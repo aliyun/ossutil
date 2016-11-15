@@ -2,8 +2,8 @@ package lib
 
 import (
     "os"
-    //"time"
-    //"fmt"
+    "time"
+    "fmt"
 
     . "gopkg.in/check.v1"
 )
@@ -20,13 +20,9 @@ func (s *OssutilCommandSuite) rawUpdate(force bool, language string) (bool, erro
 }
 
 func (s *OssutilCommandSuite) TestUpdate(c *C) {
-    os.Stdout = out 
-    os.Stderr = errout 
     showElapse, err := s.rawUpdate(false, "中文")
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, false)
-    os.Stdout = testLogFile 
-    os.Stderr = testLogFile 
 
     showElapse, err = s.rawUpdate(false, "English")
     c.Assert(err, IsNil)
@@ -61,7 +57,6 @@ func (s *OssutilCommandSuite) TestRevertRename(c *C) {
     _ = os.Remove(renameFilePath)
 }
 
-/*
 func (s *OssutilCommandSuite) TestDownloadLastestBinary(c *C) {
     tempBinaryFile := ".ossutil_test_update.temp"  
     err := updateCommand.getBinary(tempBinaryFile, "1.0.0.Beta") 
@@ -89,5 +84,3 @@ func (s *OssutilCommandSuite) TestAnonymousGetToFileError(c *C) {
     os.Stdout = testLogFile 
     os.Stderr = testLogFile 
 }
-
-*/
