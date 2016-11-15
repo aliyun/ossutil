@@ -64,10 +64,10 @@ func (s *OssutilCommandSuite) SetUpSuite(c *C) {
     s.removeBuckets(bucketNamePrefix, c)
     s.removeBucket(bucketNameExist, true, c)
     s.removeBucket(bucketNameDest, true, c)
-    time.Sleep(sleepTime)
+    time.Sleep(2*sleepTime)
     s.putBucket(bucketNameExist, c)
     s.putBucket(bucketNameDest, c)
-    time.Sleep(sleepTime)
+    time.Sleep(2*sleepTime)
 }
 
 func SetUpCredential() {
