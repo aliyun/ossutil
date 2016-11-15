@@ -98,26 +98,17 @@ func SetUpCredential() {
     if strings.HasPrefix(vUpdateEndpoint, "http://") {
         vUpdateEndpoint = vUpdateEndpoint[7:]
     }
-    os.Stdout = out 
-    os.Stderr = errout 
-    fmt.Println(vUpdateEndpoint)
-    os.Stdout = testLogFile 
-    os.Stderr = testLogFile 
 }
 
 // Run before each test or benchmark starts running
 func (s *OssutilCommandSuite) TearDownSuite(c *C) {
     testLogger.Println("test command completed")
-    //s.removeBucket(bucketNameExist, true, c)
-    //s.removeBucket(bucketNameDest, true, c)
-    //s.removeBuckets(bucketNamePrefix, c)
     _ = os.Remove(configFile)
     _ = os.Remove(resultPath)
     _ = os.Remove(uploadFileName)
     _ = os.Remove(downloadFileName)
     os.Stdout = out
     os.Stderr = errout
-    time.Sleep(sleepTime)
 }
 
 // Run after each test or benchmark runs

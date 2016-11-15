@@ -905,10 +905,10 @@ func (cc *CopyCommand) confirm(str string) bool {
 }
 
 func (cc *CopyCommand) ossPutObjectRetry(bucket *oss.Bucket, objectName string, content string) error {
-    fmt.Println("&&&&&putobject:", objectName)
 	retryTimes, _ := GetInt(OptionRetryTimes, cc.command.options)
 	for i := 1; ; i++ {
 		err := bucket.PutObject(objectName, strings.NewReader(content))
+        fmt.Println("&&&&&putobject:", objectName, err)
 		if err == nil {
 			return err
 		}
