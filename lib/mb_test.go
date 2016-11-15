@@ -47,9 +47,7 @@ func (s *OssutilCommandSuite) rawPutBucketWithACLLanguage(args []string, acl, la
 
 func (s *OssutilCommandSuite) TestMakeBucket(c *C) {
     s.SetUpBucketEnv(c)
-    bucket := bucketNamePrefix + "mb" 
-    s.putBucket(bucket, c)
-    time.Sleep(sleepTime)
+    bucket := bucketNameExist 
 
     // put bucket already exists
     s.putBucket(bucket, c)
@@ -70,21 +68,6 @@ func (s *OssutilCommandSuite) TestMakeBucket(c *C) {
         c.Assert(bucketStat[StatName], Equals, bucket)
         c.Assert(bucketStat[StatACL], Equals, acl)
     }
-
-/*    result := []string{"private", "public-read", "public-read-write"}
-    for i, str := range []string{"private", "public-read", "public-read-write"} {
-        showElapse, err := s.putBucketWithACL(bucket, str)
-        c.Assert(err, IsNil)
-        c.Assert(showElapse, Equals, true)
-        time.Sleep(sleepTime)
-
-        bucketStat := s.getStat(bucket, "", c) 
-        c.Assert(bucketStat[StatName], Equals, bucket)
-        c.Assert(bucketStat[StatACL], Equals, result[i])
-    }
-*/
-    s.removeBucket(bucket, true, c)
-    time.Sleep(sleepTime)
 }
 
 func (s *OssutilCommandSuite) TestMakeBucketErrorName(c *C) {
