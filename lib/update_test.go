@@ -20,9 +20,13 @@ func (s *OssutilCommandSuite) rawUpdate(force bool, language string) (bool, erro
 }
 
 func (s *OssutilCommandSuite) TestUpdate(c *C) {
+    os.Stdout = out 
+    os.Stderr = errout 
     showElapse, err := s.rawUpdate(false, "中文")
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, false)
+    os.Stdout = testLogFile 
+    os.Stderr = testLogFile 
 
     showElapse, err = s.rawUpdate(false, "English")
     c.Assert(err, IsNil)
