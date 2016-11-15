@@ -38,9 +38,8 @@ func (s *OssutilCommandSuite) rawCPWithArgs(args []string, recursive, force, upd
 }
 
 func (s *OssutilCommandSuite) TestCPObject(c *C) {
-    s.SetUpBucketEnv(c)
-    bucket := bucketNamePrefix + "cp1"
-    s.putBucket(bucket, c)
+    bucket := bucketNameExist 
+    s.removeObjects(bucket, "", true, true, c)
     time.Sleep(sleepTime)
 
     destBucket := bucketNameNotExist 
@@ -162,9 +161,6 @@ func (s *OssutilCommandSuite) TestCPObject(c *C) {
     str = s.readFile(filePath, c) 
     c.Assert(str, Equals, data1)
     _ = os.Remove(filePath)
-
-    s.removeBucket(bucket, true, c)
-    time.Sleep(sleepTime) 
 }
 
 func (s *OssutilCommandSuite) TestErrorCP(c *C) {
