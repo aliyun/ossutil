@@ -908,7 +908,7 @@ func (cc *CopyCommand) ossPutObjectRetry(bucket *oss.Bucket, objectName string, 
 	retryTimes, _ := GetInt(OptionRetryTimes, cc.command.options)
 	for i := 1; ; i++ {
 		err := bucket.PutObject(objectName, strings.NewReader(content))
-        fmt.Println("&&&&&putobject:", objectName, err)
+        fmt.Println("&&&&&&putobject:", objectName, err)
 		if err == nil {
 			return err
 		}
