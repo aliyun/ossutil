@@ -52,8 +52,8 @@ func (s *OssutilCommandSuite) TestMakeBucket(c *C) {
     s.putBucket(bucket, c)
 
     // get bucket stat 
-    bucketStat := s.getStat(bucket, "", c) 
-    c.Assert(bucketStat[StatName], Equals, bucket)
+    bucketStat := s.getStat(bucketNameDest, "", c) 
+    c.Assert(bucketStat[StatName], Equals, bucketNameDest)
     c.Assert(bucketStat[StatACL], Equals, "private")
 
     // put bucket with ACL

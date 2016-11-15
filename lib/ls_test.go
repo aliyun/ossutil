@@ -324,8 +324,7 @@ func (s *OssutilCommandSuite) TestListIDKey(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestListBucketIDKey(c *C) {
-    bucket := bucketNamePrefix + "lsidkey1"
-    s.putBucket(bucket, c)
+    bucket := bucketNameExist 
 
     cfile := "ossutil_test.config_boto"
     data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Endpoint]\n%s=%s[Bucket-Cname]\n%s=%s", "abc", "def", "ghi", bucket, "abc", bucket, "abc") 
@@ -356,7 +355,4 @@ func (s *OssutilCommandSuite) TestListBucketIDKey(c *C) {
     c.Assert(showElapse, Equals, true)
 
     _ = os.Remove(cfile)
-
-    s.removeBucket(bucket, true, c)
-    time.Sleep(sleepTime)
 }

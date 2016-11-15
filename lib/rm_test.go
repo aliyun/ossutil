@@ -260,7 +260,7 @@ func (s *OssutilCommandSuite) TestErrDeleteObject(c *C) {
 func (s *OssutilCommandSuite) TestRemoveIDKey(c *C) {
     bucket := bucketNamePrefix + "rmidkey"
     s.putBucket(bucket, c)
-    time.Sleep(sleepTime)
+    time.Sleep(2*sleepTime)
 
     cfile := "ossutil_test.config_boto"
     data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Endpoint]\n%s=%s[Bucket-Cname]\n%s=%s", "abc", "def", "ghi", bucket, "abc", bucket, "abc") 

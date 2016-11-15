@@ -79,6 +79,9 @@ func (s *OssutilCommandSuite) TestGetStatNotExist(c *C) {
     c.Assert(showElapse, Equals, false)
 
     bucket = bucketNameExist
+    s.removeObjects(bucket, object, true, true, c)
+    time.Sleep(sleepTime)
+
     showElapse, err = s.rawGetStat(bucket, "")
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true)
@@ -88,12 +91,11 @@ func (s *OssutilCommandSuite) TestGetStatNotExist(c *C) {
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
 
+    object = "testobject_exist"
     s.putObject(bucket, object, uploadFileName, c)
     showElapse, err = s.rawGetStat(bucket, object)
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true)
-
-    s.removeObjects(bucket, object, true, true, c)
 }
 
 func (s *OssutilCommandSuite) TestGetStatRetryTimes(c *C) {
