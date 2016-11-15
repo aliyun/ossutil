@@ -92,6 +92,17 @@ func SetUpCredential() {
     if ub := os.Getenv("OSS_TEST_UPDATE_BUCKET"); ub != "" {
         vUpdateBucket = ub
     }
+    if strings.HasPrefix(vUpdateEndpoint, "https://") {
+        vUpdateEndpoint = vUpdateEndpoint[8:]
+    }
+    if strings.HasPrefix(vUpdateEndpoint, "http://") {
+        vUpdateEndpoint = vUpdateEndpoint[7:]
+    }
+    os.Stdout = out 
+    os.Stderr = errout 
+    fmt.Println(vUpdateEndpoint)
+    os.Stdout = testLogFile 
+    os.Stderr = testLogFile 
 }
 
 // Run before each test or benchmark starts running

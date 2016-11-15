@@ -199,6 +199,7 @@ func (uc *UpdateCommand) ossAnonymousGetToFile(host, filePath string) error {
     fmt.Println("&&&&&ossAnonymousGetToFile1")
     response, err := http.Get(host)
     if err != nil {
+        fmt.Println("&&&&&&&errofhttpget:", err)
         return err
     }
     defer response.Body.Close()
