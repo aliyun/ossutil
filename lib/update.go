@@ -196,33 +196,27 @@ func (uc *UpdateCommand) anonymousGetToFileRetry(bucketName, objectName, filePat
 }
 
 func (uc *UpdateCommand) ossAnonymousGetToFile(host, filePath string) error {
-    fmt.Println("&&&&&ossAnonymousGetToFile1")
     response, err := http.Get(host)
     if err != nil {
-        fmt.Println("&&&&&&&errofhttpget:", err)
         return err
     }
     defer response.Body.Close()
-    fmt.Println("&&&&&ossAnonymousGetToFile2")
     statusCode := response.StatusCode
     body, _ := ioutil.ReadAll(response.Body)
     if statusCode >= 300 { 
         return fmt.Errorf(string(body))
     }
 
-    fmt.Println("&&&&ossAnonymousGetToFile3")
     fd, err := os.OpenFile(filePath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0660)
     defer fd.Close()
     if err != nil {
         return err
     }
 
-    fmt.Println("&&&&&ossAnonymousGetToFile4")
     _, err = io.WriteString(fd, string(body))
     if err != nil {
         return err
     }
-    fmt.Println("&&&&&ossAnonymousGetToFile4")
     return nil
 }
 
