@@ -3,7 +3,6 @@ package lib
 import (
     "fmt"
     "os"
-    "time"
 
     . "gopkg.in/check.v1"
 )
