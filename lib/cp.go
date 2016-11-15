@@ -903,7 +903,7 @@ func (cc *CopyCommand) confirm(str string) bool {
 }
 
 func (cc *CopyCommand) ossPutObjectRetry(bucket *oss.Bucket, objectName string, content string) error {
-    fmt.Println("&&&&&:", objectName)
+    fmt.Println("&&&&&putobject:", objectName)
 	retryTimes, _ := GetInt(OptionRetryTimes, cc.command.options)
 	for i := 1; ; i++ {
 		err := bucket.PutObject(objectName, strings.NewReader(content))
@@ -917,7 +917,7 @@ func (cc *CopyCommand) ossPutObjectRetry(bucket *oss.Bucket, objectName string, 
 }
 
 func (cc *CopyCommand) ossUploadFileRetry(bucket *oss.Bucket, objectName string, filePath string) error {
-    fmt.Println("&&&&&:", objectName)
+    fmt.Println("&&&&&uploadfile:", objectName)
 	retryTimes, _ := GetInt(OptionRetryTimes, cc.command.options)
 	for i := 1; ; i++ {
 		err := bucket.PutObjectFromFile(objectName, filePath)

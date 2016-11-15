@@ -1,11 +1,11 @@
 package lib 
 
 import (
-    //"os"
+    "os"
     //"time"
     //"fmt"
 
-    //. "gopkg.in/check.v1"
+    . "gopkg.in/check.v1"
 )
 
 func (s *OssutilCommandSuite) rawUpdate(force bool, language string) (bool, error) {
@@ -19,7 +19,6 @@ func (s *OssutilCommandSuite) rawUpdate(force bool, language string) (bool, erro
     return showElapse, err
 }
 
-/*
 func (s *OssutilCommandSuite) TestUpdate(c *C) {
     showElapse, err := s.rawUpdate(false, "中文")
     c.Assert(err, IsNil)
@@ -40,6 +39,25 @@ func (s *OssutilCommandSuite) TestUpdate(c *C) {
     c.Assert(err, IsNil)
 }
 
+func (s *OssutilCommandSuite) TestRevertRename(c *C) {
+    filePath := ".ossutil_tempf"
+    renameFilePath := ".ossutil_tempr"
+
+    s.createFile(filePath, filePath + "i", c)
+    s.createFile(renameFilePath, renameFilePath + "i", c)
+
+    updateCommand.revertRename(filePath, renameFilePath)
+    _, err := os.Stat(renameFilePath) 
+    c.Assert(err, NotNil)
+
+    str := s.readFile(filePath, c) 
+    c.Assert(str, Equals, renameFilePath + "i")
+
+    _ = os.Remove(filePath)
+    _ = os.Remove(renameFilePath)
+}
+
+/*
 func (s *OssutilCommandSuite) TestDownloadLastestBinary(c *C) {
     tempBinaryFile := ".ossutil_test_update.temp"  
     err := updateCommand.getBinary(tempBinaryFile, "1.0.0.Beta") 
@@ -68,21 +86,4 @@ func (s *OssutilCommandSuite) TestAnonymousGetToFileError(c *C) {
     os.Stderr = testLogFile 
 }
 
-func (s *OssutilCommandSuite) TestRevertRename(c *C) {
-    filePath := ".ossutil_tempf"
-    renameFilePath := ".ossutil_tempr"
-
-    s.createFile(filePath, filePath + "i", c)
-    s.createFile(renameFilePath, renameFilePath + "i", c)
-
-    updateCommand.revertRename(filePath, renameFilePath)
-    _, err := os.Stat(renameFilePath) 
-    c.Assert(err, NotNil)
-
-    str := s.readFile(filePath, c) 
-    c.Assert(str, Equals, renameFilePath + "i")
-
-    _ = os.Remove(filePath)
-    _ = os.Remove(renameFilePath)
-}
 */
