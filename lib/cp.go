@@ -790,14 +790,16 @@ func (cc *CopyCommand) uploadConsumer(bucket *oss.Bucket, destURL CloudURL, cpOp
 	for file := range chFiles {
 		if cc.filterFile(file, cpOption.cpDir) {
 			skip, err := cc.uploadFile(bucket, destURL, cpOption, file)
-            fmt.Println(file, err)
 			if err != nil {
+                fmt.Println(file, err)
 				chError <- err
 				return
 			}
 			if skip {
+                fmt.Println("skip:", file)
 				chSkipFiles <- file
 			} else {
+                fmt.Println("upload:", file)
 				chFinishFiles <- file
 			}
 		}

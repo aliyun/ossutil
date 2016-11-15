@@ -197,37 +197,7 @@ func (s *OssutilCommandSuite) TestRemoveObjectBucketOption(c *C) {
     buckets := s.listBuckets(false, c)
     c.Assert(FindPos(bucket, buckets) != -1, Equals, true)
 }
-/*
-func (s *OssutilCommandSuite) TestRemoveObjectBucketOption(c *C) {
-    bucket := bucketNamePrefix + "rmb5"
-    s.putBucket(bucket, c)
-    time.Sleep(sleepTime)
 
-    object := "test_object"
-    command := "rm"
-    args := []string{CloudURLToString(bucket, object)}
-    str := ""
-    ok := true
-    options := OptionMapType{
-        "endpoint": &str,
-        "accessKeyID": &str,
-        "accessKeySecret": &str,
-        "stsToken": &str,
-        "configFile": &configFile,
-        "bucket": &ok,
-        "force": &ok,
-    }
-    _, err := cm.RunCommand(command, args, options)
-    c.Assert(err, NotNil)
-
-    // list buckets
-    buckets := s.listBuckets(false, c)
-    c.Assert(FindPos(bucket, buckets) != -1, Equals, true)
-
-    s.removeBucket(bucket, true, c)
-    time.Sleep(sleepTime) 
-}
-*/
 func (s *OssutilCommandSuite) TestErrRemove(c *C) {
     bucket := bucketNameExist 
 
