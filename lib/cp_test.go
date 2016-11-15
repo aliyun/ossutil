@@ -481,6 +481,9 @@ func (s *OssutilCommandSuite) TestCPObjectUpdate(c *C) {
     _ = os.Remove(oldFile)
     _ = os.Remove(newFile)
     _ = os.Remove(destFile)
+
+    s.removeObjects(bucket, "", true, true, c)
+    time.Sleep(sleepTime)
 }
 
 func (s *OssutilCommandSuite) TestResumeCPObject(c *C) { 
