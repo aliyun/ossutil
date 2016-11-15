@@ -175,6 +175,7 @@ func (s *OssutilCommandSuite) TestListBuckets(c *C) {
     time.Sleep(2*sleepTime)
 
     buckets := s.listBuckets(false, c)
+    fmt.Println("&&&&&buckets after remove:", buckets)
     bucketNum := len(buckets)
 
     // "ls -s"
@@ -188,6 +189,7 @@ func (s *OssutilCommandSuite) TestListBuckets(c *C) {
 
     // get result
     buckets = s.listBuckets(false, c)
+    fmt.Println("&&&&&buckets after put:", buckets)
     c.Assert(FindPos(bucket, buckets) != -1, Equals, true)
     c.Assert(len(buckets), Equals, bucketNum + 1)
 
@@ -197,6 +199,7 @@ func (s *OssutilCommandSuite) TestListBuckets(c *C) {
 
     // get result
     buckets = s.listBuckets(false, c)
+    fmt.Println("&&&&&buckets after remove:", buckets)
     c.Assert(FindPos(bucket, buckets) == -1, Equals, true)
     c.Assert(len(buckets), Equals, bucketNum)
 }

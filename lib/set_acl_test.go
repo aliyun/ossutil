@@ -166,9 +166,9 @@ func (s *OssutilCommandSuite) TestSetObjectACL(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestBatchSetObjectACL(c *C) {
-    bucket := bucketNamePrefix + "bsoal" 
-    s.putBucket(bucket, c)
-    time.Sleep(2*sleepTime) 
+    bucket := bucketNameExist 
+    s.removeObjects(bucket, "", true, true, c)
+    time.Sleep(sleepTime) 
 
     // put objects
     num := 10
@@ -208,9 +208,6 @@ func (s *OssutilCommandSuite) TestBatchSetObjectACL(c *C) {
     showElapse, err := s.rawSetObjectACL(bucket, "设置权限", "erracl", true, true)
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
-
-    s.removeBucket(bucket, true, c)
-    time.Sleep(sleepTime) 
 }
 
 func (s *OssutilCommandSuite) TestErrSetACL(c *C) {
