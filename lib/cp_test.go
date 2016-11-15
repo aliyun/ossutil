@@ -369,8 +369,8 @@ func (s *OssutilCommandSuite) TestBatchCPObject(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestCPObjectUpdate(c *C) {
-    bucket := bucketNamePrefix + "cpupdate" 
-    s.putBucket(bucket, c)
+    bucket := bucketNameExist 
+    s.removeObjects(bucket, "", true, true, c)
     time.Sleep(sleepTime) 
 
     // create older file and newer file
@@ -480,9 +480,6 @@ func (s *OssutilCommandSuite) TestCPObjectUpdate(c *C) {
     _ = os.Remove(oldFile)
     _ = os.Remove(newFile)
     _ = os.Remove(destFile)
-
-    s.removeBucket(bucket, true, c)
-    time.Sleep(sleepTime) 
 }
 
 func (s *OssutilCommandSuite) TestResumeCPObject(c *C) { 

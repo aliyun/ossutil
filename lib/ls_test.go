@@ -114,8 +114,7 @@ func (s *OssutilCommandSuite) TestListConfigFile(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestListWithBucketEndpoint(c *C) {
-    bucket := bucketNamePrefix + "ls"
-    s.putBucket(bucket, c)
+    bucket := bucketNameExist 
 
     cfile := "ossutil_test.config_boto"
     data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Endpoint]\n%s=%s", "abc", accessKeyID, accessKeySecret, bucket, endpoint) 
@@ -136,8 +135,6 @@ func (s *OssutilCommandSuite) TestListWithBucketEndpoint(c *C) {
     c.Assert(showElapse, Equals, true)
 
     _ = os.Remove(cfile)
-    s.removeBucket(bucket, true, c) 
-    time.Sleep(sleepTime)
 }
 
 func (s *OssutilCommandSuite) TestListWithBucketCname(c *C) {
