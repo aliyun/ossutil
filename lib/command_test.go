@@ -49,7 +49,7 @@ var (
     cm                  = CommandManager{}
     out                 = os.Stdout
     errout              = os.Stderr
-    sleepTime           = 7*time.Second
+    sleepTime           = 5*time.Second
 )
 
 // Run once when the suite starts running
@@ -109,6 +109,8 @@ func (s *OssutilCommandSuite) TearDownSuite(c *C) {
     _ = os.Remove(downloadFileName)
     os.Stdout = out
     os.Stderr = errout
+    s.removeObjects(bucketNameExist, "", true, true, c)
+    s.removeObjects(bucketNameDest, "", true, true, c)
 }
 
 // Run after each test or benchmark runs
