@@ -49,7 +49,7 @@ var (
     cm                  = CommandManager{}
     out                 = os.Stdout
     errout              = os.Stderr
-    sleepTime           = 8*time.Second
+    sleepTime           = 7*time.Second
 )
 
 // Run once when the suite starts running
@@ -206,9 +206,14 @@ func (s *OssutilCommandSuite) getResult(c *C) ([]string) {
 }
 
 func (s *OssutilCommandSuite) removeBucket(bucket string, clearObjects bool, c *C) {
+    os.Stdout = out 
+    os.Stderr = errout 
     args := []string{CloudURLToString(bucket, "")}
     showElapse, err := s.rawRemove(args, clearObjects, true, true)
+    fmt.Println("removebucket:", bucket, err)
     if err != nil {
+        os.Stdout = testLogFile 
+        os.Stderr = testLogFile 
         c.Assert(err.(oss.ServiceError).Code == "NoSuchBucket" || err.(oss.ServiceError).Code == "BucketAlreadyExist", Equals, true)
         c.Assert(showElapse, Equals, false)
     } else {
