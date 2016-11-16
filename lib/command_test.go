@@ -212,10 +212,12 @@ func (s *OssutilCommandSuite) removeBucket(bucket string, clearObjects bool, c *
     showElapse, err := s.rawRemove(args, clearObjects, true, true)
     fmt.Println("removebucket:", bucket, err)
     if err != nil {
+        error := err.(BucketError).err
+        c.Assert(error.(oss.ServiceError).Code == "NoSuchBucket" || error.(oss.ServiceError).Code == "BucketAlreadyExist", Equals, true)
+        //c.Assert(err.(oss.ServiceError).Code == "NoSuchBucket" || err.(oss.ServiceError).Code == "BucketAlreadyExist", Equals, true)
+        c.Assert(showElapse, Equals, false)
         os.Stdout = testLogFile 
         os.Stderr = testLogFile 
-        c.Assert(err.(oss.ServiceError).Code == "NoSuchBucket" || err.(oss.ServiceError).Code == "BucketAlreadyExist", Equals, true)
-        c.Assert(showElapse, Equals, false)
     } else {
         c.Assert(showElapse, Equals, true)
     }
