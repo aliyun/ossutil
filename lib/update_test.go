@@ -77,6 +77,7 @@ func (s *OssutilCommandSuite) TestAnonymousGetToFileError(c *C) {
     err = updateCommand.anonymousGetToFileRetry(bucket, object, fileName)
     c.Assert(err, NotNil)
 
+    s.renameObjects(bucket, "", true, true, c)
     s.removeBucket(bucket, true, c) 
     time.Sleep(sleepTime)
 }
