@@ -64,6 +64,7 @@ func (s *OssutilCommandSuite) TestSetBucketACL(c *C) {
 func (s *OssutilCommandSuite) TestSetBucketErrorACL(c *C) {
     bucket := bucketNamePrefix + "acl2" 
     s.putBucket(bucket, c)
+    time.Sleep(sleepTime)
 
     for _, acl := range []string{"default", "def", "erracl", "私有"} {
         showElapse, err := s.rawSetBucketACL(bucket, acl, false)
@@ -78,6 +79,7 @@ func (s *OssutilCommandSuite) TestSetBucketErrorACL(c *C) {
         c.Assert(bucketStat[StatACL], Equals, "private")
     }
     s.removeBucket(bucket, true, c)
+    time.Sleep(sleepTime)
 }
 
 func (s *OssutilCommandSuite) TestSetNotExistBucketACL(c *C) {
