@@ -49,7 +49,7 @@ var (
     cm                  = CommandManager{}
     out                 = os.Stdout
     errout              = os.Stderr
-    sleepTime           = 6*time.Second
+    sleepTime           = 7*time.Second
 )
 
 // Run once when the suite starts running
@@ -103,8 +103,6 @@ func SetUpCredential() {
 // Run before each test or benchmark starts running
 func (s *OssutilCommandSuite) TearDownSuite(c *C) {
     testLogger.Println("test command completed")
-    s.removeObjects(bucketNameExist, "", true, true, c)
-    s.removeObjects(bucketNameDest, "", true, true, c)
     _ = os.Remove(configFile)
     _ = os.Remove(resultPath)
     _ = os.Remove(uploadFileName)
