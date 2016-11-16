@@ -211,6 +211,7 @@ func (s *OssutilCommandSuite) removeBucket(bucket string, clearObjects bool, c *
     args := []string{CloudURLToString(bucket, "")}
     showElapse, err := s.rawRemove(args, clearObjects, true, true)
     fmt.Println("removebucket:", bucket, err)
+    fmt.Println(err.(type))
     os.Stdout = testLogFile 
     os.Stderr = testLogFile 
     if err != nil {
