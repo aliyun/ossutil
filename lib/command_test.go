@@ -214,8 +214,7 @@ func (s *OssutilCommandSuite) removeBucket(bucket string, clearObjects bool, c *
     os.Stdout = testLogFile 
     os.Stderr = testLogFile 
     if err != nil {
-        error := err.(BucketError).err
-        c.Assert(error.(oss.ServiceError).Code == "NoSuchBucket" || error.(oss.ServiceError).Code == "BucketNotEmpty", Equals, true)
+        c.Assert(err.(oss.ServiceError).Code == "NoSuchBucket" || (err.(BucketError).err).(oss.ServiceError).Code == "BucketNotEmpty", Equals, true)
         c.Assert(showElapse, Equals, false)
     } else {
         c.Assert(showElapse, Equals, true)
