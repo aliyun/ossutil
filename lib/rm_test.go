@@ -26,8 +26,8 @@ func (s *OssutilCommandSuite) rawRemove(args []string, recursive, force, bucket 
 }
 
 func (s *OssutilCommandSuite) TestRemoveObject(c *C) {
-    bucket := bucketNamePrefix + "rmb" 
-    s.putBucket(bucket, c)
+    bucket := bucketNameExist 
+    s.removeObjects(bucket, "", true, true, c)
     time.Sleep(sleepTime) 
 
     // put object
@@ -45,9 +45,6 @@ func (s *OssutilCommandSuite) TestRemoveObject(c *C) {
     // list object
     objects = s.listObjects(bucket, "", false, false, c)
     c.Assert(len(objects), Equals, 0)
-
-    s.removeBucket(bucket, true, c)
-    time.Sleep(sleepTime) 
 }
 
 func (s *OssutilCommandSuite) TestRemoveObjects(c *C) {
