@@ -370,7 +370,7 @@ func (s *OssutilCommandSuite) TestCPObjectUpdate(c *C) {
     newData := "new data"
     newFile := "newFile"
     s.createFile(oldFile, oldData, c)
-    time.Sleep(time.Second)
+    time.Sleep(2*time.Second)
     s.createFile(newFile, newData, c)
 
     // put newer object
@@ -436,7 +436,6 @@ func (s *OssutilCommandSuite) TestCPObjectUpdate(c *C) {
     c.Assert(str, Equals, downData)
 
     // copy object with update
-    //destBucket := bucketNamePrefix + "updatedest"  
     destBucket := bucketNameDest 
 
     destData := "data for dest bucket"

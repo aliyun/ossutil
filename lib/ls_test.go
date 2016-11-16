@@ -268,9 +268,6 @@ func (s *OssutilCommandSuite) TestListObjects(c *C) {
 
     objects = s.listObjects(bucket, "中文测试:#1/", false, true, c)
     c.Assert(len(objects), Equals, 2)
-
-    s.removeObjects(bucket, "", true, true, c) 
-    time.Sleep(2*sleepTime)
 }
 
 func (s *OssutilCommandSuite) TestErrList(c *C) {

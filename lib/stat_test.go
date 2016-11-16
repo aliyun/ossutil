@@ -47,7 +47,7 @@ func (s *OssutilCommandSuite) TestStatErrArgc(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestGetBucketStat(c *C) {
-    bucket := bucketNameExist 
+    bucket := bucketNameDest 
 
     // get bucket stat 
     bucketStat := s.getStat(bucket, "", c) 
