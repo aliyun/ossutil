@@ -275,7 +275,8 @@ func (s *OssutilCommandSuite) TestBatchCPObject(c *C) {
     c.Assert(showElapse, Equals, false)
 
     // create dir in dir 
-    subdir := "子目录"
+    //subdir := "子目录"
+    subdir := "SUBDIR"
     err = os.MkdirAll(dir + "/" + subdir, 0777)
     c.Assert(err, IsNil)
 
@@ -290,7 +291,7 @@ func (s *OssutilCommandSuite) TestBatchCPObject(c *C) {
     os.Stdout = testLogFile 
     os.Stderr = testLogFile 
 
-    time.Sleep(sleepTime)
+    time.Sleep(2*sleepTime)
 
     s.getStat(bucket, subdir + "/", c)
 
