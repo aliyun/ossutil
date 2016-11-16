@@ -311,12 +311,8 @@ func (s *OssutilCommandSuite) TestBatchCPObject(c *C) {
     os.Stdout = testLogFile 
     os.Stderr = testLogFile 
 
-    time.Sleep(10*time.Second)
-/*
-    for _, filePath := range filePaths {
-        s.getStat(bucket, filePath, c)
-    }
-*/
+    time.Sleep(sleepTime)
+
     // get files
     downDir := "下载目录"
     showElapse, err = s.rawCP(CloudURLToString(bucket, ""), downDir, true, true, false, BigFileThreshold, CheckpointDir)
