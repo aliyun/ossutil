@@ -370,8 +370,6 @@ func (s *OssutilCommandSuite) TestCPObjectUpdate(c *C) {
     newData := "new data"
     newFile := "newFile"
     s.createFile(oldFile, oldData, c)
-    time.Sleep(2*time.Second)
-    s.createFile(newFile, newData, c)
 
     // put newer object
     object := "testobject"
@@ -381,6 +379,9 @@ func (s *OssutilCommandSuite) TestCPObjectUpdate(c *C) {
     s.getObject(bucket, object, downloadFileName, c)
     str := s.readFile(downloadFileName, c) 
     c.Assert(str, Equals, newData)
+
+    time.Sleep(1000000)
+    s.createFile(newFile, newData, c)
 
     os.Stdout = out 
     os.Stderr = errout 
