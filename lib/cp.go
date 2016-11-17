@@ -854,12 +854,14 @@ func (cc *CopyCommand) uploadFile(bucket *oss.Bucket, destURL CloudURL, cpOption
 }
 
 func (cc *CopyCommand) makeObjectName(destURL CloudURL, file fileInfoType) string {
-	if destURL.object == "" || strings.HasSuffix(destURL.object, "/") || strings.HasSuffix(destURL.object, "\\") {
+	if destURL.object == "" || strings.HasSuffix(destURL.object, "/") || strings.HasSuffix(destURL.object, "\\") || strings.HasSuffix(destURL.object, string(os.PathSeparator)){
         // replace "\" of file.filePath to "/"
         filePath := file.filePath
-        if string(os.PathSeparator) != "/" {
+        /*if string(os.PathSeparator) != "/" {
             filePath = strings.Replace(file.filePath, string(os.PathSeparator), "/", -1)
-        }
+        }*/
+        filePath = strings.Replace(file.filePath, string(os.PathSeparator), "/", -1)
+        filePath = strings.Replace(file.filePath, "\\", "/", -1)
 		return destURL.object + filePath
 	}
 	return destURL.object

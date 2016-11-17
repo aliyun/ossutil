@@ -132,14 +132,14 @@ func (s *OssutilCommandSuite) TestSetObjectACL(c *C) {
     s.putBucket(bucket, c)
     time.Sleep(sleepTime)
 
-    object := "TestSetObjectACL_未上传的文件"
+    object := "未上传的文件"
 
     // set acl to not exist object
     showElapse, err := s.rawSetObjectACL(bucket, object, "default", false, true)
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
 
-    object = "TestSetObjectACL_newobject"
+    object = "newobject"
     s.putObject(bucket, object, uploadFileName, c)
 
     //get object acl
@@ -179,8 +179,8 @@ func (s *OssutilCommandSuite) TestBatchSetObjectACL(c *C) {
         s.putObject(bucket, object, uploadFileName, c)
         objectNames = append(objectNames, object)
     }
+    time.Sleep(time.Second)
 
-    time.Sleep(sleepTime)
     for _, object := range objectNames {
         objectStat := s.getStat(bucket, object, c)
         c.Assert(objectStat[StatACL], Equals, "default")

@@ -53,10 +53,8 @@ func (s *OssutilCommandSuite) TestSetBucketMeta(c *C) {
 
 func (s *OssutilCommandSuite) TestSetObjectMeta(c *C) {
     bucket := bucketNameExist 
-    s.removeObjects(bucket, "", true, true, c)
-    time.Sleep(2*sleepTime)
 
-    object := "TestSetObjectMeta_testobject" 
+    object := "testobject" 
     s.putObject(bucket, object, uploadFileName, c)
 
     objectStat := s.getStat(bucket, object, c) 
@@ -185,7 +183,7 @@ func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
     num := 10
     objectNames := []string{}
     for i := 0; i < num; i++ {
-        object := fmt.Sprintf("TestBatchSetObjectMeta_设置元信息：%d", i)
+        object := fmt.Sprintf("设置元信息：%d", i)
         s.putObject(bucket, object, uploadFileName, c)
         objectNames = append(objectNames, object)
     }
@@ -210,7 +208,7 @@ func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
     }
 
      // delete
-    s.setObjectMeta(bucket, "TestBatchSetObjectMeta_设置元信息：", "X-Oss-Meta-update", false, true, true, true, c)
+    s.setObjectMeta(bucket, "设置元信息：", "X-Oss-Meta-update", false, true, true, true, c)
    
     for _, object := range objectNames {
         objectStat := s.getStat(bucket, object, c) 
@@ -236,7 +234,7 @@ func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
         c.Assert(ok, Equals, false)
     }
 
-    s.setObjectMeta(bucket, "TestBatchSetObjectMeta_设置元信息", "X-Oss-Meta-c:c", false, false, true, true, c)
+    s.setObjectMeta(bucket, "设置元信息", "X-Oss-Meta-c:c", false, false, true, true, c)
     for _, object := range objectNames {
         objectStat := s.getStat(bucket, object, c) 
         c.Assert(objectStat["X-Oss-Meta-C"], Equals, "c") 
@@ -247,7 +245,7 @@ func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
     }
 
     // error meta
-    showElapse, err := s.rawSetMeta(bucket, "TestBatchSetObjectMeta_设置元信息：", "X-Oss-Meta-c:c", false, true, true, true, DefaultLanguage)
+    showElapse, err := s.rawSetMeta(bucket, "设置元信息：", "X-Oss-Meta-c:c", false, true, true, true, DefaultLanguage)
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
 
@@ -263,7 +261,7 @@ func (s *OssutilCommandSuite) TestErrBatchSetMeta(c *C) {
     num := 10
     objectNames := []string{}
     for i := 0; i < num; i++ {
-        object := fmt.Sprintf("TestErrBatchSetMeta_设置元信息：%d", i)
+        object := fmt.Sprintf("设置元信息：%d", i)
         s.putObject(bucket, object, uploadFileName, c)
         objectNames = append(objectNames, object)
     }
