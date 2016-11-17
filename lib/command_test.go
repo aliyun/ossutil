@@ -64,12 +64,9 @@ func (s *OssutilCommandSuite) SetUpSuite(c *C) {
     s.removeBuckets(bucketNamePrefix, c)
     s.removeBucket(bucketNameExist, true, c)
     s.removeBucket(bucketNameDest, true, c)
-    time.Sleep(2*sleepTime)
+    time.Sleep(3*sleepTime)
     s.putBucket(bucketNameExist, c)
     s.putBucket(bucketNameDest, c)
-    time.Sleep(2*sleepTime)
-    s.removeObjects(bucketNameExist, "", true, true, c)
-    s.removeObjects(bucketNameDest, "", true, true, c)
     time.Sleep(3*sleepTime)
 }
 
