@@ -49,7 +49,7 @@ var (
     cm                  = CommandManager{}
     out                 = os.Stdout
     errout              = os.Stderr
-    sleepTime           = 7*time.Second
+    sleepTime           = 5*time.Second
 )
 
 // Run once when the suite starts running
@@ -68,6 +68,9 @@ func (s *OssutilCommandSuite) SetUpSuite(c *C) {
     s.putBucket(bucketNameExist, c)
     s.putBucket(bucketNameDest, c)
     time.Sleep(2*sleepTime)
+    s.removeObjects(bucketNameExist, "", true, true, c)
+    s.removeObjects(bucketNameDest, "", true, true, c)
+    time.Sleep(3*sleepTime)
 }
 
 func SetUpCredential() {

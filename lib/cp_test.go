@@ -40,13 +40,13 @@ func (s *OssutilCommandSuite) rawCPWithArgs(args []string, recursive, force, upd
 func (s *OssutilCommandSuite) TestCPObject(c *C) {
     bucket := bucketNameExist 
     s.removeObjects(bucket, "", true, true, c)
-    time.Sleep(2*sleepTime)
+    time.Sleep(2*sleepTime) 
 
     destBucket := bucketNameNotExist 
 
     // put object
     s.createFile(uploadFileName, content, c)
-    object := "中文cp" 
+    object := "TestCPObject_中文cp" 
     s.putObject(bucket, object, uploadFileName, c)
 
     // get object
@@ -88,7 +88,7 @@ func (s *OssutilCommandSuite) TestCPObject(c *C) {
     _ = os.RemoveAll(notexistdir)
 
     // copy file
-    destObject := "destObject"
+    destObject := "TestCPObject_destObject"
     s.copyObject(bucket, object, bucket, destObject, c)
 
     objectStat := s.getStat(bucket, destObject, c)
