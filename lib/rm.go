@@ -297,14 +297,14 @@ func (rc *RemoveCommand) batchDeleteObjects(bucket *oss.Bucket, cloudURL CloudUR
 	for i := 0; ; i++ {
 		lor, err := rc.command.ossListObjectsRetry(bucket, marker, pre)
 		if err != nil {
-			return num, err
+			return num, BucketError{err, bucket.BucketName}
 		}
 
 		// batch delete
 		delNum, err := rc.ossBatchDeleteObjectsRetry(bucket, rc.getObjectsFromListResult(lor))
 		num += delNum
 		if err != nil {
-			return num, err
+			return num, BucketError{err, bucket.BucketName}
 		}
 		pre = oss.Prefix(lor.Prefix)
 		marker = oss.Marker(lor.NextMarker)
