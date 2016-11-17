@@ -49,7 +49,7 @@ var (
     cm                  = CommandManager{}
     out                 = os.Stdout
     errout              = os.Stderr
-    sleepTime           = 5*time.Second
+    sleepTime           = 7*time.Second
 )
 
 // Run once when the suite starts running
@@ -278,7 +278,6 @@ func (s *OssutilCommandSuite) putObject(bucket, object, fileName string, c *C) {
     showElapse, err := s.rawCPWithArgs(args, false, true, false, BigFileThreshold, CheckpointDir) 
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true)
-    time.Sleep(time.Second)
 }
 
 func (s *OssutilCommandSuite) getObject(bucket, object, fileName string, c *C) {
