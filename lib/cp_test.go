@@ -277,7 +277,7 @@ func (s *OssutilCommandSuite) TestBatchCPObject(c *C) {
 
     // create dir in dir 
     subdir := "SUBDIR"
-    err = os.MkdirAll(dir + os.PathSeparator + subdir, 0777)
+    err = os.MkdirAll(dir + string(os.PathSeparator) + subdir, 0777)
     c.Assert(err, IsNil)
 
     // upload dir    
