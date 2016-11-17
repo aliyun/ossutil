@@ -261,7 +261,6 @@ func (rc *RemoveCommand) ossDeleteBucketRetry(client *oss.Client, bucket string)
 	for i := 1; ; i++ {
 		err := client.DeleteBucket(bucket)
 		if err == nil {
-            fmt.Println("&&&&&&&&&&&&remove bucket:", bucket)
 			return err
 		}
 		if int64(i) >= retryTimes {

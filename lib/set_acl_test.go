@@ -169,7 +169,7 @@ func (s *OssutilCommandSuite) TestSetObjectACL(c *C) {
 func (s *OssutilCommandSuite) TestBatchSetObjectACL(c *C) {
     bucket := bucketNameExist 
     s.removeObjects(bucket, "", true, true, c)
-    time.Sleep(sleepTime) 
+    time.Sleep(2*sleepTime) 
 
     // put objects
     num := 10
