@@ -820,6 +820,7 @@ func (cc *CopyCommand) filterFile(file fileInfoType, cpDir string) bool {
 func (cc *CopyCommand) uploadFile(bucket *oss.Bucket, destURL CloudURL, cpOption copyOptionType, file fileInfoType) (bool, error) {
 	//first make object name
 	objectName := cc.makeObjectName(destURL, file)
+    fmt.Println("&&&&&&&&:", objectName)
 
 	filePath := file.filePath
 	if file.dir != "" {
@@ -907,6 +908,7 @@ func (cc *CopyCommand) ossPutObjectRetry(bucket *oss.Bucket, objectName string, 
 	for i := 1; ; i++ {
 		err := bucket.PutObject(objectName, strings.NewReader(content))
 		if err == nil {
+            fmt.Println("&&&&&&&&PutObject:", objectName)
 			return err
 		}
 		if int64(i) >= retryTimes {
