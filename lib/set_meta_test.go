@@ -148,6 +148,8 @@ func (s *OssutilCommandSuite) TestSetObjectMeta(c *C) {
 
 func (s *OssutilCommandSuite) TestSetNotExistObjectMeta(c *C) {
     bucket := bucketNameExist 
+    s.putBucket(bucket, c)
+    time.Sleep(sleepTime)
 
     object := "testobject-notexistone" 
     // set meta of not exist object
