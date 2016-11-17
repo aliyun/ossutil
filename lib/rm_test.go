@@ -28,7 +28,7 @@ func (s *OssutilCommandSuite) rawRemove(args []string, recursive, force, bucket 
 func (s *OssutilCommandSuite) TestRemoveObject(c *C) {
     bucket := bucketNameExist 
     s.removeObjects(bucket, "", true, true, c)
-    time.Sleep(sleepTime) 
+    time.Sleep(2*sleepTime) 
 
     // put object
     object := "test_object"
