@@ -172,7 +172,7 @@ func (s *OssutilCommandSuite) TestBatchSetObjectACL(c *C) {
     time.Sleep(2*sleepTime) 
 
     // put objects
-    num := 10
+    num := 3 
     objectNames := []string{}
     for i := 0; i < num; i++ {
         object := fmt.Sprintf("TestBatchSetObjectACL_设置权限:%d", i)

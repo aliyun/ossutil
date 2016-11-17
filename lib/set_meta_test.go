@@ -180,7 +180,7 @@ func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
     time.Sleep(2*sleepTime)
 
     // put objects
-    num := 10
+    num := 3 
     objectNames := []string{}
     for i := 0; i < num; i++ {
         object := fmt.Sprintf("设置元信息：%d", i)
@@ -261,7 +261,7 @@ func (s *OssutilCommandSuite) TestErrBatchSetMeta(c *C) {
     num := 10
     objectNames := []string{}
     for i := 0; i < num; i++ {
-        object := fmt.Sprintf("设置元信息：%d", i)
+        object := fmt.Sprintf("TestErrBatchSetMeta_设置元信息：%d", i)
         s.putObject(bucket, object, uploadFileName, c)
         objectNames = append(objectNames, object)
     }

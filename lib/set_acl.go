@@ -110,9 +110,9 @@ ACL：
 	sampleText: ` 
     (1)ossutil set-acl oss://bucket1 public-read-write -b 
 
-    (2)ossutil set-acl oss://bucket1/obj1 pr 
+    (2)ossutil set-acl oss://bucket1/obj1 private 
 
-    (3)ossutil set-acl oss://bucket1/obj def -r
+    (3)ossutil set-acl oss://bucket1/obj default -r
 `,
 }
 
@@ -182,9 +182,9 @@ Usage：
 	sampleText: ` 
     (1)ossutil set-acl oss://bucket1 public-read-write -b 
 
-    (2)ossutil set-acl oss://bucket1/obj1 pr 
+    (2)ossutil set-acl oss://bucket1/obj1 private 
 
-    (3)ossutil set-acl oss://bucket1/obj def -r
+    (3)ossutil set-acl oss://bucket1/obj default -r
 `,
 }
 
