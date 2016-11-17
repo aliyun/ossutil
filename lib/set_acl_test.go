@@ -169,13 +169,13 @@ func (s *OssutilCommandSuite) TestSetObjectACL(c *C) {
 func (s *OssutilCommandSuite) TestBatchSetObjectACL(c *C) {
     bucket := bucketNameExist 
     s.removeObjects(bucket, "", true, true, c)
-    time.Sleep(2*sleepTime) 
+    time.Sleep(sleepTime) 
 
     // put objects
     num := 10
     objectNames := []string{}
     for i := 0; i < num; i++ {
-        object := fmt.Sprintf("SetMeta:%d", i)
+        object := fmt.Sprintf("设置权限:%d", i)
         s.putObject(bucket, object, uploadFileName, c)
         objectNames = append(objectNames, object)
     }
@@ -195,7 +195,7 @@ func (s *OssutilCommandSuite) TestBatchSetObjectACL(c *C) {
     }
 
     for _, acl := range []string{"default", "private", "public-read", "public-read-write"} {
-        s.setObjectACL(bucket, "SetMeta", acl, true, true, c)
+        s.setObjectACL(bucket, "设置权限", acl, true, true, c)
         time.Sleep(time.Second)
 
         for _, object := range objectNames {
@@ -204,7 +204,7 @@ func (s *OssutilCommandSuite) TestBatchSetObjectACL(c *C) {
         }
     }
 
-    showElapse, err := s.rawSetObjectACL(bucket, "SetMeta", "erracl", true, true)
+    showElapse, err := s.rawSetObjectACL(bucket, "设置权限", "erracl", true, true)
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
 }
@@ -267,7 +267,7 @@ func (s *OssutilCommandSuite) TestErrBatchSetACL(c *C) {
     num := 10
     objectNames := []string{}
     for i := 0; i < num; i++ {
-        object := fmt.Sprintf("SetMeta:%d", i)
+        object := fmt.Sprintf("设置权限:%d", i)
         s.putObject(bucket, object, uploadFileName, c)
         objectNames = append(objectNames, object)
     }
