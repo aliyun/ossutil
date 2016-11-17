@@ -2,7 +2,6 @@ package lib
 
 import (
     "os"
-    "time"
 
     . "gopkg.in/check.v1"
 )
