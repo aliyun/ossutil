@@ -134,6 +134,7 @@ func (s *OssutilCommandSuite) TestCPObject(c *C) {
     // copy single object in directory, test the name of dest object 
     srcObject := "a/b/c/d/e"
     s.putObject(bucket, srcObject, uploadFileName, c)
+    time.Sleep(time.Second)
 
     s.copyObject(bucket, srcObject, destBucket, "", c)
 
@@ -370,6 +371,8 @@ func (s *OssutilCommandSuite) TestCPObjectUpdate(c *C) {
     newData := "new data"
     newFile := "newFile"
     s.createFile(oldFile, oldData, c)
+    time.Sleep(sleepTime)
+    s.createFile(newFile, newData, c)
 
     // put newer object
     object := "testobject"
@@ -379,9 +382,6 @@ func (s *OssutilCommandSuite) TestCPObjectUpdate(c *C) {
     s.getObject(bucket, object, downloadFileName, c)
     str := s.readFile(downloadFileName, c) 
     c.Assert(str, Equals, newData)
-
-    time.Sleep(1000000)
-    s.createFile(newFile, newData, c)
 
     os.Stdout = out 
     os.Stderr = errout 
