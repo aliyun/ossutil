@@ -782,7 +782,6 @@ func (cc *CopyCommand) getFileList(dpath string) ([]string, error) {
         fileList = append(fileList, fileName)
         return nil
     })
-    fmt.Println(fileList)
     return fileList, err
 }
 
@@ -902,7 +901,6 @@ func (cc *CopyCommand) confirm(str string) bool {
 }
 
 func (cc *CopyCommand) ossPutObjectRetry(bucket *oss.Bucket, objectName string, content string) error {
-    fmt.Println("PutObject:", objectName)
 	retryTimes, _ := GetInt(OptionRetryTimes, cc.command.options)
 	for i := 1; ; i++ {
 		err := bucket.PutObject(objectName, strings.NewReader(content))
