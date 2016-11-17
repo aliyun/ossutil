@@ -820,7 +820,6 @@ func (cc *CopyCommand) filterFile(file fileInfoType, cpDir string) bool {
 func (cc *CopyCommand) uploadFile(bucket *oss.Bucket, destURL CloudURL, cpOption copyOptionType, file fileInfoType) (bool, error) {
 	//first make object name
 	objectName := cc.makeObjectName(destURL, file)
-    fmt.Println("&&&&&&&&:", objectName)
 
 	filePath := file.filePath
 	if file.dir != "" {
@@ -858,9 +857,6 @@ func (cc *CopyCommand) makeObjectName(destURL CloudURL, file fileInfoType) strin
 	if destURL.object == "" || strings.HasSuffix(destURL.object, "/") || strings.HasSuffix(destURL.object, "\\") || strings.HasSuffix(destURL.object, string(os.PathSeparator)){
         // replace "\" of file.filePath to "/"
         filePath := file.filePath
-        /*if string(os.PathSeparator) != "/" {
-            filePath = strings.Replace(file.filePath, string(os.PathSeparator), "/", -1)
-        }*/
         filePath = strings.Replace(file.filePath, string(os.PathSeparator), "/", -1)
         filePath = strings.Replace(file.filePath, "\\", "/", -1)
 		return destURL.object + filePath
@@ -908,7 +904,6 @@ func (cc *CopyCommand) ossPutObjectRetry(bucket *oss.Bucket, objectName string, 
 	for i := 1; ; i++ {
 		err := bucket.PutObject(objectName, strings.NewReader(content))
 		if err == nil {
-            fmt.Println("&&&&&&&&PutObject:", objectName)
 			return err
 		}
 		if int64(i) >= retryTimes {

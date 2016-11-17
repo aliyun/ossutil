@@ -280,16 +280,10 @@ func (s *OssutilCommandSuite) TestBatchCPObject(c *C) {
     err = os.MkdirAll(dir + string(os.PathSeparator) + subdir, 0777)
     c.Assert(err, IsNil)
 
-    os.Stdout = out 
-    os.Stderr = errout 
-
     // upload dir    
     showElapse, err = s.rawCP(dir, CloudURLToString(bucket, ""), true, true, false, BigFileThreshold, CheckpointDir)
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true) 
-
-    os.Stdout = testLogFile 
-    os.Stderr = testLogFile 
 
     s.getStat(bucket, "", c)
     s.getStat(bucket, subdir + "/", c)
