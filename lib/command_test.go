@@ -55,6 +55,7 @@ var (
     bucketNameCP        = "nodelete-ossutil-test-cp"
     bucketNameBCP       = "nodelete-ossutil-test-bcp"
     bucketNameSetMeta   = "nodelete-ossutil-test-setmeta"
+    bucketNameSetMeta1  = "nodelete-ossutil-test-setmeta1"
     bucketNameSetACL    = "nodelete-ossutil-test-setacl"
     bucketNameSetACL1   = "nodelete-ossutil-test-setacl1"
     bucketNameMB        = "nodelete-ossutil-test-mb"
@@ -105,11 +106,11 @@ func SetUpCredential() {
 
 func (s *OssutilCommandSuite) SetUpBucketEnv(c *C) {
     s.removeBuckets(bucketNamePrefix, c)
-    for _, bucket := range []string{bucketNameExist, bucketNameDest, bucketNameCP, bucketNameBCP, bucketNameSetMeta, bucketNameSetACL, bucketNameSetACL1, bucketNameMB} { 
+    for _, bucket := range []string{bucketNameExist, bucketNameDest, bucketNameCP, bucketNameBCP, bucketNameSetMeta, bucketNameSetMeta1, bucketNameSetACL, bucketNameSetACL1, bucketNameMB} { 
         s.putBucket(bucket, c)
     }
     time.Sleep(3*sleepTime)
-    for _, bucket := range []string{bucketNameExist, bucketNameDest, bucketNameCP, bucketNameBCP, bucketNameSetMeta, bucketNameSetACL, bucketNameSetACL1, bucketNameMB} { 
+    for _, bucket := range []string{bucketNameExist, bucketNameDest, bucketNameCP, bucketNameBCP, bucketNameSetMeta, bucketNameSetMeta1, bucketNameSetACL, bucketNameSetACL1, bucketNameMB} { 
         s.removeObjects(bucket, "", true, true, c)
         time.Sleep(sleepTime)
     }
@@ -119,7 +120,7 @@ func (s *OssutilCommandSuite) SetUpBucketEnv(c *C) {
 // Run before each test or benchmark starts running
 func (s *OssutilCommandSuite) TearDownSuite(c *C) {
     testLogger.Println("test command completed")
-    for _, bucket := range []string{bucketNameExist, bucketNameDest, bucketNameCP, bucketNameBCP, bucketNameSetMeta, bucketNameSetACL, bucketNameSetACL1, bucketNameMB} { 
+    for _, bucket := range []string{bucketNameExist, bucketNameDest, bucketNameCP, bucketNameBCP, bucketNameSetMeta, bucketNameSetMeta1, bucketNameSetACL, bucketNameSetACL1, bucketNameMB} { 
         s.removeObjects(bucket, "", true, true, c)
     }
     _ = os.Remove(configFile)
