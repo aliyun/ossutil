@@ -70,7 +70,7 @@ func (s *OssutilCommandSuite) TestSetBucketErrorACL(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestSetNotExistBucketACL(c *C) {
-    bucket := bucketNamePrefix + "TestSetNotExistBucketACL" 
+    bucket := bucketNamePrefix + "noexistsetacl" 
 
     showElapse, err := s.rawGetStat(bucket, "")
     c.Assert(err, NotNil)
@@ -125,14 +125,14 @@ func (s *OssutilCommandSuite) TestSetObjectACL(c *C) {
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
 
-    object = "TestSetObjectACL_object"
+    object = "setacl-oldobject"
     s.putObject(bucket, object, uploadFileName, c)
 
     //get object acl
     objectStat := s.getStat(bucket, object, c)
     c.Assert(objectStat[StatACL], Equals, "default")
 
-    object = "TestSetObjectACL_newobject"
+    object = "setacl-newobject"
     s.putObject(bucket, object, uploadFileName, c)
 
     // set acl
