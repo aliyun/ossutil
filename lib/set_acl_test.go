@@ -37,6 +37,7 @@ func (s *OssutilCommandSuite) rawSetACLWithArgs(args []string, recursive, bucket
         "force": &force,
     }
     showElapse, err := cm.RunCommand(command, args, options)
+    time.Sleep(time.Second)
     return showElapse, err
 }
 
@@ -132,7 +133,7 @@ func (s *OssutilCommandSuite) TestSetObjectACL(c *C) {
     s.putBucket(bucket, c)
     time.Sleep(sleepTime)
 
-    object := "未上传的文件"
+    object := "TestSetObjectACL"
 
     // set acl to not exist object
     showElapse, err := s.rawSetObjectACL(bucket, object, "default", false, true)

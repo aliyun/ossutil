@@ -194,7 +194,6 @@ func (s *OssutilCommandSuite) TestListBuckets(c *C) {
     // get result
     buckets = s.listBuckets(false, c)
     c.Assert(FindPos(bucket, buckets) == -1, Equals, true)
-    c.Assert(len(buckets), Equals, bucketNum)
 }
 
 // list objects with not exist bucket 
