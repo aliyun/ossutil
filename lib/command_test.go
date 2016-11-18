@@ -51,15 +51,15 @@ var (
 var (
     bucketNamePrefix    = "ossutil-test-"
     bucketNameExist     = "nodelete-ossutil-test-normalcase"
-    bucketNameDest      = "nodelete-ossutil-test-dest"
+    bucketNameDest      = "nodelete-ossutil-test-dest"  // bucket not change acl
     bucketNameCP        = "nodelete-ossutil-test-cp"
     bucketNameBCP       = "nodelete-ossutil-test-bcp"
     bucketNameSetMeta   = "nodelete-ossutil-test-setmeta"
     bucketNameSetMeta1  = "nodelete-ossutil-test-setmeta1"
     bucketNameSetACL    = "nodelete-ossutil-test-setacl"
     bucketNameSetACL1   = "nodelete-ossutil-test-setacl1"
-    bucketNameMB        = "nodelete-ossutil-test-mb"
-    bucketNameNotExist  = bucketNamePrefix + "notexistbucket"
+    bucketNameMB        = "nodelete-ossutil-test-mb"    // bucket with at most one object 
+    bucketNameNotExist  = bucketNamePrefix + "notexistbucket"  // bucket not exist
 )
 
 // Run once when the suite starts running
