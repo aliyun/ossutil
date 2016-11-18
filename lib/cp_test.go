@@ -46,7 +46,7 @@ func (s *OssutilCommandSuite) TestCPObject(c *C) {
 
     // put object
     s.createFile(uploadFileName, content, c)
-    object := "TestCPObject_中文cp" 
+    object := "TestCPObject_cp" 
     s.putObject(bucket, object, uploadFileName, c)
 
     // get object

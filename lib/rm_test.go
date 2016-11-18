@@ -50,13 +50,13 @@ func (s *OssutilCommandSuite) TestRemoveObject(c *C) {
 func (s *OssutilCommandSuite) TestRemoveObjects(c *C) {
     bucket := bucketNamePrefix + "rmb1" 
     s.putBucket(bucket, c)
-    time.Sleep(sleepTime) 
+    time.Sleep(2*sleepTime) 
 
     // put object
-    num := 15
+    num := 5
     objectNames := []string{}
     for i := 0; i < num; i++ {
-        object := fmt.Sprintf("^$%d$^工具", i) 
+        object := fmt.Sprintf("^$%d$^", i) 
         s.putObject(bucket, object, uploadFileName, c) 
         objectNames = append(objectNames, object)
     }
@@ -80,25 +80,10 @@ func (s *OssutilCommandSuite) TestRemoveObjects(c *C) {
     objects = s.listObjects(bucket, "", false, false, c)
     c.Assert(len(objects), Equals, 0)
 
-    s.removeObjects(bucket, "", true, true, c)
-    time.Sleep(sleepTime)
-
-    s.removeBucket(bucket, true, c)
-    time.Sleep(sleepTime) 
-}
-
-func (s *OssutilCommandSuite) TestRemoveBucket(c *C) {
-    bucket := bucketNamePrefix + "rmb2"
-    s.putBucket(bucket, c)
-    time.Sleep(2*sleepTime) 
-
-    // put object
-    num := 15
-    objectNames := []string{}
+    //reput objects and delete bucket
     for i := 0; i < num; i++ {
-        object := fmt.Sprintf("^$%d$^工具", i) 
+        object := fmt.Sprintf("^$%d$^", i) 
         s.putObject(bucket, object, uploadFileName, c) 
-        objectNames = append(objectNames, object)
     }
     
     // list buckets
@@ -135,7 +120,7 @@ func (s *OssutilCommandSuite) TestRemoveEmptyBucket(c *C) {
 func (s *OssutilCommandSuite) TestRemoveNonEmptyBucket(c *C) {
     bucket := bucketNamePrefix + "rmb4" 
     s.putBucket(bucket, c)
-    time.Sleep(sleepTime)
+    time.Sleep(2*sleepTime)
 
     // put object
     object := "test_object_for_rm"
