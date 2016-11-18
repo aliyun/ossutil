@@ -200,6 +200,7 @@ func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
 
     // update
     s.setObjectMeta(bucket, "", "content-type:abc#X-Oss-Meta-update:update", true, false, true, true, c)
+    time.Sleep(sleepTime)
 
     for _, object := range objectNames {
         objectStat := s.getStat(bucket, object, c) 
