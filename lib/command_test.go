@@ -59,6 +59,7 @@ var (
     bucketNameSetACL    = "nodelete-ossutil-test-setacl"
     bucketNameSetACL1   = "nodelete-ossutil-test-setacl1"
     bucketNameMB        = "nodelete-ossutil-test-mb"    // bucket with at most one object 
+    bucketNameList      = "nodelete-ossutil-test-list"    // bucket with at most one object 
     bucketNameNotExist  = bucketNamePrefix + "notexistbucket"  // bucket not exist
 )
 
@@ -106,11 +107,11 @@ func SetUpCredential() {
 
 func (s *OssutilCommandSuite) SetUpBucketEnv(c *C) {
     s.removeBuckets(bucketNamePrefix, c)
-    for _, bucket := range []string{bucketNameExist, bucketNameDest, bucketNameCP, bucketNameBCP, bucketNameSetMeta, bucketNameSetMeta1, bucketNameSetACL, bucketNameSetACL1, bucketNameMB} { 
+    for _, bucket := range []string{bucketNameExist, bucketNameDest, bucketNameCP, bucketNameBCP, bucketNameSetMeta, bucketNameSetMeta1, bucketNameSetACL, bucketNameSetACL1, bucketNameMB, bucketNameList} { 
         s.putBucket(bucket, c)
     }
     time.Sleep(3*sleepTime)
-    for _, bucket := range []string{bucketNameExist, bucketNameDest, bucketNameCP, bucketNameBCP, bucketNameSetMeta, bucketNameSetMeta1, bucketNameSetACL, bucketNameSetACL1, bucketNameMB} { 
+    for _, bucket := range []string{bucketNameExist, bucketNameDest, bucketNameCP, bucketNameBCP, bucketNameSetMeta, bucketNameSetMeta1, bucketNameSetACL, bucketNameSetACL1, bucketNameMB, bucketNameList} { 
         s.removeObjects(bucket, "", true, true, c)
         time.Sleep(sleepTime)
     }
