@@ -50,14 +50,6 @@ func (s *OssutilCommandSuite) TestSetBucketACL(c *C) {
         bucketStat := s.getStat(bucket, "", c)
         c.Assert(bucketStat[StatACL], Equals, acl)
     }
-
-    result := []string{"private", "public-read", "public-read-write"}
-    for i, acl := range []string{"private", "public-read", "public-read-write"} {
-        s.setBucketACL(bucket, acl, c)
-        time.Sleep(time.Second)
-        bucketStat := s.getStat(bucket, "", c)
-        c.Assert(bucketStat[StatACL], Equals, result[i])
-    }
 }
 
 func (s *OssutilCommandSuite) TestSetBucketErrorACL(c *C) {
@@ -128,9 +120,7 @@ func (s *OssutilCommandSuite) TestSetBucketEmptyACL(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestSetObjectACL(c *C) {
-    bucket := bucketNameExist 
-    s.putBucket(bucket, c)
-    time.Sleep(sleepTime)
+    bucket := bucketNameSetACL 
 
     object := "TestSetObjectACL"
 
@@ -167,7 +157,7 @@ func (s *OssutilCommandSuite) TestSetObjectACL(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestBatchSetObjectACL(c *C) {
-    bucket := bucketNameSetACL 
+    bucket := bucketNameSetACL1 
 
     // put objects
     num := 3 

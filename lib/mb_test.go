@@ -46,7 +46,7 @@ func (s *OssutilCommandSuite) rawPutBucketWithACLLanguage(args []string, acl, la
 }
 
 func (s *OssutilCommandSuite) TestMakeBucket(c *C) {
-    bucket := bucketNameExist 
+    bucket := bucketNameMB 
 
     // put bucket already exists
     s.putBucket(bucket, c)
@@ -61,7 +61,7 @@ func (s *OssutilCommandSuite) TestMakeBucket(c *C) {
         showElapse, err := s.putBucketWithACL(bucket, acl)
         c.Assert(err, IsNil)
         c.Assert(showElapse, Equals, true)
-        time.Sleep(2*sleepTime)
+        time.Sleep(3*sleepTime)
 
         bucketStat := s.getStat(bucket, "", c) 
         c.Assert(bucketStat[StatName], Equals, bucket)

@@ -45,6 +45,8 @@ var (
     bucketNameBCP       = "nodelete-ossutil-test-bcp"
     bucketNameSetMeta   = "nodelete-ossutil-test-setmeta"
     bucketNameSetACL    = "nodelete-ossutil-test-setacl"
+    bucketNameSetACL1   = "nodelete-ossutil-test-setacl1"
+    bucketNameMB        = "nodelete-ossutil-test-mb"
     bucketNameNotExist  = bucketNamePrefix + "notexistbucket"
     uploadFileName      = "ossutil_test.upload_file"
     downloadFileName    = "ossutil_test.download_file"
@@ -72,12 +74,16 @@ func (s *OssutilCommandSuite) SetUpSuite(c *C) {
     s.putBucket(bucketNameBCP, c)
     s.putBucket(bucketNameSetMeta, c)
     s.putBucket(bucketNameSetACL, c)
+    s.putBucket(bucketNameSetACL1, c)
+    s.putBucket(bucketNameMB, c)
     time.Sleep(3*sleepTime)
     s.removeObjects(bucketNameExist, "", true, true, c)
     s.removeObjects(bucketNameDest, "", true, true, c)
     s.removeObjects(bucketNameCP, "", true, true, c)
     s.removeObjects(bucketNameBCP, "", true, true, c)
     s.removeObjects(bucketNameSetACL, "", true, true, c)
+    s.removeObjects(bucketNameSetACL1, "", true, true, c)
+    s.removeObjects(bucketNameMB, "", true, true, c)
     time.Sleep(3*sleepTime)
 }
 
