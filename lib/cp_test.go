@@ -282,7 +282,7 @@ func (s *OssutilCommandSuite) TestBatchCPObject(c *C) {
     c.Assert(showElapse, Equals, true) 
 
     s.getStat(bucket, "", c)
-    s.getStat(bucket, subdir + "/", c)
+    s.getObject(bucket, subdir + "/", downloadFileName, c)
 
     // remove object
     s.removeObjects(bucket, subdir + "/", false, true, c)
