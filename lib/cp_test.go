@@ -38,10 +38,7 @@ func (s *OssutilCommandSuite) rawCPWithArgs(args []string, recursive, force, upd
 }
 
 func (s *OssutilCommandSuite) TestCPObject(c *C) {
-    bucket := bucketNameExist 
-    s.removeObjects(bucket, "", true, true, c)
-    time.Sleep(2*sleepTime) 
-
+    bucket := bucketNameCP 
     destBucket := bucketNameNotExist 
 
     // put object
@@ -81,7 +78,7 @@ func (s *OssutilCommandSuite) TestCPObject(c *C) {
     c.Assert(str, Equals, data1)
 
     // get to file in not exist directory
-    notexistdir := "不存在的目录"
+    notexistdir := "NOTEXISTDIR"
     s.getObject(bucket, object, notexistdir + string(os.PathSeparator) + downloadFileName, c)
     str = s.readFile(notexistdir + string(os.PathSeparator) + downloadFileName, c) 
     c.Assert(str, Equals, data)

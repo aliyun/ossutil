@@ -41,6 +41,8 @@ var (
     bucketNamePrefix    = "ossutil-test-"
     bucketNameExist     = "nodelete-ossutil-test-normalcase"
     bucketNameDest      = "nodelete-ossutil-test-dest"
+    bucketNameCP        = "nodelete-ossutil-test-cp"
+    bucketNameSetMeta   = "nodelete-ossutil-test-setmeta"
     bucketNameNotExist  = bucketNamePrefix + "notexistbucket"
     uploadFileName      = "ossutil_test.upload_file"
     downloadFileName    = "ossutil_test.download_file"
@@ -62,11 +64,15 @@ func (s *OssutilCommandSuite) SetUpSuite(c *C) {
     s.configNonInteractive(c)
     s.createFile(uploadFileName, content, c)
     s.removeBuckets(bucketNamePrefix, c)
-    s.removeBucket(bucketNameExist, true, c)
-    s.removeBucket(bucketNameDest, true, c)
-    time.Sleep(3*sleepTime)
     s.putBucket(bucketNameExist, c)
     s.putBucket(bucketNameDest, c)
+    s.putBucket(bucketNameCP, c)
+    s.putBucket(bucketNameSetMeta, c)
+    time.Sleep(3*sleepTime)
+    s.removeObjects(bucketNameExist, "", true, true, c)
+    s.removeObjects(bucketNameDest, "", true, true, c)
+    s.removeObjects(bucketNameCP, "", true, true, c)
+    s.removeObjects(bucketNameSetMeta, "", true, true, c)
     time.Sleep(3*sleepTime)
 }
 
@@ -278,6 +284,7 @@ func (s *OssutilCommandSuite) putObject(bucket, object, fileName string, c *C) {
     showElapse, err := s.rawCPWithArgs(args, false, true, false, BigFileThreshold, CheckpointDir) 
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true)
+    time.Sleep(100000000)
 }
 
 func (s *OssutilCommandSuite) getObject(bucket, object, fileName string, c *C) {

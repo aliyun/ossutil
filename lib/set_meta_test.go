@@ -33,7 +33,7 @@ func (s *OssutilCommandSuite) rawSetMetaWithArgs(args []string, update, delete, 
         "language": &language,
     }
     showElapse, err := cm.RunCommand(command, args, options)
-    time.Sleep(2*time.Second)
+    time.Sleep(sleepTime)
     return showElapse, err
 }
 
@@ -175,15 +175,13 @@ func (s *OssutilCommandSuite) TestSetNotExistObjectMeta(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
-    bucket := bucketNameExist 
-    s.removeObjects(bucket, "", true, true, c)
-    time.Sleep(2*sleepTime)
+    bucket := bucketNameSetMeta 
 
     // put objects
     num := 3 
     objectNames := []string{}
     for i := 0; i < num; i++ {
-        object := fmt.Sprintf("setmeta:%d", i)
+        object := fmt.Sprintf("setmeta%d", i)
         s.putObject(bucket, object, uploadFileName, c)
         objectNames = append(objectNames, object)
     }
@@ -209,7 +207,7 @@ func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
     }
 
      // delete
-    s.setObjectMeta(bucket, "setmeta:", "X-Oss-Meta-update", false, true, true, true, c)
+    s.setObjectMeta(bucket, "setmeta", "X-Oss-Meta-update", false, true, true, true, c)
    
     for _, object := range objectNames {
         objectStat := s.getStat(bucket, object, c) 
@@ -246,7 +244,7 @@ func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
     }
 
     // error meta
-    showElapse, err := s.rawSetMeta(bucket, "setmeta:", "X-Oss-Meta-c:c", false, true, true, true, DefaultLanguage)
+    showElapse, err := s.rawSetMeta(bucket, "setmeta", "X-Oss-Meta-c:c", false, true, true, true, DefaultLanguage)
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
 
