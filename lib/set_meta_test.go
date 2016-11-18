@@ -104,7 +104,6 @@ func (s *OssutilCommandSuite) TestSetObjectMeta(c *C) {
     s.setObjectMeta(bucket, object, "x-oss-object-acl:public-read#X-Oss-Meta-A:A", true, false, false, false, c)
 
     objectStat = s.getStat(bucket, object, c) 
-    c.Assert(objectStat[StatACL], Equals, "private") 
     c.Assert(objectStat["X-Oss-Meta-A"], Equals, "A")
 
     // without update, delete and force
