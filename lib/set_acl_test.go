@@ -37,7 +37,7 @@ func (s *OssutilCommandSuite) rawSetACLWithArgs(args []string, recursive, bucket
         "force": &force,
     }
     showElapse, err := cm.RunCommand(command, args, options)
-    time.Sleep(time.Second)
+    time.Sleep(sleepTime)
     return showElapse, err
 }
 
@@ -47,7 +47,6 @@ func (s *OssutilCommandSuite) TestSetBucketACL(c *C) {
     // set acl
     for _, acl := range []string{"private", "public-read", "public-read-write"} {
         s.setBucketACL(bucket, acl, c)
-        time.Sleep(time.Second)
         bucketStat := s.getStat(bucket, "", c)
         c.Assert(bucketStat[StatACL], Equals, acl)
     }
@@ -83,7 +82,7 @@ func (s *OssutilCommandSuite) TestSetBucketErrorACL(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestSetNotExistBucketACL(c *C) {
-    bucket := bucketNamePrefix + "notexist"
+    bucket := bucketNameNotExist
 
     showElapse, err := s.rawGetStat(bucket, "")
     c.Assert(err, NotNil)

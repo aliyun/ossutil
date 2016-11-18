@@ -54,7 +54,7 @@ func (s *OssutilCommandSuite) TestSetBucketMeta(c *C) {
 func (s *OssutilCommandSuite) TestSetObjectMeta(c *C) {
     bucket := bucketNameExist 
 
-    object := "testobject" 
+    object := "TestSetObjectMeta_testobject" 
     s.putObject(bucket, object, uploadFileName, c)
 
     objectStat := s.getStat(bucket, object, c) 

@@ -246,12 +246,10 @@ func (s *OssutilCommandSuite) TestUploadErrSrc(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestBatchCPObject(c *C) {
-    bucket := bucketNameExist 
-    s.removeObjects(bucket, "", true, true, c)
-    time.Sleep(2*sleepTime) 
+    bucket := bucketNameBCP
 
     // create local dir
-    dir := "上传目录"
+    dir := "TestBatchCPObject"
     err := os.MkdirAll(dir, 0777)
     c.Assert(err, IsNil)
 
@@ -273,6 +271,7 @@ func (s *OssutilCommandSuite) TestBatchCPObject(c *C) {
     c.Assert(showElapse, Equals, false)
 
     // create dir in dir 
+    dir = "TestBatchCPObject_dir"
     subdir := "SUBDIR"
     err = os.MkdirAll(dir + string(os.PathSeparator) + subdir, 0777)
     c.Assert(err, IsNil)
@@ -289,10 +288,10 @@ func (s *OssutilCommandSuite) TestBatchCPObject(c *C) {
     s.removeObjects(bucket, subdir + "/", false, true, c)
 
     // create file in dir
-    num := 10
+    num := 3 
     filePaths := []string{subdir + "/"}
     for i := 0; i < num; i++ {
-        filePath := fmt.Sprintf("测试文件：%d", i) 
+        filePath := fmt.Sprintf("TestBatchCPObject_%d", i) 
         s.createFile(dir + "/" + filePath, fmt.Sprintf("测试文件：%d内容", i), c)
         filePaths = append(filePaths, filePath)
     }
