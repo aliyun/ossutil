@@ -159,10 +159,10 @@ func (s *OssutilCommandSuite) TestBatchSetObjectACL(c *C) {
     bucket := bucketNameSetACL1 
 
     // put objects
-    num := 3 
+    num := 2 
     objectNames := []string{}
     for i := 0; i < num; i++ {
-        object := fmt.Sprintf("TestBatchSetObjectACL_setacl:%d", i)
+        object := fmt.Sprintf("TestBatchSetObjectACL_setacl%d", i)
         s.putObject(bucket, object, uploadFileName, c)
         objectNames = append(objectNames, object)
     }
@@ -182,13 +182,12 @@ func (s *OssutilCommandSuite) TestBatchSetObjectACL(c *C) {
         c.Assert(objectStat[StatACL], Equals, "default")
     }
 
-    for _, acl := range []string{"public-read", "private", "default", "public-read-write"} {
+    for _, acl := range []string{"public-read", "private", "public-read-write", "default"} {
         s.setObjectACL(bucket, "TestBatchSetObjectACL_setacl", acl, true, true, c)
         time.Sleep(2*sleepTime)
 
         for _, object := range objectNames {
             objectStat := s.getStat(bucket, object, c)
-            fmt.Println(objectStat)
             c.Assert(objectStat[StatACL], Equals, acl)
         }
     }
