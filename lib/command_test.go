@@ -70,24 +70,7 @@ func (s *OssutilCommandSuite) SetUpSuite(c *C) {
     cm.Init()
     s.configNonInteractive(c)
     s.createFile(uploadFileName, content, c)
-    s.removeBuckets(bucketNamePrefix, c)
-    s.putBucket(bucketNameExist, c)
-    s.putBucket(bucketNameDest, c)
-    s.putBucket(bucketNameCP, c)
-    s.putBucket(bucketNameBCP, c)
-    s.putBucket(bucketNameSetMeta, c)
-    s.putBucket(bucketNameSetACL, c)
-    s.putBucket(bucketNameSetACL1, c)
-    s.putBucket(bucketNameMB, c)
-    time.Sleep(3*sleepTime)
-    s.removeObjects(bucketNameExist, "", true, true, c)
-    s.removeObjects(bucketNameDest, "", true, true, c)
-    s.removeObjects(bucketNameCP, "", true, true, c)
-    s.removeObjects(bucketNameBCP, "", true, true, c)
-    s.removeObjects(bucketNameSetACL, "", true, true, c)
-    s.removeObjects(bucketNameSetACL1, "", true, true, c)
-    s.removeObjects(bucketNameMB, "", true, true, c)
-    time.Sleep(3*sleepTime)
+    s.SetUpBucketEnv(c)
 }
 
 func SetUpCredential() {
@@ -118,6 +101,19 @@ func SetUpCredential() {
     if strings.HasPrefix(vUpdateEndpoint, "http://") {
         vUpdateEndpoint = vUpdateEndpoint[7:]
     }
+}
+
+func (s *OssutilCommandSuite) SetUpBucketEnv(c *C) {
+    s.removeBuckets(bucketNamePrefix, c)
+    for _, bucket := range []string{bucketNameExist, bucketNameDest, bucketNameCP, bucketNameBCP, bucketNameSetMeta, bucketNameSetACL, bucketNameSetACL1, bucketNameMB} { 
+        s.putBucket(bucket, c)
+    }
+    time.Sleep(3*sleepTime)
+    for _, bucket := range []string{bucketNameExist, bucketNameDest, bucketNameCP, bucketNameBCP, bucketNameSetMeta, bucketNameSetACL, bucketNameSetACL1, bucketNameMB} { 
+        s.removeObjects(bucket, "", true, true, c)
+        time.Sleep(sleepTime)
+    }
+    time.Sleep(3*sleepTime)
 }
 
 // Run before each test or benchmark starts running
