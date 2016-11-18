@@ -189,7 +189,6 @@ func (s *OssutilCommandSuite) TestBatchSetObjectACL(c *C) {
 
         for _, object := range objectNames {
             objectStat := s.getStat(bucket, object, c)
-            fmt.Println(bucket, object, acl)
             c.Assert(objectStat[StatACL], Equals, acl)
         }
     }

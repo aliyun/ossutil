@@ -38,6 +38,17 @@ var (
     testLogger          = log.New(testLogFile, "", log.Ldate|log.Ltime|log.Lshortfile)
     resultPath          = "ossutil_test.result"
     testResultFile, _   = os.OpenFile(resultPath, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
+    uploadFileName      = "ossutil_test.upload_file"
+    downloadFileName    = "ossutil_test.download_file"
+    inputFileName       = "ossutil_test.input_file"
+    content             = "abc"
+    cm                  = CommandManager{}
+    out                 = os.Stdout
+    errout              = os.Stderr
+    sleepTime           = 7*time.Second
+)
+
+var (
     bucketNamePrefix    = "ossutil-test-"
     bucketNameExist     = "nodelete-ossutil-test-normalcase"
     bucketNameDest      = "nodelete-ossutil-test-dest"
@@ -48,14 +59,6 @@ var (
     bucketNameSetACL1   = "nodelete-ossutil-test-setacl1"
     bucketNameMB        = "nodelete-ossutil-test-mb"
     bucketNameNotExist  = bucketNamePrefix + "notexistbucket"
-    uploadFileName      = "ossutil_test.upload_file"
-    downloadFileName    = "ossutil_test.download_file"
-    inputFileName       = "ossutil_test.input_file"
-    content             = "abc"
-    cm                  = CommandManager{}
-    out                 = os.Stdout
-    errout              = os.Stderr
-    sleepTime           = 7*time.Second
 )
 
 // Run once when the suite starts running
