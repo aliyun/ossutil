@@ -120,7 +120,7 @@ func (s *OssutilCommandSuite) SetUpBucketEnv(c *C) {
 func (s *OssutilCommandSuite) TearDownSuite(c *C) {
     testLogger.Println("test command completed")
     for _, bucket := range []string{bucketNameExist, bucketNameDest, bucketNameCP, bucketNameBCP, bucketNameSetMeta, bucketNameSetACL, bucketNameSetACL1, bucketNameMB} { 
-        s.removeBucket(bucket, true, c)
+        s.removeObjects(bucket, "", true, true, c)
     }
     _ = os.Remove(configFile)
     _ = os.Remove(resultPath)
