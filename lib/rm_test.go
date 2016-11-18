@@ -125,6 +125,7 @@ func (s *OssutilCommandSuite) TestRemoveNonEmptyBucket(c *C) {
     // put object
     object := "test_object_for_rm"
     s.putObject(bucket, object, uploadFileName, c)
+    time.Sleep(time.Second)
 
     command := "rm"
     args := []string{CloudURLToString(bucket, "")}

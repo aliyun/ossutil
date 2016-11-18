@@ -183,7 +183,7 @@ func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
     num := 3 
     objectNames := []string{}
     for i := 0; i < num; i++ {
-        object := fmt.Sprintf("设置元信息：%d", i)
+        object := fmt.Sprintf("setmeta:%d", i)
         s.putObject(bucket, object, uploadFileName, c)
         objectNames = append(objectNames, object)
     }
@@ -209,7 +209,7 @@ func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
     }
 
      // delete
-    s.setObjectMeta(bucket, "设置元信息：", "X-Oss-Meta-update", false, true, true, true, c)
+    s.setObjectMeta(bucket, "setmeta:", "X-Oss-Meta-update", false, true, true, true, c)
    
     for _, object := range objectNames {
         objectStat := s.getStat(bucket, object, c) 
@@ -225,7 +225,7 @@ func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
     }
 
     // set all
-    s.setObjectMeta(bucket, "no设置元信息", "X-Oss-Meta-M:c", false, false, true, true, c)
+    s.setObjectMeta(bucket, "nosetmeta", "X-Oss-Meta-M:c", false, false, true, true, c)
 
     for _, object := range objectNames {
         objectStat := s.getStat(bucket, object, c) 
@@ -235,7 +235,7 @@ func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
         c.Assert(ok, Equals, false)
     }
 
-    s.setObjectMeta(bucket, "设置元信息", "X-Oss-Meta-c:c", false, false, true, true, c)
+    s.setObjectMeta(bucket, "setmeta", "X-Oss-Meta-c:c", false, false, true, true, c)
     for _, object := range objectNames {
         objectStat := s.getStat(bucket, object, c) 
         c.Assert(objectStat["X-Oss-Meta-C"], Equals, "c") 
@@ -246,7 +246,7 @@ func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
     }
 
     // error meta
-    showElapse, err := s.rawSetMeta(bucket, "设置元信息：", "X-Oss-Meta-c:c", false, true, true, true, DefaultLanguage)
+    showElapse, err := s.rawSetMeta(bucket, "setmeta:", "X-Oss-Meta-c:c", false, true, true, true, DefaultLanguage)
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
 
@@ -262,7 +262,7 @@ func (s *OssutilCommandSuite) TestErrBatchSetMeta(c *C) {
     num := 10
     objectNames := []string{}
     for i := 0; i < num; i++ {
-        object := fmt.Sprintf("TestErrBatchSetMeta_设置元信息：%d", i)
+        object := fmt.Sprintf("TestErrBatchSetMeta_setmeta:%d", i)
         s.putObject(bucket, object, uploadFileName, c)
         objectNames = append(objectNames, object)
     }

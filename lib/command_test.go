@@ -278,6 +278,7 @@ func (s *OssutilCommandSuite) putObject(bucket, object, fileName string, c *C) {
     showElapse, err := s.rawCPWithArgs(args, false, true, false, BigFileThreshold, CheckpointDir) 
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true)
+    time.Sleep(1000000)
 }
 
 func (s *OssutilCommandSuite) getObject(bucket, object, fileName string, c *C) {
