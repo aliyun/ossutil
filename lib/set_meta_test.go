@@ -184,6 +184,7 @@ func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
         s.putObject(bucket, object, uploadFileName, c)
         objectNames = append(objectNames, object)
     }
+    time.Sleep(sleepTime)
 
     // update without force
     s.setObjectMeta(bucket, "", "content-type:abc#X-Oss-Meta-Update:update", true, false, true, false, c)
