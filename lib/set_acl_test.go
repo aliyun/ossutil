@@ -166,15 +166,12 @@ func (s *OssutilCommandSuite) TestBatchSetObjectACL(c *C) {
         s.putObject(bucket, object, uploadFileName, c)
         objectNames = append(objectNames, object)
     }
-    time.Sleep(time.Second)
+    time.Sleep(sleepTime)
 
     for _, object := range objectNames {
         objectStat := s.getStat(bucket, object, c)
         c.Assert(objectStat[StatACL], Equals, "default")
     }
-
-    os.Stdout = out 
-    os.Stderr = errout 
 
     // without --force option
     s.setObjectACL(bucket, "", "public-read-write", true, false, c)
@@ -193,9 +190,6 @@ func (s *OssutilCommandSuite) TestBatchSetObjectACL(c *C) {
             c.Assert(objectStat[StatACL], Equals, acl)
         }
     }
-
-    os.Stdout = testLogFile 
-    os.Stderr = testLogFile 
 
     showElapse, err := s.rawSetObjectACL(bucket, "TestBatchSetObjectACL_setacl", "erracl", true, true)
     c.Assert(err, NotNil)
