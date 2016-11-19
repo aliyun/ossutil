@@ -115,7 +115,7 @@ func (s *OssutilCommandSuite) SetUpBucketEnv(c *C) {
         s.removeObjects(bucket, "", true, true, c)
         time.Sleep(sleepTime)
     }
-    time.Sleep(3*sleepTime)
+    time.Sleep(5*sleepTime)
 }
 
 // Run before each test or benchmark starts running
