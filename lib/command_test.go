@@ -110,11 +110,7 @@ func (s *OssutilCommandSuite) SetUpBucketEnv(c *C) {
     for _, bucket := range []string{bucketNameExist, bucketNameDest, bucketNameCP, bucketNameBCP, bucketNameSetMeta, bucketNameSetMeta1, bucketNameSetACL, bucketNameSetACL1, bucketNameMB, bucketNameList} { 
         s.putBucket(bucket, c)
     }
-    time.Sleep(sleepTime)
-    for _, bucket := range []string{bucketNameExist, bucketNameDest, bucketNameCP, bucketNameBCP, bucketNameSetMeta, bucketNameSetMeta1, bucketNameSetACL, bucketNameSetACL1, bucketNameMB, bucketNameList} { 
-        s.removeObjects(bucket, "", true, true, c)
-        time.Sleep(sleepTime)
-    }
+    time.Sleep(3*sleepTime)
     for _, bucket := range []string{bucketNameExist, bucketNameDest, bucketNameCP, bucketNameBCP, bucketNameSetMeta, bucketNameSetMeta1, bucketNameSetACL, bucketNameSetACL1, bucketNameMB, bucketNameList} { 
         s.removeObjects(bucket, "", true, true, c)
         time.Sleep(sleepTime)
