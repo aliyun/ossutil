@@ -80,6 +80,7 @@ func (s *OssutilCommandSuite) TestSetObjectMeta(c *C) {
 
     // delete
     s.setObjectMeta(bucket, object, "x-oss-object-acl#X-Oss-Meta-A", false, true, false, true, c)
+    time.Sleep(sleepTime)
     objectStat = s.getStat(bucket, object, c) 
     c.Assert(objectStat[StatACL], Equals, "private") 
     _, ok = objectStat["X-Oss-Meta-A"]
@@ -197,7 +198,7 @@ func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
     }
 
     // update
-    s.setObjectMeta(bucket, "", "content-type:abc#X-Oss-Meta-update:update", true, false, true, true, c)
+    s.setObjectMeta(bucket, "", "content-type:abc#X-Oss-Meta-Update:update", true, false, true, true, c)
     time.Sleep(sleepTime)
 
     for _, object := range objectNames {
