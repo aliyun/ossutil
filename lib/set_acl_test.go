@@ -37,7 +37,7 @@ func (s *OssutilCommandSuite) rawSetACLWithArgs(args []string, recursive, bucket
         "force": &force,
     }
     showElapse, err := cm.RunCommand(command, args, options)
-    time.Sleep(sleepTime)
+    time.Sleep(2*sleepTime)
     return showElapse, err
 }
 
