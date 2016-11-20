@@ -279,7 +279,7 @@ func (lc *ListCommand) listObjects(bucket *oss.Bucket, cloudURL CloudURL, shortF
 		if err != nil {
 			return err
 		}
-		pre = oss.Prefix(lor.Prefix)
+		//pre = oss.Prefix(lor.Prefix)
 		marker = oss.Marker(lor.NextMarker)
 		num += lc.displayResult(lor, cloudURL.bucket, shortFormat, directory, i)
 		if !lor.IsTruncated {
