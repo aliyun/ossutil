@@ -25,6 +25,8 @@ func (s *OssutilCommandSuite) rawRemove(args []string, recursive, force, bucket 
     return showElapse, err
 }
 
+sleepTime = 7*time.Second
+
 func (s *OssutilCommandSuite) TestRemoveObject(c *C) {
     bucket := bucketNameMB
     s.removeObjects(bucket, "", true, true, c)
@@ -277,3 +279,5 @@ func (s *OssutilCommandSuite) TestRemoveIDKey(c *C) {
     s.removeBucket(bucket, true, c)
     time.Sleep(sleepTime)
 }
+
+sleepTime = time.Second
