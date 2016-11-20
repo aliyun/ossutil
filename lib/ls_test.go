@@ -352,4 +352,3 @@ func (s *OssutilCommandSuite) TestListBucketIDKey(c *C) {
 
     _ = os.Remove(cfile)
 }
-

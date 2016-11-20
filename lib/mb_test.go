@@ -45,7 +45,6 @@ func (s *OssutilCommandSuite) rawPutBucketWithACLLanguage(args []string, acl, la
     return showElapse, err
 }
 
-
 func (s *OssutilCommandSuite) TestMakeBucket(c *C) {
     bucket := bucketNameMB 
 
@@ -173,4 +172,3 @@ func (s *OssutilCommandSuite) TestMakeBucketIDKey(c *C) {
 
     s.removeBucket(bucket, true, c)
 }
-
