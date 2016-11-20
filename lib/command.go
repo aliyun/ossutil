@@ -358,7 +358,7 @@ func (cmd *Command) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, chObje
 			chObjects <- object.Key
 		}
 
-		//pre = oss.Prefix(lor.Prefix)
+		pre = oss.Prefix(lor.Prefix)
 		marker = oss.Marker(lor.NextMarker)
 		if !lor.IsTruncated {
 			break
