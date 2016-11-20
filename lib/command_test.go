@@ -46,6 +46,7 @@ var (
     out                 = os.Stdout
     errout              = os.Stderr
     sleepTime           = time.Second
+    bsleepTime          = 7*time.Second
 )
 
 var (

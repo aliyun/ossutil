@@ -26,7 +26,6 @@ func (s *OssutilCommandSuite) rawList(args []string, shortFormat, directory bool
 
 // test list buckets
 func (s *OssutilCommandSuite) TestListLoadConfig(c *C) {
-    sleepTime = 7*time.Second
     command := "ls"
     var args []string
     str := ""
@@ -352,6 +351,5 @@ func (s *OssutilCommandSuite) TestListBucketIDKey(c *C) {
     c.Assert(showElapse, Equals, true)
 
     _ = os.Remove(cfile)
-    sleepTime = time.Second
 }
 
