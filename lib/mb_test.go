@@ -45,9 +45,10 @@ func (s *OssutilCommandSuite) rawPutBucketWithACLLanguage(args []string, acl, la
     return showElapse, err
 }
 
-sleepTime = 7*time.Second
 
 func (s *OssutilCommandSuite) TestMakeBucket(c *C) {
+    sleepTime = 7*time.Second
+
     bucket := bucketNameMB 
 
     // put bucket already exists
@@ -173,6 +174,7 @@ func (s *OssutilCommandSuite) TestMakeBucketIDKey(c *C) {
     _ = os.Remove(cfile)
 
     s.removeBucket(bucket, true, c)
+    
+    sleepTime = time.Second
 }
 
-sleepTime = time.Second
