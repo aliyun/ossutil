@@ -236,11 +236,11 @@ func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
     s.setObjectMeta(bucket, "setmeta", "X-Oss-Meta-c:c", false, false, true, true, c)
     for _, object := range objectNames {
         objectStat := s.getStat(bucket, object, c) 
-        c.Assert(objectStat["X-Oss-Meta-C"], Equals, "c") 
         _, ok := objectStat["X-Oss-Meta-A"]
         c.Assert(ok, Equals, false)
         _, ok = objectStat["X-Oss-Meta-B"]
         c.Assert(ok, Equals, false)
+        c.Assert(objectStat["X-Oss-Meta-C"], Equals, "c") 
     }
 
     // error meta
