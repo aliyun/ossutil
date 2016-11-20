@@ -45,7 +45,7 @@ var (
     cm                  = CommandManager{}
     out                 = os.Stdout
     errout              = os.Stderr
-    sleepTime           = 10*time.Second
+    sleepTime           = 5*time.Second
 )
 
 var (
