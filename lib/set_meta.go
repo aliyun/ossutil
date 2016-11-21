@@ -484,13 +484,16 @@ func (sc *SetMetaCommand) batchSetObjectMeta(bucket *oss.Bucket, cloudURL CloudU
 		select {
 		case <-chFinishObjects:
 			num++
-			fmt.Printf("\rsetted object meta on %d objects, when error happens...", num)
+			fmt.Printf("\rsetted object meta on %d objects...", num)
+            fmt.Println("&&&&get finish")
 		case err := <-chError:
 			if err != nil {
 				fmt.Printf("\rsetted object meta on %d objects, when error happens.\n", num)
+                fmt.Println("&&&&get error")
 				return err
 			}
 			completed++
+            fmt.Println("&&&&get completed")
 		}
 	}
 	fmt.Printf("\rSucceed:scanned %d objects, setted object meta on %d objects.\n", num, num)
@@ -500,13 +503,16 @@ func (sc *SetMetaCommand) batchSetObjectMeta(bucket *oss.Bucket, cloudURL CloudU
 func (sc *SetMetaCommand) setObjectMetaConsumer(bucket *oss.Bucket, headers map[string]string, isUpdate, isDelete bool, chObjects <-chan string, chFinishObjects chan<- string, chError chan<- error) {
 	for object := range chObjects {
 		err := sc.setObjectMeta(bucket, object, headers, isUpdate, isDelete)
-        fmt.Println("&&&&set meta consumer:", object, nil)
+        fmt.Println("&&&&set meta consumer:", object, err)
 		if err != nil {
+            fmt.Println("&&&&consumer chError:", object, err)
 			chError <- err
 			return
 		}
+        fmt.Println("&&&&consumer chFinishObjects:", object, err)
 		chFinishObjects <- object
 	}
 
+    fmt.Println("&&&&consumer chNIL:")
 	chError <- nil
 }
