@@ -187,6 +187,7 @@ func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
     objectNames := []string{}
     for i := 0; i < num; i++ {
         object := fmt.Sprintf("setmeta%d", i)
+        fmt.Println("putobject:", object)
         s.putObject(bucket, object, uploadFileName, c)
         objectNames = append(objectNames, object)
         time.Sleep(sleepTime)
