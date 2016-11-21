@@ -177,7 +177,7 @@ func (s *OssutilCommandSuite) TestSetNotExistObjectMeta(c *C) {
 func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
     bucket := bucketNameSetMeta 
     s.removeObjects(bucket, "", true, true, c)
-    time.Sleep(3*sleepTime)
+    time.Sleep(60*time.Second)
 
     // put objects
     num := 3 
