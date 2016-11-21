@@ -347,6 +347,7 @@ func (sc *SetACLCommand) setObjectACL(bucket *oss.Bucket, cloudURL CloudURL) err
 }
 
 func (sc *SetACLCommand) ossSetObjectACLRetry(bucket *oss.Bucket, object string, acl oss.ACLType) error {
+    fmt.Println("&&&&set acl", object)
 	retryTimes, _ := GetInt(OptionRetryTimes, sc.command.options)
 	for i := 1; ; i++ {
 		err := bucket.SetObjectACL(object, acl)
@@ -406,6 +407,7 @@ func (sc *SetACLCommand) batchSetObjectACL(bucket *oss.Bucket, cloudURL CloudURL
 func (sc *SetACLCommand) setObjectACLConsumer(bucket *oss.Bucket, acl oss.ACLType, chObjects <-chan string, chFinishObjects chan<- string, chError chan<- error) {
 	for object := range chObjects {
 		err := sc.ossSetObjectACLRetry(bucket, object, acl)
+        fmt.Println("&&&&Consumer chObjects:", object, err)
 		if err != nil {
 			chError <- err
 			return

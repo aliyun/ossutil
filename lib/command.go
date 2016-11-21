@@ -356,6 +356,7 @@ func (cmd *Command) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, chObje
 		}
 
 		for _, object := range lor.Objects {
+            fmt.Println("&&&&chObjects", object.Key)
 			chObjects <- object.Key
 		}
 

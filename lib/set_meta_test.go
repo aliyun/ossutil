@@ -176,8 +176,6 @@ func (s *OssutilCommandSuite) TestSetNotExistObjectMeta(c *C) {
 
 func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
     bucket := bucketNameSetMeta 
-    s.removeObjects(bucket, "", true, true, c)
-    time.Sleep(60*time.Second)
 
     // put objects
     num := 2 
@@ -189,14 +187,8 @@ func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
     }
     time.Sleep(sleepTime)
 
-    os.Stdout = out 
-    os.Stderr = errout 
-
     // update without force
     s.setObjectMeta(bucket, "", "content-type:abc#X-Oss-Meta-Update:update", true, false, true, false, c)
-
-    os.Stdout = testLogFile 
-    os.Stderr = testLogFile 
 
     for _, object := range objectNames {
         objectStat := s.getStat(bucket, object, c) 
