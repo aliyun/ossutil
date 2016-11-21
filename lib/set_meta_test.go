@@ -180,7 +180,7 @@ func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
     time.Sleep(60*time.Second)
 
     // put objects
-    num := 3 
+    num := 2 
     objectNames := []string{}
     for i := 0; i < num; i++ {
         object := fmt.Sprintf("setmeta%d", i)
@@ -189,8 +189,14 @@ func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
     }
     time.Sleep(sleepTime)
 
+    os.Stdout = out 
+    os.Stderr = errout 
+
     // update without force
     s.setObjectMeta(bucket, "", "content-type:abc#X-Oss-Meta-Update:update", true, false, true, false, c)
+
+    os.Stdout = testLogFile 
+    os.Stderr = testLogFile 
 
     for _, object := range objectNames {
         objectStat := s.getStat(bucket, object, c) 

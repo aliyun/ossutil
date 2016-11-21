@@ -118,7 +118,7 @@ func (s *OssutilCommandSuite) TestSetBucketEmptyACL(c *C) {
 func (s *OssutilCommandSuite) TestSetObjectACL(c *C) {
     bucket := bucketNameSetACL 
     s.removeObjects(bucket, "", true, true, c)
-    time.Sleep(3*sleepTime)
+    time.Sleep(60*time.Second)
 
     object := "TestSetObjectACL"
 
@@ -187,6 +187,9 @@ func (s *OssutilCommandSuite) TestBatchSetObjectACL(c *C) {
 
     time.Sleep(2*sleepTime)
 
+    os.Stdout = out 
+    os.Stderr = errout 
+
     for _, acl := range []string{"public-read", "private", "public-read-write", "default"} {
         s.setObjectACL(bucket, "TestBatchSetObjectACL_setacl", acl, true, true, c)
         time.Sleep(sleepTime)
@@ -196,6 +199,9 @@ func (s *OssutilCommandSuite) TestBatchSetObjectACL(c *C) {
             c.Assert(objectStat[StatACL], Equals, acl)
         }
     }
+
+    os.Stdout = testLogFile 
+    os.Stderr = testLogFile 
 
     showElapse, err := s.rawSetObjectACL(bucket, "TestBatchSetObjectACL_setacl", "erracl", true, true)
     c.Assert(err, NotNil)

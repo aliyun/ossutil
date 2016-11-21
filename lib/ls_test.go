@@ -180,7 +180,7 @@ func (s *OssutilCommandSuite) TestListBuckets(c *C) {
 
     // put bucket
     s.putBucket(bucket, c)
-    time.Sleep(2*sleepTime)
+    time.Sleep(3*sleepTime)
 
     // get result
     buckets = s.listBuckets(false, c)

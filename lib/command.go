@@ -349,6 +349,7 @@ func (cmd *Command) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, chObje
 	marker := oss.Marker("")
 	for i := 0; ; i++ {
 		lor, err := cmd.ossListObjectsRetry(bucket, marker, pre)
+        fmt.Println("&&&&", lor)
 		if err != nil {
 			chError <- err
 			break
