@@ -177,6 +177,11 @@ func (s *OssutilCommandSuite) TestSetNotExistObjectMeta(c *C) {
 func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
     bucket := bucketNameSetMeta 
 
+    os.Stdout = out 
+    os.Stderr = errout 
+
+    fmt.Println("**********")
+
     // put objects
     num := 2 
     objectNames := []string{}
@@ -222,9 +227,6 @@ func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
         c.Assert(objectStat["X-Oss-Meta-A"], Equals, "A") 
         c.Assert(objectStat["X-Oss-Meta-B"], Equals, "b")
     }
-
-    os.Stdout = out 
-    os.Stderr = errout 
 
     // set all
     s.setObjectMeta(bucket, "nosetmeta", "X-Oss-Meta-M:c", false, false, true, true, c)

@@ -445,6 +445,7 @@ func (sc *SetMetaCommand) getOSSOptions(headers map[string]string) ([]oss.Option
 }
 
 func (sc *SetMetaCommand) ossSetObjectMetaRetry(bucket *oss.Bucket, object string, options ...oss.Option) error {
+    fmt.Println("set meta:", object)
 	retryTimes, _ := GetInt(OptionRetryTimes, sc.command.options)
 	for i := 1; ; i++ {
 		_, err := bucket.CopyObject(object, object, options...)
@@ -499,6 +500,7 @@ func (sc *SetMetaCommand) batchSetObjectMeta(bucket *oss.Bucket, cloudURL CloudU
 func (sc *SetMetaCommand) setObjectMetaConsumer(bucket *oss.Bucket, headers map[string]string, isUpdate, isDelete bool, chObjects <-chan string, chFinishObjects chan<- string, chError chan<- error) {
 	for object := range chObjects {
 		err := sc.setObjectMeta(bucket, object, headers, isUpdate, isDelete)
+        fmt.Println("&&&&set meta consumer:", object, nil)
 		if err != nil {
 			chError <- err
 			return
