@@ -223,8 +223,15 @@ func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
         c.Assert(objectStat["X-Oss-Meta-B"], Equals, "b")
     }
 
+    os.Stdout = out 
+    os.Stderr = errout 
+
     // set all
     s.setObjectMeta(bucket, "nosetmeta", "X-Oss-Meta-M:c", false, false, true, true, c)
+
+    os.Stdout = testLogFile 
+    os.Stderr = testLogFile 
+
 
     for _, object := range objectNames {
         objectStat := s.getStat(bucket, object, c) 
