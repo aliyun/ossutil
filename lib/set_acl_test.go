@@ -117,7 +117,7 @@ func (s *OssutilCommandSuite) TestSetBucketEmptyACL(c *C) {
 
 func (s *OssutilCommandSuite) TestSetObjectACL(c *C) {
     bucket := bucketNameSetACL 
-    time.Sleep(3*sleepTime)
+    time.Sleep(60*time.Second)
 
     object := "TestSetObjectACL"
 
@@ -158,7 +158,7 @@ func (s *OssutilCommandSuite) TestSetObjectACL(c *C) {
 
 func (s *OssutilCommandSuite) TestBatchSetObjectACL(c *C) {
     bucket := bucketNameSetACL1 
-    time.Sleep(3*sleepTime)
+    time.Sleep(60*time.Second)
 
     // put objects
     num := 2 
