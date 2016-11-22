@@ -53,7 +53,6 @@ func (s *OssutilCommandSuite) TestSetBucketMeta(c *C) {
 
 func (s *OssutilCommandSuite) TestSetObjectMeta(c *C) {
     bucket := bucketNameSetMeta1 
-    time.Sleep(60*time.Second)
 
     object := "TestSetObjectMeta_testobject" 
     s.putObject(bucket, object, uploadFileName, c)
