@@ -37,7 +37,7 @@ func (s *OssutilCommandSuite) rawSetACLWithArgs(args []string, recursive, bucket
         "force": &force,
     }
     showElapse, err := cm.RunCommand(command, args, options)
-    time.Sleep(2*sleepTime)
+    time.Sleep(3*sleepTime)
     return showElapse, err
 }
 
@@ -165,7 +165,7 @@ func (s *OssutilCommandSuite) TestBatchSetObjectACL(c *C) {
         object := fmt.Sprintf("TestBatchSetObjectACL_setacl%d", i)
         s.putObject(bucket, object, uploadFileName, c)
         objectNames = append(objectNames, object)
-        time.Sleep(time.Second)
+        time.Sleep(sleepTime)
     }
 
     for _, object := range objectNames {
@@ -184,16 +184,12 @@ func (s *OssutilCommandSuite) TestBatchSetObjectACL(c *C) {
         c.Assert(objectStat[StatACL], Equals, "default")
     }
 
-    time.Sleep(2*sleepTime)
-
     for _, acl := range []string{"public-read", "private", "public-read-write", "default"} {
-        s.setObjectACL(bucket, "TestBatchSetObjectACL_setacl", acl, true, true, c)
+        s.setObjectACL(bucket, "TestBatchSetObjectACL_setacl0", acl, true, true, c)
         time.Sleep(3*sleepTime)
 
-        for _, object := range objectNames {
-            objectStat := s.getStat(bucket, object, c)
-            c.Assert(objectStat[StatACL], Equals, acl)
-        }
+        objectStat := s.getStat(bucket, "TestBatchSetObjectACL_setacl0", c)
+        c.Assert(objectStat[StatACL], Equals, acl)
     }
 
     os.Stdout = testLogFile 
