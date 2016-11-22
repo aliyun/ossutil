@@ -347,7 +347,7 @@ func (sc *SetACLCommand) setObjectACL(bucket *oss.Bucket, cloudURL CloudURL) err
 }
 
 func (sc *SetACLCommand) ossSetObjectACLRetry(bucket *oss.Bucket, object string, acl oss.ACLType) error {
-    fmt.Println("&&&&set acl", object)
+    fmt.Println("&&&&set acl", object, acl)
 	retryTimes, _ := GetInt(OptionRetryTimes, sc.command.options)
 	for i := 1; ; i++ {
 		err := bucket.SetObjectACL(object, acl)
