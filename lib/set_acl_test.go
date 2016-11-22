@@ -165,8 +165,8 @@ func (s *OssutilCommandSuite) TestBatchSetObjectACL(c *C) {
         object := fmt.Sprintf("TestBatchSetObjectACL_setacl%d", i)
         s.putObject(bucket, object, uploadFileName, c)
         objectNames = append(objectNames, object)
+        time.Sleep(time.Second)
     }
-    time.Sleep(time.Second)
 
     for _, object := range objectNames {
         objectStat := s.getStat(bucket, object, c)
