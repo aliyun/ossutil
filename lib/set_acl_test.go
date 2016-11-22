@@ -189,6 +189,7 @@ func (s *OssutilCommandSuite) TestBatchSetObjectACL(c *C) {
         time.Sleep(3*sleepTime)
 
         objectStat := s.getStat(bucket, "TestBatchSetObjectACL_setacl0", c)
+        fmt.Println(objectStat)
         c.Assert(objectStat[StatACL], Equals, acl)
     }
 
