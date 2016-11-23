@@ -574,7 +574,7 @@ func (cc *CopyCommand) RunCommand() error {
 	}
 
 	//create ckeckpoint dir
-	if err := os.MkdirAll(cpOption.cpDir, 0777); err != nil {
+	if err := os.MkdirAll(cpOption.cpDir, 0755); err != nil {
 		return err
 	}
 
@@ -1008,7 +1008,7 @@ func (cc *CopyCommand) adjustDestURLForDownload(destURL FileURL, cpOption copyOp
 		}
 	}
 	if strings.HasSuffix(filePath, "/") || strings.HasSuffix(filePath, "\\") {
-		if err := os.MkdirAll(filePath, 0777); err != nil {
+		if err := os.MkdirAll(filePath, 0755); err != nil {
 			return filePath, err
 		}
 	}
@@ -1042,7 +1042,7 @@ func (cc *CopyCommand) downloadSingleFile(bucket *oss.Bucket, objectInfo objectI
 	}
 
 	if size == 0 && (strings.HasSuffix(object, "/") || strings.HasSuffix(object, "\\")) {
-		return false, os.MkdirAll(fileName, 0777)
+		return false, os.MkdirAll(fileName, 0755)
 	}
 
 	//create parent directory
@@ -1092,7 +1092,7 @@ func (cc *CopyCommand) createParentDirectory(fileName string) error {
 		return err
 	}
 	dir = strings.Replace(dir, "\\", "/", -1)
-	return os.MkdirAll(dir, 0777)
+	return os.MkdirAll(dir, 0755)
 }
 
 func (cc *CopyCommand) ossResumeDownloadRetry(bucket *oss.Bucket, objectName string, filePath string, size, partSize int64, options ...oss.Option) error {
