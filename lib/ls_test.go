@@ -246,7 +246,7 @@ func (s *OssutilCommandSuite) TestListObjects(c *C) {
     c.Assert(len(objects), Equals, len(objectNames) - 1)
 
     //put directories
-    num1 = 2 
+    num1 := 2 
     objectNames = []string{}
     for i := 0; i < num1; i++ {
         object := fmt.Sprintf("lstest:#%d/", i) 
