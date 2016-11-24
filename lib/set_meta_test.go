@@ -33,7 +33,7 @@ func (s *OssutilCommandSuite) rawSetMetaWithArgs(args []string, update, delete, 
         "language": &language,
     }
     showElapse, err := cm.RunCommand(command, args, options)
-    time.Sleep(3*sleepTime)
+    time.Sleep(sleepTime)
     return showElapse, err
 }
 
@@ -80,7 +80,6 @@ func (s *OssutilCommandSuite) TestSetObjectMeta(c *C) {
 
     // delete
     s.setObjectMeta(bucket, object, "x-oss-object-acl#X-Oss-Meta-A", false, true, false, true, c)
-    time.Sleep(sleepTime)
     objectStat = s.getStat(bucket, object, c) 
     c.Assert(objectStat[StatACL], Equals, "private") 
     _, ok = objectStat["X-Oss-Meta-A"]
@@ -185,8 +184,8 @@ func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
         object := fmt.Sprintf("setmeta%d", i)
         s.putObject(bucket, object, uploadFileName, c)
         objectNames = append(objectNames, object)
-        time.Sleep(sleepTime)
     }
+    time.Sleep(sleepTime)
 
     // update without force
     s.setObjectMeta(bucket, "", "content-type:abc#X-Oss-Meta-Update:update", true, false, true, false, c)
@@ -236,7 +235,6 @@ func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
     }
 
     s.setObjectMeta(bucket, "setmeta", "X-Oss-Meta-C:c", false, false, true, true, c)
-    time.Sleep(sleepTime)
 
     for _, object := range objectNames {
         objectStat := s.getStat(bucket, object, c) 
