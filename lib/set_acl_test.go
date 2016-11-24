@@ -25,7 +25,6 @@ func (s *OssutilCommandSuite) rawSetACLWithArgs(args []string, recursive, bucket
     command := "set-acl"
     str := ""
     routines := strconv.Itoa(Routines)
-    rt := strconv.Itoa(1)
     options := OptionMapType{
         "endpoint": &str,
         "accessKeyID": &str,
@@ -36,7 +35,6 @@ func (s *OssutilCommandSuite) rawSetACLWithArgs(args []string, recursive, bucket
         "recursive": &recursive,
         "bucket": &bucket,
         "force": &force,
-        "retryTimes": &rt,
     }
     showElapse, err := cm.RunCommand(command, args, options)
     time.Sleep(3*sleepTime)
@@ -147,7 +145,7 @@ func (s *OssutilCommandSuite) TestSetObjectACL(c *C) {
     s.setObjectACL(bucket, object, "private", false, true, c)
 
     // set error acl
-    for _, acl := range []string{"public_read", "erracl", "私有"} {
+    for _, acl := range []string{"erracl"} {
         showElapse, err = s.rawSetObjectACL(bucket, object, acl, false, false)
         c.Assert(showElapse, Equals, false)
         c.Assert(err, NotNil)
@@ -188,7 +186,7 @@ func (s *OssutilCommandSuite) TestBatchSetObjectACL(c *C) {
         c.Assert(objectStat[StatACL], Equals, "default")
     }
 
-    for _, acl := range []string{"public-read", "private", "public-read-write", "default"} {
+    for _, acl := range []string{"public-read"} {
         s.setObjectACL(bucket, "TestBatchSetObjectACL_setacl0", acl, true, true, c)
         time.Sleep(3*sleepTime)
 

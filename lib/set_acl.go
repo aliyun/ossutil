@@ -351,7 +351,6 @@ func (sc *SetACLCommand) ossSetObjectACLRetry(bucket *oss.Bucket, object string,
 	for i := 1; ; i++ {
 		err := bucket.SetObjectACL(object, acl)
         fmt.Println("&&&&set acl", object, acl)
-        fmt.Println("&&&&set acl retry", retryTimes)
 		if err == nil {
 			return err
 		}
