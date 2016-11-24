@@ -37,7 +37,7 @@ func (s *OssutilCommandSuite) rawSetACLWithArgs(args []string, recursive, bucket
         "force": &force,
     }
     showElapse, err := cm.RunCommand(command, args, options)
-    time.Sleep(3*sleepTime)
+    time.Sleep(sleepTime)
     return showElapse, err
 }
 
@@ -145,7 +145,7 @@ func (s *OssutilCommandSuite) TestSetObjectACL(c *C) {
     s.setObjectACL(bucket, object, "private", false, true, c)
 
     // set error acl
-    for _, acl := range []string{"erracl"} {
+    for _, acl := range []string{"public_read", "erracl", "私有"} {
         showElapse, err = s.rawSetObjectACL(bucket, object, acl, false, false)
         c.Assert(showElapse, Equals, false)
         c.Assert(err, NotNil)
@@ -165,15 +165,11 @@ func (s *OssutilCommandSuite) TestBatchSetObjectACL(c *C) {
         object := fmt.Sprintf("TestBatchSetObjectACL_setacl%d", i)
         s.putObject(bucket, object, uploadFileName, c)
         objectNames = append(objectNames, object)
-        time.Sleep(sleepTime)
     }
-
-    os.Stdout = out 
-    os.Stderr = errout 
+    time.Sleep(time.Second)
 
     for _, object := range objectNames {
         objectStat := s.getStat(bucket, object, c)
-        fmt.Println(object, objectStat)
         c.Assert(objectStat[StatACL], Equals, "default")
     }
 
@@ -182,21 +178,18 @@ func (s *OssutilCommandSuite) TestBatchSetObjectACL(c *C) {
 
     for _, object := range objectNames {
         objectStat := s.getStat(bucket, object, c)
-        fmt.Println(object, objectStat)
         c.Assert(objectStat[StatACL], Equals, "default")
     }
 
-    for _, acl := range []string{"public-read"} {
-        s.setObjectACL(bucket, "TestBatchSetObjectACL_setacl0", acl, true, true, c)
-        time.Sleep(3*sleepTime)
+    for _, acl := range []string{"public-read", "private", "public-read-write", "default"} {
+        s.setObjectACL(bucket, "TestBatchSetObjectACL_setacl", acl, true, true, c)
+        time.Sleep(sleepTime)
 
-        objectStat := s.getStat(bucket, "TestBatchSetObjectACL_setacl0", c)
-        fmt.Println("TestBatchSetObjectACL_setacl0", objectStat)
-        c.Assert(objectStat[StatACL], Equals, acl)
+        for _, object := range objectNames {
+            objectStat := s.getStat(bucket, object, c)
+            c.Assert(objectStat[StatACL], Equals, acl)
+        }
     }
-
-    os.Stdout = testLogFile 
-    os.Stderr = testLogFile 
 
     showElapse, err := s.rawSetObjectACL(bucket, "TestBatchSetObjectACL_setacl", "erracl", true, true)
     c.Assert(err, NotNil)

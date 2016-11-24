@@ -350,7 +350,6 @@ func (sc *SetACLCommand) ossSetObjectACLRetry(bucket *oss.Bucket, object string,
 	retryTimes, _ := GetInt(OptionRetryTimes, sc.command.options)
 	for i := 1; ; i++ {
 		err := bucket.SetObjectACL(object, acl)
-        fmt.Println("&&&&set acl", object, acl)
 		if err == nil {
 			return err
 		}
@@ -392,15 +391,12 @@ func (sc *SetACLCommand) batchSetObjectACL(bucket *oss.Bucket, cloudURL CloudURL
 		case <-chFinishObjects:
 			num++
 			fmt.Printf("\rsetted object acl on %d objects...", num)
-            fmt.Println("&&&&get finish")
 		case err := <-chError:
 			if err != nil {
 				fmt.Printf("\rsetted object acl on %d objects, when error happens.\n", num)
-                fmt.Println("&&&&get error")
 				return err
 			}
 			completed++
-            fmt.Println("&&&&get completed")
 		}
 	}
 	fmt.Printf("\rSucceed: scanned %d objects, setted object acl on %d objects.\n", num, num)
@@ -410,16 +406,12 @@ func (sc *SetACLCommand) batchSetObjectACL(bucket *oss.Bucket, cloudURL CloudURL
 func (sc *SetACLCommand) setObjectACLConsumer(bucket *oss.Bucket, acl oss.ACLType, chObjects <-chan string, chFinishObjects chan<- string, chError chan<- error) {
 	for object := range chObjects {
 		err := sc.ossSetObjectACLRetry(bucket, object, acl)
-        fmt.Println("&&&&Consumer chObjects:", object, err)
 		if err != nil {
-            fmt.Println("&&&&consumer chError:", object, err)
 			chError <- err
 			return
 		}
-        fmt.Println("&&&&consumer chFinishObjects:", object, err)
 		chFinishObjects <- object
 	}
 
-    fmt.Println("&&&&consumer chNIL:")
 	chError <- nil
 }
