@@ -69,6 +69,13 @@ func (s *OssutilCommandSuite) TestCPObject(c *C) {
     c.Assert(str, Equals, data)
     _ = os.Remove(object)
 
+    // get to file in not exist directory
+    notexistdir := "NOTEXISTDIR"
+    s.getObject(bucket, object, notexistdir + string(os.PathSeparator) + downloadFileName, c)
+    str = s.readFile(notexistdir + string(os.PathSeparator) + downloadFileName, c) 
+    c.Assert(str, Equals, data)
+    _ = os.RemoveAll(notexistdir)
+
     // put without specify dest object 
     data1 := "put without specify dest object"
     s.createFile(uploadFileName, data1, c)
@@ -76,13 +83,6 @@ func (s *OssutilCommandSuite) TestCPObject(c *C) {
     s.getObject(bucket, uploadFileName, downloadFileName, c)
     str = s.readFile(downloadFileName, c) 
     c.Assert(str, Equals, data1)
-
-    // get to file in not exist directory
-    notexistdir := "NOTEXISTDIR"
-    s.getObject(bucket, object, notexistdir + string(os.PathSeparator) + downloadFileName, c)
-    str = s.readFile(notexistdir + string(os.PathSeparator) + downloadFileName, c) 
-    c.Assert(str, Equals, data)
-    _ = os.RemoveAll(notexistdir)
 
     // copy file
     destObject := "TestCPObject_destObject"
