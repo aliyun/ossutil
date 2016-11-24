@@ -33,7 +33,7 @@ func (s *OssutilCommandSuite) rawSetMetaWithArgs(args []string, update, delete, 
         "language": &language,
     }
     showElapse, err := cm.RunCommand(command, args, options)
-    time.Sleep(2*sleepTime)
+    time.Sleep(3*sleepTime)
     return showElapse, err
 }
 
