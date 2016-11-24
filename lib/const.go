@@ -83,7 +83,7 @@ const (
 	RetryTimes                      int    = 3
 	MaxRetryTimes                   int64  = 500
 	MinRetryTimes                   int64  = 1
-	Routines                        int    = 3
+	Routines                        int    = 1
 	MaxRoutines                     int64  = 32
 	MinRoutines                     int64  = 1
 	DefaultHashType                 string = "crc64"
