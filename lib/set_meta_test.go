@@ -177,17 +177,12 @@ func (s *OssutilCommandSuite) TestSetNotExistObjectMeta(c *C) {
 func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
     bucket := bucketNameSetMeta 
 
-    os.Stdout = out 
-    os.Stderr = errout 
-
-    fmt.Println("**********")
 
     // put objects
     num := 2 
     objectNames := []string{}
     for i := 0; i < num; i++ {
         object := fmt.Sprintf("setmeta%d", i)
-        fmt.Println("putobject:", object)
         s.putObject(bucket, object, uploadFileName, c)
         objectNames = append(objectNames, object)
         time.Sleep(sleepTime)
@@ -231,10 +226,6 @@ func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
 
     // set all
     s.setObjectMeta(bucket, "nosetmeta", "X-Oss-Meta-M:c", false, false, true, true, c)
-
-    os.Stdout = testLogFile 
-    os.Stderr = testLogFile 
-
 
     for _, object := range objectNames {
         objectStat := s.getStat(bucket, object, c) 
