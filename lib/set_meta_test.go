@@ -57,11 +57,6 @@ func (s *OssutilCommandSuite) TestSetObjectMeta(c *C) {
     object := "TestSetObjectMeta_testobject" 
     s.putObject(bucket, object, uploadFileName, c)
 
-    /*objectStat := s.getStat(bucket, object, c) 
-    c.Assert(objectStat[StatACL], Equals, "default") 
-    _, ok := objectStat["X-Oss-Meta-A"]
-    c.Assert(ok, Equals, false)*/
-
     // update
     s.setObjectMeta(bucket, object, "x-oss-object-acl:private#X-Oss-Meta-A:A#Expires:2006-01-02T15:04:05Z", true, false, false, true, c)
 
