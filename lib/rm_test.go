@@ -25,28 +25,6 @@ func (s *OssutilCommandSuite) rawRemove(args []string, recursive, force, bucket 
     return showElapse, err
 }
 
-func (s *OssutilCommandSuite) TestRemoveObject(c *C) {
-    bucket := bucketNameMB
-    s.removeObjects(bucket, "", true, true, c)
-    time.Sleep(3*sleepTime) 
-
-    // put object
-    object := "test_object"
-    s.putObject(bucket, object, uploadFileName, c)
-
-    // list object
-    objects := s.listObjects(bucket, "", false, false, c)
-    c.Assert(len(objects), Equals, 1)
-    c.Assert(objects[0], Equals, object)
-
-    // remove object
-    s.removeObjects(bucket, object, false, true, c)
-
-    // list object
-    objects = s.listObjects(bucket, "", false, false, c)
-    c.Assert(len(objects), Equals, 0)
-}
-
 func (s *OssutilCommandSuite) TestRemoveObjects(c *C) {
     bucket := bucketNameMB 
     s.removeObjects(bucket, "", true, true, c)
@@ -80,11 +58,20 @@ func (s *OssutilCommandSuite) TestRemoveObjects(c *C) {
     objects = s.listObjects(bucket, "", false, false, c)
     c.Assert(len(objects), Equals, 0)
 
-    //reput objects
-    for i := 0; i < num; i++ {
-        object := fmt.Sprintf("^$%d$^", i) 
-        s.putObject(bucket, object, uploadFileName, c) 
-    }
+    // put object
+    object := "test_object"
+    s.putObject(bucket, object, uploadFileName, c)
+
+    // list object
+    objects = s.listObjects(bucket, "", false, false, c)
+    c.Assert(FindPos(object, objects) != -1, Equals, true)
+
+    // remove object
+    s.removeObjects(bucket, object, false, true, c)
+
+    // list object
+    objects = s.listObjects(bucket, "", false, false, c)
+    c.Assert(FindPos(object, objects) == -1, Equals, true)
 }
 
 func (s *OssutilCommandSuite) TestRemoveNonEmptyBucket(c *C) {
