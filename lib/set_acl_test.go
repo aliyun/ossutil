@@ -164,16 +164,35 @@ func (s *OssutilCommandSuite) TestBatchSetObjectACL(c *C) {
     // without --force option
     s.setObjectACL(bucket, "", "public-read-write", true, false, c)
 
-    for _, acl := range []string{"private"} {
-        s.setObjectACL(bucket, "TestBatchSetObjectACL_setacl1", acl, true, true, c)
-
-        objectStat := s.getStat(bucket, "TestBatchSetObjectACL_setacl1", c)
-        c.Assert(objectStat[StatACL], Equals, acl)
-    }
+    s.setObjectACL(bucket, "TestBatchSetObjectACL_setacl1", "private", true, true, c)
+    objectStat := s.getStat(bucket, "TestBatchSetObjectACL_setacl1", c)
+    c.Assert(objectStat[StatACL], Equals, "private")
 
     showElapse, err := s.rawSetObjectACL(bucket, "TestBatchSetObjectACL_setacl", "erracl", true, true)
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
+
+    command := "set-acl"
+    str := ""
+    str1 := "abc"
+    args := []string{CloudURLToString(bucket, ""), "public-read-write"}
+    routines := strconv.Itoa(Routines)
+    ok := true
+    options := OptionMapType{
+        "endpoint": &str1,
+        "accessKeyID": &str1,
+        "accessKeySecret": &str1,
+        "stsToken": &str,
+        "routines": &routines,
+        "recursive": &ok,
+        "force": &ok,
+    }
+    showElapse, err := cm.RunCommand(command, args, options)
+    c.Assert(err, NotNil)
+    c.Assert(showElapse, Equals, false)
+
+    objectStat := s.getStat(bucket, "TestBatchSetObjectACL_setacl1", c)
+    c.Assert(objectStat[StatACL], Equals, acl)
 }
 
 func (s *OssutilCommandSuite) TestErrSetACL(c *C) {
@@ -226,7 +245,7 @@ func (s *OssutilCommandSuite) TestErrSetACL(c *C) {
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
 }
-
+/*
 func (s *OssutilCommandSuite) TestErrBatchSetACL(c *C) {
     bucket := bucketNameExist  
 
@@ -265,7 +284,7 @@ func (s *OssutilCommandSuite) TestErrBatchSetACL(c *C) {
         c.Assert(objectStat[StatACL], Equals, "default")
     }
 }
-
+*/
 func (s *OssutilCommandSuite) TestSetACLIDKey(c *C) {
     bucket := bucketNameExist 
 
