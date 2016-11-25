@@ -191,11 +191,19 @@ func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
 
     // update
     s.setObjectMeta(bucket, "setmeta0", "content-type:abc#X-Oss-Meta-Update:update", true, false, true, true, c)
-    time.Sleep(sleepTime)
+
+    os.Stdout = out 
+    os.Stderr = errout 
 
     objectStat := s.getStat(bucket, "setmeta0", c) 
+    fmt.Println(objectStat)
     c.Assert(objectStat["Content-Type"], Equals, "abc") 
     c.Assert(objectStat["X-Oss-Meta-Update"], Equals, "update")
+
+    os.Stdout = testLogFile 
+    os.Stderr = testLogFile 
+
+    time.Sleep(sleepTime)
 
      // delete
     s.setObjectMeta(bucket, "setmeta0", "X-Oss-Meta-update", false, true, true, true, c)
@@ -203,6 +211,8 @@ func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
     objectStat = s.getStat(bucket, "setmeta0", c) 
     _, ok := objectStat["X-Oss-Meta-Update"]
     c.Assert(ok, Equals, false)
+
+    time.Sleep(sleepTime)
 
     s.setObjectMeta(bucket, "setmeta1", "X-Oss-Meta-A:A#x-oss-meta-B:b", true, false, true, true, c)
 

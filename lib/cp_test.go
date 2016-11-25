@@ -367,7 +367,7 @@ func (s *OssutilCommandSuite) TestCPObjectUpdate(c *C) {
     s.createFile(newFile, newData, c)
 
     // put newer object
-    object := "testobject"
+    object := "TestCPObjectUpdate"
     s.putObject(bucket, object, newFile, c)
 
     // get object
@@ -581,7 +581,7 @@ func (s *OssutilCommandSuite) TestErrUpload(c *C) {
 func (s *OssutilCommandSuite) TestErrDownload(c *C) {
     bucket := bucketNameExist 
  
-    object := "object"
+    object := "TestErrDownload"
     s.putObject(bucket, object, uploadFileName, c)
 
     // download to dir, but dir exist as a file
@@ -616,7 +616,7 @@ func (s *OssutilCommandSuite) TestErrCopy(c *C) {
     c.Assert(showElapse, Equals, false)
 
     // err dest object
-    object := "object"
+    object := "TestErrCopy"
     s.putObject(srcBucket, object, uploadFileName, c)
     showElapse, err = s.rawCP(CloudURLToString(srcBucket, object), CloudURLToString(destBucket, "/object"), false, true, false, BigFileThreshold, CheckpointDir)
     c.Assert(err, NotNil)
@@ -658,10 +658,10 @@ func (s *OssutilCommandSuite) TestResumeDownloadRetry(c *C) {
 func (s *OssutilCommandSuite) TestCPIDKey(c *C) {
     bucket := bucketNameExist 
 
-    object := "testobject" 
+    object := "TestCPIDKey" 
 
     ufile := "ossutil_test.cpidkey"
-    data := "欢迎使用ossutil"
+    data := "welcome to use ossutil"
     s.createFile(ufile, data, c)
 
     cfile := "ossutil_test.config_boto"

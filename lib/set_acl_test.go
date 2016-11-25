@@ -135,24 +135,17 @@ func (s *OssutilCommandSuite) TestSetObjectACL(c *C) {
     object = "setacl-newobject"
     s.putObject(bucket, object, uploadFileName, c)
 
-    // set acl
-    for _, acl := range []string{"default", "private", "public-read", "public-read-write"} {
-        s.setObjectACL(bucket, object, acl, false, true, c)
-        objectStat = s.getStat(bucket, object, c)
-        c.Assert(objectStat[StatACL], Equals, acl)
-    }
-
     s.setObjectACL(bucket, object, "private", false, true, c)
+    objectStat = s.getStat(bucket, object, c)
+    c.Assert(objectStat[StatACL], Equals, acl)
 
     // set error acl
-    for _, acl := range []string{"erracl"} {
-        showElapse, err = s.rawSetObjectACL(bucket, object, acl, false, false)
-        c.Assert(showElapse, Equals, false)
-        c.Assert(err, NotNil)
+    showElapse, err = s.rawSetObjectACL(bucket, object, "erracl", false, false)
+    c.Assert(showElapse, Equals, false)
+    c.Assert(err, NotNil)
 
-        objectStat = s.getStat(bucket, object, c)
-        c.Assert(objectStat[StatACL], Equals, "private")
-    }
+    objectStat = s.getStat(bucket, object, c)
+    c.Assert(objectStat[StatACL], Equals, "private")
 }
 
 func (s *OssutilCommandSuite) TestBatchSetObjectACL(c *C) {
