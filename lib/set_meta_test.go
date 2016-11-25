@@ -33,7 +33,7 @@ func (s *OssutilCommandSuite) rawSetMetaWithArgs(args []string, update, delete, 
         "language": &language,
     }
     showElapse, err := cm.RunCommand(command, args, options)
-    time.Sleep(sleepTime)
+    time.Sleep(2*sleepTime)
     return showElapse, err
 }
 
@@ -177,7 +177,6 @@ func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
 
    // update
     s.setObjectMeta(bucket, "", "content-type:abc#X-Oss-Meta-update:update", true, false, true, true, c)
-    time.Sleep(sleepTime)
 
     meta := "content-type:def#X-Oss-Meta-Update:no" 
     args := []string{CloudURLToString(bucket, ""), meta}

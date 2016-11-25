@@ -281,9 +281,6 @@ func (s *OssutilCommandSuite) TestBatchCPObject(c *C) {
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true) 
 
-    // remove object
-    s.removeObjects(bucket, subdir + "/", false, true, c)
-
     // create file in dir
     num := 3 
     filePaths := []string{subdir + "/"}
@@ -328,7 +325,6 @@ func (s *OssutilCommandSuite) TestBatchCPObject(c *C) {
 
     _, err = os.Stat(downDir)
     c.Assert(err, IsNil)
-    //c.Assert(f.ModTime(), Equals, f1.ModTime())
 
     // copy files
     destBucket := bucketNameNotExist 
