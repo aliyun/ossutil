@@ -69,13 +69,6 @@ func (s *OssutilCommandSuite) TestCPObject(c *C) {
     c.Assert(str, Equals, data)
     _ = os.Remove(object)
 
-    // get to file in not exist directory
-    notexistdir := "NOTEXISTDIR"
-    s.getObject(bucket, object, notexistdir + string(os.PathSeparator) + downloadFileName, c)
-    str = s.readFile(notexistdir + string(os.PathSeparator) + downloadFileName, c) 
-    c.Assert(str, Equals, data)
-    _ = os.RemoveAll(notexistdir)
-
     // put without specify dest object 
     data1 := "put without specify dest object"
     s.createFile(uploadFileName, data1, c)
@@ -83,6 +76,13 @@ func (s *OssutilCommandSuite) TestCPObject(c *C) {
     s.getObject(bucket, uploadFileName, downloadFileName, c)
     str = s.readFile(downloadFileName, c) 
     c.Assert(str, Equals, data1)
+
+    // get to file in not exist directory
+    notexistdir := "NOTEXISTDIR"
+    s.getObject(bucket, object, notexistdir + string(os.PathSeparator) + downloadFileName, c)
+    str = s.readFile(notexistdir + string(os.PathSeparator) + downloadFileName, c) 
+    c.Assert(str, Equals, data)
+    _ = os.RemoveAll(notexistdir)
 
     // copy file
     destObject := "TestCPObject_destObject"
@@ -250,7 +250,7 @@ func (s *OssutilCommandSuite) TestBatchCPObject(c *C) {
 
     // create local dir
     dir := "TestBatchCPObject"
-    err := os.MkdirAll(dir, 0755)
+    err := os.MkdirAll(dir, 0777)
     c.Assert(err, IsNil)
 
     // upload empty dir miss recursive
@@ -273,7 +273,7 @@ func (s *OssutilCommandSuite) TestBatchCPObject(c *C) {
     // create dir in dir 
     dir = "TestBatchCPObject_dir"
     subdir := "SUBDIR"
-    err = os.MkdirAll(dir + string(os.PathSeparator) + subdir, 0755)
+    err = os.MkdirAll(dir + string(os.PathSeparator) + subdir, 0777)
     c.Assert(err, IsNil)
 
     // upload dir    
@@ -363,11 +363,11 @@ func (s *OssutilCommandSuite) TestCPObjectUpdate(c *C) {
     newData := "new data"
     newFile := "newFile"
     s.createFile(oldFile, oldData, c)
-    time.Sleep(10*time.Second)
+    time.Sleep(sleepTime)
     s.createFile(newFile, newData, c)
 
     // put newer object
-    object := "TestCPObjectUpdate"
+    object := "testobject"
     s.putObject(bucket, object, newFile, c)
 
     // get object
@@ -550,7 +550,7 @@ func (s *OssutilCommandSuite) TestErrUpload(c *C) {
 
     // create local dir
     dir := "上传目录"
-    err = os.MkdirAll(dir, 0755)
+    err = os.MkdirAll(dir, 0777)
     c.Assert(err, IsNil)
     cpDir := dir + string(os.PathSeparator) + CheckpointDir 
     showElapse, err = s.rawCP(dir, CloudURLToString(bucket, ""), true, true, true, BigFileThreshold, cpDir)
@@ -567,7 +567,7 @@ func (s *OssutilCommandSuite) TestErrUpload(c *C) {
     c.Assert(showElapse, Equals, false)
 
     subdir := dir + string(os.PathSeparator) + "subdir"
-    err = os.MkdirAll(subdir, 0755)
+    err = os.MkdirAll(subdir, 0777)
     c.Assert(err, IsNil)
 
     showElapse, err = s.rawCP(subdir, CloudURLToString(bucket, "/object"), false, true, false, 1, CheckpointDir)
@@ -581,7 +581,7 @@ func (s *OssutilCommandSuite) TestErrUpload(c *C) {
 func (s *OssutilCommandSuite) TestErrDownload(c *C) {
     bucket := bucketNameExist 
  
-    object := "TestErrDownload"
+    object := "object"
     s.putObject(bucket, object, uploadFileName, c)
 
     // download to dir, but dir exist as a file
@@ -616,7 +616,7 @@ func (s *OssutilCommandSuite) TestErrCopy(c *C) {
     c.Assert(showElapse, Equals, false)
 
     // err dest object
-    object := "TestErrCopy"
+    object := "object"
     s.putObject(srcBucket, object, uploadFileName, c)
     showElapse, err = s.rawCP(CloudURLToString(srcBucket, object), CloudURLToString(destBucket, "/object"), false, true, false, BigFileThreshold, CheckpointDir)
     c.Assert(err, NotNil)
@@ -658,10 +658,10 @@ func (s *OssutilCommandSuite) TestResumeDownloadRetry(c *C) {
 func (s *OssutilCommandSuite) TestCPIDKey(c *C) {
     bucket := bucketNameExist 
 
-    object := "TestCPIDKey" 
+    object := "testobject" 
 
     ufile := "ossutil_test.cpidkey"
-    data := "welcome to use ossutil"
+    data := "欢迎使用ossutil"
     s.createFile(ufile, data, c)
 
     cfile := "ossutil_test.config_boto"

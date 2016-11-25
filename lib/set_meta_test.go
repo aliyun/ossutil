@@ -33,7 +33,7 @@ func (s *OssutilCommandSuite) rawSetMetaWithArgs(args []string, update, delete, 
         "language": &language,
     }
     showElapse, err := cm.RunCommand(command, args, options)
-    time.Sleep(2*sleepTime)
+    time.Sleep(sleepTime)
     return showElapse, err
 }
 
@@ -177,7 +177,7 @@ func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
     bucket := bucketNameSetMeta 
 
     // put objects
-    num := 2 
+    num := 3 
     objectNames := []string{}
     for i := 0; i < num; i++ {
         object := fmt.Sprintf("setmeta%d", i)
@@ -187,48 +187,61 @@ func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
     time.Sleep(sleepTime)
 
     // update without force
-    s.setObjectMeta(bucket, "setmeta0", "content-type:abc#X-Oss-Meta-Update:update", true, false, true, false, c)
+    s.setObjectMeta(bucket, "", "content-type:abc#X-Oss-Meta-Update:update", true, false, true, false, c)
+
+    for _, object := range objectNames {
+        objectStat := s.getStat(bucket, object, c) 
+        c.Assert(objectStat["Content-Type"] != "abc", Equals, true) 
+        _, ok := objectStat["X-Oss-Meta-Update"]
+        c.Assert(ok, Equals, false)
+    }
 
     // update
-    s.setObjectMeta(bucket, "setmeta0", "content-type:abc#X-Oss-Meta-Update:update", true, false, true, true, c)
-
-    objectStat := s.getStat(bucket, "setmeta0", c) 
-    c.Assert(objectStat["Content-Type"], Equals, "abc") 
-    c.Assert(objectStat["X-Oss-Meta-Update"], Equals, "update")
-
+    s.setObjectMeta(bucket, "", "content-type:abc#X-Oss-Meta-update:update", true, false, true, true, c)
     time.Sleep(sleepTime)
+
+    for _, object := range objectNames {
+        objectStat := s.getStat(bucket, object, c) 
+        c.Assert(objectStat["Content-Type"], Equals, "abc") 
+        c.Assert(objectStat["X-Oss-Meta-Update"], Equals, "update")
+    }
 
      // delete
-    s.setObjectMeta(bucket, "setmeta0", "X-Oss-Meta-update", false, true, true, true, c)
+    s.setObjectMeta(bucket, "setmeta", "X-Oss-Meta-update", false, true, true, true, c)
    
-    objectStat = s.getStat(bucket, "setmeta0", c) 
-    _, ok := objectStat["X-Oss-Meta-Update"]
-    c.Assert(ok, Equals, false)
+    for _, object := range objectNames {
+        objectStat := s.getStat(bucket, object, c) 
+        _, ok := objectStat["X-Oss-Meta-Update"]
+        c.Assert(ok, Equals, false)
+    }
 
-    time.Sleep(sleepTime)
+    s.setObjectMeta(bucket, "", "X-Oss-Meta-A:A#x-oss-meta-B:b", true, false, true, true, c)
+    for _, object := range objectNames {
+        objectStat := s.getStat(bucket, object, c) 
+        c.Assert(objectStat["X-Oss-Meta-A"], Equals, "A") 
+        c.Assert(objectStat["X-Oss-Meta-B"], Equals, "b")
+    }
 
-    s.setObjectMeta(bucket, "setmeta1", "X-Oss-Meta-A:A#x-oss-meta-B:b", true, false, true, true, c)
-
-    objectStat = s.getStat(bucket, "setmeta1", c) 
-    c.Assert(objectStat["X-Oss-Meta-A"], Equals, "A") 
-    c.Assert(objectStat["X-Oss-Meta-B"], Equals, "b")
-
+    // set all
     s.setObjectMeta(bucket, "nosetmeta", "X-Oss-Meta-M:c", false, false, true, true, c)
 
-    /*objectStat = s.getStat(bucket, "setmeta1", c) 
-    c.Assert(objectStat["X-Oss-Meta-A"], Equals, "A") 
-    c.Assert(objectStat["X-Oss-Meta-B"], Equals, "b")
-    _, ok = objectStat["X-Oss-Meta-M"]
-    c.Assert(ok, Equals, false)*/
+    for _, object := range objectNames {
+        objectStat := s.getStat(bucket, object, c) 
+        c.Assert(objectStat["X-Oss-Meta-A"], Equals, "A") 
+        c.Assert(objectStat["X-Oss-Meta-B"], Equals, "b")
+        _, ok := objectStat["X-Oss-Meta-M"]
+        c.Assert(ok, Equals, false)
+    }
 
-    s.setObjectMeta(bucket, "setmeta1", "X-Oss-Meta-C:c", false, false, true, true, c)
-
-    objectStat = s.getStat(bucket, "setmeta1", c) 
-    c.Assert(objectStat["X-Oss-Meta-C"], Equals, "c") 
-    _, ok = objectStat["X-Oss-Meta-A"]
-    c.Assert(ok, Equals, false)
-    _, ok = objectStat["X-Oss-Meta-B"]
-    c.Assert(ok, Equals, false)
+    s.setObjectMeta(bucket, "setmeta", "X-Oss-Meta-c:c", false, false, true, true, c)
+    for _, object := range objectNames {
+        objectStat := s.getStat(bucket, object, c) 
+        c.Assert(objectStat["X-Oss-Meta-C"], Equals, "c") 
+        _, ok := objectStat["X-Oss-Meta-A"]
+        c.Assert(ok, Equals, false)
+        _, ok = objectStat["X-Oss-Meta-B"]
+        c.Assert(ok, Equals, false)
+    }
 
     // error meta
     showElapse, err := s.rawSetMeta(bucket, "setmeta", "X-Oss-Meta-c:c", false, true, true, true, DefaultLanguage)
