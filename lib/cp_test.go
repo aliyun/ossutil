@@ -355,7 +355,7 @@ func (s *OssutilCommandSuite) TestBatchCPObject(c *C) {
 func (s *OssutilCommandSuite) TestCPObjectUpdate(c *C) {
     bucket := bucketNameExist 
     s.removeObjects(bucket, "", true, true, c)
-    time.Sleep(2*sleepTime) 
+    time.Sleep(3*sleepTime) 
 
     // create older file and newer file
     oldData := "old data"
@@ -367,7 +367,7 @@ func (s *OssutilCommandSuite) TestCPObjectUpdate(c *C) {
     s.createFile(newFile, newData, c)
 
     // put newer object
-    object := "testobject"
+    object := "TestCPObjectUpdate"
     s.putObject(bucket, object, newFile, c)
 
     // get object
@@ -661,7 +661,7 @@ func (s *OssutilCommandSuite) TestCPIDKey(c *C) {
     object := "testobject" 
 
     ufile := "ossutil_test.cpidkey"
-    data := "欢迎使用ossutil"
+    data := "使用ossutil"
     s.createFile(ufile, data, c)
 
     cfile := "ossutil_test.config_boto"
