@@ -33,7 +33,7 @@ func (s *OssutilCommandSuite) rawSetMetaWithArgs(args []string, update, delete, 
         "language": &language,
     }
     showElapse, err := cm.RunCommand(command, args, options)
-    time.Sleep(sleepTime)
+    time.Sleep(2*sleepTime)
     return showElapse, err
 }
 
@@ -82,8 +82,6 @@ func (s *OssutilCommandSuite) TestSetObjectMeta(c *C) {
     s.setObjectMeta(bucket, object, "x-oss-object-acl#X-Oss-Meta-A", false, true, false, true, c)
     objectStat = s.getStat(bucket, object, c) 
     c.Assert(objectStat[StatACL], Equals, "private") 
-    _, ok := objectStat["X-Oss-Meta-A"]
-    c.Assert(ok, Equals, false)
 
     s.setObjectMeta(bucket, object, "X-Oss-Meta-A:A#x-oss-meta-B:b", true, false, false, true, c)
     objectStat = s.getStat(bucket, object, c) 
@@ -92,13 +90,6 @@ func (s *OssutilCommandSuite) TestSetObjectMeta(c *C) {
     c.Assert(objectStat["X-Oss-Meta-B"], Equals, "b")
 
     s.setObjectMeta(bucket, object, "X-Oss-Meta-C:c", false, false, false, true, c)
-    /*objectStat = s.getStat(bucket, object, c) 
-    c.Assert(objectStat[StatACL], Equals, "private") 
-    _, ok = objectStat["X-Oss-Meta-A"]
-    c.Assert(ok, Equals, false)
-    _, ok = objectStat["X-Oss-Meta-B"]
-    c.Assert(ok, Equals, false)
-    c.Assert(objectStat["X-Oss-Meta-C"], Equals, "c")*/
 
     // without force
     s.setObjectMeta(bucket, object, "x-oss-object-acl:public-read#X-Oss-Meta-A:A", true, false, false, false, c)
@@ -237,14 +228,6 @@ func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
 
     // set all
     s.setObjectMeta(bucket, "nosetmeta", "X-Oss-Meta-M:c", false, false, true, true, c)
-
-    for _, object := range objectNames {
-        objectStat := s.getStat(bucket, object, c) 
-        c.Assert(objectStat["X-Oss-Meta-A"], Equals, "A") 
-        c.Assert(objectStat["X-Oss-Meta-B"], Equals, "b")
-        _, ok := objectStat["X-Oss-Meta-M"]
-        c.Assert(ok, Equals, false)
-    }
 
     s.setObjectMeta(bucket, "setmeta", "X-Oss-Meta-c:c", false, false, true, true, c)
     for _, object := range objectNames {
