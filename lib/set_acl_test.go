@@ -187,12 +187,12 @@ func (s *OssutilCommandSuite) TestBatchSetObjectACL(c *C) {
         "recursive": &ok,
         "force": &ok,
     }
-    showElapse, err := cm.RunCommand(command, args, options)
+    showElapse, err = cm.RunCommand(command, args, options)
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
 
-    objectStat := s.getStat(bucket, "TestBatchSetObjectACL_setacl1", c)
-    c.Assert(objectStat[StatACL], Equals, acl)
+    objectStat = s.getStat(bucket, "TestBatchSetObjectACL_setacl1", c)
+    c.Assert(objectStat[StatACL], Equals, "private")
 }
 
 func (s *OssutilCommandSuite) TestErrSetACL(c *C) {
