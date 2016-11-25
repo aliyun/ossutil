@@ -192,16 +192,9 @@ func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
     // update
     s.setObjectMeta(bucket, "setmeta0", "content-type:abc#X-Oss-Meta-Update:update", true, false, true, true, c)
 
-    os.Stdout = out 
-    os.Stderr = errout 
-
     objectStat := s.getStat(bucket, "setmeta0", c) 
-    fmt.Println(objectStat)
     c.Assert(objectStat["Content-Type"], Equals, "abc") 
     c.Assert(objectStat["X-Oss-Meta-Update"], Equals, "update")
-
-    os.Stdout = testLogFile 
-    os.Stderr = testLogFile 
 
     time.Sleep(sleepTime)
 
