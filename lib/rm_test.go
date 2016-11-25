@@ -98,11 +98,11 @@ func (s *OssutilCommandSuite) TestRemoveObjects(c *C) {
     buckets = s.listBuckets(false, c)
     c.Assert(FindPos(bucket, buckets) == -1, Equals, true)
 }
-
+/*
 func (s *OssutilCommandSuite) TestRemoveEmptyBucket(c *C) {
     bucket := bucketNamePrefix + "rmb3"
     s.putBucket(bucket, c)
-    time.Sleep(sleepTime)
+    time.Sleep(3*sleepTime)
 
     // list buckets
     buckets := s.listBuckets(false, c)
@@ -110,13 +110,13 @@ func (s *OssutilCommandSuite) TestRemoveEmptyBucket(c *C) {
 
     // rm bucket
     s.removeBucket(bucket, false, c)
-    time.Sleep(sleepTime)
+    time.Sleep(3*sleepTime)
 
     // list buckets
     buckets = s.listBuckets(false, c)
     c.Assert(FindPos(bucket, buckets) == -1, Equals, true)
 }
-
+*/
 func (s *OssutilCommandSuite) TestRemoveNonEmptyBucket(c *C) {
     bucket := bucketNamePrefix + "rmb4" 
     s.putBucket(bucket, c)
