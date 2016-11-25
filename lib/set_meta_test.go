@@ -87,7 +87,7 @@ func (s *OssutilCommandSuite) TestSetObjectMeta(c *C) {
     s.setObjectMeta(bucket, object, "X-Oss-Meta-C:c", false, false, false, true, c)
 
     // without force
-    s.setObjectMeta(bucket, object, "x-oss-object-acl:public-read#X-Oss-Meta-A:A", true, false, false, false, c)
+    s.setObjectMeta(bucket, object, "x-oss-object-acl:private#X-Oss-Meta-A:A", true, false, false, false, c)
 
     objectStat = s.getStat(bucket, object, c) 
     c.Assert(objectStat["X-Oss-Meta-A"], Equals, "A")
