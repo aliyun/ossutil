@@ -176,7 +176,6 @@ func (s *OssutilCommandSuite) TestSetNotExistObjectMeta(c *C) {
 func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
     bucket := bucketNameSetMeta 
 
-
     // put objects
     num := 2 
     objectNames := []string{}
