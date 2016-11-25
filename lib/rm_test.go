@@ -126,7 +126,7 @@ func (s *OssutilCommandSuite) TestRemoveNonEmptyBucket(c *C) {
     time.Sleep(2*sleepTime) 
 
     // list buckets
-    buckets = s.listBuckets(false, c)
+    buckets := s.listBuckets(false, c)
     c.Assert(FindPos(bucket, buckets) == -1, Equals, true)
 }
 
