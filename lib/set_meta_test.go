@@ -65,7 +65,7 @@ func (s *OssutilCommandSuite) TestSetObjectMeta(c *C) {
     // update
     s.setObjectMeta(bucket, object, "x-oss-object-acl:private#X-Oss-Meta-A:A#Expires:2006-01-02T15:04:05Z", true, false, false, true, c)
 
-    objectStat = s.getStat(bucket, object, c) 
+    objectStat := s.getStat(bucket, object, c) 
     c.Assert(objectStat[StatACL], Equals, "private") 
     c.Assert(objectStat["X-Oss-Meta-A"], Equals, "A")
     c.Assert(objectStat["Expires"], Equals, "Mon, 02 Jan 2006 15:04:05 GMT")
@@ -82,7 +82,7 @@ func (s *OssutilCommandSuite) TestSetObjectMeta(c *C) {
     s.setObjectMeta(bucket, object, "x-oss-object-acl#X-Oss-Meta-A", false, true, false, true, c)
     objectStat = s.getStat(bucket, object, c) 
     c.Assert(objectStat[StatACL], Equals, "private") 
-    _, ok = objectStat["X-Oss-Meta-A"]
+    _, ok := objectStat["X-Oss-Meta-A"]
     c.Assert(ok, Equals, false)
 
     s.setObjectMeta(bucket, object, "X-Oss-Meta-A:A#x-oss-meta-B:b", true, false, false, true, c)
