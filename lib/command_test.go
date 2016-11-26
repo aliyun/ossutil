@@ -50,7 +50,7 @@ var (
 
 var (
     bucketNamePrefix    = "ossutil-test-"
-    bucketNameExist     = "nodelete-ossutil-test-normalcase"
+    bucketNameExist     = "nodelete-ossutil-test-normalcase1"
     bucketNameDest      = "nodelete-ossutil-test-dest"  // bucket not change acl
     bucketNameCP        = "nodelete-ossutil-test-cp"
     bucketNameBCP       = "nodelete-ossutil-test-bcp"
