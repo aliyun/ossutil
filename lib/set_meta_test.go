@@ -172,8 +172,8 @@ func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
         object := fmt.Sprintf("setmeta%d", i)
         s.putObject(bucket, object, uploadFileName, c)
         objectNames = append(objectNames, object)
+        time.Sleep(sleepTime)
     }
-    time.Sleep(sleepTime)
 
     // update without force
     s.setObjectMeta(bucket, "", "content-type:abc#X-Oss-Meta-Update:update", true, false, true, false, c)
@@ -217,11 +217,6 @@ func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
     }
 
     s.setObjectMeta(bucket, "", "X-Oss-Meta-A:A#x-oss-meta-B:b", true, false, true, true, c)
-    for _, object := range objectNames {
-        objectStat := s.getStat(bucket, object, c) 
-        c.Assert(objectStat["X-Oss-Meta-A"], Equals, "A") 
-        c.Assert(objectStat["X-Oss-Meta-B"], Equals, "b")
-    }
 
     // set all
     s.setObjectMeta(bucket, "nosetmeta", "X-Oss-Meta-M:c", false, false, true, true, c)
