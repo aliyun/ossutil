@@ -84,7 +84,8 @@ func (s *OssutilCommandSuite) TestRemoveNonEmptyBucket(c *C) {
     s.putObject(bucket, object, uploadFileName, c)
     time.Sleep(time.Second)
 
-    buckets = s.listBuckets(true, c)
+    buckets := s.listBuckets(true, c)
+    bucketNum := len(buckets)
     c.Assert(FindPos(bucket, buckets) != -1, Equals, true)
 
     command := "rm"
