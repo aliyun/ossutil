@@ -52,7 +52,7 @@ func (s *OssutilCommandSuite) TestSetBucketMeta(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestSetObjectMeta(c *C) {
-    bucket := bucketNameExist 
+    bucket := bucketNameSetMeta1 
 
     object := "TestSetObjectMeta_testobject" 
     s.putObject(bucket, object, uploadFileName, c)
@@ -101,10 +101,9 @@ func (s *OssutilCommandSuite) TestSetObjectMeta(c *C) {
     c.Assert(objectStat["X-Oss-Meta-C"], Equals, "c")
 
     // without force
-    s.setObjectMeta(bucket, object, "x-oss-object-acl:default#X-Oss-Meta-A:A", true, false, false, false, c)
+    s.setObjectMeta(bucket, object, "x-oss-object-acl:public-read#X-Oss-Meta-A:A", true, false, false, false, c)
 
     objectStat = s.getStat(bucket, object, c) 
-    c.Assert(objectStat[StatACL], Equals, "default") 
     c.Assert(objectStat["X-Oss-Meta-A"], Equals, "A")
 
     // without update, delete and force
@@ -185,6 +184,7 @@ func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
         s.putObject(bucket, object, uploadFileName, c)
         objectNames = append(objectNames, object)
     }
+    time.Sleep(sleepTime)
 
     // update without force
     s.setObjectMeta(bucket, "", "content-type:abc#X-Oss-Meta-Update:update", true, false, true, false, c)

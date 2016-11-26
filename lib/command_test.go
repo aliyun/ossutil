@@ -38,16 +38,6 @@ var (
     testLogger          = log.New(testLogFile, "", log.Ldate|log.Ltime|log.Lshortfile)
     resultPath          = "ossutil_test.result"
     testResultFile, _   = os.OpenFile(resultPath, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
-    bucketNamePrefix    = "ossutil-test-"
-    bucketNameExist     = "nodelete-ossutil-test-normalcase1"
-    bucketNameDest      = "nodelete-ossutil-test-dest"
-    bucketNameCP        = "nodelete-ossutil-test-cp"
-    bucketNameBCP       = "nodelete-ossutil-test-bcp"
-    bucketNameSetMeta   = "nodelete-ossutil-test-setmeta"
-    bucketNameSetACL    = "nodelete-ossutil-test-setacl"
-    bucketNameSetACL1   = "nodelete-ossutil-test-setacl1"
-    bucketNameMB        = "nodelete-ossutil-test-mb"
-    bucketNameNotExist  = bucketNamePrefix + "notexistbucket"
     uploadFileName      = "ossutil_test.upload_file"
     downloadFileName    = "ossutil_test.download_file"
     inputFileName       = "ossutil_test.input_file"
@@ -56,6 +46,21 @@ var (
     out                 = os.Stdout
     errout              = os.Stderr
     sleepTime           = 7*time.Second
+)
+
+var (
+    bucketNamePrefix    = "ossutil-test-"
+    bucketNameExist     = "nodelete-ossutil-test-normalcase1"
+    bucketNameDest      = "nodelete-ossutil-test-dest"  // bucket not change acl
+    bucketNameCP        = "nodelete-ossutil-test-cp"
+    bucketNameBCP       = "nodelete-ossutil-test-bcp"
+    bucketNameSetMeta   = "nodelete-ossutil-test-setmeta"
+    bucketNameSetMeta1  = "nodelete-ossutil-test-setmeta1"
+    bucketNameSetACL    = "nodelete-ossutil-test-setacl"
+    bucketNameSetACL1   = "nodelete-ossutil-test-setacl1"
+    bucketNameMB        = "nodelete-ossutil-test-mb"    // bucket with at most one object 
+    bucketNameList      = "nodelete-ossutil-test-list"    // bucket with at most one object 
+    bucketNameNotExist  = bucketNamePrefix + "notexistbucket"  // bucket not exist
 )
 
 // Run once when the suite starts running
@@ -67,24 +72,7 @@ func (s *OssutilCommandSuite) SetUpSuite(c *C) {
     cm.Init()
     s.configNonInteractive(c)
     s.createFile(uploadFileName, content, c)
-    s.removeBuckets(bucketNamePrefix, c)
-    s.putBucket(bucketNameExist, c)
-    s.putBucket(bucketNameDest, c)
-    s.putBucket(bucketNameCP, c)
-    s.putBucket(bucketNameBCP, c)
-    s.putBucket(bucketNameSetMeta, c)
-    s.putBucket(bucketNameSetACL, c)
-    s.putBucket(bucketNameSetACL1, c)
-    s.putBucket(bucketNameMB, c)
-    time.Sleep(3*sleepTime)
-    s.removeObjects(bucketNameExist, "", true, true, c)
-    s.removeObjects(bucketNameDest, "", true, true, c)
-    s.removeObjects(bucketNameCP, "", true, true, c)
-    s.removeObjects(bucketNameBCP, "", true, true, c)
-    s.removeObjects(bucketNameSetACL, "", true, true, c)
-    s.removeObjects(bucketNameSetACL1, "", true, true, c)
-    s.removeObjects(bucketNameMB, "", true, true, c)
-    time.Sleep(3*sleepTime)
+    s.SetUpBucketEnv(c)
 }
 
 func SetUpCredential() {
@@ -115,6 +103,19 @@ func SetUpCredential() {
     if strings.HasPrefix(vUpdateEndpoint, "http://") {
         vUpdateEndpoint = vUpdateEndpoint[7:]
     }
+}
+
+func (s *OssutilCommandSuite) SetUpBucketEnv(c *C) {
+    s.removeBuckets(bucketNamePrefix, c)
+    for _, bucket := range []string{bucketNameExist, bucketNameDest, bucketNameCP, bucketNameBCP, bucketNameSetMeta, bucketNameSetMeta1, bucketNameSetACL, bucketNameSetACL1, bucketNameMB, bucketNameList} { 
+        s.putBucket(bucket, c)
+    }
+    time.Sleep(3*sleepTime)
+    for _, bucket := range []string{bucketNameExist, bucketNameDest, bucketNameCP, bucketNameBCP, bucketNameSetMeta, bucketNameSetMeta1, bucketNameSetACL, bucketNameSetACL1, bucketNameMB, bucketNameList} { 
+        s.removeObjects(bucket, "", true, true, c)
+        time.Sleep(sleepTime)
+    }
+    //time.Sleep(3*sleepTime)
 }
 
 // Run before each test or benchmark starts running
