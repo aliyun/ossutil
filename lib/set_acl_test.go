@@ -149,6 +149,9 @@ func (s *OssutilCommandSuite) TestSetObjectACL(c *C) {
         showElapse, err = s.rawSetObjectACL(bucket, object, acl, false, false)
         c.Assert(showElapse, Equals, false)
         c.Assert(err, NotNil)
+
+        objectStat = s.getStat(bucket, object, c)
+        c.Assert(objectStat[StatACL], Equals, "private")
     }
 }
 
@@ -173,10 +176,19 @@ func (s *OssutilCommandSuite) TestBatchSetObjectACL(c *C) {
     // without --force option
     s.setObjectACL(bucket, "", "public-read-write", true, false, c)
 
+    for _, object := range objectNames {
+        objectStat := s.getStat(bucket, object, c)
+        c.Assert(objectStat[StatACL], Equals, "default")
+    }
+
     for _, acl := range []string{"public-read", "private", "public-read-write", "default"} {
         s.setObjectACL(bucket, "TestBatchSetObjectACL_setacl", acl, true, true, c)
         time.Sleep(sleepTime)
 
+        for _, object := range objectNames {
+            objectStat := s.getStat(bucket, object, c)
+            c.Assert(objectStat[StatACL], Equals, acl)
+        }
     }
 
     showElapse, err := s.rawSetObjectACL(bucket, "TestBatchSetObjectACL_setacl", "erracl", true, true)
@@ -239,14 +251,13 @@ func (s *OssutilCommandSuite) TestErrBatchSetACL(c *C) {
     bucket := bucketNameExist  
 
     // put objects
-    num := 2 
+    num := 10
     objectNames := []string{}
     for i := 0; i < num; i++ {
         object := fmt.Sprintf("TestErrBatchSetACL_setacl:%d", i)
         s.putObject(bucket, object, uploadFileName, c)
         objectNames = append(objectNames, object)
     }
-    time.Sleep(3*time.Second)
 
     command := "set-acl"
     str := ""

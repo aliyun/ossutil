@@ -120,10 +120,6 @@ func (s *OssutilCommandSuite) SetUpBucketEnv(c *C) {
 // Run before each test or benchmark starts running
 func (s *OssutilCommandSuite) TearDownSuite(c *C) {
     testLogger.Println("test command completed")
-    for _, bucket := range []string{bucketNameExist, bucketNameDest, bucketNameCP, bucketNameBCP, bucketNameSetMeta, bucketNameSetMeta1, bucketNameSetACL, bucketNameSetACL1, bucketNameMB, bucketNameList} { 
-        s.removeObjects(bucket, "", true, true, c)
-        time.Sleep(sleepTime)
-    }
     _ = os.Remove(configFile)
     _ = os.Remove(resultPath)
     _ = os.Remove(uploadFileName)
