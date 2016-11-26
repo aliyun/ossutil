@@ -61,7 +61,7 @@ func (s *OssutilCommandSuite) TestMakeBucket(c *C) {
         showElapse, err := s.putBucketWithACL(bucket, acl)
         c.Assert(err, IsNil)
         c.Assert(showElapse, Equals, true)
-        time.Sleep(3*sleepTime)
+        time.Sleep(3*7*time.Second)
 
         bucketStat := s.getStat(bucket, "", c) 
         c.Assert(bucketStat[StatName], Equals, bucket)
@@ -98,7 +98,7 @@ func (s *OssutilCommandSuite) TestMakeBucketErrorACL(c *C) {
             showElapse, err := s.rawPutBucketWithACLLanguage([]string{CloudURLToString(bucket, "")}, acl, language)
             c.Assert(err, NotNil)
             c.Assert(showElapse, Equals, false)
-            time.Sleep(sleepTime)
+            time.Sleep(7*time.Second)
 
             showElapse, err = s.rawGetStat(bucket, "")
             c.Assert(err, NotNil)

@@ -50,7 +50,7 @@ func (s *OssutilCommandSuite) TestRemoveObject(c *C) {
 func (s *OssutilCommandSuite) TestRemoveObjects(c *C) {
     bucket := bucketNamePrefix + "rmb1" 
     s.putBucket(bucket, c)
-    time.Sleep(2*sleepTime) 
+    time.Sleep(2*7*time.Second) 
 
     // put object
     num := 5
@@ -92,7 +92,7 @@ func (s *OssutilCommandSuite) TestRemoveObjects(c *C) {
 
     // rm bucket
     s.removeBucket(bucket, true, c)
-    time.Sleep(2*sleepTime) 
+    time.Sleep(2*7*time.Second) 
 
     // list buckets
     buckets = s.listBuckets(false, c)
@@ -102,7 +102,7 @@ func (s *OssutilCommandSuite) TestRemoveObjects(c *C) {
 func (s *OssutilCommandSuite) TestRemoveEmptyBucket(c *C) {
     bucket := bucketNamePrefix + "rmb3"
     s.putBucket(bucket, c)
-    time.Sleep(sleepTime)
+    time.Sleep(7*time.Second)
 
     // list buckets
     buckets := s.listBuckets(false, c)
@@ -110,7 +110,7 @@ func (s *OssutilCommandSuite) TestRemoveEmptyBucket(c *C) {
 
     // rm bucket
     s.removeBucket(bucket, false, c)
-    time.Sleep(sleepTime)
+    time.Sleep(7*time.Second)
 
     // list buckets
     buckets = s.listBuckets(false, c)
@@ -120,7 +120,7 @@ func (s *OssutilCommandSuite) TestRemoveEmptyBucket(c *C) {
 func (s *OssutilCommandSuite) TestRemoveNonEmptyBucket(c *C) {
     bucket := bucketNamePrefix + "rmb4" 
     s.putBucket(bucket, c)
-    time.Sleep(2*sleepTime)
+    time.Sleep(2*7*time.Second)
 
     // put object
     object := "test_object_for_rm"
@@ -238,7 +238,7 @@ func (s *OssutilCommandSuite) TestErrDeleteObject(c *C) {
 func (s *OssutilCommandSuite) TestRemoveIDKey(c *C) {
     bucket := bucketNamePrefix + "rmidkey"
     s.putBucket(bucket, c)
-    time.Sleep(2*sleepTime)
+    time.Sleep(2*7*time.Second)
 
     cfile := "ossutil_test.config_boto"
     data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Endpoint]\n%s=%s[Bucket-Cname]\n%s=%s", "abc", "def", "ghi", bucket, "abc", bucket, "abc") 
@@ -275,5 +275,5 @@ func (s *OssutilCommandSuite) TestRemoveIDKey(c *C) {
 
     _ = os.Remove(cfile)
     s.removeBucket(bucket, true, c)
-    time.Sleep(sleepTime)
+    time.Sleep(7*time.Second)
 }

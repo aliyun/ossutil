@@ -363,7 +363,7 @@ func (s *OssutilCommandSuite) TestCPObjectUpdate(c *C) {
     newData := "new data"
     newFile := "newFile"
     s.createFile(oldFile, oldData, c)
-    time.Sleep(sleepTime)
+    time.Sleep(7*time.Second)
     s.createFile(newFile, newData, c)
 
     // put newer object
