@@ -25,7 +25,7 @@ var _ = Suite(&OssutilCommandSuite{})
 
 var (
     // Update before running test
-    endpoint         = "oss.aliyuncs.com"
+    endpoint         = "<testEndpoint>"
     accessKeyID      = "<testAccessKeyID>"
     accessKeySecret  = "<testAccessKeySecret>"
     stsToken         = "<testSTSToken>"
@@ -45,7 +45,7 @@ var (
     cm                  = CommandManager{}
     out                 = os.Stdout
     errout              = os.Stderr
-    sleepTime           = 7*time.Second
+    sleepTime           = 3*time.Second
 )
 
 var (
@@ -124,7 +124,8 @@ func (s *OssutilCommandSuite) TearDownSuite(c *C) {
     time.Sleep(sleepTime)
     for _, bucket := range []string{bucketNameExist, bucketNameDest, bucketNameCP, bucketNameBCP, bucketNameSetMeta, bucketNameSetMeta1, bucketNameSetACL, bucketNameSetACL1, bucketNameMB, bucketNameList} { 
         fmt.Println("remove bucket in TearDownSuite:", bucket)
-        s.removeBucket(bucket, true, c)
+        s.removeObjects(bucket, "", true, true, c)
+        //s.removeBucket(bucket, true, c)
     }
     time.Sleep(sleepTime)
     os.Stdout = testLogFile 
