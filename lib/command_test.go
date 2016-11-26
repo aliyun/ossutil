@@ -39,7 +39,7 @@ var (
     resultPath          = "ossutil_test.result"
     testResultFile, _   = os.OpenFile(resultPath, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
     bucketNamePrefix    = "ossutil-test-"
-    bucketNameExist     = "nodelete-ossutil-test-normalcase"
+    bucketNameExist     = "nodelete-ossutil-test-normalcase1"
     bucketNameDest      = "nodelete-ossutil-test-dest"
     bucketNameCP        = "nodelete-ossutil-test-cp"
     bucketNameBCP       = "nodelete-ossutil-test-bcp"
