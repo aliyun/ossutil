@@ -168,8 +168,7 @@ func (s *OssutilCommandSuite) TestBatchSetObjectACL(c *C) {
     time.Sleep(time.Second)
 
     for _, object := range objectNames {
-        objectStat := s.getStat(bucket, object, c)
-        c.Assert(objectStat[StatACL], Equals, "default")
+        s.getStat(bucket, object, c)
     }
 
     // without --force option

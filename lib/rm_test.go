@@ -50,7 +50,7 @@ func (s *OssutilCommandSuite) TestRemoveObject(c *C) {
 func (s *OssutilCommandSuite) TestRemoveObjects(c *C) {
     bucket := bucketNamePrefix + "rmb1" 
     s.putBucket(bucket, c)
-    time.Sleep(14*time.Second) 
+    time.Sleep(10*time.Second) 
 
     // put object
     num := 5
@@ -121,7 +121,7 @@ func (s *OssutilCommandSuite) TestRemoveEmptyBucket(c *C) {
 func (s *OssutilCommandSuite) TestRemoveNonEmptyBucket(c *C) {
     bucket := bucketNamePrefix + "rmb4" 
     s.putBucket(bucket, c)
-    time.Sleep(21*time.Second)
+    time.Sleep(10*time.Second)
 
     // put object
     object := "test_object_for_rm"
