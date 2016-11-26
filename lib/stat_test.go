@@ -63,7 +63,7 @@ func (s *OssutilCommandSuite) TestGetBucketStat(c *C) {
 func (s *OssutilCommandSuite) TestGetObjectStat(c *C) {
     bucket := bucketNameExist 
 
-    object := "TestGetObjectStat"
+    object := "悠悠风来"
     s.putObject(bucket, object, uploadFileName, c)
 
     objectStat := s.getStat(bucket, object, c)

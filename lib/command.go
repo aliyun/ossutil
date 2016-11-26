@@ -270,7 +270,6 @@ func (cmd *Command) ossClient(bucket string) (*oss.Client, error) {
 	accessKeySecret, _ := GetString(OptionAccessKeySecret, cmd.options)
 	stsToken, _ := GetString(OptionSTSToken, cmd.options)
 	client, err := oss.New(endpoint, accessKeyID, accessKeySecret, oss.UseCname(isCname), oss.SecurityToken(stsToken), oss.UserAgent(getUserAgent()), oss.Timeout(120, 1200), oss.EnableCRC(false))
-	//client, err := oss.New(endpoint, accessKeyID, accessKeySecret, oss.UseCname(isCname), oss.SecurityToken(stsToken), oss.UserAgent(getUserAgent()), oss.EnableCRC(false))
 	if err != nil {
 		return nil, err
 	}
@@ -359,7 +358,7 @@ func (cmd *Command) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, chObje
 			chObjects <- object.Key
 		}
 
-		//pre = oss.Prefix(lor.Prefix)
+		pre = oss.Prefix(lor.Prefix)
 		marker = oss.Marker(lor.NextMarker)
 		if !lor.IsTruncated {
 			break

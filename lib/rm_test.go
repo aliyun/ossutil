@@ -25,16 +25,38 @@ func (s *OssutilCommandSuite) rawRemove(args []string, recursive, force, bucket 
     return showElapse, err
 }
 
-func (s *OssutilCommandSuite) TestRemoveObjects(c *C) {
-    bucket := bucketNameMB 
+func (s *OssutilCommandSuite) TestRemoveObject(c *C) {
+    bucket := bucketNameExist 
     s.removeObjects(bucket, "", true, true, c)
-    time.Sleep(3*sleepTime) 
+    time.Sleep(2*sleepTime) 
 
     // put object
-    num := 2
+    object := "test_object"
+    s.putObject(bucket, object, uploadFileName, c)
+
+    // list object
+    objects := s.listObjects(bucket, "", false, false, c)
+    c.Assert(len(objects), Equals, 1)
+    c.Assert(objects[0], Equals, object)
+
+    // remove object
+    s.removeObjects(bucket, object, false, true, c)
+
+    // list object
+    objects = s.listObjects(bucket, "", false, false, c)
+    c.Assert(len(objects), Equals, 0)
+}
+
+func (s *OssutilCommandSuite) TestRemoveObjects(c *C) {
+    bucket := bucketNamePrefix + "rmb1" 
+    s.putBucket(bucket, c)
+    time.Sleep(2*sleepTime) 
+
+    // put object
+    num := 5
     objectNames := []string{}
     for i := 0; i < num; i++ {
-        object := fmt.Sprintf("remove%d", i) 
+        object := fmt.Sprintf("^$%d$^", i) 
         s.putObject(bucket, object, uploadFileName, c) 
         objectNames = append(objectNames, object)
     }
@@ -52,41 +74,58 @@ func (s *OssutilCommandSuite) TestRemoveObjects(c *C) {
 
     // "rm oss://bucket/prefix -r -f"
     // remove object
-    s.removeObjects(bucket, "re", true, true, c)
+    s.removeObjects(bucket, "^$", true, true, c)
 
     // list object
     objects = s.listObjects(bucket, "", false, false, c)
     c.Assert(len(objects), Equals, 0)
 
-    // put object
-    object := "test_object"
-    s.putObject(bucket, object, uploadFileName, c)
+    //reput objects and delete bucket
+    for i := 0; i < num; i++ {
+        object := fmt.Sprintf("^$%d$^", i) 
+        s.putObject(bucket, object, uploadFileName, c) 
+    }
+    
+    // list buckets
+    buckets := s.listBuckets(false, c)
+    c.Assert(FindPos(bucket, buckets) != -1, Equals, true)
 
-    // list object
-    objects = s.listObjects(bucket, "", false, false, c)
-    c.Assert(FindPos(object, objects) != -1, Equals, true)
+    // rm bucket
+    s.removeBucket(bucket, true, c)
+    time.Sleep(2*sleepTime) 
 
-    // remove object
-    s.removeObjects(bucket, object, false, true, c)
+    // list buckets
+    buckets = s.listBuckets(false, c)
+    c.Assert(FindPos(bucket, buckets) == -1, Equals, true)
+}
 
-    // list object
-    objects = s.listObjects(bucket, "", false, false, c)
-    c.Assert(FindPos(object, objects) == -1, Equals, true)
+func (s *OssutilCommandSuite) TestRemoveEmptyBucket(c *C) {
+    bucket := bucketNamePrefix + "rmb3"
+    s.putBucket(bucket, c)
+    time.Sleep(sleepTime)
+
+    // list buckets
+    buckets := s.listBuckets(false, c)
+    c.Assert(FindPos(bucket, buckets) != -1, Equals, true)
+
+    // rm bucket
+    s.removeBucket(bucket, false, c)
+    time.Sleep(sleepTime)
+
+    // list buckets
+    buckets = s.listBuckets(false, c)
+    c.Assert(FindPos(bucket, buckets) == -1, Equals, true)
 }
 
 func (s *OssutilCommandSuite) TestRemoveNonEmptyBucket(c *C) {
     bucket := bucketNamePrefix + "rmb4" 
     s.putBucket(bucket, c)
-    time.Sleep(3*sleepTime)
+    time.Sleep(2*sleepTime)
 
     // put object
     object := "test_object_for_rm"
     s.putObject(bucket, object, uploadFileName, c)
     time.Sleep(time.Second)
-
-    buckets := s.listBuckets(true, c)
-    bucketNum := len(buckets)
-    c.Assert(FindPos(bucket, buckets) != -1, Equals, true)
 
     command := "rm"
     args := []string{CloudURLToString(bucket, "")}
@@ -114,12 +153,7 @@ func (s *OssutilCommandSuite) TestRemoveNonEmptyBucket(c *C) {
     showElapse, err := s.rawRemove(args, true, true, true)
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true)
-    time.Sleep(3*sleepTime) 
-
-    // list buckets
-    buckets = s.listBuckets(false, c)
-    c.Assert(FindPos(bucket, buckets) == -1, Equals, true)
-    c.Assert(len(buckets) <= bucketNum, Equals, true)
+    time.Sleep(sleepTime) 
 }
 
 func (s *OssutilCommandSuite) TestRemoveObjectBucketOption(c *C) {

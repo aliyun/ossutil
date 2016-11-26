@@ -164,6 +164,38 @@ func (s *OssutilCommandSuite) TestListWithBucketCname(c *C) {
     time.Sleep(sleepTime)
 }
 
+func (s *OssutilCommandSuite) TestListBuckets(c *C) {
+    // "ls" 
+    bucket := bucketNamePrefix + "ls2" 
+    s.removeBucket(bucket, true, c)
+    time.Sleep(3*sleepTime)
+
+    buckets := s.listBuckets(false, c)
+    c.Assert(FindPos(bucket, buckets) == -1, Equals, true)
+    bucketNum := len(buckets)
+
+    // "ls -s"
+    buckets = s.listBuckets(true, c)
+    c.Assert(FindPos(bucket, buckets) == -1, Equals, true)
+
+    // put bucket
+    s.putBucket(bucket, c)
+    time.Sleep(2*sleepTime)
+
+    // get result
+    buckets = s.listBuckets(false, c)
+    c.Assert(FindPos(bucket, buckets) != -1, Equals, true)
+    c.Assert(len(buckets) >= bucketNum, Equals, true)
+
+    // remove bucket
+    s.removeBucket(bucket, true, c)
+    time.Sleep(2*sleepTime)
+
+    // get result
+    buckets = s.listBuckets(false, c)
+    c.Assert(FindPos(bucket, buckets) == -1, Equals, true)
+}
+
 // list objects with not exist bucket 
 func (s *OssutilCommandSuite) TestListObjectsBucketNotExist(c *C) {
     bucket := bucketNameNotExist 
@@ -184,19 +216,19 @@ func (s *OssutilCommandSuite) TestListObjectsBucketNotExist(c *C) {
 
 // list objects
 func (s *OssutilCommandSuite) TestListObjects(c *C) {
-    bucket := bucketNameList 
-    s.removeObjects(bucket, "", true, true, c)
-    time.Sleep(3*sleepTime)
+    bucket := bucketNameExist 
+    s.removeObjects(bucket, "", true, true, c) 
+    time.Sleep(2*sleepTime)
 
     // "ls oss://bucket"
     objects := s.listObjects(bucket, "", false, false, c)
     c.Assert(len(objects), Equals, 0)
 
     // put objects
-    num1 := 3
+    num := 10
     objectNames := []string{}
-    for i := 0; i < num1; i++ {
-        object := fmt.Sprintf("lstest:#%d", i) 
+    for i := 0; i < num; i++ {
+        object := fmt.Sprintf("中文测试:#%d", i) 
         s.putObject(bucket, object, uploadFileName, c) 
         objectNames = append(objectNames, object)
     }
@@ -210,30 +242,30 @@ func (s *OssutilCommandSuite) TestListObjects(c *C) {
     c.Assert(len(objects), Equals, len(objectNames))
 
     // "ls oss://bucket/prefix -s"
-    objects = s.listObjects(bucket, "lstest:", true, false, c)
+    objects = s.listObjects(bucket, "中文测试:", true, false, c)
     c.Assert(len(objects), Equals, len(objectNames) - 1)
 
     //put directories
-    num2 := 2 
+    num = 5 
     objectNames = []string{}
-    for i := 0; i < num2; i++ {
-        object := fmt.Sprintf("lstest:#%d/", i) 
+    for i := 0; i < num; i++ {
+        object := fmt.Sprintf("中文测试:#%d/", i) 
         s.putObject(bucket, object, uploadFileName, c) 
 
-        object = fmt.Sprintf("lstest:#%d/%d/", i, i) 
+        object = fmt.Sprintf("中文测试:#%d/%d/", i, i) 
         s.putObject(bucket, object, uploadFileName, c) 
         objectNames = append(objectNames, object)
     }
 
     // "ls oss://bucket/prefix"
-    objects = s.listObjects(bucket, "lstest:#", false, false, c)
-    c.Assert(len(objects), Equals, num1 + 2*num2)
+    objects = s.listObjects(bucket, "中文测试:#", false, false, c)
+    c.Assert(len(objects), Equals, 20)
 
     // "ls oss://bucket/prefix -d"
-    objects = s.listObjects(bucket, "lstest:#", false, true, c)
-    c.Assert(len(objects), Equals, num1 + num2)
+    objects = s.listObjects(bucket, "中文测试:#", false, true, c)
+    c.Assert(len(objects), Equals, 15)
 
-    objects = s.listObjects(bucket, "lstest:#1/", false, true, c)
+    objects = s.listObjects(bucket, "中文测试:#1/", false, true, c)
     c.Assert(len(objects), Equals, 2)
 }
 

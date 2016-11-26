@@ -124,6 +124,8 @@ func (s *OssutilCommandSuite) TestCPObject(c *C) {
     s.copyObject(bucket, object, destBucket, destObject, c)
 
     s.getObject(destBucket, destObject, filePath, c)
+    str = s.readFile(filePath, c) 
+    c.Assert(str, Equals, data)
     _ = os.Remove(filePath)
 
     // copy single object in directory, test the name of dest object 
@@ -279,6 +281,12 @@ func (s *OssutilCommandSuite) TestBatchCPObject(c *C) {
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true) 
 
+    s.getStat(bucket, "", c)
+    s.getStat(bucket, subdir + "/", c)
+
+    // remove object
+    s.removeObjects(bucket, subdir + "/", false, true, c)
+
     // create file in dir
     num := 3 
     filePaths := []string{subdir + "/"}
@@ -323,6 +331,7 @@ func (s *OssutilCommandSuite) TestBatchCPObject(c *C) {
 
     _, err = os.Stat(downDir)
     c.Assert(err, IsNil)
+    //c.Assert(f.ModTime(), Equals, f1.ModTime())
 
     // copy files
     destBucket := bucketNameNotExist 
@@ -349,7 +358,7 @@ func (s *OssutilCommandSuite) TestBatchCPObject(c *C) {
 func (s *OssutilCommandSuite) TestCPObjectUpdate(c *C) {
     bucket := bucketNameExist 
     s.removeObjects(bucket, "", true, true, c)
-    time.Sleep(3*sleepTime) 
+    time.Sleep(2*sleepTime) 
 
     // create older file and newer file
     oldData := "old data"
@@ -361,7 +370,7 @@ func (s *OssutilCommandSuite) TestCPObjectUpdate(c *C) {
     s.createFile(newFile, newData, c)
 
     // put newer object
-    object := "TestCPObjectUpdate"
+    object := "testobject"
     s.putObject(bucket, object, newFile, c)
 
     // get object
@@ -655,7 +664,7 @@ func (s *OssutilCommandSuite) TestCPIDKey(c *C) {
     object := "testobject" 
 
     ufile := "ossutil_test.cpidkey"
-    data := "使用ossutil"
+    data := "欢迎使用ossutil"
     s.createFile(ufile, data, c)
 
     cfile := "ossutil_test.config_boto"
