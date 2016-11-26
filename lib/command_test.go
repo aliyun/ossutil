@@ -25,7 +25,7 @@ var _ = Suite(&OssutilCommandSuite{})
 
 var (
     // Update before running test
-    endpoint         = "<testEndpoint>"
+    endpoint         = "oss.aliyuncs.com"
     accessKeyID      = "<testAccessKeyID>"
     accessKeySecret  = "<testAccessKeySecret>"
     stsToken         = "<testSTSToken>"
@@ -45,7 +45,7 @@ var (
     cm                  = CommandManager{}
     out                 = os.Stdout
     errout              = os.Stderr
-    sleepTime           = 7*time.Second
+    sleepTime           = 3*time.Second
 )
 
 var (
