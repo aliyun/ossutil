@@ -52,7 +52,7 @@ func (s *OssutilCommandSuite) TestRemoveObjects(c *C) {
 
     // "rm oss://bucket/prefix -r -f"
     // remove object
-    s.removeObjects(bucket, "^$", true, true, c)
+    s.removeObjects(bucket, "re", true, true, c)
 
     // list object
     objects = s.listObjects(bucket, "", false, false, c)

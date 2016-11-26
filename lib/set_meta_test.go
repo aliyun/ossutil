@@ -56,6 +56,7 @@ func (s *OssutilCommandSuite) TestSetObjectMeta(c *C) {
 
     object := "TestSetObjectMeta_testobject" 
     s.putObject(bucket, object, uploadFileName, c)
+    time.Sleep(sleepTime)
 
     // update
     s.setObjectMeta(bucket, object, "x-oss-object-acl:private#X-Oss-Meta-A:A#Expires:2006-01-02T15:04:05Z", true, false, false, true, c)
@@ -104,6 +105,8 @@ func (s *OssutilCommandSuite) TestSetObjectMeta(c *C) {
     showElapse, err = s.rawSetMeta(bucket, object, "x-oss-object-acl:default#X-Oss-Meta-A:A", false, false, false, false, LEnglishLanguage)
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
+
+    s.putObject(bucket, object, uploadFileName, c)
 
     // miss meta
     s.setObjectMeta(bucket, object, "", true, false, false, true, c)
