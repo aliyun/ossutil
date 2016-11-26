@@ -298,7 +298,7 @@ func (s *OssutilCommandSuite) TestBatchCPObject(c *C) {
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true)
     
-    time.Sleep(sleepTime)
+    time.Sleep(7*time.Second)
 
     // get files
     downDir := "下载目录"
@@ -341,7 +341,7 @@ func (s *OssutilCommandSuite) TestBatchCPObject(c *C) {
     showElapse, err = s.rawCP(CloudURLToString(bucket, ""), CloudURLToString(destBucket, "123"), true, true, false, BigFileThreshold, CheckpointDir)
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true)
-    time.Sleep(sleepTime)
+    time.Sleep(7*time.Second)
 
     for _, filePath := range filePaths {
         s.getStat(destBucket, "123" + filePath, c)
@@ -355,7 +355,7 @@ func (s *OssutilCommandSuite) TestBatchCPObject(c *C) {
 func (s *OssutilCommandSuite) TestCPObjectUpdate(c *C) {
     bucket := bucketNameExist 
     s.removeObjects(bucket, "", true, true, c)
-    time.Sleep(2*sleepTime) 
+    time.Sleep(2*7*time.Second) 
 
     // create older file and newer file
     oldData := "old data"
@@ -379,7 +379,7 @@ func (s *OssutilCommandSuite) TestCPObjectUpdate(c *C) {
     showElapse, err := s.rawCP(oldFile, CloudURLToString(bucket, object), false, false, true, BigFileThreshold, CheckpointDir)  
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true)
-    time.Sleep(sleepTime)
+    time.Sleep(7*time.Second)
 
     s.getObject(bucket, object, downloadFileName, c)
     str = s.readFile(downloadFileName, c) 

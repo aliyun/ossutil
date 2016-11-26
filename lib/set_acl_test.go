@@ -101,7 +101,7 @@ func (s *OssutilCommandSuite) TestSetNotExistBucketACL(c *C) {
 func (s *OssutilCommandSuite) TestSetBucketEmptyACL(c *C) {
     bucket := bucketNamePrefix + "acl3" 
     s.putBucket(bucket, c)
-    time.Sleep(7*time.Second)
+    time.Sleep(3*7*time.Second)
 
     object := "test"
     s.putObject(bucket, object, uploadFileName, c)
