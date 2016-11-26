@@ -189,7 +189,7 @@ func (s *OssutilCommandSuite) TestListBuckets(c *C) {
 
     // remove bucket
     s.removeBucket(bucket, true, c)
-    time.Sleep(7*time.Second)
+    time.Sleep(21*time.Second)
 
     // get result
     buckets = s.listBuckets(false, c)

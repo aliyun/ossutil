@@ -113,7 +113,7 @@ func (s *OssutilCommandSuite) SetUpBucketEnv(c *C) {
     time.Sleep(3*sleepTime)
     for _, bucket := range []string{bucketNameExist, bucketNameDest, bucketNameCP, bucketNameBCP, bucketNameSetMeta, bucketNameSetMeta1, bucketNameSetACL, bucketNameSetACL1, bucketNameMB, bucketNameList} { 
         s.removeObjects(bucket, "", true, true, c)
-        time.Sleep(sleepTime)
+        time.Sleep(7*time.Second)
     }
 }
 
