@@ -57,7 +57,7 @@ func (s *OssutilCommandSuite) TestMakeBucket(c *C) {
     c.Assert(bucketStat[StatACL], Equals, "private")
 
     // put bucket with ACL
-    for _, acl := range []string{"private", "public-read", "public-read-write"} {
+    for _, acl := range []string{"private"} {
         showElapse, err := s.putBucketWithACL(bucket, acl)
         c.Assert(err, IsNil)
         c.Assert(showElapse, Equals, true)
