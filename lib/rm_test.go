@@ -84,6 +84,13 @@ func (s *OssutilCommandSuite) TestRemoveNonEmptyBucket(c *C) {
     s.putObject(bucket, object, uploadFileName, c)
     time.Sleep(time.Second)
 
+    buckets := s.listBuckets(false, c)
+    c.Assert(FindPos(bucket, buckets) != -1, Equals, true)
+    c.Assert(len(buckets) >= bucketNum, Equals, true)
+
+    buckets = s.listBuckets(true, c)
+    c.Assert(FindPos(bucket, buckets) != -1, Equals, true)
+
     command := "rm"
     args := []string{CloudURLToString(bucket, "")}
     str := ""
@@ -110,7 +117,7 @@ func (s *OssutilCommandSuite) TestRemoveNonEmptyBucket(c *C) {
     showElapse, err := s.rawRemove(args, true, true, true)
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true)
-    time.Sleep(2*sleepTime) 
+    time.Sleep(3*sleepTime) 
 
     // list buckets
     buckets := s.listBuckets(false, c)
