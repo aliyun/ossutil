@@ -116,6 +116,10 @@ func (s *OssutilCommandSuite) TestSetObjectMeta(c *C) {
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true)
 
+    showElapse, err = s.rawSetMeta(bucket, object, "x-oss-object-acl:private", true, false, false, true, DefaultLanguage)
+    c.Assert(err, IsNil)
+    c.Assert(showElapse, Equals, true)
+
     // delete error meta
     showElapse, err = s.rawSetMeta(bucket, object, "X-Oss-Meta-A:A", false, true, false, true, DefaultLanguage)
     c.Assert(err, NotNil)
@@ -125,10 +129,6 @@ func (s *OssutilCommandSuite) TestSetObjectMeta(c *C) {
     showElapse, err = s.rawSetMeta(bucket, object, "a:b", true, false, false, true, DefaultLanguage)
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
-
-    showElapse, err = s.rawSetMeta(bucket, object, "x-oss-object-acl:private", true, false, false, true, DefaultLanguage)
-    c.Assert(err, IsNil)
-    c.Assert(showElapse, Equals, true)
 }
 
 func (s *OssutilCommandSuite) TestSetNotExistObjectMeta(c *C) {

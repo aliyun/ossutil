@@ -111,20 +111,22 @@ func (s *OssutilCommandSuite) SetUpBucketEnv(c *C) {
         s.putBucket(bucket, c)
     }
     time.Sleep(3*sleepTime)
-    for _, bucket := range []string{bucketNameExist, bucketNameDest, bucketNameCP, bucketNameBCP, bucketNameSetMeta, bucketNameSetMeta1, bucketNameSetACL, bucketNameSetACL1, bucketNameMB, bucketNameList} { 
+    /*for _, bucket := range []string{bucketNameExist, bucketNameDest, bucketNameCP, bucketNameBCP, bucketNameSetMeta, bucketNameSetMeta1, bucketNameSetACL, bucketNameSetACL1, bucketNameMB, bucketNameList} { 
         s.removeObjects(bucket, "", true, true, c)
         time.Sleep(sleepTime)
-    }
+    }*/
 }
 
 // Run before each test or benchmark starts running
 func (s *OssutilCommandSuite) TearDownSuite(c *C) {
     os.Stdout = out 
     os.Stderr = errout 
+    time.Sleep(sleepTime)
     for _, bucket := range []string{bucketNameExist, bucketNameDest, bucketNameCP, bucketNameBCP, bucketNameSetMeta, bucketNameSetMeta1, bucketNameSetACL, bucketNameSetACL1, bucketNameMB, bucketNameList} { 
         fmt.Println("remove bucket in TearDownSuite:", bucket)
         s.removeBucket(bucket, true, c)
     }
+    time.Sleep(sleepTime)
     os.Stdout = testLogFile 
     os.Stderr = testLogFile 
     testLogger.Println("test command completed")
