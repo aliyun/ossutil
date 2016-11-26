@@ -215,7 +215,7 @@ func (lc *ListCommand) listBuckets(prefix string) error {
 		if err != nil {
 			return err
 		}
-		pre = oss.Prefix(lbr.Prefix)
+		//pre = oss.Prefix(lbr.Prefix)
 		marker = oss.Marker(lbr.NextMarker)
         if num == 0 && !shortFormat && len(lbr.Buckets) > 0 {
             fmt.Printf("%-30s %20s%s%s\n", "CreationTime", "Region", FormatTAB, "BucketName")
@@ -279,7 +279,7 @@ func (lc *ListCommand) listObjects(bucket *oss.Bucket, cloudURL CloudURL, shortF
 		if err != nil {
 			return err
 		}
-		pre = oss.Prefix(lor.Prefix)
+		//pre = oss.Prefix(lor.Prefix)
 		marker = oss.Marker(lor.NextMarker)
 		num += lc.displayResult(lor, cloudURL.bucket, shortFormat, directory, i)
 		if !lor.IsTruncated {

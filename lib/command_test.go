@@ -45,7 +45,7 @@ var (
     cm                  = CommandManager{}
     out                 = os.Stdout
     errout              = os.Stderr
-    sleepTime           = 3*time.Second
+    sleepTime           = 5*time.Second
 )
 
 var (
@@ -387,7 +387,7 @@ func (s *OssutilCommandSuite) TestParseOptions(c *C) {
     s.createFile(uploadFileName, content, c)
 
     // put object
-    object := "中文" 
+    object := "TestParseOptions" 
     v := []string{"", "cp", uploadFileName, CloudURLToString(bucket, object), "-f", "--update", "--bigfile-threshold=1", "--checkpoint-dir=checkpoint_dir", "-c", configFile}
     os.Args = v
     err := ParseAndRunCommand()

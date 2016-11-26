@@ -234,12 +234,13 @@ func (s *OssutilCommandSuite) TestErrBatchSetACL(c *C) {
     bucket := bucketNameExist  
 
     // put objects
-    num := 10
+    num := 2 
     objectNames := []string{}
     for i := 0; i < num; i++ {
         object := fmt.Sprintf("TestErrBatchSetACL_setacl:%d", i)
         s.putObject(bucket, object, uploadFileName, c)
         objectNames = append(objectNames, object)
+        time.Sleep(sleepTime)
     }
 
     command := "set-acl"

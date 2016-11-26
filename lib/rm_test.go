@@ -34,7 +34,7 @@ func (s *OssutilCommandSuite) TestRemoveObjects(c *C) {
     num := 2
     objectNames := []string{}
     for i := 0; i < num; i++ {
-        object := fmt.Sprintf("^$%d$^", i) 
+        object := fmt.Sprintf("remove%d", i) 
         s.putObject(bucket, object, uploadFileName, c) 
         objectNames = append(objectNames, object)
     }
