@@ -135,7 +135,7 @@ func (s *OssutilCommandSuite) TestSetObjectACL(c *C) {
     s.putObject(bucket, object, uploadFileName, c)
 
     // set acl
-    for _, acl := range []string{"default", "private", "public-read", "public-read-write"} {
+    for _, acl := range []string{"default"} {
         s.setObjectACL(bucket, object, acl, false, true, c)
         objectStat = s.getStat(bucket, object, c)
         c.Assert(objectStat[StatACL], Equals, acl)
