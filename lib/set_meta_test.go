@@ -157,7 +157,7 @@ func (s *OssutilCommandSuite) TestSetObjectMeta(c *C) {
 
     s.setObjectMeta(bucket, "", "X-Oss-Meta-c:c", false, false, true, true, c)
 
-    showElapse, err := s.rawSetMeta(bucket, "", "X-Oss-Meta-c:c", false, true, true, true, DefaultLanguage)
+    showElapse, err = s.rawSetMeta(bucket, "", "X-Oss-Meta-c:c", false, true, true, true, DefaultLanguage)
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
 
