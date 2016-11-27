@@ -148,9 +148,6 @@ func (s *OssutilCommandSuite) TestSetObjectACL(c *C) {
         showElapse, err = s.rawSetObjectACL(bucket, object, acl, false, false)
         c.Assert(showElapse, Equals, false)
         c.Assert(err, NotNil)
-
-        objectStat = s.getStat(bucket, object, c)
-        c.Assert(objectStat[StatACL], Equals, "private")
     }
 }
 

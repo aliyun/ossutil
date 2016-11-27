@@ -55,6 +55,7 @@ func (s *OssutilCommandSuite) TestCPObject(c *C) {
     data := "欢迎使用ossutil"
     s.createFile(uploadFileName, data, c)
 
+    time.Sleep(sleepTime)
     // put to exist object
     s.putObject(bucket, object, uploadFileName, c)
 

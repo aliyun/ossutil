@@ -50,10 +50,10 @@ func (s *OssutilCommandSuite) TestRemoveObject(c *C) {
 func (s *OssutilCommandSuite) TestRemoveObjects(c *C) {
     bucket := bucketNamePrefix + "rmb1" 
     s.putBucket(bucket, c)
-    time.Sleep(10*time.Second) 
+    time.Sleep(7*time.Second) 
 
     // put object
-    num := 5
+    num := 2
     objectNames := []string{}
     for i := 0; i < num; i++ {
         object := fmt.Sprintf("^$%d$^", i) 
@@ -65,6 +65,22 @@ func (s *OssutilCommandSuite) TestRemoveObjects(c *C) {
     // list object
     objects := s.listObjects(bucket, "", false, false, c)
     c.Assert(len(objects), Equals, num)
+
+    command := "rm"
+    args := []string{CloudURLToString(bucket, "")}
+    str := ""
+    ok := true
+    options := OptionMapType{
+        "endpoint": &str,
+        "accessKeyID": &str,
+        "accessKeySecret": &str,
+        "stsToken": &str,
+        "configFile": &configFile,
+        "bucket": &ok,
+        "force": &ok,
+    }
+    _, err := cm.RunCommand(command, args, options)
+    c.Assert(err, NotNil)
 
     // "rm oss://bucket/ -r"
     // remove object
@@ -116,45 +132,6 @@ func (s *OssutilCommandSuite) TestRemoveEmptyBucket(c *C) {
     // list buckets
     buckets = s.listBuckets(false, c)
     c.Assert(FindPos(bucket, buckets) == -1, Equals, true)
-}
-
-func (s *OssutilCommandSuite) TestRemoveNonEmptyBucket(c *C) {
-    bucket := bucketNamePrefix + "rmb4" 
-    s.putBucket(bucket, c)
-    time.Sleep(10*time.Second)
-
-    // put object
-    object := "test_object_for_rm"
-    s.putObject(bucket, object, uploadFileName, c)
-    time.Sleep(time.Second)
-
-    command := "rm"
-    args := []string{CloudURLToString(bucket, "")}
-    str := ""
-    ok := true
-    options := OptionMapType{
-        "endpoint": &str,
-        "accessKeyID": &str,
-        "accessKeySecret": &str,
-        "stsToken": &str,
-        "configFile": &configFile,
-        "bucket": &ok,
-        "force": &ok,
-    }
-    _, err := cm.RunCommand(command, args, options)
-    c.Assert(err, NotNil)
-
-    // list object
-    objects := s.listObjects(bucket, "", false, false, c)
-    c.Assert(len(objects), Equals, 1)
-    c.Assert(objects[0], Equals, object)
-
-    // remove objects with buckets
-    args = []string{CloudURLToString(bucket, "")}
-    showElapse, err := s.rawRemove(args, true, true, true)
-    c.Assert(err, IsNil)
-    c.Assert(showElapse, Equals, true)
-    time.Sleep(sleepTime) 
 }
 
 func (s *OssutilCommandSuite) TestRemoveObjectBucketOption(c *C) {
