@@ -72,7 +72,7 @@ func (s *OssutilCommandSuite) TestSetNotExistBucketACL(c *C) {
     bucket := bucketNamePrefix + "noexistsetacl" 
 
     // set acl and create bucket
-    showElapse, err = s.rawSetBucketACL(bucket, "public-read", true)
+    showElapse, err := s.rawSetBucketACL(bucket, "public-read", true)
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true)
 
