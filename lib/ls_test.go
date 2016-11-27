@@ -218,7 +218,7 @@ func (s *OssutilCommandSuite) TestListObjectsBucketNotExist(c *C) {
 func (s *OssutilCommandSuite) TestListObjects(c *C) {
     bucket := bucketNameList 
     s.removeObjects(bucket, "", true, true, c)
-    time.Sleep(7*time.Second)
+    time.Sleep(14*time.Second)
 
     // "ls oss://bucket"
     objects := s.listObjects(bucket, "", false, false, c)
