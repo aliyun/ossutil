@@ -143,6 +143,27 @@ func (s *OssutilCommandSuite) TestSetObjectMeta(c *C) {
     showElapse, err = s.rawSetMeta(bucket, object, "x-oss-object-acl:private", true, false, false, true, DefaultLanguage)
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true)
+
+    //batch
+    s.setObjectMeta(bucket, "", "content-type:abc#X-Oss-Meta-Update:update", true, false, true, false, c)
+
+    s.setObjectMeta(bucket, "", "content-type:abc#X-Oss-Meta-update:update", true, false, true, true, c)
+
+    s.setObjectMeta(bucket, "", "X-Oss-Meta-update", false, true, true, true, c)
+
+    s.setObjectMeta(bucket, "", "X-Oss-Meta-A:A#x-oss-meta-B:b", true, false, true, true, c)
+
+    s.setObjectMeta(bucket, "nosetmeta", "X-Oss-Meta-M:c", false, false, true, true, c)
+
+    s.setObjectMeta(bucket, "", "X-Oss-Meta-c:c", false, false, true, true, c)
+
+    showElapse, err := s.rawSetMeta(bucket, "", "X-Oss-Meta-c:c", false, true, true, true, DefaultLanguage)
+    c.Assert(err, NotNil)
+    c.Assert(showElapse, Equals, false)
+
+    showElapse, err = s.rawSetMeta(bucket, "", "a:b", true, false, true, true, DefaultLanguage)
+    c.Assert(err, NotNil)
+    c.Assert(showElapse, Equals, false)
 }
 
 func (s *OssutilCommandSuite) TestSetNotExistObjectMeta(c *C) {

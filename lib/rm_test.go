@@ -93,7 +93,7 @@ func (s *OssutilCommandSuite) TestRemoveObjects(c *C) {
 
     // rm bucket
     s.removeBucket(bucket, true, c)
-    time.Sleep(2*7*time.Second) 
+    time.Sleep(10*time.Second) 
 
     // list buckets
     buckets = s.listBuckets(false, c)
@@ -111,7 +111,7 @@ func (s *OssutilCommandSuite) TestRemoveEmptyBucket(c *C) {
 
     // rm bucket
     s.removeBucket(bucket, false, c)
-    time.Sleep(21*time.Second)
+    time.Sleep(10*time.Second)
 
     // list buckets
     buckets = s.listBuckets(false, c)
@@ -239,7 +239,7 @@ func (s *OssutilCommandSuite) TestErrDeleteObject(c *C) {
 func (s *OssutilCommandSuite) TestRemoveIDKey(c *C) {
     bucket := bucketNamePrefix + "rmidkey"
     s.putBucket(bucket, c)
-    time.Sleep(2*7*time.Second)
+    time.Sleep(7*time.Second)
 
     cfile := "ossutil_test.config_boto"
     data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Endpoint]\n%s=%s[Bucket-Cname]\n%s=%s", "abc", "def", "ghi", bucket, "abc", bucket, "abc") 

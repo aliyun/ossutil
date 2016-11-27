@@ -85,7 +85,7 @@ func (s *OssutilCommandSuite) TestSetNotExistBucketACL(c *C) {
     c.Assert(bucketStat[StatACL], Equals, "public-read")
 
     s.removeBucket(bucket, true, c)
-    time.Sleep(3*7*time.Second)
+    time.Sleep(7*time.Second)
 
     // invalid bucket name
     bucket = "a"
@@ -101,7 +101,7 @@ func (s *OssutilCommandSuite) TestSetNotExistBucketACL(c *C) {
 func (s *OssutilCommandSuite) TestSetBucketEmptyACL(c *C) {
     bucket := bucketNamePrefix + "acl3" 
     s.putBucket(bucket, c)
-    time.Sleep(3*7*time.Second)
+    time.Sleep(7*time.Second)
 
     object := "test"
     s.putObject(bucket, object, uploadFileName, c)
@@ -178,7 +178,7 @@ func (s *OssutilCommandSuite) TestBatchSetObjectACL(c *C) {
         s.getStat(bucket, object, c)
     }
 
-    for _, acl := range []string{"public-read", "private", "public-read-write", "default"} {
+    for _, acl := range []string{"public-read"} {
         s.setObjectACL(bucket, "TestBatchSetObjectACL_setacl", acl, true, true, c)
         time.Sleep(sleepTime)
 

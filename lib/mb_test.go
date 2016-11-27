@@ -61,7 +61,7 @@ func (s *OssutilCommandSuite) TestMakeBucket(c *C) {
         showElapse, err := s.putBucketWithACL(bucket, acl)
         c.Assert(err, IsNil)
         c.Assert(showElapse, Equals, true)
-        time.Sleep(3*7*time.Second)
+        time.Sleep(sleepTime)
 
         bucketStat := s.getStat(bucket, "", c) 
         c.Assert(bucketStat[StatName], Equals, bucket)
