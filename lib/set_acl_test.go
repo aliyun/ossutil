@@ -90,22 +90,6 @@ func (s *OssutilCommandSuite) TestSetNotExistBucketACL(c *C) {
     c.Assert(showElapse, Equals, false)
 }
 
-func (s *OssutilCommandSuite) TestSetBucketEmptyACL(c *C) {
-    bucket := bucketNamePrefix + "acl3" 
-    s.putBucket(bucket, c)
-    time.Sleep(7*time.Second)
-
-    object := "test"
-    s.putObject(bucket, object, uploadFileName, c)
-
-    showElapse, err := s.rawSetObjectACL(bucket, object, "", false, true)
-    c.Assert(err, NotNil)
-    c.Assert(showElapse, Equals, false)
-
-    s.removeBucket(bucket, true, c)
-    time.Sleep(7*time.Second)
-}
-
 func (s *OssutilCommandSuite) TestSetObjectACL(c *C) {
     bucket := bucketNameSetACL 
 
@@ -136,7 +120,7 @@ func (s *OssutilCommandSuite) TestSetObjectACL(c *C) {
     s.setObjectACL(bucket, object, "private", false, true, c)
 
     // set error acl
-    for _, acl := range []string{"public_read", "erracl", "私有"} {
+    for _, acl := range []string{"public_read", "erracl", "私有", ""} {
         showElapse, err = s.rawSetObjectACL(bucket, object, acl, false, false)
         c.Assert(showElapse, Equals, false)
         c.Assert(err, NotNil)
