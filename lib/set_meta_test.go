@@ -172,7 +172,7 @@ func (s *OssutilCommandSuite) TestSetNotExistObjectMeta(c *C) {
     c.Assert(objectStat[StatACL], Equals, "private") 
     c.Assert(objectStat["X-Oss-Meta-A"], Equals, "A")
 }
-
+/*
 func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
     bucket := bucketNameSetMeta 
 
@@ -246,7 +246,7 @@ func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
     showElapse, err = s.rawSetMeta(bucket, "", "a:b", true, false, true, true, DefaultLanguage)
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
-}
+}*/
 
 func (s *OssutilCommandSuite) TestErrBatchSetMeta(c *C) {
     bucket := bucketNameExist 
