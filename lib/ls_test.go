@@ -187,8 +187,8 @@ func (s *OssutilCommandSuite) TestListBuckets(c *C) {
     c.Assert(FindPos(bucket, buckets) != -1, Equals, true)
     c.Assert(len(buckets) >= bucketNum, Equals, true)
 
-    // remove bucket
-    s.removeBucket(bucket, true, c)
+    // remove empty bucket
+    s.removeBucket(bucket, false, c)
     time.Sleep(10*time.Second)
 
     // get result
