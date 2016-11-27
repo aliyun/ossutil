@@ -56,6 +56,7 @@ func (s *OssutilCommandSuite) TestSetObjectMeta(c *C) {
 
     object := "TestSetObjectMeta_testobject" 
     s.putObject(bucket, object, uploadFileName, c)
+    time.Sleep(sleepTime)
 
     objectStat := s.getStat(bucket, object, c) 
     c.Assert(objectStat[StatACL], Equals, "default") 
@@ -87,7 +88,6 @@ func (s *OssutilCommandSuite) TestSetObjectMeta(c *C) {
 
     s.setObjectMeta(bucket, object, "X-Oss-Meta-A:A#x-oss-meta-B:b", true, false, false, true, c)
     objectStat = s.getStat(bucket, object, c) 
-    c.Assert(objectStat[StatACL], Equals, "private") 
     c.Assert(objectStat["X-Oss-Meta-A"], Equals, "A")
     c.Assert(objectStat["X-Oss-Meta-B"], Equals, "b")
 
