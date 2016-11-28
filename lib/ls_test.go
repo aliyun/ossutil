@@ -224,45 +224,35 @@ func (s *OssutilCommandSuite) TestListObjectsBucketNotExist(c *C) {
 // list objects
 func (s *OssutilCommandSuite) TestListObjects(c *C) {
     bucket := bucketNameList 
-    s.removeObjects(bucket, "", true, true, c)
-    time.Sleep(14*time.Second)
-
-    // "ls oss://bucket"
-    objects := s.listObjects(bucket, "", false, false, c)
-    c.Assert(len(objects), Equals, 0)
 
     // put objects
     num := 3 
-    objectNames := []string{}
     for i := 0; i < num; i++ {
         object := fmt.Sprintf("lstest:#%d", i) 
         s.putObject(bucket, object, uploadFileName, c) 
-        objectNames = append(objectNames, object)
     }
 
     object := "another_object"
     s.putObject(bucket, object, uploadFileName, c)
-    objectNames = append(objectNames, object)
-
-    // "ls oss://bucket -s"
-    objects = s.listObjects(bucket, "", true, false, c)
-    c.Assert(len(objects), Equals, len(objectNames))
-
-    // "ls oss://bucket/prefix -s"
-    objects = s.listObjects(bucket, "lstest:", true, false, c)
-    c.Assert(len(objects), Equals, len(objectNames) - 1)
 
     //put directories
     num1 := 2 
-    objectNames = []string{}
     for i := 0; i < num1; i++ {
         object := fmt.Sprintf("lstest:#%d/", i) 
         s.putObject(bucket, object, uploadFileName, c) 
 
         object = fmt.Sprintf("lstest:#%d/%d/", i, i) 
         s.putObject(bucket, object, uploadFileName, c) 
-        objectNames = append(objectNames, object)
     }
+
+    // "ls oss://bucket -s"
+    objects := s.listObjects(bucket, "", true, false, c)
+    c.Assert(len(objects), Equals, num + 2*num1 + 1)
+
+    // "ls oss://bucket/prefix -s"
+    objects = s.listObjects(bucket, "lstest:", true, false, c)
+    c.Assert(len(objects), Equals, num + 2*num1)
+
 
     // "ls oss://bucket/prefix"
     objects = s.listObjects(bucket, "lstest:#", false, false, c)

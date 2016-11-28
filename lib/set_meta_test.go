@@ -98,9 +98,6 @@ func (s *OssutilCommandSuite) TestSetObjectMeta(c *C) {
     // without force
     s.setObjectMeta(bucket, object, "x-oss-object-acl:public-read#X-Oss-Meta-A:A", true, false, false, false, c)
 
-    objectStat = s.getStat(bucket, object, c) 
-    c.Assert(objectStat["X-Oss-Meta-A"], Equals, "A")
-
     // without update, delete and force
     showElapse, err = s.rawSetMeta(bucket, object, "x-oss-object-acl:default#X-Oss-Meta-A:A", false, false, false, false, DefaultLanguage)
     c.Assert(err, NotNil)

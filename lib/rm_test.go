@@ -51,17 +51,17 @@ func (s *OssutilCommandSuite) TestRemoveObject(c *C) {
 func (s *OssutilCommandSuite) TestRemoveObjects(c *C) {
     bucket := bucketNamePrefix + "rmb1" 
     s.putBucket(bucket, c)
-    time.Sleep(21*time.Second) 
+    time.Sleep(14*time.Second) 
 
     // put object
-    num := 5
+    num := 2
     objectNames := []string{}
     for i := 0; i < num; i++ {
         object := fmt.Sprintf("remove%d", i) 
         s.putObject(bucket, object, uploadFileName, c) 
         objectNames = append(objectNames, object)
-        time.Sleep(sleepTime)
     }
+    time.Sleep(sleepTime)
 
     command := "rm"
     args := []string{CloudURLToString(bucket, "")}
