@@ -146,6 +146,7 @@ func (s *OssutilCommandSuite) TestBatchSetObjectACL(c *C) {
     for _, object := range objectNames {
         objectStat := s.getStat(bucket, object, c)
         fmt.Println(objectStat)
+        c.Assert(objectStat[StatACL], Equals, "default")
     }
 
     // without --force option
