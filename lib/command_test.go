@@ -535,8 +535,9 @@ func (s *OssutilCommandSuite) TestUserAgent(c *C) {
     c.Assert(client, NotNil)
 }
 
+/*
 func (s *OssutilCommandSuite) TestParseAndRunCommand(c *C) {
     os.Args = []string{""}
     err := ParseAndRunCommand()
     c.Assert(err, IsNil)
-}
+}*/
