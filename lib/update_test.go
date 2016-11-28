@@ -40,8 +40,6 @@ func (s *OssutilCommandSuite) TestUpdate(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestUpdateDiffVersion(c *C) {
-    os.Stdout = out 
-    os.Stderr = errout 
     // error get lastest version
     ue := vUpdateBucket
     vUpdateBucket = "abc" 
@@ -54,12 +52,9 @@ func (s *OssutilCommandSuite) TestUpdateDiffVersion(c *C) {
     vVersion = version
     err = updateCommand.RunCommand()
     c.Assert(err, IsNil)
-    vVersion = version + "1"
+    vVersion = version + "123"
     updateCommand.RunCommand()
     vVersion = Version 
-
-    os.Stdout = testLogFile
-    os.Stderr = testLogFile
 }
 
 func (s *OssutilCommandSuite) TestRevertRename(c *C) {

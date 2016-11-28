@@ -112,7 +112,6 @@ func (uc *UpdateCommand) RunCommand() error {
     force, _ := GetBool(OptionForce, uc.command.options)
     language, _ := GetString(OptionLanguage, uc.command.options)
     language = strings.ToLower(language)
-    fmt.Println(vVersion)
 
     // get lastest version
     version, err := uc.getLastestVersion()
