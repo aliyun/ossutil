@@ -170,5 +170,5 @@ func (s *OssutilCommandSuite) TestMakeBucketIDKey(c *C) {
 
     _ = os.Remove(cfile)
 
-    s.removeBucket(bucket, true, c)
+    s.removeBucket(bucket, false, c)
 }

@@ -164,6 +164,7 @@ func (s *OssutilCommandSuite) TestListWithBucketCname(c *C) {
     time.Sleep(7*time.Second)
 }
 
+/*
 func (s *OssutilCommandSuite) TestListBuckets(c *C) {
     // "ls" 
     bucket := bucketNamePrefix + "ls2" 
@@ -185,7 +186,7 @@ func (s *OssutilCommandSuite) TestListBuckets(c *C) {
     c.Assert(FindPos(bucket, buckets) == -1, Equals, true)
     c.Assert(len(buckets) <= bucketNum, Equals, true)
 }
-
+*/
 // list objects with not exist bucket 
 func (s *OssutilCommandSuite) TestListObjectsBucketNotExist(c *C) {
     bucket := bucketNameNotExist 
