@@ -167,23 +167,6 @@ func (s *OssutilCommandSuite) TestListWithBucketCname(c *C) {
 func (s *OssutilCommandSuite) TestListBuckets(c *C) {
     // "ls" 
     bucket := bucketNamePrefix + "ls2" 
-/*    os.Stdout = out
-    os.Stderr = errout
-    s.removeBucket(bucket, false, c)
-    time.Sleep(10*time.Second)
-
-    buckets := s.listBuckets(false, c)
-    fmt.Println(buckets)
-    c.Assert(FindPos(bucket, buckets) == -1, Equals, true)
-    bucketNum := len(buckets)
-
-    os.Stdout = testLogFile
-    os.Stderr = testLogFile
-
-    // "ls -s"
-    buckets = s.listBuckets(true, c)
-    c.Assert(FindPos(bucket, buckets) == -1, Equals, true)
-*/
     // put bucket
     s.putBucket(bucket, c)
     time.Sleep(10*time.Second)
@@ -234,6 +217,13 @@ func (s *OssutilCommandSuite) TestListObjects(c *C) {
 
     object := "another_object"
     s.putObject(bucket, object, uploadFileName, c)
+    time.Sleep(sleepTime)
+
+    objectStat := s.getStat(bucket, object, c)
+    c.Assert(objectStat[StatACL], Equals, "default")
+    c.Assert(len(objectStat["Etag"]), Equals, 32)
+    c.Assert(objectStat["Last-Modified"] != "", Equals, true)
+    c.Assert(objectStat[StatOwner] != "", Equals, true)
 
     //put directories
     num1 := 2 

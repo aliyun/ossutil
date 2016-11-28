@@ -60,19 +60,6 @@ func (s *OssutilCommandSuite) TestGetBucketStat(c *C) {
     c.Assert(bucketStat[StatOwner] != "", Equals, true)
 }
 
-func (s *OssutilCommandSuite) TestGetObjectStat(c *C) {
-    bucket := bucketNameExist 
-
-    object := "悠悠风来"
-    s.putObject(bucket, object, uploadFileName, c)
-
-    objectStat := s.getStat(bucket, object, c)
-    c.Assert(objectStat[StatACL], Equals, "default")
-    c.Assert(len(objectStat["Etag"]), Equals, 32)
-    c.Assert(objectStat["Last-Modified"] != "", Equals, true)
-    c.Assert(objectStat[StatOwner] != "", Equals, true)
-}
-
 func (s *OssutilCommandSuite) TestGetStatNotExist(c *C) {
     bucket := bucketNameNotExist 
     showElapse, err := s.rawGetStat(bucket, "")
