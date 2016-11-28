@@ -93,6 +93,7 @@ func (s *OssutilCommandSuite) TestRemoveObjects(c *C) {
     // "rm oss://bucket/prefix -r -f"
     // remove object
     s.removeObjects(bucket, "re", true, true, c)
+    time.Sleep(3*sleepTime)
 
     // list object
     objects = s.listObjects(bucket, "", false, false, c)
