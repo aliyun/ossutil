@@ -535,9 +535,11 @@ func (s *OssutilCommandSuite) TestUserAgent(c *C) {
     c.Assert(client, NotNil)
 }
 
-/*
+
 func (s *OssutilCommandSuite) TestParseAndRunCommand(c *C) {
-    os.Args = []string{""}
-    err := ParseAndRunCommand()
+    args := []string{}
+    options := OptionMapType{}
+    showElapse, err := RunCommand(args, options)
     c.Assert(err, IsNil)
-}*/
+    c.Assert(showElapse, Equals, false)
+}

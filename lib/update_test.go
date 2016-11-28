@@ -39,6 +39,29 @@ func (s *OssutilCommandSuite) TestUpdate(c *C) {
     c.Assert(err, IsNil)
 }
 
+func (s *OssutilCommandSuite) TestUpdateDiffVersion(c *C) {
+    os.Stdout = out 
+    os.Stderr = errout 
+    // error get lastest version
+    ue := vUpdateBucket
+    vUpdateBucket = "abc" 
+    version, err := updateCommand.getLastestVersion()
+    c.Assert(err, NotNil)
+
+    vUpdateBucket = ue
+    version, err = updateCommand.getLastestVersion()
+    c.Assert(err, IsNil)
+    vVersion = version
+    err = updateCommand.RunCommand()
+    c.Assert(err, IsNil)
+    vVersion = version + "1"
+    updateCommand.RunCommand()
+    vVersion = Version 
+
+    os.Stdout = testLogFile
+    os.Stderr = testLogFile
+}
+
 func (s *OssutilCommandSuite) TestRevertRename(c *C) {
     filePath := ".ossutil_tempf"
     renameFilePath := ".ossutil_tempr"
@@ -55,6 +78,10 @@ func (s *OssutilCommandSuite) TestRevertRename(c *C) {
 
     _ = os.Remove(filePath)
     _ = os.Remove(renameFilePath)
+
+    renameFilePath = ".ossutil_notexist"
+    err = updateCommand.revertRename(filePath, renameFilePath)
+    c.Assert(err, NotNil)
 }
 
 func (s *OssutilCommandSuite) TestDownloadLastestBinary(c *C) {

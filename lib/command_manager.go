@@ -19,28 +19,15 @@ func ParseAndRunCommand() (error) {
         return err
 	}
 
-	if len(args) == 0 {
-		if val, _ := GetBool(OptionVersion, options); val {
-            fmt.Printf("ossutil version: %s\n", Version)
-            return nil 
-		} 
-		args = append(args, "help")
-	}
-
-	command := args[0]
-	args = args[1:]
-
-	cm := CommandManager{}
-	cm.Init()
-	showElapse, err := cm.RunCommand(command, args, options)
-	if err != nil {
-        return err
-	}
-	if showElapse {
-		te := time.Now().UnixNano()
-		fmt.Printf("%.6f(s) elapsed\n", float64(te-ts)/1e9)
+    showElapse, err := RunCommand(args, options)
+    if err != nil {
+        return err 
+    }
+    if showElapse {
+        te := time.Now().UnixNano()
+        fmt.Printf("%.6f(s) elapsed\n", float64(te-ts)/1e9)
         return nil
-	}
+    }
     return nil
 }
 
@@ -50,6 +37,24 @@ func clearEnv() {
         os.Remove(renameFilePath)
     }
 }
+
+func RunCommand(args []string, options OptionMapType) (bool, error) {
+    if len(args) == 0 {
+        if val, _ := GetBool(OptionVersion, options); val {
+            fmt.Printf("ossutil version: %s\n", Version)
+            return false, nil
+        }
+        args = append(args, "help")
+    }
+    command := args[0]
+    args = args[1:]  
+
+    cm := CommandManager{}
+    cm.Init()
+    showElapse, err := cm.RunCommand(command, args, options)
+    return showElapse, err
+}
+
 
 // CommandManager is used to manager commands, such as build command map and run command
 type CommandManager struct {

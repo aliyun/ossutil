@@ -14,6 +14,7 @@ import (
 var (
     vUpdateEndpoint = updateEndpoint
     vUpdateBucket = updateBucket
+    vVersion = Version
 )
 
 var specChineseUpdate = SpecText{
@@ -111,6 +112,7 @@ func (uc *UpdateCommand) RunCommand() error {
     force, _ := GetBool(OptionForce, uc.command.options)
     language, _ := GetString(OptionLanguage, uc.command.options)
     language = strings.ToLower(language)
+    fmt.Println(vVersion)
 
     // get lastest version
     version, err := uc.getLastestVersion()
@@ -119,11 +121,11 @@ func (uc *UpdateCommand) RunCommand() error {
     }
 
     if language == LEnglishLanguage {
-        fmt.Printf("current version is: %s, the lastest version is: %s", Version, version)
+        fmt.Printf("current version is: %s, the lastest version is: %s", vVersion, version)
     } else {
-        fmt.Printf("当前版本为：%s，最新版本为：%s", Version, version)
+        fmt.Printf("当前版本为：%s，最新版本为：%s", vVersion, version)
     }
-    if version == Version {
+    if version == vVersion {
         if language == LEnglishLanguage {
             fmt.Println(", current version is the lastest version, no need to update.")
         } else {
