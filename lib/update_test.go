@@ -18,19 +18,21 @@ func (s *OssutilCommandSuite) rawUpdate(force bool, language string) (bool, erro
 }
 
 func (s *OssutilCommandSuite) TestUpdate(c *C) {
-    showElapse, err := s.rawUpdate(false, "中文")
+    showElapse, err := s.rawUpdate(false, "ch")
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, false)
 
-    showElapse, err = s.rawUpdate(false, "English")
+    showElapse, err = s.rawUpdate(false, "En")
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, false)
 
-    showElapse, err = s.rawUpdate(true, "中文")
+    showElapse, err = s.rawUpdate(true, "ch")
 
-    showElapse, err = s.rawUpdate(true, "English")
+    showElapse, err = s.rawUpdate(true, "En")
 
-    err = updateCommand.updateVersion(Version, "中文")
+    err = updateCommand.updateVersion(Version, "ch")
+
+    err = updateCommand.updateVersion("1.0.0.Beta", "ch")
 
     fileName := "ossutil_test_not_exist"
     err = updateCommand.rewriteLoadConfig(fileName)

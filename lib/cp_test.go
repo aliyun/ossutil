@@ -34,6 +34,7 @@ func (s *OssutilCommandSuite) rawCPWithArgs(args []string, recursive, force, upd
         "routines": &routines,
     }
     showElapse, err := cm.RunCommand(command, args, options)
+    time.Sleep(sleepTime)
     return showElapse, err
 }
 
