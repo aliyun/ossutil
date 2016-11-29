@@ -151,10 +151,10 @@ func (s *OssutilCommandSuite) TestSetObjectMeta(c *C) {
 
     s.setObjectMeta(bucket, "nosetmeta", "X-Oss-Meta-M:c", false, false, true, true, c)
 
-    s.setObjectMeta(bucket, "", "X-Oss-Meta-c:c", false, false, true, true, c)
+    s.setObjectMeta(bucket, "", "X-Oss-Meta-C:c", false, false, true, true, c)
 
     objectStat = s.getStat(bucket, object, c)
-    c.Assert(objectStat["X-Oss-Meta-M"], Equals, "c")
+    c.Assert(objectStat["X-Oss-Meta-C"], Equals, "c")
 
     showElapse, err = s.rawSetMeta(bucket, "", "X-Oss-Meta-c:c", false, true, true, true, DefaultLanguage)
     c.Assert(err, NotNil)
