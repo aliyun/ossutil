@@ -139,13 +139,20 @@ func (s *OssutilCommandSuite) TestSetObjectMeta(c *C) {
     //batch
     s.setObjectMeta(bucket, "", "content-type:abc#X-Oss-Meta-Update:update", true, false, true, false, c)
 
-    s.setObjectMeta(bucket, "", "content-type:abc#X-Oss-Meta-update:update", true, false, true, true, c)
+    s.setObjectMeta(bucket, "", "content-type:abc#X-Oss-Meta-Update:update", true, false, true, true, c)
+
+    objectStat = s.getStat(bucket, object, c)
+    c.Assert(objectStat["Content-Type"], Equals, "abc")
+    c.Assert(objectStat["X-Oss-Meta-Update"], Equals, "update")
 
     s.setObjectMeta(bucket, "", "X-Oss-Meta-update", false, true, true, true, c)
 
     s.setObjectMeta(bucket, "", "X-Oss-Meta-A:A#x-oss-meta-B:b", true, false, true, true, c)
 
     s.setObjectMeta(bucket, "nosetmeta", "X-Oss-Meta-M:c", false, false, true, true, c)
+
+    objectStat = s.getStat(bucket, object, c)
+    c.Assert(objectStat["X-Oss-Meta-M"], Equals, "c")
 
     s.setObjectMeta(bucket, "", "X-Oss-Meta-c:c", false, false, true, true, c)
 
