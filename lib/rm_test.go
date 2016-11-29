@@ -27,13 +27,11 @@ func (s *OssutilCommandSuite) rawRemove(args []string, recursive, force, bucket 
 
 func (s *OssutilCommandSuite) TestRemoveObject(c *C) {
     bucket := bucketNameMB
-    s.removeObjects(bucket, "", true, true, c)
-    time.Sleep(10*time.Second) 
 
     // put object
     object := "test_object"
     s.putObject(bucket, object, uploadFileName, c)
-    time.Sleep(2*sleepTime)
+    time.Sleep(sleepTime)
 
     // list object
     objects := s.listObjects(bucket, "", false, false, c)

@@ -312,12 +312,12 @@ func (sc *SetMetaCommand) checkOption(isUpdate, isDelete, force bool, language s
 	}
     if !isUpdate && !isDelete && !force {
         if language == LEnglishLanguage {
-            fmt.Printf("Warning: --update option means update the specified header, --delete option means delete the specified header, miss both options means update the whole meta info, continue to update the whole meta info(y or n)? ")
+            fmt.Printf("Warning: --update option means update the specified header, --delete option means delete the specified header, miss both options means update the whole meta info, continue to update the whole meta info(y or N)? ")
         } else {
-            fmt.Printf("警告：--update选项更新指定的header，--delete选项删除指定的header，两者同时缺失会更改object的全量meta信息，请确认是否要更改全量meta信息(y or n)? ")
+            fmt.Printf("警告：--update选项更新指定的header，--delete选项删除指定的header，两者同时缺失会更改object的全量meta信息，请确认是否要更改全量meta信息(y or N)? ")
         }
         var str string
-        if _, err := fmt.Scanln(&str); err != nil || (str != "yes" && str != "y") {
+        if _, err := fmt.Scanln(&str); err != nil || (strings.ToLower(str) != "yes" && strings.ToLower(str) != "y") {
             return fmt.Errorf("operation is canceled")
         }
         fmt.Println("")
@@ -460,8 +460,8 @@ func (sc *SetMetaCommand) ossSetObjectMetaRetry(bucket *oss.Bucket, object strin
 func (sc *SetMetaCommand) batchSetObjectMeta(bucket *oss.Bucket, cloudURL CloudURL, headers map[string]string, isUpdate, isDelete, force bool, routines int64) error {
 	if !force {
 		var val string
-		fmt.Printf("Do you really mean to recursivlly set meta on objects of %s(y or n)? ", sc.command.args[0])
-		if _, err := fmt.Scanln(&val); err != nil || (val != "yes" && val != "y") {
+		fmt.Printf("Do you really mean to recursivlly set meta on objects of %s(y or N)? ", sc.command.args[0])
+		if _, err := fmt.Scanln(&val); err != nil || (strings.ToLower(val) != "yes" && strings.ToLower(val) != "y") {
 			fmt.Println("operation is canceled.")
 			return nil
 		}

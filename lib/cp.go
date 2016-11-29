@@ -892,8 +892,8 @@ func (cc *CopyCommand) confirm(str string) bool {
 	defer mu.Unlock()
 
 	var val string
-	fmt.Printf("\rcp: overwrite \"%s\"(y or n)? ", str)
-	if _, err := fmt.Scanln(&val); err != nil || (val != "yes" && val != "y") {
+	fmt.Printf("\rcp: overwrite \"%s\"(y or N)? ", str)
+	if _, err := fmt.Scanln(&val); err != nil || (strings.ToLower(val) != "yes" && strings.ToLower(val) != "y") {
 		return false
 	}
 	return true
