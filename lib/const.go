@@ -19,6 +19,7 @@ const (
 	OptionCheckpointDir           = "checkpointDir"
 	OptionRetryTimes              = "retryTimes"
 	OptionRoutines                = "routines"
+	OptionParallel                = "parallel"
     OptionLanguage                = "language"
     OptionHashType                = "hashType"
 	OptionVersion                 = "version"
@@ -86,6 +87,8 @@ const (
 	Routines                        int    = 3
 	MaxRoutines                     int64  = 32
 	MinRoutines                     int64  = 1
+	MaxParallel                     int64  = 32
+	MinParallel                     int64  = 1
 	DefaultHashType                 string = "crc64"
 	MD5HashType                     string = "md5"
 )

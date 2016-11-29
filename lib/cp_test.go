@@ -542,6 +542,43 @@ func (s *OssutilCommandSuite) TestCPMulitSrc(c *C) {
     c.Assert(showElapse, Equals, false)
 }
 
+func (s *OssutilCommandSuite) TestCPParallel(c *C) {
+    bucket := bucketNameExist 
+    file := uploadFileName + "parallel"
+    s.createFile(file, file, c)
+
+    object := "TestCPParallel"
+
+    command := "cp"
+    args := []string{file, CloudURLToString(bucket, object)}
+    str := ""
+    thre := strconv.FormatInt(1, 10)
+    routines := strconv.Itoa(Routines)
+    parallel := strconv.Itoa(7)
+    ok := true
+    options := OptionMapType{
+        "endpoint": &str,
+        "accessKeyID": &str,
+        "accessKeySecret": &str,
+        "stsToken": &str,
+        "configFile": &configFile,
+        "force": &ok,
+        "bigfileThreshold": &thre,
+        "routines": &routines,
+        "parallel": &parallel,
+    }
+    showElapse, err := cm.RunCommand(command, args, options)
+    c.Assert(err, IsNil)
+    c.Assert(showElapse, Equals, true)
+    time.Sleep(sleepTime)
+
+    s.getObject(bucket, object, downloadFileName, c)
+    str = s.readFile(downloadFileName, c) 
+    c.Assert(str, Equals, file)
+
+    _ = os.Remove(file)
+}
+
 func (s *OssutilCommandSuite) TestErrUpload(c *C) {
     // src file not exist
     bucket := bucketNameExist 
@@ -646,6 +683,12 @@ func (s *OssutilCommandSuite) TestPreparePartOption(c *C) {
     c.Assert(partSize, Equals, int64(922337203685478))
     c.Assert(routines, Equals, 10)
 
+    parallel := strconv.Itoa(7) 
+    copyCommand.command.options[OptionParallel] = &parallel
+    partSize, routines = copyCommand.preparePartOption(1)
+    c.Assert(routines, Equals, parallel)
+    str := ""
+    copyCommand.command.options[OptionParallel] = &str
 }
 
 func (s *OssutilCommandSuite) TestResumeDownloadRetry(c *C) {

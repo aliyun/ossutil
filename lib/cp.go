@@ -528,6 +528,7 @@ var copyCommand = CopyCommand{
             OptionSTSToken,
 			OptionRetryTimes,
 			OptionRoutines,
+            OptionParallel,
 		},
 	},
 }
@@ -941,6 +942,10 @@ func (cc *CopyCommand) preparePartOption(fileSize int64) (int64, int) {
 		partSize *= 5
 		partNum = (fileSize-1)/partSize + 1
 	}
+
+    if parallel, err := GetInt(OptionParallel, cc.command.options); err == nil {
+        return partSize, int(parallel)
+    }
 
 	if partNum < 3 {
 		return partSize, 1
