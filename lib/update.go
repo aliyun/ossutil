@@ -208,7 +208,7 @@ func (uc *UpdateCommand) ossAnonymousGetToFile(host, filePath string) error {
         return fmt.Errorf(string(body))
     }
 
-    fd, err := os.OpenFile(filePath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0660)
+    fd, err := os.OpenFile(filePath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0640)
     defer fd.Close()
     if err != nil {
         return err

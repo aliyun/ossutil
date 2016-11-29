@@ -252,7 +252,7 @@ func (s *OssutilCommandSuite) TestBatchCPObject(c *C) {
 
     // create local dir
     dir := "TestBatchCPObject"
-    err := os.MkdirAll(dir, 0777)
+    err := os.MkdirAll(dir, 0755)
     c.Assert(err, IsNil)
 
     // upload empty dir miss recursive
@@ -275,7 +275,7 @@ func (s *OssutilCommandSuite) TestBatchCPObject(c *C) {
     // create dir in dir 
     dir = "TestBatchCPObject_dir"
     subdir := "SUBDIR"
-    err = os.MkdirAll(dir + string(os.PathSeparator) + subdir, 0777)
+    err = os.MkdirAll(dir + string(os.PathSeparator) + subdir, 0755)
     c.Assert(err, IsNil)
 
     // upload dir    
@@ -552,7 +552,7 @@ func (s *OssutilCommandSuite) TestErrUpload(c *C) {
 
     // create local dir
     dir := "上传目录"
-    err = os.MkdirAll(dir, 0777)
+    err = os.MkdirAll(dir, 0755)
     c.Assert(err, IsNil)
     cpDir := dir + string(os.PathSeparator) + CheckpointDir 
     showElapse, err = s.rawCP(dir, CloudURLToString(bucket, ""), true, true, true, BigFileThreshold, cpDir)
@@ -569,7 +569,7 @@ func (s *OssutilCommandSuite) TestErrUpload(c *C) {
     c.Assert(showElapse, Equals, false)
 
     subdir := dir + string(os.PathSeparator) + "subdir"
-    err = os.MkdirAll(subdir, 0777)
+    err = os.MkdirAll(subdir, 0755)
     c.Assert(err, IsNil)
 
     showElapse, err = s.rawCP(subdir, CloudURLToString(bucket, "/object"), false, true, false, 1, CheckpointDir)
