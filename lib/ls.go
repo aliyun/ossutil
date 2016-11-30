@@ -60,7 +60,7 @@ var specChineseList = SpecText{
         Object Number is: 2
 
     4)ossutil ls oss://bucket1
-        LastModifiedTime              Size(B)                              ETAG  ObjectName
+        LastModifiedTime              Size(B)  ETAG                              ObjectName
         2016-04-08 14:50:47 +0000 UTC 6476984  4F16FDAE7AC404CEC8B727FCC67779D6  oss://bucket1/obj1
         2015-06-05 14:06:29 +0000 UTC  201933  7E2F4A7F1AC9D2F0996E8332D5EA5B41  oss://bucket1/dir1/obj11
         Object Number is: 2
@@ -124,7 +124,7 @@ Usage:
         Object Number is: 2
 
     4)ossutil ls oss://bucket1
-        LastModifiedTime              Size(B)                              ETAG  ObjectName
+        LastModifiedTime              Size(B)  ETAG                              ObjectName
         2016-04-08 14:50:47 +0000 UTC 6476984  4F16FDAE7AC404CEC8B727FCC67779D6  oss://bucket1/obj1
         2015-06-05 14:06:29 +0000 UTC  201933  7E2F4A7F1AC9D2F0996E8332D5EA5B41  oss://bucket1/dir1/obj11
         Object Number is: 2
