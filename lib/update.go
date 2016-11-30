@@ -11,6 +11,12 @@ import (
     "runtime"
 )
 
+var (
+    vUpdateEndpoint = updateEndpoint
+    vUpdateBucket = updateBucket
+    vVersion = Version
+)
+
 var specChineseUpdate = SpecText{
 
 	synopsisText: "更新ossutil",
@@ -114,11 +120,11 @@ func (uc *UpdateCommand) RunCommand() error {
     }
 
     if language == LEnglishLanguage {
-        fmt.Printf("current version is: %s, the lastest version is: %s", Version, version)
+        fmt.Printf("current version is: %s, the lastest version is: %s", vVersion, version)
     } else {
-        fmt.Printf("当前版本为：%s，最新版本为：%s", Version, version)
+        fmt.Printf("当前版本为：%s，最新版本为：%s", vVersion, version)
     }
-    if version == Version {
+    if version == vVersion {
         if language == LEnglishLanguage {
             fmt.Println(", current version is the lastest version, no need to update.")
         } else {
@@ -152,7 +158,7 @@ func (uc *UpdateCommand) RunCommand() error {
 }
 
 func (uc *UpdateCommand) getLastestVersion() (string, error) {
-    if err := uc.anonymousGetToFileRetry(updateBucket, updateVersionObject, updateTmpVersionFile); err != nil {
+    if err := uc.anonymousGetToFileRetry(vUpdateBucket, updateVersionObject, updateTmpVersionFile); err != nil {
         return "", err
     }
 
@@ -177,7 +183,7 @@ func (uc *UpdateCommand) getLastestVersion() (string, error) {
 }
 
 func (uc *UpdateCommand) anonymousGetToFileRetry(bucketName, objectName, filePath string) error {
-    host := fmt.Sprintf("http://%s.%s/%s", bucketName, updateEndpoint, objectName)
+    host := fmt.Sprintf("http://%s.%s/%s", bucketName, vUpdateEndpoint, objectName)
 	retryTimes, _ := GetInt(OptionRetryTimes, uc.command.options)
 	for i := 1; ; i++ {
         err := uc.ossAnonymousGetToFile(host, filePath)
@@ -191,7 +197,10 @@ func (uc *UpdateCommand) anonymousGetToFileRetry(bucketName, objectName, filePat
 }
 
 func (uc *UpdateCommand) ossAnonymousGetToFile(host, filePath string) error {
-    response, _ := http.Get(host)
+    response, err := http.Get(host)
+    if err != nil {
+        return err
+    }
     defer response.Body.Close()
     statusCode := response.StatusCode
     body, _ := ioutil.ReadAll(response.Body)
@@ -199,11 +208,11 @@ func (uc *UpdateCommand) ossAnonymousGetToFile(host, filePath string) error {
         return fmt.Errorf(string(body))
     }
 
-    fd, err := os.OpenFile(filePath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0660)
+    fd, err := os.OpenFile(filePath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0640)
+    defer fd.Close()
     if err != nil {
         return err
     }
-    defer fd.Close()
 
     _, err = io.WriteString(fd, string(body))
     if err != nil {
@@ -255,9 +264,14 @@ func (uc *UpdateCommand) updateVersion(version, language string) error {
     return nil
 }
 
-func (uc *UpdateCommand) revertRename(filePath, renameFilePath string) {
-    os.Remove(filePath)
-    os.Rename(renameFilePath, filePath)
+func (uc *UpdateCommand) revertRename(filePath, renameFilePath string) error {
+    if err := os.Remove(filePath); err != nil {
+        return err
+    }
+    if err := os.Rename(renameFilePath, filePath); err != nil {
+        return err
+    }
+    return nil
 }
 
 func (uc *UpdateCommand) getBinary(filePath, version string) error {
@@ -277,7 +291,7 @@ func (uc *UpdateCommand) getBinary(filePath, version string) error {
 
     object = version + "/" + object
 
-    if err := uc.anonymousGetToFileRetry(updateBucket, object, filePath); err != nil {
+    if err := uc.anonymousGetToFileRetry(vUpdateBucket, object, filePath); err != nil {
         return err
     }
 

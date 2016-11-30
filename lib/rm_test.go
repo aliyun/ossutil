@@ -26,17 +26,15 @@ func (s *OssutilCommandSuite) rawRemove(args []string, recursive, force, bucket 
 }
 
 func (s *OssutilCommandSuite) TestRemoveObject(c *C) {
-    s.SetUpBucketEnv(c)
-    bucket := bucketNamePrefix + "rmb" 
-    s.putBucket(bucket, c)
-    time.Sleep(sleepTime) 
+    bucket := bucketNameMB
 
     // put object
-    object := "test_object"
+    object := "TestRemoveObject"
     s.putObject(bucket, object, uploadFileName, c)
+    time.Sleep(2*sleepTime)
 
     // list object
-    objects := s.listObjects(bucket, "", false, false, c)
+    objects := s.listObjects(bucket, object, false, false, c)
     c.Assert(len(objects), Equals, 1)
     c.Assert(objects[0], Equals, object)
 
@@ -44,103 +42,24 @@ func (s *OssutilCommandSuite) TestRemoveObject(c *C) {
     s.removeObjects(bucket, object, false, true, c)
 
     // list object
-    objects = s.listObjects(bucket, "", false, false, c)
+    objects = s.listObjects(bucket, object, false, false, c)
     c.Assert(len(objects), Equals, 0)
-
-    s.removeBucket(bucket, true, c)
-    time.Sleep(sleepTime) 
 }
 
 func (s *OssutilCommandSuite) TestRemoveObjects(c *C) {
-    bucket := bucketNamePrefix + "rmb" 
+    bucket := bucketNamePrefix + "rmb1" 
     s.putBucket(bucket, c)
-    time.Sleep(sleepTime) 
+    time.Sleep(14*time.Second) 
 
     // put object
-    num := 15
+    num := 2
     objectNames := []string{}
     for i := 0; i < num; i++ {
-        object := fmt.Sprintf("^$%d$^工具", i) 
+        object := fmt.Sprintf("remove%d", i) 
         s.putObject(bucket, object, uploadFileName, c) 
         objectNames = append(objectNames, object)
     }
-
-    // list object
-    objects := s.listObjects(bucket, "", false, false, c)
-    c.Assert(len(objects), Equals, num)
-
-    // "rm oss://bucket/ -r"
-    // remove object
-    s.removeObjects(bucket, "", true, false, c)
-
-    objects = s.listObjects(bucket, "", false, false, c)
-    c.Assert(len(objects), Equals, num)
-
-    // "rm oss://bucket/prefix -r -f"
-    // remove object
-    s.removeObjects(bucket, "^$", true, true, c)
-
-    // list object
-    objects = s.listObjects(bucket, "", false, false, c)
-    c.Assert(len(objects), Equals, 0)
-
-    s.removeBucket(bucket, true, c)
-    time.Sleep(sleepTime) 
-}
-
-func (s *OssutilCommandSuite) TestRemoveBucket(c *C) {
-    bucket := bucketNamePrefix + "rmb"
-    s.putBucket(bucket, c)
-    time.Sleep(sleepTime) 
-
-    // put object
-    num := 15
-    objectNames := []string{}
-    for i := 0; i < num; i++ {
-        object := fmt.Sprintf("^$%d$^工具", i) 
-        s.putObject(bucket, object, uploadFileName, c) 
-        objectNames = append(objectNames, object)
-    }
-    
-    // list buckets
-    buckets := s.listBuckets(false, c)
-    c.Assert(FindPos(bucket, buckets) != -1, Equals, true)
-
-    // rm bucket
-    s.removeBucket(bucket, true, c)
-    time.Sleep(sleepTime) 
-
-    // list buckets
-    buckets = s.listBuckets(false, c)
-    c.Assert(FindPos(bucket, buckets) == -1, Equals, true)
-}
-
-func (s *OssutilCommandSuite) TestRemoveEmptyBucket(c *C) {
-    bucket := bucketNamePrefix + "rmb"
-    s.putBucket(bucket, c)
-    time.Sleep(sleepTime)
-
-    // list buckets
-    buckets := s.listBuckets(false, c)
-    c.Assert(FindPos(bucket, buckets) != -1, Equals, true)
-
-    // rm bucket
-    s.removeBucket(bucket, false, c)
-    time.Sleep(sleepTime)
-
-    // list buckets
-    buckets = s.listBuckets(false, c)
-    c.Assert(FindPos(bucket, buckets) == -1, Equals, true)
-}
-
-func (s *OssutilCommandSuite) TestRemoveNonEmptyBucket(c *C) {
-    bucket := bucketNamePrefix + "rmb" 
-    s.putBucket(bucket, c)
-    time.Sleep(sleepTime)
-
-    // put object
-    object := "test_object_for_rm"
-    s.putObject(bucket, object, uploadFileName, c)
+    time.Sleep(2*sleepTime)
 
     command := "rm"
     args := []string{CloudURLToString(bucket, "")}
@@ -160,17 +79,76 @@ func (s *OssutilCommandSuite) TestRemoveNonEmptyBucket(c *C) {
 
     // list object
     objects := s.listObjects(bucket, "", false, false, c)
-    c.Assert(len(objects), Equals, 1)
-    c.Assert(objects[0], Equals, object)
+    c.Assert(len(objects), Equals, num)
 
-    s.removeBucket(bucket, true, c)
-    time.Sleep(sleepTime) 
+    // "rm oss://bucket/ -r"
+    // remove object
+    s.removeObjects(bucket, "", true, false, c)
+
+    objects = s.listObjects(bucket, "", false, false, c)
+    c.Assert(len(objects), Equals, num)
+
+    // "rm oss://bucket/prefix -r -f"
+    // remove object
+    s.removeObjects(bucket, "re", true, true, c)
+    time.Sleep(3*sleepTime)
+
+    // list object
+    objects = s.listObjects(bucket, "", false, false, c)
+    c.Assert(len(objects), Equals, 0)
+
+    //reput objects and delete bucket
+    for i := 0; i < num; i++ {
+        object := fmt.Sprintf("remove%d", i) 
+        s.putObject(bucket, object, uploadFileName, c) 
+    }
+    
+    // list buckets
+    buckets := s.listBuckets(false, c)
+    c.Assert(FindPos(bucket, buckets) != -1, Equals, true)
+
+    // error remove bucket with config 
+    cfile := "ossutil_test.config_boto"
+    data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Endpoint]\n%s=%s[Bucket-Cname]\n%s=%s", "abc", "def", "ghi", bucket, "abc", bucket, "abc") 
+    s.createFile(cfile, data, c)
+
+    options = OptionMapType{
+        "endpoint": &str,
+        "accessKeyID": &str,
+        "accessKeySecret": &str,
+        "stsToken": &str,
+        "configFile": &cfile,
+        "recursive": &ok,
+        "bucket": &ok,
+        "force": &ok,
+    }
+    showElapse, err := cm.RunCommand(command, args, options)
+    c.Assert(err, NotNil)
+
+    options = OptionMapType{
+        "endpoint": &endpoint,
+        "accessKeyID": &accessKeyID,
+        "accessKeySecret": &accessKeySecret,
+        "stsToken": &str,
+        "configFile": &cfile,
+        "recursive": &ok,
+        "bucket": &ok,
+        "force": &ok,
+    }
+    showElapse, err = cm.RunCommand(command, args, options)
+    c.Assert(err, IsNil)
+    c.Assert(showElapse, Equals, true)
+
+    _ = os.Remove(cfile)
+    time.Sleep(2*7*time.Second) 
+
+    // list buckets
+    buckets = s.listBuckets(false, c)
+    c.Assert(FindPos(bucket, buckets) == -1, Equals, true)
 }
 
 func (s *OssutilCommandSuite) TestRemoveObjectBucketOption(c *C) {
-    bucket := bucketNamePrefix + "rmb"
-    s.putBucket(bucket, c)
-    time.Sleep(sleepTime)
+    bucket := bucketNameExist 
 
     object := "test_object"
     command := "rm"
@@ -192,9 +170,6 @@ func (s *OssutilCommandSuite) TestRemoveObjectBucketOption(c *C) {
     // list buckets
     buckets := s.listBuckets(false, c)
     c.Assert(FindPos(bucket, buckets) != -1, Equals, true)
-
-    s.removeBucket(bucket, true, c)
-    time.Sleep(sleepTime) 
 }
 
 func (s *OssutilCommandSuite) TestErrRemove(c *C) {
@@ -251,45 +226,3 @@ func (s *OssutilCommandSuite) TestErrDeleteObject(c *C) {
     c.Assert(err, NotNil)
 }
 
-func (s *OssutilCommandSuite) TestRemoveIDKey(c *C) {
-    bucket := bucketNamePrefix + "rmidkey"
-    s.putBucket(bucket, c)
-    time.Sleep(sleepTime)
-
-    cfile := "ossutil_test.config_boto"
-    data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Endpoint]\n%s=%s[Bucket-Cname]\n%s=%s", "abc", "def", "ghi", bucket, "abc", bucket, "abc") 
-    s.createFile(cfile, data, c)
-
-    command := "rm"
-    str := ""
-    ok := true
-    args := []string{CloudURLToString(bucket, "")}
-    options := OptionMapType{
-        "endpoint": &str,
-        "accessKeyID": &str,
-        "accessKeySecret": &str,
-        "stsToken": &str,
-        "configFile": &cfile,
-        "bucket": &ok,
-        "force": &ok,
-    }
-    showElapse, err := cm.RunCommand(command, args, options)
-    c.Assert(err, NotNil)
-
-    options = OptionMapType{
-        "endpoint": &endpoint,
-        "accessKeyID": &accessKeyID,
-        "accessKeySecret": &accessKeySecret,
-        "stsToken": &str,
-        "configFile": &cfile,
-        "bucket": &ok,
-        "force": &ok,
-    }
-    showElapse, err = cm.RunCommand(command, args, options)
-    c.Assert(err, IsNil)
-    c.Assert(showElapse, Equals, true)
-
-    _ = os.Remove(cfile)
-    s.removeBucket(bucket, true, c)
-    time.Sleep(sleepTime)
-}

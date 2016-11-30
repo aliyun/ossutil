@@ -110,9 +110,9 @@ ACL：
 	sampleText: ` 
     (1)ossutil set-acl oss://bucket1 public-read-write -b 
 
-    (2)ossutil set-acl oss://bucket1/obj1 pr 
+    (2)ossutil set-acl oss://bucket1/obj1 private 
 
-    (3)ossutil set-acl oss://bucket1/obj def -r
+    (3)ossutil set-acl oss://bucket1/obj default -r
 `,
 }
 
@@ -182,9 +182,9 @@ Usage：
 	sampleText: ` 
     (1)ossutil set-acl oss://bucket1 public-read-write -b 
 
-    (2)ossutil set-acl oss://bucket1/obj1 pr 
+    (2)ossutil set-acl oss://bucket1/obj1 private 
 
-    (3)ossutil set-acl oss://bucket1/obj def -r
+    (3)ossutil set-acl oss://bucket1/obj default -r
 `,
 }
 
@@ -362,8 +362,8 @@ func (sc *SetACLCommand) ossSetObjectACLRetry(bucket *oss.Bucket, object string,
 func (sc *SetACLCommand) batchSetObjectACL(bucket *oss.Bucket, cloudURL CloudURL, force bool, routines int64) error {
 	if !force {
 		var val string
-		fmt.Printf("Do you really mean to recursivlly set acl on objects of %s(y or n)? ", sc.command.args[0])
-		if _, err := fmt.Scanln(&val); err != nil || (val != "yes" && val != "y") {
+		fmt.Printf("Do you really mean to recursivlly set acl on objects of %s(y or N)? ", sc.command.args[0])
+		if _, err := fmt.Scanln(&val); err != nil || (strings.ToLower(val) != "yes" && strings.ToLower(val) != "y") {
 			fmt.Println("operation is canceled.")
 			return nil
 		}

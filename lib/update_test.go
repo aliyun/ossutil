@@ -2,7 +2,6 @@ package lib
 
 import (
     "os"
-    "time"
 
     . "gopkg.in/check.v1"
 )
@@ -19,46 +18,43 @@ func (s *OssutilCommandSuite) rawUpdate(force bool, language string) (bool, erro
 }
 
 func (s *OssutilCommandSuite) TestUpdate(c *C) {
-    s.SetUpBucketEnv(c)
-    showElapse, err := s.rawUpdate(false, "中文")
+    showElapse, err := s.rawUpdate(false, "ch")
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, false)
 
-    showElapse, err = s.rawUpdate(false, "English")
+    showElapse, err = s.rawUpdate(false, "En")
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, false)
 
-    showElapse, err = s.rawUpdate(true, "中文")
+    showElapse, err = s.rawUpdate(true, "ch")
 
-    showElapse, err = s.rawUpdate(true, "English")
+    showElapse, err = s.rawUpdate(true, "En")
 
-    err = updateCommand.updateVersion(Version, "中文")
+    err = updateCommand.updateVersion(Version, "ch")
+
+    err = updateCommand.updateVersion("1.0.0.Beta", "ch")
 
     fileName := "ossutil_test_not_exist"
     err = updateCommand.rewriteLoadConfig(fileName)
     c.Assert(err, IsNil)
 }
 
-func (s *OssutilCommandSuite) TestDownloadLastestBinary(c *C) {
-    tempBinaryFile := ".ossutil_test_update.temp"  
-    err := updateCommand.getBinary(tempBinaryFile, "1.0.0.Beta") 
+func (s *OssutilCommandSuite) TestUpdateDiffVersion(c *C) {
+    // error get lastest version
+    ue := vUpdateBucket
+    vUpdateBucket = "abc" 
+    version, err := updateCommand.getLastestVersion()
+    c.Assert(err, NotNil)
+
+    vUpdateBucket = ue
+    version, err = updateCommand.getLastestVersion()
     c.Assert(err, IsNil)
-
-    _ = os.Remove(tempBinaryFile)
-}
-
-func (s *OssutilCommandSuite) TestAnonymousGetToFileError(c *C) {
-    bucket := bucketNamePrefix + "update"
-    object := "object"
-    err := updateCommand.anonymousGetToFileRetry(bucket, object, object)
-    c.Assert(err, NotNil)
-
-    s.putBucket(bucket, c)
-    time.Sleep(sleepTime)
-    s.putObject(bucket, object, uploadFileName, c)
-    fileName := "*"
-    err = updateCommand.anonymousGetToFileRetry(bucket, object, fileName)
-    c.Assert(err, NotNil)
+    vVersion = version
+    err = updateCommand.RunCommand()
+    c.Assert(err, IsNil)
+    vVersion = version + "123"
+    updateCommand.RunCommand()
+    vVersion = Version 
 }
 
 func (s *OssutilCommandSuite) TestRevertRename(c *C) {
@@ -77,4 +73,29 @@ func (s *OssutilCommandSuite) TestRevertRename(c *C) {
 
     _ = os.Remove(filePath)
     _ = os.Remove(renameFilePath)
+
+    renameFilePath = ".ossutil_notexist"
+    err = updateCommand.revertRename(filePath, renameFilePath)
+    c.Assert(err, NotNil)
+}
+
+func (s *OssutilCommandSuite) TestDownloadLastestBinary(c *C) {
+    tempBinaryFile := ".ossutil_test_update.temp"  
+    err := updateCommand.getBinary(tempBinaryFile, "1.0.0.Beta") 
+    c.Assert(err, IsNil)
+
+    _ = os.Remove(tempBinaryFile)
+}
+
+func (s *OssutilCommandSuite) TestAnonymousGetToFileError(c *C) {
+    bucket := bucketNameNotExist 
+    object := "TestAnonymousGetToFileError"
+    err := updateCommand.anonymousGetToFileRetry(bucket, object, object)
+    c.Assert(err, NotNil)
+
+    bucket = bucketNameDest 
+    s.putObject(bucket, object, uploadFileName, c)
+    fileName := "*"
+    err = updateCommand.anonymousGetToFileRetry(bucket, object, fileName)
+    c.Assert(err, NotNil)
 }

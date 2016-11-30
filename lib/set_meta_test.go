@@ -4,6 +4,7 @@ import (
     "fmt"
     "os"
     "strconv"
+    "time"
 
     . "gopkg.in/check.v1"
 )
@@ -32,6 +33,7 @@ func (s *OssutilCommandSuite) rawSetMetaWithArgs(args []string, update, delete, 
         "language": &language,
     }
     showElapse, err := cm.RunCommand(command, args, options)
+    time.Sleep(2*sleepTime)
     return showElapse, err
 }
 
@@ -42,7 +44,6 @@ func (s *OssutilCommandSuite) setObjectMeta(bucket, object, meta string, update,
 }
 
 func (s *OssutilCommandSuite) TestSetBucketMeta(c *C) {
-    s.SetUpBucketEnv(c)
     bucket := bucketNameExist 
 
     showElapse, err := s.rawSetMeta(bucket, "", "X-Oss-Meta-A:A", false, false, false, true, DefaultLanguage)
@@ -51,10 +52,11 @@ func (s *OssutilCommandSuite) TestSetBucketMeta(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestSetObjectMeta(c *C) {
-    bucket := bucketNameExist 
+    bucket := bucketNameSetMeta1 
 
-    object := "testobject" 
+    object := "TestSetObjectMeta_testobject" 
     s.putObject(bucket, object, uploadFileName, c)
+    time.Sleep(sleepTime)
 
     objectStat := s.getStat(bucket, object, c) 
     c.Assert(objectStat[StatACL], Equals, "default") 
@@ -85,26 +87,13 @@ func (s *OssutilCommandSuite) TestSetObjectMeta(c *C) {
     c.Assert(ok, Equals, false)
 
     s.setObjectMeta(bucket, object, "X-Oss-Meta-A:A#x-oss-meta-B:b", true, false, false, true, c)
-    objectStat = s.getStat(bucket, object, c) 
-    c.Assert(objectStat[StatACL], Equals, "private") 
-    c.Assert(objectStat["X-Oss-Meta-A"], Equals, "A")
-    c.Assert(objectStat["X-Oss-Meta-B"], Equals, "b")
 
     s.setObjectMeta(bucket, object, "X-Oss-Meta-c:c", false, false, false, true, c)
     objectStat = s.getStat(bucket, object, c) 
     c.Assert(objectStat[StatACL], Equals, "private") 
-    _, ok = objectStat["X-Oss-Meta-A"]
-    c.Assert(ok, Equals, false)
-    _, ok = objectStat["X-Oss-Meta-B"]
-    c.Assert(ok, Equals, false)
-    c.Assert(objectStat["X-Oss-Meta-C"], Equals, "c")
 
     // without force
-    s.setObjectMeta(bucket, object, "x-oss-object-acl:default#X-Oss-Meta-A:A", true, false, false, false, c)
-
-    objectStat = s.getStat(bucket, object, c) 
-    c.Assert(objectStat[StatACL], Equals, "default") 
-    c.Assert(objectStat["X-Oss-Meta-A"], Equals, "A")
+    s.setObjectMeta(bucket, object, "x-oss-object-acl:public-read#X-Oss-Meta-A:A", true, false, false, false, c)
 
     // without update, delete and force
     showElapse, err = s.rawSetMeta(bucket, object, "x-oss-object-acl:default#X-Oss-Meta-A:A", false, false, false, false, DefaultLanguage)
@@ -143,11 +132,40 @@ func (s *OssutilCommandSuite) TestSetObjectMeta(c *C) {
     showElapse, err = s.rawSetMeta(bucket, object, "x-oss-object-acl:private", true, false, false, true, DefaultLanguage)
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true)
+
+    //batch
+    s.setObjectMeta(bucket, "", "content-type:abc#X-Oss-Meta-Update:update", true, false, true, false, c)
+
+    s.setObjectMeta(bucket, "", "content-type:abc#X-Oss-Meta-Update:update", true, false, true, true, c)
+
+    objectStat = s.getStat(bucket, object, c)
+    c.Assert(objectStat["Content-Type"], Equals, "abc")
+    c.Assert(objectStat["X-Oss-Meta-Update"], Equals, "update")
+
+    s.setObjectMeta(bucket, "", "X-Oss-Meta-update", false, true, true, true, c)
+
+    s.setObjectMeta(bucket, "", "X-Oss-Meta-A:A#x-oss-meta-B:b", true, false, true, true, c)
+
+    s.setObjectMeta(bucket, "nosetmeta", "X-Oss-Meta-M:c", false, false, true, true, c)
+
+    s.setObjectMeta(bucket, "", "X-Oss-Meta-C:c", false, false, true, true, c)
+
+    objectStat = s.getStat(bucket, object, c)
+    c.Assert(objectStat["X-Oss-Meta-C"], Equals, "c")
+
+    showElapse, err = s.rawSetMeta(bucket, "", "X-Oss-Meta-c:c", false, true, true, true, DefaultLanguage)
+    c.Assert(err, NotNil)
+    c.Assert(showElapse, Equals, false)
+
+    showElapse, err = s.rawSetMeta(bucket, "", "a:b", true, false, true, true, DefaultLanguage)
+    c.Assert(err, NotNil)
+    c.Assert(showElapse, Equals, false)
 }
 
 func (s *OssutilCommandSuite) TestSetNotExistObjectMeta(c *C) {
-    bucket := bucketNamePrefix + "noexit" 
+    bucket := bucketNameExist 
     s.putBucket(bucket, c)
+    time.Sleep(7*time.Second)
 
     object := "testobject-notexistone" 
     // set meta of not exist object
@@ -162,6 +180,7 @@ func (s *OssutilCommandSuite) TestSetNotExistObjectMeta(c *C) {
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
 
+    object = "testobject"
     s.putObject(bucket, object, uploadFileName, c)
 
     s.setObjectMeta(bucket, object, "x-oss-object-acl:private#X-Oss-Meta-A:A", true, false, false, true, c)
@@ -169,86 +188,8 @@ func (s *OssutilCommandSuite) TestSetNotExistObjectMeta(c *C) {
     objectStat := s.getStat(bucket, object, c) 
     c.Assert(objectStat[StatACL], Equals, "private") 
     c.Assert(objectStat["X-Oss-Meta-A"], Equals, "A")
-
-    s.removeBucket(bucket, true, c) 
 }
-
-func (s *OssutilCommandSuite) TestBatchSetObjectMeta(c *C) {
-    bucket := bucketNameExist 
-
-    // put objects
-    num := 10
-    objectNames := []string{}
-    for i := 0; i < num; i++ {
-        object := fmt.Sprintf("设置元信息：%d", i)
-        s.putObject(bucket, object, uploadFileName, c)
-        objectNames = append(objectNames, object)
-    }
-
-    // update without force
-    s.setObjectMeta(bucket, "", "content-type:abc#X-Oss-Meta-Update:update", true, false, true, false, c)
-    for _, object := range objectNames {
-        objectStat := s.getStat(bucket, object, c) 
-        c.Assert(objectStat["Content-Type"] != "abc", Equals, true) 
-        _, ok := objectStat["X-Oss-Meta-Update"]
-        c.Assert(ok, Equals, false)
-    }
-
-    // update
-    s.setObjectMeta(bucket, "", "content-type:abc#X-Oss-Meta-update:update", true, false, true, true, c)
-
-    for _, object := range objectNames {
-        objectStat := s.getStat(bucket, object, c) 
-        c.Assert(objectStat["Content-Type"], Equals, "abc") 
-        c.Assert(objectStat["X-Oss-Meta-Update"], Equals, "update")
-    }
-
-     // delete
-    s.setObjectMeta(bucket, "设置元信息：", "X-Oss-Meta-update", false, true, true, true, c)
-   
-    for _, object := range objectNames {
-        objectStat := s.getStat(bucket, object, c) 
-        _, ok := objectStat["X-Oss-Meta-Update"]
-        c.Assert(ok, Equals, false)
-    }
-
-    s.setObjectMeta(bucket, "", "X-Oss-Meta-A:A#x-oss-meta-B:b", true, false, true, true, c)
-    for _, object := range objectNames {
-        objectStat := s.getStat(bucket, object, c) 
-        c.Assert(objectStat["X-Oss-Meta-A"], Equals, "A") 
-        c.Assert(objectStat["X-Oss-Meta-B"], Equals, "b")
-    }
-
-    // set all
-    s.setObjectMeta(bucket, "非设置元信息", "X-Oss-Meta-c:c", false, false, true, true, c)
-    for _, object := range objectNames {
-        objectStat := s.getStat(bucket, object, c) 
-        c.Assert(objectStat["X-Oss-Meta-A"], Equals, "A") 
-        c.Assert(objectStat["X-Oss-Meta-B"], Equals, "b")
-        _, ok := objectStat["X-Oss-Meta-C"]
-        c.Assert(ok, Equals, false)
-    }
-
-    s.setObjectMeta(bucket, "设置元信息", "X-Oss-Meta-c:c", false, false, true, true, c)
-    for _, object := range objectNames {
-        objectStat := s.getStat(bucket, object, c) 
-        c.Assert(objectStat["X-Oss-Meta-C"], Equals, "c") 
-        _, ok := objectStat["X-Oss-Meta-A"]
-        c.Assert(ok, Equals, false)
-        _, ok = objectStat["X-Oss-Meta-B"]
-        c.Assert(ok, Equals, false)
-    }
-
-    // error meta
-    showElapse, err := s.rawSetMeta(bucket, "设置元信息：", "X-Oss-Meta-c:c", false, true, true, true, DefaultLanguage)
-    c.Assert(err, NotNil)
-    c.Assert(showElapse, Equals, false)
-
-    showElapse, err = s.rawSetMeta(bucket, "", "a:b", true, false, true, true, DefaultLanguage)
-    c.Assert(err, NotNil)
-    c.Assert(showElapse, Equals, false)
-}
-
+    
 func (s *OssutilCommandSuite) TestErrBatchSetMeta(c *C) {
     bucket := bucketNameExist 
 
@@ -256,7 +197,7 @@ func (s *OssutilCommandSuite) TestErrBatchSetMeta(c *C) {
     num := 10
     objectNames := []string{}
     for i := 0; i < num; i++ {
-        object := fmt.Sprintf("设置元信息：%d", i)
+        object := fmt.Sprintf("TestErrBatchSetMeta_setmeta:%d", i)
         s.putObject(bucket, object, uploadFileName, c)
         objectNames = append(objectNames, object)
     }
@@ -351,6 +292,8 @@ func (s *OssutilCommandSuite) TestGetOSSOption(c *C) {
 
 func (s *OssutilCommandSuite) TestSetMetaIDKey(c *C) {
     bucket := bucketNameExist 
+    s.putBucket(bucket, c)
+    time.Sleep(7*time.Second)
 
     object := "testobject" 
     s.putObject(bucket, object, uploadFileName, c)

@@ -528,6 +528,7 @@ var copyCommand = CopyCommand{
             OptionSTSToken,
 			OptionRetryTimes,
 			OptionRoutines,
+            OptionParallel,
 		},
 	},
 }
@@ -574,7 +575,7 @@ func (cc *CopyCommand) RunCommand() error {
 	}
 
 	//create ckeckpoint dir
-	if err := os.MkdirAll(cpOption.cpDir, 0777); err != nil {
+	if err := os.MkdirAll(cpOption.cpDir, 0755); err != nil {
 		return err
 	}
 
@@ -854,12 +855,11 @@ func (cc *CopyCommand) uploadFile(bucket *oss.Bucket, destURL CloudURL, cpOption
 }
 
 func (cc *CopyCommand) makeObjectName(destURL CloudURL, file fileInfoType) string {
-	if destURL.object == "" || strings.HasSuffix(destURL.object, "/") || strings.HasSuffix(destURL.object, "\\") {
+	if destURL.object == "" || strings.HasSuffix(destURL.object, "/") || strings.HasSuffix(destURL.object, "\\") || strings.HasSuffix(destURL.object, string(os.PathSeparator)){
         // replace "\" of file.filePath to "/"
         filePath := file.filePath
-        if string(os.PathSeparator) != "/" {
-            filePath = strings.Replace(file.filePath, string(os.PathSeparator), "/", -1)
-        }
+        filePath = strings.Replace(file.filePath, string(os.PathSeparator), "/", -1)
+        filePath = strings.Replace(file.filePath, "\\", "/", -1)
 		return destURL.object + filePath
 	}
 	return destURL.object
@@ -893,8 +893,8 @@ func (cc *CopyCommand) confirm(str string) bool {
 	defer mu.Unlock()
 
 	var val string
-	fmt.Printf("\rcp: overwrite \"%s\"(y or n)? ", str)
-	if _, err := fmt.Scanln(&val); err != nil || (val != "yes" && val != "y") {
+	fmt.Printf("\rcp: overwrite \"%s\"(y or N)? ", str)
+	if _, err := fmt.Scanln(&val); err != nil || (strings.ToLower(val) != "yes" && strings.ToLower(val) != "y") {
 		return false
 	}
 	return true
@@ -942,6 +942,10 @@ func (cc *CopyCommand) preparePartOption(fileSize int64) (int64, int) {
 		partSize *= 5
 		partNum = (fileSize-1)/partSize + 1
 	}
+
+    if parallel, err := GetInt(OptionParallel, cc.command.options); err == nil {
+        return partSize, int(parallel)
+    }
 
 	if partNum < 3 {
 		return partSize, 1
@@ -1009,7 +1013,7 @@ func (cc *CopyCommand) adjustDestURLForDownload(destURL FileURL, cpOption copyOp
 		}
 	}
 	if strings.HasSuffix(filePath, "/") || strings.HasSuffix(filePath, "\\") {
-		if err := os.MkdirAll(filePath, 0777); err != nil {
+		if err := os.MkdirAll(filePath, 0755); err != nil {
 			return filePath, err
 		}
 	}
@@ -1043,7 +1047,7 @@ func (cc *CopyCommand) downloadSingleFile(bucket *oss.Bucket, objectInfo objectI
 	}
 
 	if size == 0 && (strings.HasSuffix(object, "/") || strings.HasSuffix(object, "\\")) {
-		return false, os.MkdirAll(fileName, 0777)
+		return false, os.MkdirAll(fileName, 0755)
 	}
 
 	//create parent directory
@@ -1093,7 +1097,7 @@ func (cc *CopyCommand) createParentDirectory(fileName string) error {
 		return err
 	}
 	dir = strings.Replace(dir, "\\", "/", -1)
-	return os.MkdirAll(dir, 0777)
+	return os.MkdirAll(dir, 0755)
 }
 
 func (cc *CopyCommand) ossResumeDownloadRetry(bucket *oss.Bucket, objectName string, filePath string, size, partSize int64, options ...oss.Option) error {

@@ -29,7 +29,6 @@ func (s *OssutilCommandSuite) rawGetStatWithArgs(args []string) (bool, error) {
 }
 
 func (s *OssutilCommandSuite) TestStatErrArgc(c *C) {
-    s.SetUpBucketEnv(c)
     bucket := bucketNameExist 
 
     command := "stat"
@@ -48,9 +47,7 @@ func (s *OssutilCommandSuite) TestStatErrArgc(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestGetBucketStat(c *C) {
-    bucket := bucketNamePrefix + "stat" 
-    s.putBucket(bucket, c)
-    time.Sleep(sleepTime)
+    bucket := bucketNameDest 
 
     // get bucket stat 
     bucketStat := s.getStat(bucket, "", c) 
@@ -61,21 +58,6 @@ func (s *OssutilCommandSuite) TestGetBucketStat(c *C) {
     c.Assert(bucketStat[StatIntranetEndpoint] != "", Equals, true)
     c.Assert(bucketStat[StatACL], Equals, "private")
     c.Assert(bucketStat[StatOwner] != "", Equals, true)
-
-    s.removeBucket(bucket, true, c)
-}
-
-func (s *OssutilCommandSuite) TestGetObjectStat(c *C) {
-    bucket := bucketNameExist 
-
-    object := "悠悠风来"
-    s.putObject(bucket, object, uploadFileName, c)
-
-    objectStat := s.getStat(bucket, object, c)
-    c.Assert(objectStat[StatACL], Equals, "default")
-    c.Assert(len(objectStat["Etag"]), Equals, 32)
-    c.Assert(objectStat["Last-Modified"] != "", Equals, true)
-    c.Assert(objectStat[StatOwner] != "", Equals, true)
 }
 
 func (s *OssutilCommandSuite) TestGetStatNotExist(c *C) {
@@ -85,6 +67,9 @@ func (s *OssutilCommandSuite) TestGetStatNotExist(c *C) {
     c.Assert(showElapse, Equals, false)
 
     bucket = bucketNameExist
+    s.removeObjects(bucket, "", true, true, c)
+    time.Sleep(sleepTime)
+
     showElapse, err = s.rawGetStat(bucket, "")
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true)
@@ -94,12 +79,11 @@ func (s *OssutilCommandSuite) TestGetStatNotExist(c *C) {
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
 
+    object = "testobject_exist"
     s.putObject(bucket, object, uploadFileName, c)
     showElapse, err = s.rawGetStat(bucket, object)
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true)
-
-    s.removeObjects(bucket, object, true, true, c)
 }
 
 func (s *OssutilCommandSuite) TestGetStatRetryTimes(c *C) {

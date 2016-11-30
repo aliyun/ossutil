@@ -85,8 +85,8 @@ func readConfigFromFile(configFile string) (OptionMapType, error) {
 
 	credOptions := credSection.Options()
 	for name, option := range credOptions {
-		if opName, ok := getOptionNameByStr(name); ok {
-			configMap[opName] = option
+		if opName, ok := getOptionNameByStr(strings.TrimSpace(name)); ok {
+			configMap[strings.TrimSpace(opName)] = strings.TrimSpace(option)
 		}
 	}
 
@@ -96,7 +96,7 @@ func readConfigFromFile(configFile string) (OptionMapType, error) {
 			configMap[sec] = map[string]string{}
 			options := section.Options()
 			for bucket, host := range options {
-				(configMap[sec]).(map[string]string)[bucket] = host
+				(configMap[sec]).(map[string]string)[strings.TrimSpace(bucket)] = strings.TrimSpace(host)
 			}
 		}
 	}

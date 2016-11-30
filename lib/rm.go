@@ -2,6 +2,8 @@ package lib
 
 import (
 	"fmt"
+    "strings"
+
 	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
 
@@ -241,8 +243,8 @@ func (rc *RemoveCommand) removeBucket(bucket *oss.Bucket, cloudURL CloudURL, for
 
 	if !force {
 		var val string
-		fmt.Printf("Do you really mean to remove the bucket:%s(y or n)? ", cloudURL.bucket)
-		if _, err := fmt.Scanln(&val); err != nil || (val != "yes" && val != "y") {
+		fmt.Printf("Do you really mean to remove the bucket:%s(y or N)? ", cloudURL.bucket)
+		if _, err := fmt.Scanln(&val); err != nil || (strings.ToLower(val) != "yes" && strings.ToLower(val) != "y") {
 			fmt.Println("operation is canceled.")
 			return nil
 		}
@@ -296,14 +298,14 @@ func (rc *RemoveCommand) batchDeleteObjects(bucket *oss.Bucket, cloudURL CloudUR
 	for i := 0; ; i++ {
 		lor, err := rc.command.ossListObjectsRetry(bucket, marker, pre)
 		if err != nil {
-			return num, err
+			return num, BucketError{err, bucket.BucketName}
 		}
 
 		// batch delete
 		delNum, err := rc.ossBatchDeleteObjectsRetry(bucket, rc.getObjectsFromListResult(lor))
 		num += delNum
 		if err != nil {
-			return num, err
+			return num, BucketError{err, bucket.BucketName}
 		}
 		pre = oss.Prefix(lor.Prefix)
 		marker = oss.Marker(lor.NextMarker)

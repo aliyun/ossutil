@@ -332,9 +332,9 @@ func (cc *ConfigCommand) configInteractive(configFile, language string) error {
 	section.Add(OptionLanguage, language)
     if _, err := os.Stat(configFile); err != nil {
         if llanguage == LEnglishLanguage {
-		    fmt.Printf("Please enter language(%s, the configuration will go into effect after the command successfully executed):", OptionMap[OptionLanguage].minVal)
+		    fmt.Printf("Please enter language(%s, default is:%s, the configuration will go into effect after the command successfully executed):", OptionMap[OptionLanguage].minVal, DefaultLanguage)
         } else {
-            fmt.Printf("请输入语言(%s，该配置项将在此次config命令成功结束后生效)：", OptionMap[OptionLanguage].minVal)
+            fmt.Printf("请输入语言(%s，默认为：%s，该配置项将在此次config命令成功结束后生效)：", OptionMap[OptionLanguage].minVal, DefaultLanguage)
         }
 		if _, err := fmt.Scanln(&val); err == nil {
             vals := strings.Split(OptionMap[OptionLanguage].minVal, "/")
@@ -359,11 +359,11 @@ func (cc *ConfigCommand) configInteractive(configFile, language string) error {
 
 	for _, sec := range []string{BucketEndpointSection, BucketCnameSection} {
         if llanguage == LEnglishLanguage {
-		    fmt.Printf("\nIs there any %s configurations(yes or no)?", sec)
+		    fmt.Printf("\nIs there any %s configurations(y or N)?", sec)
         } else {
-		    fmt.Printf("\n是否需要配置：%s(y or n)?", sec)
+		    fmt.Printf("\n是否需要配置：%s(y or N)?", sec)
         }
-		if _, err := fmt.Scanln(&val); err == nil && (val == "yes" || val == "y") {
+		if _, err := fmt.Scanln(&val); err == nil && (strings.ToLower(val) == "yes" || strings.ToLower(val) == "y") {
 			section = config.NewSection(sec)
 			nameList := strings.SplitN(sec, "-", 2)
 			for {

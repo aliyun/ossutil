@@ -38,10 +38,6 @@ var (
     testLogger          = log.New(testLogFile, "", log.Ldate|log.Ltime|log.Lshortfile)
     resultPath          = "ossutil_test.result"
     testResultFile, _   = os.OpenFile(resultPath, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
-    bucketNamePrefix    = "ossutil-test-"
-    bucketNameExist     = "nodelete-ossutil-test-normalcase"
-    bucketNameNotExist  = bucketNamePrefix + "notexistbucket"
-    bucketNameDest      = "nodelete-ossutil-test-dest"
     uploadFileName      = "ossutil_test.upload_file"
     downloadFileName    = "ossutil_test.download_file"
     inputFileName       = "ossutil_test.input_file"
@@ -49,7 +45,22 @@ var (
     cm                  = CommandManager{}
     out                 = os.Stdout
     errout              = os.Stderr
-    sleepTime           = 5*time.Second
+    sleepTime           = time.Second
+)
+
+var (
+    bucketNamePrefix    = "ossutil-test-"
+    bucketNameExist     = "nodelete-ossutil-test-normalcase1"
+    bucketNameDest      = "nodelete-ossutil-test-dest"  // bucket not change acl
+    bucketNameCP        = "nodelete-ossutil-test-cp"
+    bucketNameBCP       = "nodelete-ossutil-test-bcp"
+    bucketNameSetMeta   = "nodelete-ossutil-test-setmeta"
+    bucketNameSetMeta1  = "nodelete-ossutil-test-setmeta1"
+    bucketNameSetACL    = "nodelete-ossutil-test-setacl"
+    bucketNameSetACL1   = "nodelete-ossutil-test-setacl1"
+    bucketNameMB        = "nodelete-ossutil-test-mb"    // bucket with at most one object 
+    bucketNameList      = "nodelete-ossutil-test-list"    // bucket with at most one object 
+    bucketNameNotExist  = bucketNamePrefix + "notexistbucket"  // bucket not exist
 )
 
 // Run once when the suite starts running
@@ -61,15 +72,18 @@ func (s *OssutilCommandSuite) SetUpSuite(c *C) {
     cm.Init()
     s.configNonInteractive(c)
     s.createFile(uploadFileName, content, c)
-    s.removeBuckets(bucketNamePrefix, c)
-    s.putBucket(bucketNameExist, c)
-    s.putBucket(bucketNameDest, c)
-    time.Sleep(sleepTime)
+    s.SetUpBucketEnv(c)
 }
 
 func SetUpCredential() {
     if endpoint == "<testEndpoint>" {
         endpoint = os.Getenv("OSS_TEST_ENDPOINT") 
+    }
+    if strings.HasPrefix(endpoint, "https://") {
+        endpoint = endpoint[8:]
+    }
+    if strings.HasPrefix(endpoint, "http://") {
+        endpoint = endpoint[7:]
     }
     if accessKeyID == "<testAccessKeyID>" {
         accessKeyID = os.Getenv("OSS_TEST_ACCESS_KEY_ID")
@@ -77,19 +91,35 @@ func SetUpCredential() {
     if accessKeySecret == "<testAccessKeySecret>" {
         accessKeySecret = os.Getenv("OSS_TEST_ACCESS_KEY_SECRET")
     }
+    if ue := os.Getenv("OSS_TEST_UPDATE_ENDPOINT"); ue != "" {
+        vUpdateEndpoint = ue
+    }
+    if ub := os.Getenv("OSS_TEST_UPDATE_BUCKET"); ub != "" {
+        vUpdateBucket = ub
+    }
+    if strings.HasPrefix(vUpdateEndpoint, "https://") {
+        vUpdateEndpoint = vUpdateEndpoint[8:]
+    }
+    if strings.HasPrefix(vUpdateEndpoint, "http://") {
+        vUpdateEndpoint = vUpdateEndpoint[7:]
+    }
 }
 
 func (s *OssutilCommandSuite) SetUpBucketEnv(c *C) {
     s.removeBuckets(bucketNamePrefix, c)
-    time.Sleep(sleepTime)
+    for _, bucket := range []string{bucketNameExist, bucketNameDest, bucketNameCP, bucketNameBCP, bucketNameSetMeta, bucketNameSetMeta1, bucketNameSetACL, bucketNameSetACL1, bucketNameMB, bucketNameList} { 
+        s.putBucket(bucket, c)
+    }
+    time.Sleep(3*sleepTime)
+    for _, bucket := range []string{bucketNameExist, bucketNameDest, bucketNameCP, bucketNameBCP, bucketNameSetMeta, bucketNameSetMeta1, bucketNameSetACL, bucketNameSetACL1, bucketNameMB, bucketNameList} { 
+        s.removeObjects(bucket, "", true, true, c)
+        time.Sleep(7*time.Second)
+    }
 }
 
 // Run before each test or benchmark starts running
 func (s *OssutilCommandSuite) TearDownSuite(c *C) {
     testLogger.Println("test command completed")
-    s.removeBucket(bucketNameExist, true, c)
-    s.removeBucket(bucketNameDest, true, c)
-    s.removeBuckets(bucketNamePrefix, c)
     _ = os.Remove(configFile)
     _ = os.Remove(resultPath)
     _ = os.Remove(uploadFileName)
@@ -196,7 +226,8 @@ func (s *OssutilCommandSuite) removeBucket(bucket string, clearObjects bool, c *
     args := []string{CloudURLToString(bucket, "")}
     showElapse, err := s.rawRemove(args, clearObjects, true, true)
     if err != nil {
-        c.Assert(err.(oss.ServiceError).Code == "NoSuchBucket", Equals, true)
+        error := err.(BucketError).err
+        c.Assert(error.(oss.ServiceError).Code == "NoSuchBucket" || error.(oss.ServiceError).Code == "BucketNotEmpty", Equals, true)
         c.Assert(showElapse, Equals, false)
     } else {
         c.Assert(showElapse, Equals, true)
@@ -485,7 +516,7 @@ func (s *OssutilCommandSuite) TestStorageURL(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestErrOssDownloadFile(c *C) {
-    bucketName := bucketNamePrefix + "cmd"
+    bucketName := bucketNamePrefix + "b1"
 	bucket, err := copyCommand.command.ossBucket(bucketName)
     c.Assert(err, IsNil)
 
@@ -501,4 +532,13 @@ func (s *OssutilCommandSuite) TestUserAgent(c *C) {
     client, err := listCommand.command.ossClient("")
     c.Assert(err, IsNil)
     c.Assert(client, NotNil)
+}
+
+
+func (s *OssutilCommandSuite) TestParseAndRunCommand(c *C) {
+    args := []string{}
+    options := OptionMapType{}
+    showElapse, err := RunCommand(args, options)
+    c.Assert(err, IsNil)
+    c.Assert(showElapse, Equals, false)
 }
