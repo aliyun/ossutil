@@ -335,15 +335,15 @@ func (sc *SetMetaCommand) getMetaData(force bool, language string) (string, erro
 	}
 
     if language == LEnglishLanguage {
-	    fmt.Printf("Do you really mean the empty meta(or forget to input header:value pair)? \nEnter yes(y) to continue with empty meta, enter no(n) to show supported headers: ")
+	    fmt.Printf("Do you really mean the empty meta(or forget to input header:value pair)? \nEnter yes(y) to continue with empty meta, enter no(n) to show supported headers, other inputs will cancel operation: ")
     } else {
-	    fmt.Printf("你是否确定你想设置的meta信息为空（或者忘记了输入header:value对）? \n输入yes(y)使用空meta继续设置，输入no(n)来展示支持的headers：")
+	    fmt.Printf("你是否确定你想设置的meta信息为空（或者忘记了输入header:value对）? \n输入yes(y)使用空meta继续设置，输入no(n)来展示支持的headers，其他输入将取消操作：")
     }
 	var str string
-	if _, err := fmt.Scanln(&str); err != nil || (str != "yes" && str != "y" && str != "no" && str != "n") {
+	if _, err := fmt.Scanln(&str); err != nil || (strings.ToLower(str) != "yes" && strings.ToLower(str) != "y" && strings.ToLower(str) != "no" && strings.ToLower(str) != "n") {
 		return "", fmt.Errorf("unknown input, operation is canceled")
 	}
-	if str == "yes" || str == "y" {
+	if strings.ToLower(str) == "yes" || strings.ToLower(str) == "y" {
 		return "", nil
 	}
 
