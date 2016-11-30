@@ -29,7 +29,7 @@ func (s *OssutilCommandSuite) TestRemoveObject(c *C) {
     bucket := bucketNameMB
 
     // put object
-    object := "test_object"
+    object := "TestRemoveObject"
     s.putObject(bucket, object, uploadFileName, c)
     time.Sleep(2*sleepTime)
 
