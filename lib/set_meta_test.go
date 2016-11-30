@@ -87,9 +87,6 @@ func (s *OssutilCommandSuite) TestSetObjectMeta(c *C) {
     c.Assert(ok, Equals, false)
 
     s.setObjectMeta(bucket, object, "X-Oss-Meta-A:A#x-oss-meta-B:b", true, false, false, true, c)
-    objectStat = s.getStat(bucket, object, c) 
-    c.Assert(objectStat["X-Oss-Meta-A"], Equals, "A")
-    c.Assert(objectStat["X-Oss-Meta-B"], Equals, "b")
 
     s.setObjectMeta(bucket, object, "X-Oss-Meta-c:c", false, false, false, true, c)
     objectStat = s.getStat(bucket, object, c) 

@@ -542,51 +542,6 @@ func (s *OssutilCommandSuite) TestCPMulitSrc(c *C) {
     c.Assert(showElapse, Equals, false)
 }
 
-/*
-func (s *OssutilCommandSuite) TestCPParallel(c *C) {
-    os.Stdout = testLogFile 
-    os.Stderr = testLogFile 
-   
-    bucket := bucketNameExist 
-    file := uploadFileName + "parallel"
-    s.createFile(file, file, c)
-    time.Sleep(sleepTime)
-
-    object := "TestCPParallel"
-
-    command := "cp"
-    args := []string{file, CloudURLToString(bucket, object)}
-    str := ""
-    thre := strconv.FormatInt(1, 10)
-    routines := strconv.Itoa(Routines)
-    parallel := strconv.Itoa(7)
-    ok := true
-    options := OptionMapType{
-        "endpoint": &str,
-        "accessKeyID": &str,
-        "accessKeySecret": &str,
-        "stsToken": &str,
-        "configFile": &configFile,
-        "force": &ok,
-        "bigfileThreshold": &thre,
-        "routines": &routines,
-        "parallel": &parallel,
-    }
-    showElapse, err := cm.RunCommand(command, args, options)
-    c.Assert(err, IsNil)
-    c.Assert(showElapse, Equals, true)
-    time.Sleep(sleepTime)
-
-    os.Stdout = testLogFile 
-    os.Stderr = testLogFile 
-
-    s.getObject(bucket, object, downloadFileName, c)
-    str = s.readFile(downloadFileName, c) 
-    c.Assert(str, Equals, file)
-
-    _ = os.Remove(file)
-}
-*/
 func (s *OssutilCommandSuite) TestErrUpload(c *C) {
     // src file not exist
     bucket := bucketNameExist 
