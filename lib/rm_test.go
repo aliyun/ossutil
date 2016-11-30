@@ -34,7 +34,7 @@ func (s *OssutilCommandSuite) TestRemoveObject(c *C) {
     time.Sleep(2*sleepTime)
 
     // list object
-    objects := s.listObjects(bucket, "", false, false, c)
+    objects := s.listObjects(bucket, object, false, false, c)
     c.Assert(len(objects), Equals, 1)
     c.Assert(objects[0], Equals, object)
 
@@ -42,7 +42,7 @@ func (s *OssutilCommandSuite) TestRemoveObject(c *C) {
     s.removeObjects(bucket, object, false, true, c)
 
     // list object
-    objects = s.listObjects(bucket, "", false, false, c)
+    objects = s.listObjects(bucket, object, false, false, c)
     c.Assert(len(objects), Equals, 0)
 }
 
