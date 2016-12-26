@@ -343,6 +343,16 @@ func (cmd *Command) ossDownloadFileRetry(bucket *oss.Bucket, objectName, fileNam
 	}
 }
 
+func (cmd *Command) ossListMultipartObjectsRetry(bucket *oss.Bucket, options ...oss.Option) (oss.ListMultipartUploadResult, error) {
+	retryTimes, _ := GetInt(OptionRetryTimes, cmd.options)
+	for i := 1; ; i++ {
+		lmr, err := bucket.ListMultipartUploads(options...)
+		if err == nil || int64(i) >= retryTimes {
+			return lmr, err
+		}
+	}
+}
+
 
 func (cmd *Command) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, chObjects chan<- string, chError chan<- error) {
 	pre := oss.Prefix(cloudURL.object)

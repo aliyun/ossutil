@@ -10,6 +10,8 @@ const (
     OptionACL                     = "acl"
 	OptionShortFormat             = "shortFormat"
 	OptionDirectory               = "directory"
+	OptionMultipart               = "multipart"
+	OptionAllType                 = "allType"
 	OptionRecursion               = "recursive"
 	OptionBucket                  = "bucket"
 	OptionForce                   = "force"

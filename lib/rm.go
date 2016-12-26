@@ -36,11 +36,12 @@ var specChineseRemove = SpecText{
 
     该命令有四种用法：
 
-    1) ossutil rm oss://bucket/object 
+    1) ossutil rm oss://bucket/object [-m] 
         （删除单个object）
         如果未指定--recursive和--bucket选项，删除指定的单个object，此时请确保url精确指
     定了待删除的object，ossutil不会进行前缀匹配。无论是否指定--force选项，ossutil都不会
     进行询问提示。如果此时指定了--bucket选项，将会报错，单独删除bucket参考用法4)。
+        如果指定--multipart选项, 删除指定的object下对应的所有uploadId，即删除这个multipart
 
     2) ossutil rm oss://bucket -b [-f]
         （删除bucket，不删除objects）
@@ -48,18 +49,26 @@ var specChineseRemove = SpecText{
     去删除该bucket下的objects。此时请确保url精确匹配待删除的bucket，并且指定的bucket内
     容为空，否则会报错。如果指定了--force选项，则删除前不会进行询问提示。
 
-    3) ossutil rm oss://bucket[/prefix] -r [-f]
+    3) ossutil rm oss://bucket[/prefix] -r [-m] [-a] [-f]
         （删除objects，不删除bucket）
         如果指定了--recursive选项，未指定--bucket选项。则可以进行objects的批量删除。该
     用法查找与指定url前缀匹配的所有objects（prefix为空代表bucket下的所有objects），删除
     这些objects。由于未指定--bucket选项，则ossutil保留bucket。如果指定了--force选项，则
     删除前不会进行询问提示。
+        如果指定--multipart选项, 该用法查找与指定url前缀匹配的所有multipart object（prefix
+    为空代表bucket下的所有multipart object），并删除对应的所有uploadId。即删除所有符合这
+    个前缀的multipart。
+        如果指定--all-type, 该操作不会区分multipart和普通的object，执行删除上述multipart
+    和普通object的操作。
 
-    4) ossutil rm oss://bucket[/prefix] -r -b [-f]
+    4) ossutil rm oss://bucket[/prefix] -r -b [-a] [-f]
         （删除bucket和objects）
         如果同时指定了--bucket和--recursive选项，ossutil进行批量删除后会尝试去一并删除
     bucket。当用户想要删除某个bucket连同其中的所有objects时，可采用该操作。如果指定了
     --force选项，则删除前不会进行询问提示。
+         如果指定--all-type, 该操作不会区分multipart和普通的object，执行上述删除bucket
+    和multipart object及普通object操作。
+
 `,
 
 	sampleText: ` 
@@ -158,6 +167,8 @@ var removeCommand = RemoveCommand{
 			OptionRecursion,
 			OptionBucket,
 			OptionForce,
+            OptionMultipart,
+            OptionAllType,
 			OptionConfigFile,
             OptionEndpoint,
             OptionAccessKeyID,
@@ -188,6 +199,8 @@ func (rc *RemoveCommand) RunCommand() error {
 	recursive, _ := GetBool(OptionRecursion, rc.command.options)
 	toBucket, _ := GetBool(OptionBucket, rc.command.options)
 	force, _ := GetBool(OptionForce, rc.command.options)
+    isMultipart, _ := GetBool(OptionMultipart, rc.command.options)
+    isAllType, _ := GetBool(OptionAllType, rc.command.options)
 
 	cloudURL, err := CloudURLFromString(rc.command.args[0])
 	if err != nil {
@@ -203,6 +216,15 @@ func (rc *RemoveCommand) RunCommand() error {
 		return err
 	}
 
+    if isAllType {
+        isMultipart = true
+    }
+    if isMultipart {
+        err = rc.removeMultipartObject(bucket, cloudURL, recursive, force)
+        if !isAllType || !recursive || err != nil{
+            return err
+        }
+    }
 	if !recursive && !toBucket {
 		return rc.removeObject(bucket, cloudURL)
 	}
@@ -234,6 +256,55 @@ func (rc *RemoveCommand) ossDeleteObjectRetry(bucket *oss.Bucket, object string)
 			return ObjectError{err, object}
 		}
 	}
+}
+
+func (rc *RemoveCommand) removeMultipartObject(bucket *oss.Bucket, cloudURL CloudURL, recursive bool, force bool) error {
+	if cloudURL.object == "" {
+		return fmt.Errorf("remove bucket, miss --bucket option, if you mean remove multipart object, invalid url: %s, miss object", rc.command.args[0])
+	}
+
+	return rc.ossDeleteMultipartObjectRetry(bucket, cloudURL.object, recursive)
+}
+
+func (rc *RemoveCommand) ossDeleteMultipartObjectRetry(bucket *oss.Bucket, object string, recursive bool) error {
+	retryTimes, _ := GetInt(OptionRetryTimes, rc.command.options)
+	num := 0
+	pre := oss.Prefix(object)
+	marker := oss.Marker("")
+	del := oss.Delimiter("")
+
+	for i := 0; ; i++ {
+	    lmr, err := rc.command.ossListMultipartObjectsRetry(bucket, marker, pre, del)
+		if err != nil {
+			 return err
+		}
+		pre = oss.Prefix(lmr.Prefix)
+		marker = oss.Marker(lmr.NextKeyMarker)
+
+        for _, upload := range lmr.Uploads {
+            if !recursive {
+                if object != upload.Key {
+                    break
+                }
+            } 
+            var imur = oss.InitiateMultipartUploadResult{Bucket: bucket.BucketName,
+                Key: upload.Key, UploadID: upload.UploadID}
+            err = bucket.AbortMultipartUpload(imur)
+        }
+		if err == nil {
+			return err
+		}
+
+		if !lmr.IsTruncated {
+			break
+		}
+
+		num += 1
+		if int64(i) >= retryTimes {
+			return ObjectError{err, object}
+		}
+	}
+    return nil
 }
 
 func (rc *RemoveCommand) removeBucket(bucket *oss.Bucket, cloudURL CloudURL, force bool) error {

@@ -29,6 +29,7 @@ var (
     accessKeyID      = "<testAccessKeyID>"
     accessKeySecret  = "<testAccessKeySecret>"
     stsToken         = "<testSTSToken>"
+
 )
 
 var (
@@ -61,6 +62,21 @@ var (
     bucketNameMB        = "nodelete-ossutil-test-mb"    // bucket with at most one object 
     bucketNameList      = "nodelete-ossutil-test-list"    // bucket with at most one object 
     bucketNameNotExist  = bucketNamePrefix + "notexistbucket"  // bucket not exist
+/*    
+    bucketNamePrefix    = "yueqiankun-ossutil-test"
+    bucketNameExist     = "yueqiankun-ossutil-test"
+    bucketNameDest      = "yueqiankun-ossutil-desc-test"  // bucket not change acl
+    bucketNameCP        = "yueqiankun-ossutil-test"
+    bucketNameBCP       = "yueqiankun-ossutil-test"
+    bucketNameSetMeta   = "yueqiankun-ossutil-test"
+    bucketNameSetMeta1  = "yueqiankun-ossutil-test"
+    bucketNameSetACL    = "yueqiankun-ossutil-test"
+    bucketNameSetACL1   = "yueqiankun-ossutil-test"
+    bucketNameMB        = "yueqiankun-ossutil-test"    // bucket with at most one object 
+    bucketNameList      = "yueqiankun-ossutil-test"    // bucket with at most one object 
+    bucketNameNotExist  = bucketNamePrefix + "notexistbucket"  // bucket not exist
+*/
+
 )
 
 // Run once when the suite starts running
