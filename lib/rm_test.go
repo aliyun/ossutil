@@ -39,7 +39,7 @@ func (s *OssutilCommandSuite) TestAllTypeObject(c *C) {
     time.Sleep(2*sleepTime)
 
     // list object
-    objects := s.listObjects(bucketName, object, false, false, c)
+    objects := s.listObjects(bucketName, object, false, false, false, false, c)
     c.Assert(len(objects), Equals, 1)
     c.Assert(objects[0], Equals, object)
 		
@@ -75,7 +75,7 @@ func (s *OssutilCommandSuite) TestAllTypeObject(c *C) {
     c.Assert(len(lmr.Uploads), Equals, 0)
 
     // list normal_object
-    objects = s.listObjects(bucketName, normal_object, false, false, c)
+    objects = s.listObjects(bucketName, normal_object, false, false, false, false, c)
     c.Assert(len(objects), Equals, 1)
     c.Assert(objects[0], Equals, normal_object)
 }
@@ -88,7 +88,7 @@ func (s *OssutilCommandSuite) TestMultipartObject(c *C) {
     time.Sleep(2*sleepTime)
 
     // list object
-    objects := s.listObjects(bucketName, object, false, false, c)
+    objects := s.listObjects(bucketName, object, false, false, false, false, c)
     c.Assert(len(objects), Equals, 1)
     c.Assert(objects[0], Equals, object)
 		
@@ -140,7 +140,7 @@ func (s *OssutilCommandSuite) TestMultipartObject_Prefix(c *C) {
     time.Sleep(2*sleepTime)
 
     // list object
-    objects := s.listObjects(bucketName, object, false, false, c)
+    objects := s.listObjects(bucketName, object, false, false, false, false, c)
     c.Assert(len(objects), Equals, 3)
 		
 	bucket, err := copyCommand.command.ossBucket(bucketName)
@@ -195,7 +195,7 @@ func (s *OssutilCommandSuite) TestRemoveObject(c *C) {
     time.Sleep(2*sleepTime)
 
     // list object
-    objects := s.listObjects(bucket, object, false, false, c)
+    objects := s.listObjects(bucket, object, false, false, false, false, c)
     c.Assert(len(objects), Equals, 1)
     c.Assert(objects[0], Equals, object)
 
@@ -203,7 +203,7 @@ func (s *OssutilCommandSuite) TestRemoveObject(c *C) {
     s.removeObjects(bucket, object, false, true, c)
 
     // list object
-    objects = s.listObjects(bucket, object, false, false, c)
+    objects = s.listObjects(bucket, object, false, false, false, false, c)
     c.Assert(len(objects), Equals, 0)
 }
 
@@ -239,14 +239,14 @@ func (s *OssutilCommandSuite) TestRemoveObjects(c *C) {
     c.Assert(err, NotNil)
 
     // list object
-    objects := s.listObjects(bucket, "", false, false, c)
+    objects := s.listObjects(bucket, "", false, false, false, false, c)
     c.Assert(len(objects), Equals, num)
 
     // "rm oss://bucket/ -r"
     // remove object
     s.removeObjects(bucket, "", true, false, c)
 
-    objects = s.listObjects(bucket, "", false, false, c)
+    objects = s.listObjects(bucket, "", false, false, false, false, c)
     c.Assert(len(objects), Equals, num)
 
     // "rm oss://bucket/prefix -r -f"
@@ -255,7 +255,7 @@ func (s *OssutilCommandSuite) TestRemoveObjects(c *C) {
     time.Sleep(3*sleepTime)
 
     // list object
-    objects = s.listObjects(bucket, "", false, false, c)
+    objects = s.listObjects(bucket, "", false, false, false, false, c)
     c.Assert(len(objects), Equals, 0)
 
     //reput objects and delete bucket

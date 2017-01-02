@@ -196,45 +196,72 @@ func (rc *RemoveCommand) Init(args []string, options OptionMapType) error {
 
 // RunCommand simulate inheritance, and polymorphism
 func (rc *RemoveCommand) RunCommand() error {
+    err := PreCheck()
+    if err != nil {
+        return err
+    }
+    
+    if (isObject) {
+		err = rc.removeObjectEntry(bucket, cloudURL, recursive)
+        if err != nil {
+            return err
+        }
+    }
+    if (isMultipart) {
+        err = rc.removeMultipartObjectEntry(bucket, cloudURL, recursive)
+        if err != nil {
+            return err
+        }
+    }
+    if (toBucket) {
+	    return rc.removeBucket(bucket, cloudURL, true)
+    }
+}
+
+func (rc *RemoveCommand) PreCheck() error {
 	recursive, _ := GetBool(OptionRecursion, rc.command.options)
 	toBucket, _ := GetBool(OptionBucket, rc.command.options)
 	force, _ := GetBool(OptionForce, rc.command.options)
     isMultipart, _ := GetBool(OptionMultipart, rc.command.options)
     isAllType, _ := GetBool(OptionAllType, rc.command.options)
+    isObject := true
+
+    if isMultipart {
+        isObject = false
+    }
+    if isAllType {
+        isMultipart = true
+        isObject = true
+    }
+
+    if !recuresive && toBucket && isMultipart {
+		return fmt.Errorf("invalid remove args: %s, miss bucket", rc.command.args[0])
+    } 
+    if !recuresive && toBucket && isAllType {
+		return fmt.Errorf("invalid remove args: %s, miss bucket", rc.command.args[0])
+    } 
 
 	cloudURL, err := CloudURLFromString(rc.command.args[0])
 	if err != nil {
 		return err
 	}
-
 	if cloudURL.bucket == "" {
 		return fmt.Errorf("invalid cloud url: %s, miss bucket", rc.command.args[0])
 	}
 
-	bucket, err := rc.command.ossBucket(cloudURL.bucket)
-	if err != nil {
-		return err
-	}
+   return nil; 
+}
 
-    if isAllType {
-        isMultipart = true
-    }
-    if isMultipart {
-        err = rc.removeMultipartObject(bucket, cloudURL, recursive, force)
-        if !isAllType || !recursive || err != nil{
+
+func (rc *RemoveCommand) removeObjectEntry(bucket *oss.Bucket, cloudURL CloudURL, recursive bool) error {
+    if recursive {
+        err := removeObject(bucket, cloudURL);
+        if err != nil {
             return err
         }
     }
-	if !recursive && !toBucket {
-		return rc.removeObject(bucket, cloudURL)
-	}
-	if !recursive && toBucket {
-		return rc.removeBucket(bucket, cloudURL, force)
-	}
-	if recursive && !toBucket {
-		return rc.clearBucket(bucket, cloudURL, force)
-	}
-	return rc.removeBucketObjects(bucket, cloudURL, force)
+    
+    return rc.recursiveRemoveObject(bucket, cloudURL, force)
 }
 
 func (rc *RemoveCommand) removeObject(bucket *oss.Bucket, cloudURL CloudURL) error {
@@ -258,7 +285,7 @@ func (rc *RemoveCommand) ossDeleteObjectRetry(bucket *oss.Bucket, object string)
 	}
 }
 
-func (rc *RemoveCommand) removeMultipartObject(bucket *oss.Bucket, cloudURL CloudURL, recursive bool, force bool) error {
+func (rc *RemoveCommand) removeMultipartObjectEntry(bucket *oss.Bucket, cloudURL CloudURL, recursive bool) error {
 	if cloudURL.object == "" {
 		return fmt.Errorf("remove bucket, miss --bucket option, if you mean remove multipart object, invalid url: %s, miss object", rc.command.args[0])
 	}
@@ -341,7 +368,7 @@ func (rc *RemoveCommand) ossDeleteBucketRetry(client *oss.Client, bucket string)
 	}
 }
 
-func (rc *RemoveCommand) clearBucket(bucket *oss.Bucket, cloudURL CloudURL, force bool) error {
+func (rc *RemoveCommand) recursiveRemoveObject(bucket *oss.Bucket, cloudURL CloudURL, force bool) error {
 	if !force {
 		var val string
 		fmt.Printf("Do you really mean to recursivlly remove %s? ", rc.command.args[0])
@@ -417,10 +444,3 @@ func (rc *RemoveCommand) getObjectsFromListResult(lor oss.ListObjectsResult) []s
 	return objects
 }
 
-func (rc *RemoveCommand) removeBucketObjects(bucket *oss.Bucket, cloudURL CloudURL, force bool) error {
-	if err := rc.clearBucket(bucket, cloudURL, force); err != nil {
-		return err
-	}
-	cloudURL.object = ""
-	return rc.removeBucket(bucket, cloudURL, true)
-}
