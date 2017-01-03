@@ -223,7 +223,7 @@ func (rc *RemoveCommand) RunCommand() error {
         }
     }
     if (rmOption.isMultipart) {
-        err = rc.removeMultipartObjectEntry(bucket, cloudURL, rmOption.recursive)
+        err = rc.removeMultipartObjectEntry(bucket, cloudURL, rmOption.recursive, rmOption.force)
         if err != nil {
             return err
         }
@@ -313,10 +313,18 @@ func (rc *RemoveCommand) ossDeleteObjectRetry(bucket *oss.Bucket, object string)
 	}
 }
 
-func (rc *RemoveCommand) removeMultipartObjectEntry(bucket *oss.Bucket, cloudURL CloudURL, recursive bool) error {
-	if cloudURL.object == "" {
+func (rc *RemoveCommand) removeMultipartObjectEntry(bucket *oss.Bucket, cloudURL CloudURL, recursive bool, force bool) error {
+	if !recursive && cloudURL.object == "" {
 		return fmt.Errorf("remove bucket, miss --bucket option, if you mean remove multipart object, invalid url: %s, miss object", rc.command.args[0])
 	}
+    if recursive && !force {
+        var val string
+		fmt.Printf("Do you really mean to recursively remove multipart in oss://%s(y or N)? ", cloudURL.bucket)
+		if _, err := fmt.Scanln(&val); err != nil || (strings.ToLower(val) != "yes" && strings.ToLower(val) != "y") {
+			fmt.Println("operation is canceled.")
+			return nil
+		}
+    }
 
 	return rc.ossDeleteMultipartObjectRetry(bucket, cloudURL.object, recursive)
 }
@@ -399,7 +407,7 @@ func (rc *RemoveCommand) ossDeleteBucketRetry(client *oss.Client, bucket string)
 func (rc *RemoveCommand) recursiveRemoveObject(bucket *oss.Bucket, cloudURL CloudURL, force bool) error {
 	if !force {
 		var val string
-		fmt.Printf("Do you really mean to recursivlly remove %s? ", rc.command.args[0])
+		fmt.Printf("Do you really mean to recursively remove %s? ", rc.command.args[0])
 		if _, err := fmt.Scanln(&val); err != nil || (val != "yes" && val != "y") {
 			fmt.Println("operation is canceled.")
 			return nil
