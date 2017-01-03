@@ -25,16 +25,16 @@ var _ = Suite(&OssutilCommandSuite{})
 
 var (
     // Update before running test
-/*    endpoint         = "<testEndpoint>"
+    endpoint         = "<testEndpoint>"
     accessKeyID      = "<testAccessKeyID>"
     accessKeySecret  = "<testAccessKeySecret>"
     stsToken         = "<testSTSToken>"
-*/  
-    endpoint         = "oss-cn-hangzhou.aliyuncs.com"
+  
+/*    endpoint         = "oss-cn-hangzhou.aliyuncs.com"
     accessKeyID      = "LTAIVRFd4lQkklQc"
     accessKeySecret  = "ytTC2LJpgFPkM1TvoTLm6TxmFApD13"
     stsToken         = "<testSTSToken>"
-
+*/
 )
 
 var (
@@ -55,7 +55,7 @@ var (
 )
 
 var (
-  /*  bucketNamePrefix    = "ossutil-test-"
+    bucketNamePrefix    = "ossutil-test-"
     bucketNameExist     = "nodelete-ossutil-test-normalcase1"
     bucketNameDest      = "nodelete-ossutil-test-dest"  // bucket not change acl
     bucketNameCP        = "nodelete-ossutil-test-cp"
@@ -67,7 +67,7 @@ var (
     bucketNameMB        = "nodelete-ossutil-test-mb"    // bucket with at most one object 
     bucketNameList      = "nodelete-ossutil-test-list"    // bucket with at most one object 
     bucketNameNotExist  = bucketNamePrefix + "notexistbucket"  // bucket not exist
-*/ 
+/* 
     bucketNamePrefix    = "yueqiankun-ossutil-test"
     bucketNameExist     = "yueqiankun-ossutil-test"
     bucketNameDest      = "yueqiankun-ossutil-desc-test"  // bucket not change acl
@@ -80,7 +80,7 @@ var (
     bucketNameMB        = "yueqiankun-ossutil-test"    // bucket with at most one object 
     bucketNameList      = "yueqiankun-ossutil-test"    // bucket with at most one object 
     bucketNameNotExist  = bucketNamePrefix + "notexistbucket"  // bucket not exist
-
+*/
 
 )
 

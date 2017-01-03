@@ -68,6 +68,12 @@ var specChineseRemove = SpecText{
     --force选项，则删除前不会进行询问提示。
          如果指定--all-type, 该操作不会区分multipart和普通的object，执行上述删除bucket
     和multipart object及普通object操作。
+    
+    该命令不支持的用法
+    1) ossutil rm oss://bucket/object -m -b [-f]
+        不能尝试删除一个multipart文件后删除一个bucket
+    2) ossutil rm oss://bucket/object -a -b [-f]
+        不能尝试删除一个文件(包括object文件和multipart文件)后删除一个bucket
 
 `,
 
@@ -354,7 +360,7 @@ func (rc *RemoveCommand) ossDeleteMultipartObjectRetry(bucket *oss.Bucket, objec
                 Key: upload.Key, UploadID: upload.UploadID}
             err = bucket.AbortMultipartUpload(imur)
         }
-		if err == nil {
+		if err != nil {
 			return err
 		}
 
