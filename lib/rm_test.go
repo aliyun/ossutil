@@ -53,6 +53,7 @@ func (s *OssutilCommandSuite) TestAllTypeObject(c *C) {
 	c.Assert(e, IsNil)
     c.Assert(len(lmr.Uploads), Equals, 20)
 
+    // "rm -abrf oss://bucket/objectPre"
     command := "rm"
     args := []string{CloudURLToString(bucketName, object)}
     str := ""
@@ -64,11 +65,12 @@ func (s *OssutilCommandSuite) TestAllTypeObject(c *C) {
         "stsToken": &str,
         "configFile": &configFile,
         "bucket": &ok,
-        "force": &ok,
+        "recursive": &ok,
         "allType": &ok,
+        "force": &ok,
     }
     _, e = cm.RunCommand(command, args, options)
-    c.Assert(e, IsNil)
+    c.Assert(e, NotNil)
     
 	lmr, e = bucket.ListMultipartUploads(oss.Prefix(object))
 	c.Assert(e, IsNil)
@@ -102,6 +104,7 @@ func (s *OssutilCommandSuite) TestMultipartObject(c *C) {
 	c.Assert(e, IsNil)
     c.Assert(len(lmr.Uploads), Equals, 20)
 
+    // "rm -rmf oss://bucket/ObjectPre"
     command := "rm"
     args := []string{CloudURLToString(bucketName, object)}
     str := ""
@@ -112,7 +115,7 @@ func (s *OssutilCommandSuite) TestMultipartObject(c *C) {
         "accessKeySecret": &str,
         "stsToken": &str,
         "configFile": &configFile,
-        "bucket": &ok,
+        "recursive": &ok,
         "force": &ok,
         "multipart": &ok,
     }
@@ -173,7 +176,6 @@ func (s *OssutilCommandSuite) TestMultipartObject_Prefix(c *C) {
         "accessKeySecret": &str,
         "stsToken": &str,
         "configFile": &configFile,
-        "bucket": &ok,
         "recursive": &ok,
         "force": &ok,
         "multipart": &ok,
@@ -353,7 +355,6 @@ func (s *OssutilCommandSuite) TestErrRemove(c *C) {
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
 
-    // remove bucket without force
     showElapse, err = s.rawRemove([]string{CloudURLToString(bucket, "")}, false, false, true)
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true)
