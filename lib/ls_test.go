@@ -6,7 +6,7 @@ import (
     "time"
 
     . "gopkg.in/check.v1"
-	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
+	//oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
 
 func (s *OssutilCommandSuite) rawList(args []string, shortFormat, directory bool, multipart, allType bool) (bool, error) {
@@ -343,7 +343,7 @@ func (s *OssutilCommandSuite) TestListBucketIDKey(c *C) {
 
     _ = os.Remove(cfile)
 }
-
+/*
 // list multipart 
 /*func (s *OssutilCommandSuite) TestListMultipartObjects(c *C) {
     bucketName := bucketNameDest
@@ -385,7 +385,7 @@ func (s *OssutilCommandSuite) TestListBucketIDKey(c *C) {
 	c.Assert(e, IsNil)
     c.Assert(len(lmr.Uploads), Equals, 20)
 }*/
-
+/*
 // list multipart 
 func (s *OssutilCommandSuite) TestListMultipartObjects(c *C) {
     bucketName := bucketNameDest
@@ -446,5 +446,5 @@ func (s *OssutilCommandSuite) TestListMultipartObjects(c *C) {
 	lmr, e = bucket.ListMultipartUploads(oss.Prefix(object))
 	c.Assert(e, IsNil)
     c.Assert(len(lmr.Uploads), Equals, 20)
-}
+}*/
 
