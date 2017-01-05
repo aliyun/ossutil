@@ -348,7 +348,7 @@ func (s *OssutilCommandSuite) TestListMultipartObjects(c *C) {
     bucketName := bucketNameDest
     object := "TestMultipartObjectLs"
     s.putObject(bucketName, object, uploadFileName, c)
-    time.Sleep(2*sleepTime)
+    time.Sleep(5*sleepTime)
 
     // list object
     objects := s.listObjects(bucketName, object, false, false, false, false, c)
@@ -356,6 +356,10 @@ func (s *OssutilCommandSuite) TestListMultipartObjects(c *C) {
     c.Assert(objects[0], Equals, object)
 		
 	bucket, err := copyCommand.command.ossBucket(bucketName)
+	
+    lmr_origin, e := bucket.ListMultipartUploads(oss.Prefix(object))
+	c.Assert(e, IsNil)
+    
     for i := 0; i < 20; i++ {
         _, err = bucket.InitiateMultipartUpload(object)
         c.Assert(err, IsNil)
@@ -364,7 +368,7 @@ func (s *OssutilCommandSuite) TestListMultipartObjects(c *C) {
     time.Sleep(2*sleepTime)
 	lmr, e := bucket.ListMultipartUploads(oss.Prefix(object))
 	c.Assert(e, IsNil)
-    c.Assert(len(lmr.Uploads), Equals, 20)
+    c.Assert(len(lmr.Uploads), Equals, 20 + len(lmr_origin.Uploads))
 
     // list multipart: ls oss://bucket/object
     objects = s.listObjects(bucketName, object, false, false, false, false, c)
@@ -374,35 +378,25 @@ func (s *OssutilCommandSuite) TestListMultipartObjects(c *C) {
     // list multipart: ls -m oss://bucket/object
     objects = s.listObjects(bucketName, object, false, false, true, false, c)
     c.Assert(len(objects), Equals, 20)
-//    c.Assert(objects[0], Equals, object)
 
     // list all type object: ls -a oss://bucket/object
     objects = s.listObjects(bucketName, object, false, false, false, true, c)
     c.Assert(len(objects), Equals, 21)
-//    c.Assert(objects[0], Equals, object)
 
     // list multipart: ls -am oss://bucket/object
     objects = s.listObjects(bucketName, object, false, false, true, true, c)
     c.Assert(len(objects), Equals, 21)
-//    c.Assert(objects[0], Equals, object)
-
-    // list multipart: ls -md oss://bucket/object
-//    objects = s.listObjects(bucketName, object, false, false, true, true, c)
-//    c.Assert(len(objects), Equals, 20)
-//    c.Assert(objects[0], Equals, object)
 
     // list multipart: ls -ms oss://bucket/object
     objects = s.listObjects(bucketName, object, false, false, true, false, c)
     c.Assert(len(objects), Equals, 20)
-//    c.Assert(objects[0], Equals, object)
 
     // list multipart: ls -as oss://bucket/object
     objects = s.listObjects(bucketName, object, false, false, true, true, c)
     c.Assert(len(objects), Equals, 21)
-//    c.Assert(objects[0], Equals, object)
 
 	lmr, e = bucket.ListMultipartUploads(oss.Prefix(object))
 	c.Assert(e, IsNil)
-    c.Assert(len(lmr.Uploads), Equals, 20)
+    c.Assert(len(lmr.Uploads), Equals, 20 + len(lmr_origin.Uploads))
 }
 
