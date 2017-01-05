@@ -344,48 +344,6 @@ func (s *OssutilCommandSuite) TestListBucketIDKey(c *C) {
 }
 
 // list multipart 
-/*func (s *OssutilCommandSuite) TestListMultipartObjects(c *C) {
-    bucketName := bucketNameDest
-    object := "TestMultipartObjectLs"
-    s.putObject(bucketName, object, uploadFileName, c)
-    time.Sleep(2*sleepTime)
-
-    // list object
-    objects := s.listObjects(bucketName, object, false, false, false, false, c)
-    c.Assert(len(objects), Equals, 1)
-    c.Assert(objects[0], Equals, object)
-		
-	bucket, err := copyCommand.command.ossBucket(bucketName)
-    for i := 0; i < 20; i++ {
-        _, err = bucket.InitiateMultipartUpload(object)
-        c.Assert(err, IsNil)
-    }
-
-	lmr, e := bucket.ListMultipartUploads(oss.Prefix(object))
-	c.Assert(e, IsNil)
-    c.Assert(len(lmr.Uploads), Equals, 20)
-
-    command := "ls"
-    args := []string{CloudURLToString(bucketName, "")}
-    str := ""
-    ok := true
-    options := OptionMapType{
-        "endpoint": &str,
-        "accessKeyID": &str,
-        "accessKeySecret": &str,
-        "stsToken": &str,
-        "configFile": &configFile,
-        "multipart": &ok,
-    }
-    _, e = cm.RunCommand(command, args, options)
-    c.Assert(e, IsNil)
-    
-	lmr, e = bucket.ListMultipartUploads(oss.Prefix(object))
-	c.Assert(e, IsNil)
-    c.Assert(len(lmr.Uploads), Equals, 20)
-}*/
-
-// list multipart 
 func (s *OssutilCommandSuite) TestListMultipartObjects(c *C) {
     bucketName := bucketNameDest
     object := "TestMultipartObjectLs"
@@ -403,6 +361,7 @@ func (s *OssutilCommandSuite) TestListMultipartObjects(c *C) {
         c.Assert(err, IsNil)
     }
 
+    time.Sleep(2*sleepTime)
 	lmr, e := bucket.ListMultipartUploads(oss.Prefix(object))
 	c.Assert(e, IsNil)
     c.Assert(len(lmr.Uploads), Equals, 20)

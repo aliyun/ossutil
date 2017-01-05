@@ -52,7 +52,7 @@ func (s *OssutilCommandSuite) TestAllTypeObject(c *C) {
     time.Sleep(2*sleepTime)
 
     // put object
-    object := "TestMultipartObject"
+    object := "TestMultipartObjectRm"
     s.putObject(bucketName, object, uploadFileName, c)
     time.Sleep(2*sleepTime)
 
