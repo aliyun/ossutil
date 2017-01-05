@@ -45,10 +45,6 @@ func (s *OssutilCommandSuite) TestAllTypeObject(c *C) {
     }
     _, e := cm.RunCommand(command, args, options)
     c.Assert(e, IsNil)
-//	lmr, e := bucket.ListMultipartUploads()
-//	c.Assert(e, IsNil)
-//    c.Assert(len(lmr.Uploads), Equals, 0)
-
 
     // put object
     normal_object := "TestAllTypeObject"

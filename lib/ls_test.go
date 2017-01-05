@@ -6,7 +6,7 @@ import (
     "time"
 
     . "gopkg.in/check.v1"
-	//oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
+	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
 
 func (s *OssutilCommandSuite) rawList(args []string, shortFormat, directory bool, multipart, allType bool) (bool, error) {
@@ -167,7 +167,6 @@ func (s *OssutilCommandSuite) TestListWithBucketCname(c *C) {
     time.Sleep(7*time.Second)
 }
 
-/*
 func (s *OssutilCommandSuite) TestListBuckets(c *C) {
     // "ls" 
     bucket := bucketNamePrefix + "ls2" 
@@ -189,7 +188,7 @@ func (s *OssutilCommandSuite) TestListBuckets(c *C) {
     c.Assert(FindPos(bucket, buckets) == -1, Equals, true)
     c.Assert(len(buckets) <= bucketNum, Equals, true)
 }
-*/
+
 // list objects with not exist bucket 
 func (s *OssutilCommandSuite) TestListObjectsBucketNotExist(c *C) {
     bucket := bucketNameNotExist 
@@ -343,11 +342,11 @@ func (s *OssutilCommandSuite) TestListBucketIDKey(c *C) {
 
     _ = os.Remove(cfile)
 }
-/*
+
 // list multipart 
 /*func (s *OssutilCommandSuite) TestListMultipartObjects(c *C) {
     bucketName := bucketNameDest
-    object := "TestMultipartObject"
+    object := "TestMultipartObjectLs"
     s.putObject(bucketName, object, uploadFileName, c)
     time.Sleep(2*sleepTime)
 
@@ -385,11 +384,11 @@ func (s *OssutilCommandSuite) TestListBucketIDKey(c *C) {
 	c.Assert(e, IsNil)
     c.Assert(len(lmr.Uploads), Equals, 20)
 }*/
-/*
+
 // list multipart 
 func (s *OssutilCommandSuite) TestListMultipartObjects(c *C) {
     bucketName := bucketNameDest
-    object := "TestMultipartObject"
+    object := "TestMultipartObjectLs"
     s.putObject(bucketName, object, uploadFileName, c)
     time.Sleep(2*sleepTime)
 
@@ -446,5 +445,5 @@ func (s *OssutilCommandSuite) TestListMultipartObjects(c *C) {
 	lmr, e = bucket.ListMultipartUploads(oss.Prefix(object))
 	c.Assert(e, IsNil)
     c.Assert(len(lmr.Uploads), Equals, 20)
-}*/
+}
 
