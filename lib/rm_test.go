@@ -28,6 +28,28 @@ func (s *OssutilCommandSuite) rawRemove(args []string, recursive, force, bucket 
 
 func (s *OssutilCommandSuite) TestAllTypeObject(c *C) {
     bucketName := bucketNameMB
+    // first clear multipart objects in this bucket
+    command := "rm"
+    args := []string{CloudURLToString(bucketName, "")}
+    str := ""
+    ok := true
+    options := OptionMapType{
+        "endpoint": &str,
+        "accessKeyID": &str,
+        "accessKeySecret": &str,
+        "stsToken": &str,
+        "configFile": &configFile,
+        "recursive": &ok,
+        "force": &ok,
+        "multipart": &ok,
+    }
+    _, e := cm.RunCommand(command, args, options)
+    c.Assert(e, IsNil)
+//	lmr, e := bucket.ListMultipartUploads()
+//	c.Assert(e, IsNil)
+//    c.Assert(len(lmr.Uploads), Equals, 0)
+
+
     // put object
     normal_object := "TestAllTypeObject"
     s.putObject(bucketName, normal_object, uploadFileName, c)
@@ -53,12 +75,12 @@ func (s *OssutilCommandSuite) TestAllTypeObject(c *C) {
 	c.Assert(e, IsNil)
     c.Assert(len(lmr.Uploads), Equals, 20)
 
-    // "rm -abrf oss://bucket/objectPre"
-    command := "rm"
-    args := []string{CloudURLToString(bucketName, object)}
-    str := ""
-    ok := true
-    options := OptionMapType{
+    // "rm -abrf oss://bucket/objectPrefix"
+    command = "rm"
+    args = []string{CloudURLToString(bucketName, object)}
+    str = ""
+    ok = true
+    options = OptionMapType{
         "endpoint": &str,
         "accessKeyID": &str,
         "accessKeySecret": &str,
