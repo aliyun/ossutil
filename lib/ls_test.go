@@ -345,7 +345,26 @@ func (s *OssutilCommandSuite) TestListBucketIDKey(c *C) {
 
 // list multipart 
 func (s *OssutilCommandSuite) TestListMultipartObjects(c *C) {
+    
     bucketName := bucketNameDest
+    // "rm -arf oss://bucket/"
+    command := "rm"
+    args := []string{CloudURLToString(bucketName, "")}
+    str := ""
+    ok := true
+    options := OptionMapType{
+        "endpoint": &str,
+        "accessKeyID": &str,
+        "accessKeySecret": &str,
+        "stsToken": &str,
+        "configFile": &configFile,
+        "recursive": &ok,
+        "force": &ok,
+        "allType": &ok,
+    }
+    _, e := cm.RunCommand(command, args, options)
+    c.Assert(e, IsNil)
+
     object := "TestMultipartObjectLs"
     s.putObject(bucketName, object, uploadFileName, c)
     time.Sleep(5*sleepTime)
