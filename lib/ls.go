@@ -33,16 +33,16 @@ var specChineseList = SpecText{
         如果用户列举时缺失url参数，则ossutil获取用户的身份凭证信息（从配置文件中读取），
     并列举该身份凭证下的所有buckets，并显示每个bucket的最新更新时间和位置信息。如果指定
     了--short-format选项则只输出bucket名称。该用法不支持--directory选项。--multipart选
-    项只输出未completed的multipart类型的object和及其对应uploadID。--all-type选项显示所
-    有类型的object，目前会显示普通的object和multipart。
+    项只输出碎片名称(未completed的multipart)及其对应uploadID。--all-type选项显示普通的
+    object和碎片。
 
     2) ossutil ls oss://bucket[/prefix] [-s] [-d] [-m] [-a]
         该用法列举指定bucket下的objects（如果指定了前缀，则列举拥有该前缀的objects），同时
     展示了object大小，最新更新时间和etag，但是如果指定了--short-format选项则只输出object名
-    称。如果指定了--directory选项，则返回指定bucket下以指定前缀开头的首级目录下的文件和子目
-    录，但是不递归显示所有子目录，此时默认为精简格式。如果指定了--multipart选项，则返回指定
-    bucket下以指定前缀开头的首级目录下的未completed的multipart类型的object和及其对应uploadID。
-    --all-type选项显示所有类型的object，目前会显示普通的object和multipart。
+    称。如果指定了--directory选项，则返回指定bucket下以指定前缀开头的第一层目录下的文件和子
+    目录，但是不递归显示所有子目录，此时默认为精简格式。如果指定了--multipart选项，则返回指
+    定bucket下以指定前缀开头的第一层目录下的碎片名称(未completed的multipart)和及其对应uploadID。
+    --all-type选项显示普通的object和碎片。
 
 `,
 

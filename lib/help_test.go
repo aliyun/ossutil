@@ -160,7 +160,6 @@ func (s *OssutilHelpSuite) TestHelpCommandOption(c *C) {
             showElapse, err := cm.RunCommand(command, args, options)
             c.Assert(showElapse, Equals, false)
             c.Assert(err, NotNil)
-            c.Assert(err, IsNil)
         }
     }
 }

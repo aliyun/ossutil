@@ -41,8 +41,8 @@ var specChineseRemove = SpecText{
         如果未指定--recursive和--bucket选项，删除指定的单个object，此时请确保url精确指
     定了待删除的object，ossutil不会进行前缀匹配。无论是否指定--force选项，ossutil都不会
     进行询问提示。如果此时指定了--bucket选项，将会报错，单独删除bucket参考用法4)。
-        如果指定--multipart选项, 删除指定的未completed的multipart object下对应的所有uploadId,
-    即删除这个multipart
+        如果指定--multipart选项, 删除指定的碎片(未completed的multipart)及其对应的所有
+    uploadId。
 
     2) ossutil rm oss://bucket -b [-f]
         （删除bucket，不删除objects）
@@ -56,25 +56,24 @@ var specChineseRemove = SpecText{
     用法查找与指定url前缀匹配的所有objects（prefix为空代表bucket下的所有objects），删除
     这些objects。由于未指定--bucket选项，则ossutil保留bucket。如果指定了--force选项，则
     删除前不会进行询问提示。
-        如果指定--multipart选项, 该用法查找与指定url前缀匹配的所有未completed的multipart 
-    object（prefix为空代表bucket下的所有multipart object），并删除对应的所有uploadId。即
-    删除所有符合这个前缀的multipart。
-        如果指定--all-type, 该操作不会区分未completed的multipart和普通的object，执行删除
-    上述未completed的multipart和普通object的操作。
+        如果指定--multipart选项, 该用法查找与指定url前缀匹配的所有碎片(未completed的
+    multipart)（prefix为空代表bucket下的所有碎片），并删除对应的所有uploadId。
+        如果指定--all-type, 该操作不会区分碎片和普通的object，执行删除符合匹配的碎片和普通
+    object。
 
     4) ossutil rm oss://bucket[/prefix] -r -b [-a] [-f]
         （删除bucket和objects）
         如果同时指定了--bucket和--recursive选项，ossutil进行批量删除后会尝试去一并删除
     bucket。当用户想要删除某个bucket连同其中的所有objects时，可采用该操作。如果指定了
     --force选项，则删除前不会进行询问提示。
-         如果指定--all-type, 该操作不会区分multipart和普通的object，执行上述删除bucket
-    和未completed的multipart object及普通object操作。
+         如果指定--all-type, 该操作不会区分碎片(未completed的multipart)和普通的object，
+    执行上述删除碎片及普通object操作。
     
     该命令不支持的用法
     1) ossutil rm oss://bucket/object -m -b [-f]
-        不能尝试删除一个未completed的multipart文件后删除一个bucket
+        不能尝试删除一个碎片(未completed的multipart文件)后删除一个bucket
     2) ossutil rm oss://bucket/object -a -b [-f]
-        不能尝试删除一个文件(包括object文件和未completed的multipart文件)后删除一个bucket
+        不能尝试删除一个文件(包括普通object和碎片)后删除一个bucket
 
 `,
 
