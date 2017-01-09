@@ -33,15 +33,15 @@ var specChineseList = SpecText{
         如果用户列举时缺失url参数，则ossutil获取用户的身份凭证信息（从配置文件中读取），
     并列举该身份凭证下的所有buckets，并显示每个bucket的最新更新时间和位置信息。如果指定
     了--short-format选项则只输出bucket名称。该用法不支持--directory选项。--multipart选
-    项只输出multipart类型的object和及其对应uploadID。--all-type选项显示所有类型的object，
-    目前会显示普通的object和multipart。
+    项只输出未completed的multipart类型的object和及其对应uploadID。--all-type选项显示所
+    有类型的object，目前会显示普通的object和multipart。
 
     2) ossutil ls oss://bucket[/prefix] [-s] [-d] [-m] [-a]
         该用法列举指定bucket下的objects（如果指定了前缀，则列举拥有该前缀的objects），同时
     展示了object大小，最新更新时间和etag，但是如果指定了--short-format选项则只输出object名
-    称。如果指定了--directory选项，则返回指定bucket下以指定前缀开头的首级目录下的文件和子
-    目录，但是不递归显示所有子目录，此时默认为精简格式。。如果指定了--multipart选项，则返
-    回指定bucket下以指定前缀开头的首级目录下的multipart类型的object和及其对应uploadID。
+    称。如果指定了--directory选项，则返回指定bucket下以指定前缀开头的首级目录下的文件和子目
+    录，但是不递归显示所有子目录，此时默认为精简格式。如果指定了--multipart选项，则返回指定
+    bucket下以指定前缀开头的首级目录下的未completed的multipart类型的object和及其对应uploadID。
     --all-type选项显示所有类型的object，目前会显示普通的object和multipart。
 
 `,
@@ -76,19 +76,20 @@ var specChineseList = SpecText{
         Object or Directory Number is: 2
 
     6)ossutil ls oss://bucket1 -m 
-             ObjectName                                UploadID
-        oss://bucket1/obj1                15754AF7980C4DFB8193F190837520BB
-        oss://bucket2/obj2                3998971ACAF94AD9AC48EAC1988BE863 
-        Object Number is: 2
+        UploadID                            MultipartName
+        15754AF7980C4DFB8193F190837520BB    oss://bucket1/obj1
+        3998971ACAF94AD9AC48EAC1988BE863    oss://bucket2/obj2
+        UploadId Number is: 2
     
     7)ossutil ls oss://bucket1 -a 
         LastModifiedTime              Size(B)  ETAG                              ObjectName
         2016-04-08 14:50:47 +0000 UTC 6476984  4F16FDAE7AC404CEC8B727FCC67779D6  oss://bucket1/sample.txt
         2015-06-05 14:06:29 +0000 UTC  201933  7E2F4A7F1AC9D2F0996E8332D5EA5B41  oss://bucket1/dir1/obj11
-         ObjectName                                UploadID
-        oss://bucket1/obj1                15754AF7980C4DFB8193F190837520BB
-        oss://bucket2/obj2                3998971ACAF94AD9AC48EAC1988BE863
-        Object Number is: 4
+        Object Number is: 2
+        UploadID                            MultipartName
+        15754AF7980C4DFB8193F190837520BB    oss://bucket1/obj1
+        3998971ACAF94AD9AC48EAC1988BE863    oss://bucket2/obj2
+        Multipart Number is: 2
          
 `,
 }
@@ -303,20 +304,30 @@ func (lc *ListCommand) listFiles(cloudURL CloudURL) error {
 	directory, _ := GetBool(OptionDirectory, lc.command.options)
     isMultipart, _ := GetBool(OptionMultipart, lc.command.options)
     isAllType, _ := GetBool(OptionAllType, lc.command.options) 
+    isObject := true
 
-	return lc.listObjects(bucket, cloudURL, shortFormat, directory, isMultipart, isAllType)
+    if isMultipart {
+        isObject = false
+    }
+    if isAllType {
+        isObject = true
+        isMultipart = true
+    }
+
+	return lc.listObjects(bucket, cloudURL, shortFormat, directory, isObject, isMultipart)
 }
 
-func (lc *ListCommand) listObjects(bucket *oss.Bucket, cloudURL CloudURL, shortFormat bool, directory bool, isMultipart bool, isAllType bool) error {
-	//list all objects or directories
-	num := 0
+func (lc *ListCommand) listObjects(bucket *oss.Bucket, cloudURL CloudURL, shortFormat bool, directory bool, isObject, isMultipart bool) error {
+	objectNum := 0
+	multipartNum := 0
 	pre := oss.Prefix(cloudURL.object)
 	marker := oss.Marker("")
 	del := oss.Delimiter("")
 	if directory {
 		del = oss.Delimiter("/")
 	}
-    if !isMultipart || isAllType {
+
+    if isObject {
 	    for i := 0; ; i++ {
 	    	lor, err := lc.command.ossListObjectsRetry(bucket, marker, pre, del)
     		if err != nil {
@@ -324,13 +335,20 @@ func (lc *ListCommand) listObjects(bucket *oss.Bucket, cloudURL CloudURL, shortF
 		    }
 		    pre = oss.Prefix(lor.Prefix)
 		    marker = oss.Marker(lor.NextMarker)
-	    	num += lc.displayResult(lor, cloudURL.bucket, shortFormat, directory, i)
+	    	objectNum += lc.displayResult(lor, cloudURL.bucket, shortFormat, directory, i)
     		if !lor.IsTruncated {
 			    break
 		    }
 	    }
+    
+        if !directory {
+		    fmt.Printf("Object Number is: %d\n", objectNum)
+	    } else {
+		    fmt.Printf("Object or Directory Number is: %d\n", objectNum)
+	    }
     }
-    if isMultipart || isAllType {
+
+    if isMultipart {
     	for i := 0; ; i++ {
 	    	lmr, err := lc.command.ossListMultipartObjectsRetry(bucket, marker, pre, del)
 		    if err != nil {
@@ -338,19 +356,13 @@ func (lc *ListCommand) listObjects(bucket *oss.Bucket, cloudURL CloudURL, shortF
 		    }
 		    pre = oss.Prefix(lmr.Prefix)
 		    marker = oss.Marker(lmr.NextKeyMarker)
-		    num += lc.displayMultipartObjectResult(lmr, cloudURL.bucket, shortFormat, directory, i)
+		    multipartNum += lc.displayMultipartUploadsResult(lmr, cloudURL.bucket, shortFormat, directory, i)
 		    if !lmr.IsTruncated {
 			    break
 		    }
 	    }
+        fmt.Printf("Multipart Number is: %d\n", multipartNum)
     }
-
-	if !directory {
-		fmt.Printf("Object Number is: %d\n", num)
-	} else {
-		fmt.Printf("Object or Directory Number is: %d\n", num)
-	}
-
 	return nil
 }
 
@@ -398,26 +410,25 @@ func (lc *ListCommand) showDirectories(lor oss.ListObjectsResult, bucket string)
 
 
 // multipart objects display
-func (lc *ListCommand) displayMultipartObjectResult(lmr oss.ListMultipartUploadResult, bucket string, shortFormat bool, directory bool, i int) int {
-	if i == 0 && !shortFormat && !directory && len(lmr.Uploads) > 0 {
-		fmt.Printf("%-12s%s%-40s%s\n", " ", "ObjectName", "  ", "UploadID")
+func (lc *ListCommand) displayMultipartUploadsResult(lmr oss.ListMultipartUploadResult, bucket string, shortFormat bool, directory bool, i int) int {
+	if i == 0 && !shortFormat && len(lmr.Uploads) > 0 {
+		fmt.Printf("%s%-28s%s\n", "UploadId", " ", "ObjectName")
 	}
 
 	var output string
 	var num int
-    output, num = lc.showMultipartObjects(lmr, bucket, shortFormat)	
+    output, num = lc.showMultipartUploads(lmr, bucket, shortFormat)	
     fmt.Printf(output)
 	return num
 }
 
-func (lc *ListCommand) showMultipartObjects(lmr oss.ListMultipartUploadResult, bucket string, shortFormat bool)(string, int) {
+func (lc *ListCommand) showMultipartUploads(lmr oss.ListMultipartUploadResult, bucket string, shortFormat bool)(string, int) {
 	var output string
     var num int
 	for _, upload := range lmr.Uploads {
 		if !shortFormat {
 			output += fmt.Sprintf(
-				"%s%-16s%s%s\n", CloudURLToString(bucket, upload.Key), " ",
-				 " ", upload.UploadID,
+				"%s%-4s%s\n", upload.UploadID, " ", CloudURLToString(bucket, upload.Key),
 			)
 		} else {
 			output += CloudURLToString(bucket, upload.Key) + "\n"

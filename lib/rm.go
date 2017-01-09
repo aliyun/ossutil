@@ -41,7 +41,8 @@ var specChineseRemove = SpecText{
         如果未指定--recursive和--bucket选项，删除指定的单个object，此时请确保url精确指
     定了待删除的object，ossutil不会进行前缀匹配。无论是否指定--force选项，ossutil都不会
     进行询问提示。如果此时指定了--bucket选项，将会报错，单独删除bucket参考用法4)。
-        如果指定--multipart选项, 删除指定的object下对应的所有uploadId，即删除这个multipart
+        如果指定--multipart选项, 删除指定的未completed的multipart object下对应的所有uploadId,
+    即删除这个multipart
 
     2) ossutil rm oss://bucket -b [-f]
         （删除bucket，不删除objects）
@@ -55,11 +56,11 @@ var specChineseRemove = SpecText{
     用法查找与指定url前缀匹配的所有objects（prefix为空代表bucket下的所有objects），删除
     这些objects。由于未指定--bucket选项，则ossutil保留bucket。如果指定了--force选项，则
     删除前不会进行询问提示。
-        如果指定--multipart选项, 该用法查找与指定url前缀匹配的所有multipart object（prefix
-    为空代表bucket下的所有multipart object），并删除对应的所有uploadId。即删除所有符合这
-    个前缀的multipart。
-        如果指定--all-type, 该操作不会区分multipart和普通的object，执行删除上述multipart
-    和普通object的操作。
+        如果指定--multipart选项, 该用法查找与指定url前缀匹配的所有未completed的multipart 
+    object（prefix为空代表bucket下的所有multipart object），并删除对应的所有uploadId。即
+    删除所有符合这个前缀的multipart。
+        如果指定--all-type, 该操作不会区分未completed的multipart和普通的object，执行删除
+    上述未completed的multipart和普通object的操作。
 
     4) ossutil rm oss://bucket[/prefix] -r -b [-a] [-f]
         （删除bucket和objects）
@@ -67,13 +68,13 @@ var specChineseRemove = SpecText{
     bucket。当用户想要删除某个bucket连同其中的所有objects时，可采用该操作。如果指定了
     --force选项，则删除前不会进行询问提示。
          如果指定--all-type, 该操作不会区分multipart和普通的object，执行上述删除bucket
-    和multipart object及普通object操作。
+    和未completed的multipart object及普通object操作。
     
     该命令不支持的用法
     1) ossutil rm oss://bucket/object -m -b [-f]
-        不能尝试删除一个multipart文件后删除一个bucket
+        不能尝试删除一个未completed的multipart文件后删除一个bucket
     2) ossutil rm oss://bucket/object -a -b [-f]
-        不能尝试删除一个文件(包括object文件和multipart文件)后删除一个bucket
+        不能尝试删除一个文件(包括object文件和未completed的multipart文件)后删除一个bucket
 
 `,
 
@@ -253,7 +254,6 @@ func (rc *RemoveCommand) PreCheck(rmOption *removeOptionType) (error, CloudURL) 
     if (!rmOption.isMultipart && !rmOption.isAllType && !rmOption.recursive && rmOption.toBucket) {
         rmOption.isObject = false
         rmOption.isMultipart = false
-        rmOption.isObject = false
     }
 
     if rmOption.isMultipart {
@@ -266,12 +266,12 @@ func (rc *RemoveCommand) PreCheck(rmOption *removeOptionType) (error, CloudURL) 
 
     // "rm -mb", invalid
     if !rmOption.recursive && rmOption.toBucket && rmOption.isMultipart {
-		err := fmt.Errorf("invalid remove args: %s", rc.command.args[0])
+		err := fmt.Errorf("invalid remove bucket args: %s", rc.command.args[0])
         return err, CloudURL{}
     } 
     // "rm -ab", invalid
     if !rmOption.recursive && rmOption.toBucket && rmOption.isAllType {
-		err := fmt.Errorf("invalid remove args: %s", rc.command.args[0])
+		err := fmt.Errorf("invalid remove bucket args: %s", rc.command.args[0])
         return err, CloudURL{}
     } 
 
@@ -359,20 +359,21 @@ func (rc *RemoveCommand) ossDeleteMultipartObjectRetry(bucket *oss.Bucket, objec
             var imur = oss.InitiateMultipartUploadResult{Bucket: bucket.BucketName,
                 Key: upload.Key, UploadID: upload.UploadID}
             err = bucket.AbortMultipartUpload(imur)
-        }
-		if err != nil {
-			return err
+            if err != nil {
+			    return err
+            }
+            num ++
 		}
 
 		if !lmr.IsTruncated {
 			break
 		}
 
-		num += 1
 		if int64(i) >= retryTimes {
 			return ObjectError{err, object}
 		}
 	}
+	fmt.Printf("scaned %d multipart, removed %d multipart.\n", num, num)
     return nil
 }
 
@@ -413,7 +414,7 @@ func (rc *RemoveCommand) ossDeleteBucketRetry(client *oss.Client, bucket string)
 func (rc *RemoveCommand) recursiveRemoveObject(bucket *oss.Bucket, cloudURL CloudURL, force bool) error {
 	if !force {
 		var val string
-		fmt.Printf("Do you really mean to recursively remove %s? ", rc.command.args[0])
+		fmt.Printf("Do you really mean to recursively remove objects %s? ", rc.command.args[0])
 		if _, err := fmt.Scanln(&val); err != nil || (val != "yes" && val != "y") {
 			fmt.Println("operation is canceled.")
 			return nil
