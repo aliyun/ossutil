@@ -343,7 +343,7 @@ func (cmd *Command) ossDownloadFileRetry(bucket *oss.Bucket, objectName, fileNam
 	}
 }
 
-func (cmd *Command) ossListMultipartObjectsRetry(bucket *oss.Bucket, options ...oss.Option) (oss.ListMultipartUploadResult, error) {
+func (cmd *Command) ossListMultipartUploadsRetry(bucket *oss.Bucket, options ...oss.Option) (oss.ListMultipartUploadResult, error) {
 	retryTimes, _ := GetInt(OptionRetryTimes, cmd.options)
 	for i := 1; ; i++ {
 		lmr, err := bucket.ListMultipartUploads(options...)

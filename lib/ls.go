@@ -350,7 +350,7 @@ func (lc *ListCommand) listObjects(bucket *oss.Bucket, cloudURL CloudURL, shortF
 
     if isMultipart {
     	for i := 0; ; i++ {
-	    	lmr, err := lc.command.ossListMultipartObjectsRetry(bucket, marker, pre, del)
+	    	lmr, err := lc.command.ossListMultipartUploadsRetry(bucket, marker, pre, del)
 		    if err != nil {
 			    return err
 		    }
@@ -412,19 +412,17 @@ func (lc *ListCommand) showDirectories(lor oss.ListObjectsResult, bucket string)
 // multipart objects display
 func (lc *ListCommand) displayMultipartUploadsResult(lmr oss.ListMultipartUploadResult, bucket string, shortFormat bool, directory bool, i int) int {
 	if i == 0 && !shortFormat && len(lmr.Uploads) > 0 {
-		fmt.Printf("%s%-28s%s\n", "UploadId", " ", "ObjectName")
+		fmt.Printf("%s%-28s%s\n", "UploadId", " ", "MultipartName")
 	}
 
 	var output string
-	var num int
-    output, num = lc.showMultipartUploads(lmr, bucket, shortFormat)	
+    output = lc.showMultipartUploads(lmr, bucket, shortFormat)	
     fmt.Printf(output)
-	return num
+	return len(lmr.Uploads)
 }
 
-func (lc *ListCommand) showMultipartUploads(lmr oss.ListMultipartUploadResult, bucket string, shortFormat bool)(string, int) {
+func (lc *ListCommand) showMultipartUploads(lmr oss.ListMultipartUploadResult, bucket string, shortFormat bool)(string) {
 	var output string
-    var num int
 	for _, upload := range lmr.Uploads {
 		if !shortFormat {
 			output += fmt.Sprintf(
@@ -433,8 +431,7 @@ func (lc *ListCommand) showMultipartUploads(lmr oss.ListMultipartUploadResult, b
 		} else {
 			output += CloudURLToString(bucket, upload.Key) + "\n"
 		}
-        num = num + 1
 	}
-	return output, num
+	return output
 }
 
