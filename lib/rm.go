@@ -203,19 +203,19 @@ func (rc *RemoveCommand) formatIndependHelp() string {
 	return rc.command.formatIndependHelp()
 }
 
-func (rc* RemoveCommand) askYesForRemove(info string, cloudURL CloudURL) (bool) {
+func (rc* RemoveCommand) askYesForRemove(removeType string, cloudURL CloudURL) (bool) {
     var val string
-    if info == "bucket" {
-        fmt.Printf("Do you really mean to remove the %s of oss://%s(y or N)? ", info, cloudURL.bucket)
+    if removeType == "bucket" {
+        fmt.Printf("Do you really mean to remove the bucket of oss://%s(y or N)? ", cloudURL.bucket)
     } else {
-        fmt.Printf("Do you really mean to recursively remove %s in oss://%s(y or N)? ", info, cloudURL.bucket)
+        fmt.Printf("Do you really mean to recursively remove %s in oss://%s(y or N)? ", removeType, cloudURL.bucket)
     }
 
     if _, err := fmt.Scanln(&val); err != nil || (strings.ToLower(val) != "yes" && strings.ToLower(val) != "y") {
         fmt.Println("operation is canceled.")
-        return false
+        return true
     }
-    return true
+    return false
 }
 
 // Init simulate inheritance, and polymorphism 
@@ -419,7 +419,7 @@ func (rc *RemoveCommand) ossDeleteBucketRetry(client *oss.Client, bucket string)
 
 func (rc *RemoveCommand) recursiveRemoveObject(bucket *oss.Bucket, cloudURL CloudURL, force bool) error {
 	if !force {
-        if rc.askYesForRemove("obejcts", cloudURL) {
+        if rc.askYesForRemove("objects", cloudURL) {
             return nil
         }
 	}
