@@ -2,7 +2,7 @@ package lib
 
 import (
 	"fmt"
-    "strings"
+	"strings"
 
 	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
@@ -156,15 +156,15 @@ Usage:
 }
 
 type removeOptionType struct {
-	recursive       bool
-    toBucket        bool
-	force           bool
-	isObject        bool
-	isMultipart     bool
-	isAllType       bool
+	recursive   bool
+	toBucket    bool
+	force       bool
+	isObject    bool
+	isMultipart bool
+	isAllType   bool
 }
 
-// RemoveCommand is the command remove bucket or objects 
+// RemoveCommand is the command remove bucket or objects
 type RemoveCommand struct {
 	command Command
 }
@@ -182,13 +182,13 @@ var removeCommand = RemoveCommand{
 			OptionRecursion,
 			OptionBucket,
 			OptionForce,
-            OptionMultipart,
-            OptionAllType,
+			OptionMultipart,
+			OptionAllType,
 			OptionConfigFile,
-            OptionEndpoint,
-            OptionAccessKeyID,
-            OptionAccessKeySecret,
-            OptionSTSToken,
+			OptionEndpoint,
+			OptionAccessKeyID,
+			OptionAccessKeySecret,
+			OptionSTSToken,
 			OptionRetryTimes,
 		},
 	},
@@ -203,22 +203,22 @@ func (rc *RemoveCommand) formatIndependHelp() string {
 	return rc.command.formatIndependHelp()
 }
 
-func (rc* RemoveCommand) askYesForRemove(removeType string, cloudURL CloudURL) (bool) {
-    var val string
-    if removeType == "bucket" {
-        fmt.Printf("Do you really mean to remove the bucket of oss://%s(y or N)? ", cloudURL.bucket)
-    } else {
-        fmt.Printf("Do you really mean to remove recursively %s in oss://%s(y or N)? ", removeType, cloudURL.bucket)
-    }
+func (rc *RemoveCommand) askYesForRemove(removeType string, cloudURL CloudURL) bool {
+	var val string
+	if removeType == RmBucket {
+		fmt.Printf("Do you really mean to remove the bucket of oss://%s(y or N)? ", cloudURL.bucket)
+	} else {
+		fmt.Printf("Do you really mean to remove recursively %s in oss://%s(y or N)? ", removeType, cloudURL.bucket)
+	}
 
-    if _, err := fmt.Scanln(&val); err != nil || (strings.ToLower(val) != "yes" && strings.ToLower(val) != "y") {
-        fmt.Println("operation is canceled.")
-        return true
-    }
-    return false
+	if _, err := fmt.Scanln(&val); err != nil || (strings.ToLower(val) != "yes" && strings.ToLower(val) != "y") {
+		fmt.Println("operation is canceled.")
+		return true
+	}
+	return false
 }
 
-// Init simulate inheritance, and polymorphism 
+// Init simulate inheritance, and polymorphism
 func (rc *RemoveCommand) Init(args []string, options OptionMapType) error {
 	return rc.command.Init(args, options, rc)
 }
@@ -226,88 +226,82 @@ func (rc *RemoveCommand) Init(args []string, options OptionMapType) error {
 // RunCommand simulate inheritance, and polymorphism
 func (rc *RemoveCommand) RunCommand() error {
 	rmOption := removeOptionType{}
-    err, cloudURL := rc.PreCheck(&rmOption)
-    if err != nil {
-        return err
-    }
+	err, cloudURL := rc.PreCheck(&rmOption)
+	if err != nil {
+		return err
+	}
 
-    bucket, err := rc.command.ossBucket(cloudURL.bucket)
-    if err != nil {
-        return err
-    } 
-    
-    if (rmOption.isObject) {
+	bucket, err := rc.command.ossBucket(cloudURL.bucket)
+	if err != nil {
+		return err
+	}
+
+	if rmOption.isObject {
 		err = rc.removeObjectEntry(bucket, cloudURL, rmOption.recursive, rmOption.force)
-        if err != nil {
-            return err
-        }
-    }
-    if (rmOption.isMultipart) {
-        err = rc.removeMultipartUploadsEntry(bucket, cloudURL, rmOption.recursive, rmOption.force)
-        if err != nil {
-            return err
-        }
-    }
-    if (rmOption.toBucket) {
-	    return rc.removeBucket(bucket, cloudURL, rmOption.force)
-    }
-    
-    return nil
+		if err != nil {
+			return err
+		}
+	}
+	if rmOption.isMultipart {
+		err = rc.removeMultipartUploadsEntry(bucket, cloudURL, rmOption.recursive, rmOption.force)
+		if err != nil {
+			return err
+		}
+	}
+	if rmOption.toBucket {
+		return rc.removeBucket(bucket, cloudURL, rmOption.force)
+	}
+
+	return nil
 }
 
 func (rc *RemoveCommand) PreCheck(rmOption *removeOptionType) (error, CloudURL) {
 	rmOption.recursive, _ = GetBool(OptionRecursion, rc.command.options)
 	rmOption.toBucket, _ = GetBool(OptionBucket, rc.command.options)
 	rmOption.force, _ = GetBool(OptionForce, rc.command.options)
-    rmOption.isMultipart, _ = GetBool(OptionMultipart, rc.command.options)
-    rmOption.isAllType, _ = GetBool(OptionAllType, rc.command.options)
-    rmOption.isObject = true
+	rmOption.isMultipart, _ = GetBool(OptionMultipart, rc.command.options)
+	rmOption.isAllType, _ = GetBool(OptionAllType, rc.command.options)
+	rmOption.isObject = true
 
-    // support "rm -bf" or "rm -b"
-    if (!rmOption.isMultipart && !rmOption.isAllType && !rmOption.recursive && rmOption.toBucket) {
-        rmOption.isObject = false
-        rmOption.isMultipart = false
-    }
+	// support "rm -bf" or "rm -b"
+	if !rmOption.isMultipart && !rmOption.isAllType && !rmOption.recursive && rmOption.toBucket {
+		rmOption.isObject = false
+		rmOption.isMultipart = false
+	}
 
-    if rmOption.isMultipart {
-        rmOption.isObject = false
-    }
-    if rmOption.isAllType {
-        rmOption.isMultipart = true
-        rmOption.isObject = true
-    }
+	if rmOption.isMultipart {
+		rmOption.isObject = false
+	}
+	if rmOption.isAllType {
+		rmOption.isMultipart = true
+		rmOption.isObject = true
+	}
 
-    // "rm -mb", invalid
-    if !rmOption.recursive && rmOption.toBucket && rmOption.isMultipart {
+	// "rm -mb" and "rm -ab", invalid
+	if !rmOption.recursive && rmOption.toBucket && (rmOption.isMultipart || rmOption.isAllType) {
 		err := fmt.Errorf("invalid remove bucket args: %s", rc.command.args[0])
-        return err, CloudURL{}
-    } 
-    // "rm -ab", invalid
-    if !rmOption.recursive && rmOption.toBucket && rmOption.isAllType {
-		err := fmt.Errorf("invalid remove bucket args: %s", rc.command.args[0])
-        return err, CloudURL{}
-    } 
+		return err, CloudURL{}
+	}
 
 	cloudURL, err := CloudURLFromString(rc.command.args[0])
 	if err != nil {
-        return err, CloudURL{}
-	}
-	
-    if cloudURL.bucket == "" {
-		err := fmt.Errorf("invalid cloud url: %s, miss bucket", rc.command.args[0])
-        return err, CloudURL{}
+		return err, CloudURL{}
 	}
 
-    return nil, cloudURL; 
+	if cloudURL.bucket == "" {
+		err := fmt.Errorf("invalid cloud url: %s, miss bucket", rc.command.args[0])
+		return err, CloudURL{}
+	}
+
+	return nil, cloudURL
 }
 
-
 func (rc *RemoveCommand) removeObjectEntry(bucket *oss.Bucket, cloudURL CloudURL, recursive bool, force bool) error {
-    if !recursive {
-        return rc.removeObject(bucket, cloudURL)
-    } else {
-        return rc.recursiveRemoveObject(bucket, cloudURL, force)
-    }
+	if !recursive {
+		return rc.removeObject(bucket, cloudURL)
+	} else {
+		return rc.recursiveRemoveObject(bucket, cloudURL, force)
+	}
 }
 
 func (rc *RemoveCommand) removeObject(bucket *oss.Bucket, cloudURL CloudURL) error {
@@ -335,11 +329,11 @@ func (rc *RemoveCommand) removeMultipartUploadsEntry(bucket *oss.Bucket, cloudUR
 	if !recursive && cloudURL.object == "" {
 		return fmt.Errorf("remove bucket, miss --bucket option, if you mean remove multipart object, invalid url: %s, miss object", rc.command.args[0])
 	}
-    if recursive && !force {
-        if rc.askYesForRemove("multiparts", cloudURL) {
-            return nil 
-        }
-    }
+	if recursive && !force {
+		if rc.askYesForRemove(RmMultipart, cloudURL) {
+			return nil
+		}
+	}
 
 	return rc.ossDeleteMultipartUploadsRetry(bucket, cloudURL.object, recursive)
 }
@@ -352,26 +346,26 @@ func (rc *RemoveCommand) ossDeleteMultipartUploadsRetry(bucket *oss.Bucket, obje
 	del := oss.Delimiter("")
 
 	for i := 0; ; i++ {
-	    lmr, err := rc.command.ossListMultipartUploadsRetry(bucket, marker, pre, del)
+		lmr, err := rc.command.ossListMultipartUploadsRetry(bucket, marker, pre, del)
 		if err != nil {
-			 return err
+			return err
 		}
 		pre = oss.Prefix(lmr.Prefix)
 		marker = oss.Marker(lmr.NextKeyMarker)
 
-        for _, upload := range lmr.Uploads {
-            if !recursive {
-                if object != upload.Key {
-                    break
-                }
-            } 
-            var imur = oss.InitiateMultipartUploadResult{Bucket: bucket.BucketName,
-                Key: upload.Key, UploadID: upload.UploadID}
-            err = bucket.AbortMultipartUpload(imur)
-            if err != nil {
-			    return err
-            }
-            num ++
+		for _, upload := range lmr.Uploads {
+			if !recursive {
+				if object != upload.Key {
+					break
+				}
+			}
+			var imur = oss.InitiateMultipartUploadResult{Bucket: bucket.BucketName,
+				Key: upload.Key, UploadID: upload.UploadID}
+			err = bucket.AbortMultipartUpload(imur)
+			if err != nil {
+				return err
+			}
+			num++
 		}
 
 		if !lmr.IsTruncated {
@@ -383,7 +377,7 @@ func (rc *RemoveCommand) ossDeleteMultipartUploadsRetry(bucket *oss.Bucket, obje
 		}
 	}
 	fmt.Printf("scaned %d multipart, removed %d multipart.\n", num, num)
-    return nil
+	return nil
 }
 
 func (rc *RemoveCommand) removeBucket(bucket *oss.Bucket, cloudURL CloudURL, force bool) error {
@@ -392,16 +386,16 @@ func (rc *RemoveCommand) removeBucket(bucket *oss.Bucket, cloudURL CloudURL, for
 	}
 
 	if !force {
-        if rc.askYesForRemove("bucket", cloudURL) {
-            return nil
-        }
+		if rc.askYesForRemove(RmBucket, cloudURL) {
+			return nil
+		}
 	}
 
 	err := rc.ossDeleteBucketRetry(&bucket.Client, cloudURL.bucket)
-    if err == nil {
+	if err == nil {
 		fmt.Printf("removed bucket: %s.\n", cloudURL.bucket)
-    }
-    return err
+	}
+	return err
 }
 
 func (rc *RemoveCommand) ossDeleteBucketRetry(client *oss.Client, bucket string) error {
@@ -419,14 +413,14 @@ func (rc *RemoveCommand) ossDeleteBucketRetry(client *oss.Client, bucket string)
 
 func (rc *RemoveCommand) recursiveRemoveObject(bucket *oss.Bucket, cloudURL CloudURL, force bool) error {
 	if !force {
-        if rc.askYesForRemove("objects", cloudURL) {
-            return nil
-        }
+		if rc.askYesForRemove(RmObject, cloudURL) {
+			return nil
+		}
 	}
 
 	// batch delete objects
 	num, err := rc.batchDeleteObjects(bucket, cloudURL)
-    if err != nil {
+	if err != nil {
 		fmt.Printf("removed %d objects, when error happens.\n", num)
 		return err
 	}
@@ -463,9 +457,9 @@ func (rc *RemoveCommand) batchDeleteObjects(bucket *oss.Bucket, cloudURL CloudUR
 func (rc *RemoveCommand) ossBatchDeleteObjectsRetry(bucket *oss.Bucket, objects []string) (int, error) {
 	retryTimes, _ := GetInt(OptionRetryTimes, rc.command.options)
 	num := len(objects)
-    if num <= 0 {
-        return 0, nil
-    }
+	if num <= 0 {
+		return 0, nil
+	}
 
 	for i := 1; ; i++ {
 		delRes, err := bucket.DeleteObjects(objects, oss.DeleteObjectsQuiet(true))
@@ -489,4 +483,3 @@ func (rc *RemoveCommand) getObjectsFromListResult(lor oss.ListObjectsResult) []s
 	}
 	return objects
 }
-
