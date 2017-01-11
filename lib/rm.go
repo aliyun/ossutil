@@ -208,7 +208,7 @@ func (rc* RemoveCommand) askYesForRemove(removeType string, cloudURL CloudURL) (
     if removeType == "bucket" {
         fmt.Printf("Do you really mean to remove the bucket of oss://%s(y or N)? ", cloudURL.bucket)
     } else {
-        fmt.Printf("Do you really mean to recursively remove %s in oss://%s(y or N)? ", removeType, cloudURL.bucket)
+        fmt.Printf("Do you really mean to remove recursively %s in oss://%s(y or N)? ", removeType, cloudURL.bucket)
     }
 
     if _, err := fmt.Scanln(&val); err != nil || (strings.ToLower(val) != "yes" && strings.ToLower(val) != "y") {
