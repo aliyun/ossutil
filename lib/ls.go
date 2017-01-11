@@ -194,10 +194,10 @@ var listCommand = ListCommand{
 			OptionMultipart,
 			OptionAllType,
 			OptionConfigFile,
-            OptionEndpoint,
-            OptionAccessKeyID,
-            OptionAccessKeySecret,
-            OptionSTSToken,
+			OptionEndpoint,
+			OptionAccessKeyID,
+			OptionAccessKeySecret,
+			OptionSTSToken,
 			OptionRetryTimes,
 		},
 	},
@@ -258,9 +258,9 @@ func (lc *ListCommand) listBuckets(prefix string) error {
 		}
 		pre = oss.Prefix(lbr.Prefix)
 		marker = oss.Marker(lbr.NextMarker)
-        if num == 0 && !shortFormat && len(lbr.Buckets) > 0 {
-            fmt.Printf("%-30s %20s%s%s\n", "CreationTime", "Region", FormatTAB, "BucketName")
-        }
+		if num == 0 && !shortFormat && len(lbr.Buckets) > 0 {
+			fmt.Printf("%-30s %20s%s%s\n", "CreationTime", "Region", FormatTAB, "BucketName")
+		}
 		for _, bucket := range lbr.Buckets {
 			if !shortFormat {
 				fmt.Printf("%-30s %20s%s%s\n", utcToLocalTime(bucket.CreationDate), bucket.Location, FormatTAB, CloudURLToString(bucket.Name, ""))
@@ -302,17 +302,17 @@ func (lc *ListCommand) listFiles(cloudURL CloudURL) error {
 
 	shortFormat, _ := GetBool(OptionShortFormat, lc.command.options)
 	directory, _ := GetBool(OptionDirectory, lc.command.options)
-    isMultipart, _ := GetBool(OptionMultipart, lc.command.options)
-    isAllType, _ := GetBool(OptionAllType, lc.command.options) 
-    isObject := true
+	isMultipart, _ := GetBool(OptionMultipart, lc.command.options)
+	isAllType, _ := GetBool(OptionAllType, lc.command.options)
+	isObject := true
 
-    if isMultipart {
-        isObject = false
-    }
-    if isAllType {
-        isObject = true
-        isMultipart = true
-    }
+	if isMultipart {
+		isObject = false
+	}
+	if isAllType {
+		isObject = true
+		isMultipart = true
+	}
 
 	return lc.listObjects(bucket, cloudURL, shortFormat, directory, isObject, isMultipart)
 }
@@ -327,42 +327,42 @@ func (lc *ListCommand) listObjects(bucket *oss.Bucket, cloudURL CloudURL, shortF
 		del = oss.Delimiter("/")
 	}
 
-    if isObject {
-	    for i := 0; ; i++ {
-	    	lor, err := lc.command.ossListObjectsRetry(bucket, marker, pre, del)
-    		if err != nil {
-			    return err
-		    }
-		    pre = oss.Prefix(lor.Prefix)
-		    marker = oss.Marker(lor.NextMarker)
-	    	objectNum += lc.displayResult(lor, cloudURL.bucket, shortFormat, directory, i)
-    		if !lor.IsTruncated {
-			    break
-		    }
-	    }
-    
-        if !directory {
-		    fmt.Printf("Object Number is: %d\n", objectNum)
-	    } else {
-		    fmt.Printf("Object or Directory Number is: %d\n", objectNum)
-	    }
-    }
+	if isObject {
+		for i := 0; ; i++ {
+			lor, err := lc.command.ossListObjectsRetry(bucket, marker, pre, del)
+			if err != nil {
+				return err
+			}
+			pre = oss.Prefix(lor.Prefix)
+			marker = oss.Marker(lor.NextMarker)
+			objectNum += lc.displayResult(lor, cloudURL.bucket, shortFormat, directory, i)
+			if !lor.IsTruncated {
+				break
+			}
+		}
 
-    if isMultipart {
-    	for i := 0; ; i++ {
-	    	lmr, err := lc.command.ossListMultipartUploadsRetry(bucket, marker, pre, del)
-		    if err != nil {
-			    return err
-		    }
-		    pre = oss.Prefix(lmr.Prefix)
-		    marker = oss.Marker(lmr.NextKeyMarker)
-		    multipartNum += lc.displayMultipartUploadsResult(lmr, cloudURL.bucket, shortFormat, directory, i)
-		    if !lmr.IsTruncated {
-			    break
-		    }
-	    }
-        fmt.Printf("Multipart Number is: %d\n", multipartNum)
-    }
+		if !directory {
+			fmt.Printf("Object Number is: %d\n", objectNum)
+		} else {
+			fmt.Printf("Object or Directory Number is: %d\n", objectNum)
+		}
+	}
+
+	if isMultipart {
+		for i := 0; ; i++ {
+			lmr, err := lc.command.ossListMultipartUploadsRetry(bucket, marker, pre, del)
+			if err != nil {
+				return err
+			}
+			pre = oss.Prefix(lmr.Prefix)
+			marker = oss.Marker(lmr.NextKeyMarker)
+			multipartNum += lc.displayMultipartUploadsResult(lmr, cloudURL.bucket, shortFormat, directory, i)
+			if !lmr.IsTruncated {
+				break
+			}
+		}
+		fmt.Printf("Multipart Number is: %d\n", multipartNum)
+	}
 	return nil
 }
 
@@ -378,8 +378,8 @@ func (lc *ListCommand) displayResult(lor oss.ListObjectsResult, bucket string, s
 	} else {
 		output, num = lc.showObjects(lor, bucket, true)
 		output1, num1 := lc.showDirectories(lor, bucket)
-        output += output1
-        num += num1 
+		output += output1
+		num += num1
 	}
 	fmt.Printf(output)
 	return num
@@ -408,7 +408,6 @@ func (lc *ListCommand) showDirectories(lor oss.ListObjectsResult, bucket string)
 	return output, len(lor.CommonPrefixes)
 }
 
-
 // multipart objects display
 func (lc *ListCommand) displayMultipartUploadsResult(lmr oss.ListMultipartUploadResult, bucket string, shortFormat bool, directory bool, i int) int {
 	if i == 0 && !shortFormat && len(lmr.Uploads) > 0 {
@@ -416,12 +415,12 @@ func (lc *ListCommand) displayMultipartUploadsResult(lmr oss.ListMultipartUpload
 	}
 
 	var output string
-    output = lc.showMultipartUploads(lmr, bucket, shortFormat)	
-    fmt.Printf(output)
+	output = lc.showMultipartUploads(lmr, bucket, shortFormat)
+	fmt.Printf(output)
 	return len(lmr.Uploads)
 }
 
-func (lc *ListCommand) showMultipartUploads(lmr oss.ListMultipartUploadResult, bucket string, shortFormat bool)(string) {
+func (lc *ListCommand) showMultipartUploads(lmr oss.ListMultipartUploadResult, bucket string, shortFormat bool) string {
 	var output string
 	for _, upload := range lmr.Uploads {
 		if !shortFormat {
@@ -434,4 +433,3 @@ func (lc *ListCommand) showMultipartUploads(lmr oss.ListMultipartUploadResult, b
 	}
 	return output
 }
-

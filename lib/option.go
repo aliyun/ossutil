@@ -3,9 +3,9 @@ package lib
 import (
 	"errors"
 	"fmt"
-    "strings"
-	"strconv"
 	goopt "github.com/droundy/goopt"
+	"strconv"
+	"strings"
 )
 
 type optionType int
@@ -15,7 +15,7 @@ const (
 	OptionTypeString optionType = iota
 	OptionTypeInt64
 	OptionTypeFlagTrue
-    OptionTypeAlternative
+	OptionTypeAlternative
 )
 
 // Option describe the component of a option
@@ -55,23 +55,23 @@ var OptionMap = map[string]Option{
 	OptionUpdate:           Option{"", "--update", "", OptionTypeFlagTrue, "", "", "更新操作", "update"},
 	OptionDelete:           Option{"", "--delete", "", OptionTypeFlagTrue, "", "", "删除操作", "delete"},
 	OptionBigFileThreshold: Option{"", "--bigfile-threshold", strconv.Itoa(BigFileThreshold), OptionTypeInt64, strconv.FormatInt(MinBigFileThreshold, 10), strconv.FormatInt(MaxBigFileThreshold, 10), fmt.Sprintf("开启大文件断点续传的文件大小阀值，默认值:%dM，取值范围：%d-%d", BigFileThreshold/(1024*0124), MinBigFileThreshold, MaxBigFileThreshold), fmt.Sprintf("the threshold of file size, the file size larger than the threshold will use resume upload or download(default: %d), value range is: %d-%d", BigFileThreshold, MinBigFileThreshold, MaxBigFileThreshold)},
-	OptionCheckpointDir:    Option{"", "--checkpoint-dir", CheckpointDir, OptionTypeString, "", "",
+	OptionCheckpointDir: Option{"", "--checkpoint-dir", CheckpointDir, OptionTypeString, "", "",
 		fmt.Sprintf("checkpoint目录的路径(默认值为:%s)，断点续传时，操作失败ossutil会自动创建该目录，并在该目录下记录checkpoint信息，操作成功会删除该目录。如果指定了该选项，请确保所指定的目录可以被删除。", CheckpointDir),
 		fmt.Sprintf("Path of checkpoint directory(default:%s), the directory is used in resume upload or download, when operate failed, ossutil will create the directory automatically, and record the checkpoint information in the directory, when the operation is succeed, the directory will be removed, so when specify the option, please make sure the directory can be removed.", CheckpointDir)},
-	OptionRetryTimes:       Option{"", "--retry-times", strconv.Itoa(RetryTimes), OptionTypeInt64, strconv.FormatInt(MinRetryTimes, 10), strconv.FormatInt(MaxRetryTimes, 10), fmt.Sprintf("当错误发生时的重试次数，默认值：%d，取值范围：%d-%d", RetryTimes, MinRetryTimes, MaxRetryTimes), fmt.Sprintf("retry times when fail(default: %d), value range is: %d-%d", RetryTimes, MinRetryTimes, MaxRetryTimes)},
-	OptionRoutines:         Option{"-j", "--jobs", strconv.Itoa(Routines), OptionTypeInt64, strconv.FormatInt(MinRoutines, 10), strconv.FormatInt(MaxRoutines, 10), fmt.Sprintf("多文件操作时的并发任务数，默认值：%d，取值范围：%d-%d", Routines, MinRoutines, MaxRoutines), fmt.Sprintf("amount of concurrency tasks between multi-files(default: %d), value range is: %d-%d", Routines, MinRoutines, MaxRoutines)},
-	OptionParallel:         Option{"", "--parallel", "", OptionTypeInt64, strconv.FormatInt(MinParallel, 10), strconv.FormatInt(MaxParallel, 10), fmt.Sprintf("单文件内部操作的并发任务数，取值范围：%d-%d, 默认将由ossutil根据操作类型和文件大小自行决定。", MinRoutines, MaxRoutines), fmt.Sprintf("amount of concurrency tasks when work with a file, value range is: %d-%d, by default the value will be decided by ossutil intelligently.", MinRoutines, MaxRoutines)},
-    OptionLanguage:         Option{"-L", "--language", DefaultLanguage, OptionTypeAlternative, fmt.Sprintf("%s/%s", DefaultLanguage, EnglishLanguage), "", fmt.Sprintf("设置ossutil工具的语言，默认值：%s，取值范围：%s/%s", DefaultLanguage, DefaultLanguage, EnglishLanguage), fmt.Sprintf("set the language of ossutil(default: %s), value range is: %s/%s", DefaultLanguage, DefaultLanguage, EnglishLanguage)}, 
-    OptionHashType:         Option{"", "--type", DefaultHashType, OptionTypeAlternative, fmt.Sprintf("%s/%s", DefaultHashType, MD5HashType), "", fmt.Sprintf("计算的类型, 默认值：%s, 取值范围: %s/%s", DefaultHashType, DefaultHashType, MD5HashType),
-        fmt.Sprintf("hash type, Default: %s, value range is: %s/%s", DefaultHashType, DefaultHashType, MD5HashType)},
-	OptionVersion:          Option{"-v", "--version", "", OptionTypeFlagTrue, "", "", fmt.Sprintf("显示ossutil的版本（%s）并退出。", Version), fmt.Sprintf("Show ossutil version (%s) and exit.", Version)},
+	OptionRetryTimes: Option{"", "--retry-times", strconv.Itoa(RetryTimes), OptionTypeInt64, strconv.FormatInt(MinRetryTimes, 10), strconv.FormatInt(MaxRetryTimes, 10), fmt.Sprintf("当错误发生时的重试次数，默认值：%d，取值范围：%d-%d", RetryTimes, MinRetryTimes, MaxRetryTimes), fmt.Sprintf("retry times when fail(default: %d), value range is: %d-%d", RetryTimes, MinRetryTimes, MaxRetryTimes)},
+	OptionRoutines:   Option{"-j", "--jobs", strconv.Itoa(Routines), OptionTypeInt64, strconv.FormatInt(MinRoutines, 10), strconv.FormatInt(MaxRoutines, 10), fmt.Sprintf("多文件操作时的并发任务数，默认值：%d，取值范围：%d-%d", Routines, MinRoutines, MaxRoutines), fmt.Sprintf("amount of concurrency tasks between multi-files(default: %d), value range is: %d-%d", Routines, MinRoutines, MaxRoutines)},
+	OptionParallel:   Option{"", "--parallel", "", OptionTypeInt64, strconv.FormatInt(MinParallel, 10), strconv.FormatInt(MaxParallel, 10), fmt.Sprintf("单文件内部操作的并发任务数，取值范围：%d-%d, 默认将由ossutil根据操作类型和文件大小自行决定。", MinRoutines, MaxRoutines), fmt.Sprintf("amount of concurrency tasks when work with a file, value range is: %d-%d, by default the value will be decided by ossutil intelligently.", MinRoutines, MaxRoutines)},
+	OptionLanguage:   Option{"-L", "--language", DefaultLanguage, OptionTypeAlternative, fmt.Sprintf("%s/%s", DefaultLanguage, EnglishLanguage), "", fmt.Sprintf("设置ossutil工具的语言，默认值：%s，取值范围：%s/%s", DefaultLanguage, DefaultLanguage, EnglishLanguage), fmt.Sprintf("set the language of ossutil(default: %s), value range is: %s/%s", DefaultLanguage, DefaultLanguage, EnglishLanguage)},
+	OptionHashType: Option{"", "--type", DefaultHashType, OptionTypeAlternative, fmt.Sprintf("%s/%s", DefaultHashType, MD5HashType), "", fmt.Sprintf("计算的类型, 默认值：%s, 取值范围: %s/%s", DefaultHashType, DefaultHashType, MD5HashType),
+		fmt.Sprintf("hash type, Default: %s, value range is: %s/%s", DefaultHashType, DefaultHashType, MD5HashType)},
+	OptionVersion: Option{"-v", "--version", "", OptionTypeFlagTrue, "", "", fmt.Sprintf("显示ossutil的版本（%s）并退出。", Version), fmt.Sprintf("Show ossutil version (%s) and exit.", Version)},
 }
 
 func (T *Option) getHelp(language string) string {
 	switch strings.ToLower(language) {
 	case LEnglishLanguage:
 		return T.helpEnglish
-    default:
+	default:
 		return T.helpChinese
 	}
 }
@@ -82,7 +82,7 @@ type OptionMapType map[string]interface{}
 // ParseArgOptions parse command line and returns args and options
 func ParseArgOptions() ([]string, OptionMapType, error) {
 	options := initOption()
-    goopt.Args = make([]string, 0, 4)
+	goopt.Args = make([]string, 0, 4)
 	goopt.Description = func() string {
 		return "Simple tool for access OSS."
 	}
@@ -103,9 +103,9 @@ func initOption() OptionMapType {
 		case OptionTypeFlagTrue:
 			val, _ := flagTrueOption(option)
 			m[name] = val
-        case OptionTypeAlternative:
-            val, _ := stringOption(option) 
-            m[name] = val
+		case OptionTypeAlternative:
+			val, _ := stringOption(option)
+			m[name] = val
 		default:
 			val, _ := stringOption(option)
 			m[name] = val
@@ -116,7 +116,7 @@ func initOption() OptionMapType {
 
 func stringOption(option Option) (*string, error) {
 	names, err := makeNames(option)
-    if err == nil {
+	if err == nil {
 		// ignore option.def, set it to "", will assemble it after
 		return goopt.String(names, "", option.getHelp(DefaultLanguage)), nil
 	}
@@ -125,7 +125,7 @@ func stringOption(option Option) (*string, error) {
 
 func flagTrueOption(option Option) (*bool, error) {
 	names, err := makeNames(option)
-    if err == nil {
+	if err == nil {
 		return goopt.Flag(names, []string{}, option.getHelp(DefaultLanguage), ""), nil
 	}
 	return nil, err
@@ -155,7 +155,7 @@ func makeNames(option Option) ([]string, error) {
 func checkOption(options OptionMapType) error {
 	for name, optionInfo := range OptionMap {
 		if option, ok := options[name]; ok {
-		    if optionInfo.optionType == OptionTypeInt64 {
+			if optionInfo.optionType == OptionTypeInt64 {
 				if val, ook := option.(*string); ook && *val != "" {
 					num, err := strconv.ParseInt(*val, 10, 64)
 					if err != nil {
@@ -176,14 +176,14 @@ func checkOption(options OptionMapType) error {
 					}
 				}
 			}
-            if optionInfo.optionType == OptionTypeAlternative {
+			if optionInfo.optionType == OptionTypeAlternative {
 				if val, ook := option.(*string); ook && *val != "" {
-                    vals := strings.Split(optionInfo.minVal, "/")
-                    if FindPosCaseInsen(*val, vals) == -1 {
-                        return fmt.Errorf("invalid option value of %s, the value: %s is not anyone of %s", name, *val, optionInfo.minVal)
-                    }
-                }
-            }
+					vals := strings.Split(optionInfo.minVal, "/")
+					if FindPosCaseInsen(*val, vals) == -1 {
+						return fmt.Errorf("invalid option value of %s, the value: %s is not anyone of %s", name, *val, optionInfo.minVal)
+					}
+				}
+			}
 		}
 	}
 	return nil
@@ -206,13 +206,13 @@ func GetInt(name string, options OptionMapType) (int64, error) {
 		switch option.(type) {
 		case *string:
 			val, err := strconv.ParseInt(*(option.(*string)), 10, 64)
-            if err == nil {
+			if err == nil {
 				return val, nil
 			}
-            if *(option.(*string)) == "" {
-                return 0, fmt.Errorf("Option value of %s is empty", name)
-            }
-            return 0, err
+			if *(option.(*string)) == "" {
+				return 0, fmt.Errorf("Option value of %s is empty", name)
+			}
+			return 0, err
 		case *int64:
 			return *(option.(*int64)), nil
 		default:
