@@ -4,8 +4,10 @@ import (
     "fmt"
     "os"
     "time"
+    "strings"
 
     . "gopkg.in/check.v1"
+	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
 
 func (s *OssutilCommandSuite) rawRemove(args []string, recursive, force, bucket bool) (bool, error) {
@@ -25,6 +27,40 @@ func (s *OssutilCommandSuite) rawRemove(args []string, recursive, force, bucket 
     return showElapse, err
 }
 
+func (s *OssutilCommandSuite) RemoveWrapper(args string, bucket string, object string, c *C) (bool, error) {
+    array := strings.Split(args, " ")
+    command := array[0]
+    parameter := strings.Split(array[1], "-")
+    a := strings.Contains(parameter[1], "a")
+    m := strings.Contains(parameter[1], "m")
+    b := strings.Contains(parameter[1], "b")
+    r := strings.Contains(parameter[1], "r")
+    f := strings.Contains(parameter[1], "f")
+
+    arg := []string{CloudURLToString(bucket, object)}
+    str := ""
+    options := OptionMapType{
+        "endpoint": &str,
+        "accessKeyID": &str,
+        "accessKeySecret": &str,
+        "stsToken": &str,
+        "configFile": &configFile,
+        "bucket": &b,
+        "allType": &a,
+        "multipart": &m,
+        "recursive": &r,
+        "force": &f,
+    }
+    showElapse, err := cm.RunCommand(command, arg, options)
+    return showElapse, err
+}
+
+func (s *OssutilCommandSuite) clearAllMultipartInBucket(bucket string, c *C) {
+
+    _, e := s.RemoveWrapper("rm -afr", bucket, "", c)
+    c.Assert(e, IsNil)
+}
+
 func (s *OssutilCommandSuite) TestRemoveObject(c *C) {
     bucket := bucketNameMB
 
@@ -34,7 +70,7 @@ func (s *OssutilCommandSuite) TestRemoveObject(c *C) {
     time.Sleep(2*sleepTime)
 
     // list object
-    objects := s.listObjects(bucket, object, false, false, c)
+    objects := s.listObjects(bucket, object, false, false, false, false, c)
     c.Assert(len(objects), Equals, 1)
     c.Assert(objects[0], Equals, object)
 
@@ -42,7 +78,7 @@ func (s *OssutilCommandSuite) TestRemoveObject(c *C) {
     s.removeObjects(bucket, object, false, true, c)
 
     // list object
-    objects = s.listObjects(bucket, object, false, false, c)
+    objects = s.listObjects(bucket, object, false, false, false, false, c)
     c.Assert(len(objects), Equals, 0)
 }
 
@@ -78,14 +114,14 @@ func (s *OssutilCommandSuite) TestRemoveObjects(c *C) {
     c.Assert(err, NotNil)
 
     // list object
-    objects := s.listObjects(bucket, "", false, false, c)
+    objects := s.listObjects(bucket, "", false, false, false, false, c)
     c.Assert(len(objects), Equals, num)
 
     // "rm oss://bucket/ -r"
     // remove object
     s.removeObjects(bucket, "", true, false, c)
 
-    objects = s.listObjects(bucket, "", false, false, c)
+    objects = s.listObjects(bucket, "", false, false, false, false, c)
     c.Assert(len(objects), Equals, num)
 
     // "rm oss://bucket/prefix -r -f"
@@ -94,7 +130,7 @@ func (s *OssutilCommandSuite) TestRemoveObjects(c *C) {
     time.Sleep(3*sleepTime)
 
     // list object
-    objects = s.listObjects(bucket, "", false, false, c)
+    objects = s.listObjects(bucket, "", false, false, false, false, c)
     c.Assert(len(objects), Equals, 0)
 
     //reput objects and delete bucket
@@ -192,7 +228,6 @@ func (s *OssutilCommandSuite) TestErrRemove(c *C) {
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
 
-    // remove bucket without force
     showElapse, err = s.rawRemove([]string{CloudURLToString(bucket, "")}, false, false, true)
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true)
@@ -221,8 +256,162 @@ func (s *OssutilCommandSuite) TestErrDeleteObject(c *C) {
     object := "object"
     err = removeCommand.ossDeleteObjectRetry(bucket, object)
     c.Assert(err, NotNil)
-
+    
     _, err = removeCommand.ossBatchDeleteObjectsRetry(bucket, []string{object})
     c.Assert(err, NotNil)
+}
+
+func (s *OssutilCommandSuite) TestAllTypeObject(c *C) {
+    bucketName := bucketNameMB
+    
+    s.clearAllMultipartInBucket(bucketName, c)
+
+    normal_object := "TestAllTypeObject"
+    s.putObject(bucketName, normal_object, uploadFileName, c)
+    time.Sleep(2*sleepTime)
+
+    object := "TestMultipartObjectRm"
+    s.putObject(bucketName, object, uploadFileName, c)
+    time.Sleep(2*sleepTime)
+
+    objects := s.listObjects(bucketName, object, false, false, false, false, c)
+    c.Assert(len(objects), Equals, 1)
+    c.Assert(objects[0], Equals, object)
+		
+	bucket, err := copyCommand.command.ossBucket(bucketName)
+    for i := 0; i < 20; i++ {
+        _, err = bucket.InitiateMultipartUpload(object)
+        c.Assert(err, IsNil)
+    }
+
+	lmr, e := bucket.ListMultipartUploads(oss.Prefix(object))
+	c.Assert(e, IsNil)
+    c.Assert(len(lmr.Uploads), Equals, 20)
+
+    _, e = s.RemoveWrapper("rm -arf", bucketName, object, c)
+    c.Assert(e, IsNil)
+    
+	lmr, e = bucket.ListMultipartUploads(oss.Prefix(object))
+	c.Assert(e, IsNil)
+    c.Assert(len(lmr.Uploads), Equals, 0)
+
+    // list normal_object
+    objects = s.listObjects(bucketName, normal_object, false, false, false, false, c)
+    c.Assert(len(objects), Equals, 1)
+    c.Assert(objects[0], Equals, normal_object)
+}
+
+func (s *OssutilCommandSuite) TestMultipartObject(c *C) {
+    bucketName := bucketNameMB
+    
+    s.clearAllMultipartInBucket(bucketName, c)
+    
+    // put object
+    object := "TestMultipartObject"
+    s.putObject(bucketName, object, uploadFileName, c)
+    time.Sleep(2*sleepTime)
+
+    // list object
+    objects := s.listObjects(bucketName, object, false, false, false, false, c)
+    c.Assert(len(objects), Equals, 1)
+    c.Assert(objects[0], Equals, object)
+		
+	bucket, err := copyCommand.command.ossBucket(bucketName)
+    for i := 0; i < 20; i++ {
+        _, err = bucket.InitiateMultipartUpload(object)
+        c.Assert(err, IsNil)
+    }
+
+	lmr, e := bucket.ListMultipartUploads(oss.Prefix(object))
+	c.Assert(e, IsNil)
+    c.Assert(len(lmr.Uploads), Equals, 20)
+
+    _, e = s.RemoveWrapper("rm -mrf", bucketName, object, c)
+    c.Assert(e, IsNil)
+    
+	lmr, e = bucket.ListMultipartUploads(oss.Prefix(object))
+	c.Assert(e, IsNil)
+    c.Assert(len(lmr.Uploads), Equals, 0)
+
+    obj := "TestMultipartObjectUploads";
+    s.putObject(bucketName, obj, uploadFileName, c)
+    time.Sleep(4*sleepTime)
+
+    for i := 0; i < 20; i++ {
+        _, err = bucket.InitiateMultipartUpload(obj)
+        c.Assert(err, IsNil)
+    }
+    _, e = s.RemoveWrapper("rm -mrf", bucketName, "", c)
+    c.Assert(e, IsNil)
+    c.Assert(len(lmr.Uploads), Equals, 0)
+}
+
+func (s *OssutilCommandSuite) TestMultipartObject_Prefix(c *C) {
+    bucketName := bucketNameMB
+    bucket, err := copyCommand.command.ossBucket(bucketName) 
+	c.Assert(err, IsNil)
+    
+    s.clearAllMultipartInBucket(bucketName, c)
+
+    object := "TestMultipartObject"
+    s.putObject(bucketName, object, uploadFileName, c)
+    time.Sleep(2*sleepTime)
+
+    object1 := "TestMultipartObject" + "prefix" 
+    s.putObject(bucketName, object1, uploadFileName, c)
+    time.Sleep(2*sleepTime)
+
+    object2 := "TestMultipartObject" + "/dir/test" 
+    s.putObject(bucketName, object2, uploadFileName, c)
+    time.Sleep(2*sleepTime)
+
+    // list object
+    objects := s.listObjects(bucketName, object, false, false, false, false, c)
+    c.Assert(len(objects), Equals, 3)
+		
+    for i := 0; i < 20; i++ {
+        _, err = bucket.InitiateMultipartUpload(object)
+        c.Assert(err, IsNil)
+    }
+
+    for i := 0; i < 20; i++ {
+        _, err = bucket.InitiateMultipartUpload(object1)
+        c.Assert(err, IsNil)
+    }
+
+    for i := 0; i < 20; i++ {
+        _, err = bucket.InitiateMultipartUpload(object2)
+        c.Assert(err, IsNil)
+    }
+
+	lmr, e := bucket.ListMultipartUploads(oss.Prefix(object))
+	c.Assert(e, IsNil)
+    c.Assert(len(lmr.Uploads), Equals, 20*3)
+
+    _, e = s.RemoveWrapper("rm -mrf", bucketName, "", c)
+    c.Assert(e, IsNil)
+   
+	lmr, e = bucket.ListMultipartUploads(oss.Prefix(object))
+	c.Assert(e, IsNil)
+    c.Assert(len(lmr.Uploads), Equals, 0)
+}
+
+func (s *OssutilCommandSuite) TestMultipartError(c *C) {
+    bucketName := bucketNameMB
+    object := "TestMultipartError"
+
+     _, e := s.RemoveWrapper("rm -mb", bucketName, object, c)
+    c.Assert(e, NotNil)
+
+    _, e = s.RemoveWrapper("rm -mf", bucketName, "", c)
+    c.Assert(e, NotNil)
+}
+
+func (s *OssutilCommandSuite) TestAllTypeError(c *C) {
+    bucketName := bucketNameMB
+    object := "random"
+
+    _, e := s.RemoveWrapper("rm -ab", bucketName, object, c)
+    c.Assert(e, NotNil)
 }
 

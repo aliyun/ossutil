@@ -29,6 +29,7 @@ var (
     accessKeyID      = "<testAccessKeyID>"
     accessKeySecret  = "<testAccessKeySecret>"
     stsToken         = "<testSTSToken>"
+
 )
 
 var (
@@ -61,6 +62,7 @@ var (
     bucketNameMB        = "nodelete-ossutil-test-mb"    // bucket with at most one object 
     bucketNameList      = "nodelete-ossutil-test-list"    // bucket with at most one object 
     bucketNameNotExist  = bucketNamePrefix + "notexistbucket"  // bucket not exist
+
 )
 
 // Run once when the suite starts running
@@ -186,7 +188,7 @@ func (s *OssutilCommandSuite) listBuckets(shortFormat bool, c *C) ([]string) {
     out := os.Stdout
     testResultFile, _ = os.OpenFile(resultPath, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
     os.Stdout = testResultFile 
-    showElapse, err := s.rawList(args, shortFormat, false)
+    showElapse, err := s.rawList(args, shortFormat, false, false, false)
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true)
     os.Stdout = out
@@ -241,12 +243,12 @@ func (s *OssutilCommandSuite) removeObjects(bucket, prefix string, recursive, fo
     c.Assert(showElapse, Equals, true)
 }
 
-func (s *OssutilCommandSuite) listObjects(bucket, prefix string, shortFormat, directory bool, c *C) ([]string) {
+func (s *OssutilCommandSuite) listObjects(bucket, prefix string, shortFormat, directory bool, multipart, allType bool, c *C) ([]string) {
     args := []string{CloudURLToString(bucket, prefix)}
     out := os.Stdout
     testResultFile, _ = os.OpenFile(resultPath, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
     os.Stdout = testResultFile 
-    showElapse, err := s.rawList(args, shortFormat, directory)
+    showElapse, err := s.rawList(args, shortFormat, directory, multipart, allType)
     os.Stdout = out
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true)
