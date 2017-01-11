@@ -261,7 +261,9 @@ func (rc *RemoveCommand) PreCheck(rmOption *removeOptionType) (error, CloudURL) 
 
 	if multipart {
 		rmOption.typeSet = MultipartBit
-	} else {
+	} else if !rmOption.toBucket {
+		rmOption.typeSet = ObjectBit
+	} else if rmOption.recursive {
 		rmOption.typeSet = ObjectBit
 	}
 

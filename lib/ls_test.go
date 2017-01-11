@@ -3,14 +3,30 @@ package lib
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 	. "gopkg.in/check.v1"
 )
 
-func (s *OssutilCommandSuite) rawList(args []string, shortFormat, directory bool, multipart, allType bool) (bool, error) {
-	command := "ls"
+func (s *OssutilCommandSuite) rawList(args []string, cmdline string) (bool, error) {
+	array := strings.Split(cmdline, " ")
+	if len(array) < 2 {
+		return false, fmt.Errorf("ls test wrong cmdline given")
+	}
+
+	parameter := strings.Split(array[1], "-")
+	if len(parameter) < 2 {
+		return false, fmt.Errorf("ls test wrong cmdline given")
+	}
+
+	command := array[0]
+	sf := strings.Contains(parameter[1], "s")
+	d := strings.Contains(parameter[1], "d")
+	m := strings.Contains(parameter[1], "m")
+	a := strings.Contains(parameter[1], "a")
+
 	str := ""
 	options := OptionMapType{
 		"endpoint":        &str,
@@ -18,10 +34,10 @@ func (s *OssutilCommandSuite) rawList(args []string, shortFormat, directory bool
 		"accessKeySecret": &str,
 		"stsToken":        &str,
 		"configFile":      &configFile,
-		"shortFormat":     &shortFormat,
-		"directory":       &directory,
-		"multipart":       &multipart,
-		"allType":         &allType,
+		"shortFormat":     &sf,
+		"directory":       &d,
+		"multipart":       &m,
+		"allType":         &a,
 	}
 	showElapse, err := cm.RunCommand(command, args, options)
 	return showElapse, err
@@ -243,33 +259,33 @@ func (s *OssutilCommandSuite) TestListObjects(c *C) {
 	//c.Assert(len(objects), Equals, num + 2*num1 + 1)
 
 	// "ls oss://bucket/prefix -s"
-	objects := s.listObjects(bucket, "lstest:", true, false, false, false, c)
+	objects := s.listObjects(bucket, "lstest:", "ls -s", c)
 	c.Assert(len(objects), Equals, num+2*num1)
 
 	// "ls oss://bucket/prefix"
-	objects = s.listObjects(bucket, "lstest:#", false, false, false, false, c)
+	objects = s.listObjects(bucket, "lstest:#", "ls - ", c)
 	c.Assert(len(objects), Equals, num+2*num1)
 
 	// "ls oss://bucket/prefix -d"
-	objects = s.listObjects(bucket, "lstest:#", false, true, false, false, c)
+	objects = s.listObjects(bucket, "lstest:#", "ls -d", c)
 	c.Assert(len(objects), Equals, num+num1)
 
-	objects = s.listObjects(bucket, "lstest:#1/", false, true, false, false, c)
+	objects = s.listObjects(bucket, "lstest:#1/", "ls -d", c)
 	c.Assert(len(objects), Equals, 2)
 }
 
 func (s *OssutilCommandSuite) TestErrList(c *C) {
-	showElapse, err := s.rawList([]string{"../"}, true, false, false, false)
+	showElapse, err := s.rawList([]string{"../"}, "ls -s")
 	c.Assert(err, NotNil)
 	c.Assert(showElapse, Equals, false)
 
 	bucket := bucketNameNotExist
-	showElapse, err = s.rawList([]string{CloudURLToString(bucket, "")}, false, true, false, false)
+	showElapse, err = s.rawList([]string{CloudURLToString(bucket, "")}, "ls -d")
 	c.Assert(err, NotNil)
 	c.Assert(showElapse, Equals, false)
 
 	// list buckets with -d
-	showElapse, err = s.rawList([]string{"oss://"}, false, true, false, false)
+	showElapse, err = s.rawList([]string{"oss://"}, "ls -d")
 	c.Assert(err, NotNil)
 	c.Assert(showElapse, Equals, false)
 }
@@ -369,7 +385,7 @@ func (s *OssutilCommandSuite) TestListMultipartObjects(c *C) {
 	time.Sleep(5 * sleepTime)
 
 	// list object
-	objects := s.listObjects(bucketName, object, false, false, false, false, c)
+	objects := s.listObjects(bucketName, object, "ls - ", c)
 	c.Assert(len(objects), Equals, 1)
 	c.Assert(objects[0], Equals, object)
 
@@ -389,28 +405,28 @@ func (s *OssutilCommandSuite) TestListMultipartObjects(c *C) {
 	c.Assert(len(lmr.Uploads), Equals, 20+len(lmr_origin.Uploads))
 
 	// list multipart: ls oss://bucket/object
-	objects = s.listObjects(bucketName, object, false, false, false, false, c)
+	objects = s.listObjects(bucketName, object, "ls - ", c)
 	c.Assert(len(objects), Equals, 1)
 	c.Assert(objects[0], Equals, object)
 
 	// list multipart: ls -m oss://bucket/object
-	objects = s.listObjects(bucketName, object, false, false, true, false, c)
+	objects = s.listObjects(bucketName, object, "ls -m", c)
 	c.Assert(len(objects), Equals, 20)
 
 	// list all type object: ls -a oss://bucket/object
-	objects = s.listObjects(bucketName, object, false, false, false, true, c)
+	objects = s.listObjects(bucketName, object, "ls -a", c)
 	c.Assert(len(objects), Equals, 21)
 
 	// list multipart: ls -am oss://bucket/object
-	objects = s.listObjects(bucketName, object, false, false, true, true, c)
+	objects = s.listObjects(bucketName, object, "ls -am", c)
 	c.Assert(len(objects), Equals, 21)
 
 	// list multipart: ls -ms oss://bucket/object
-	objects = s.listObjects(bucketName, object, false, false, true, false, c)
+	objects = s.listObjects(bucketName, object, "ls -ms", c)
 	c.Assert(len(objects), Equals, 20)
 
 	// list multipart: ls -as oss://bucket/object
-	objects = s.listObjects(bucketName, object, false, false, true, true, c)
+	objects = s.listObjects(bucketName, object, "ls -as", c)
 	c.Assert(len(objects), Equals, 21)
 
 	lmr, e = bucket.ListMultipartUploads(oss.Prefix(object))
