@@ -155,12 +155,10 @@ Usage:
 }
 
 type removeOptionType struct {
-	recursive   bool
-	toBucket    bool
-	force       bool
-	isObject    bool
-	isMultipart bool
-	isAllType   bool
+	recursive bool
+	toBucket  bool
+	force     bool
+	typeSet   uint
 }
 
 // RemoveCommand is the command remove bucket or objects
@@ -235,13 +233,13 @@ func (rc *RemoveCommand) RunCommand() error {
 		return err
 	}
 
-	if rmOption.isObject {
+	if rmOption.typeSet&ObjectBit != 0 {
 		err = rc.removeObjectEntry(bucket, cloudURL, rmOption.recursive, rmOption.force)
 		if err != nil {
 			return err
 		}
 	}
-	if rmOption.isMultipart {
+	if rmOption.typeSet&MultipartBit != 0 {
 		err = rc.removeMultipartUploadsEntry(bucket, cloudURL, rmOption.recursive, rmOption.force)
 		if err != nil {
 			return err
@@ -258,26 +256,21 @@ func (rc *RemoveCommand) PreCheck(rmOption *removeOptionType) (error, CloudURL) 
 	rmOption.recursive, _ = GetBool(OptionRecursion, rc.command.options)
 	rmOption.toBucket, _ = GetBool(OptionBucket, rc.command.options)
 	rmOption.force, _ = GetBool(OptionForce, rc.command.options)
-	rmOption.isMultipart, _ = GetBool(OptionMultipart, rc.command.options)
-	rmOption.isAllType, _ = GetBool(OptionAllType, rc.command.options)
-	rmOption.isObject = true
+	multipart, _ := GetBool(OptionMultipart, rc.command.options)
+	allType, _ := GetBool(OptionAllType, rc.command.options)
 
-	// support "rm -bf" and "rm -b"
-	if !rmOption.isMultipart && !rmOption.isAllType && !rmOption.recursive && rmOption.toBucket {
-		rmOption.isObject = false
-		rmOption.isMultipart = false
+	if multipart {
+		rmOption.typeSet = MultipartBit
+	} else {
+		rmOption.typeSet = ObjectBit
 	}
 
-	if rmOption.isMultipart {
-		rmOption.isObject = false
-	}
-	if rmOption.isAllType {
-		rmOption.isMultipart = true
-		rmOption.isObject = true
+	if allType {
+		rmOption.typeSet = MultipartBit | ObjectBit
 	}
 
 	// "rm -mb" and "rm -ab", invalid
-	if !rmOption.recursive && rmOption.toBucket && (rmOption.isMultipart || rmOption.isAllType) {
+	if !rmOption.recursive && rmOption.toBucket && (multipart || allType) {
 		err := fmt.Errorf("invalid remove bucket args: %s", rc.command.args[0])
 		return err, CloudURL{}
 	}

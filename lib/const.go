@@ -100,3 +100,15 @@ const (
 	RmMultipart = "removeMultipart"
 	RmBucket    = "removeBucket"
 )
+
+const (
+	AllTypeBit   = 0x0001
+	ObjectBit    = 0x0010
+	MultipartBit = 0x0100
+)
+
+const (
+	NotAllTypeBit   = 0x0
+	NotObjectBit    = 0x0
+	NotMultipartBit = 0x0
+)
