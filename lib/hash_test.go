@@ -2,19 +2,8 @@ package lib
 
 import (
     "os"
-    "math/rand"
     . "gopkg.in/check.v1"
 )
-
-var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-
-func randStr(n int) string {
-    b := make([]rune, n)
-    for i := range b {
-        b[i] = letters[rand.Intn(len(letters))]
-    }
-    return string(b)
-}
 
 func (s *OssutilCommandSuite) TestErrorInputFile(c *C) {
     command := "hash" 

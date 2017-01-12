@@ -311,8 +311,11 @@ func (cmd *Command) ossListObjectsRetry(bucket *oss.Bucket, options ...oss.Optio
 	retryTimes, _ := GetInt(OptionRetryTimes, cmd.options)
 	for i := 1; ; i++ {
 		lor, err := bucket.ListObjects(options...)
-		if err == nil || int64(i) >= retryTimes {
-			return lor, err
+		if err == nil { 
+            return lor, err
+        }
+        if int64(i) >= retryTimes {
+			return lor, BucketError{err, bucket.BucketName}
 		}
 	}
 }
@@ -325,24 +328,49 @@ func (cmd *Command) ossGetObjectStatRetry(bucket *oss.Bucket, object string) (ht
 			return props, err
 		}
 		if int64(i) >= retryTimes {
-			return props, ObjectError{err, object}
+			return props, ObjectError{err, bucket.BucketName, object}
 		}
 	}
 }
 
-func (cmd *Command) ossDownloadFileRetry(bucket *oss.Bucket, objectName, fileName string) error {
+func (cmd *Command) ossGetObjectMetaRetry(bucket *oss.Bucket, object string) (http.Header, error) {
 	retryTimes, _ := GetInt(OptionRetryTimes, cmd.options)
 	for i := 1; ; i++ {
-		err := bucket.GetObjectToFile(objectName, fileName)
+		props, err := bucket.GetObjectMeta(object)
 		if err == nil {
-			return err
+			return props, err
 		}
 		if int64(i) >= retryTimes {
-			return ObjectError{err, objectName}
+			return props, ObjectError{err, bucket.BucketName, object}
 		}
 	}
 }
 
+func (cmd *Command) objectStatistic(bucket *oss.Bucket, cloudURL CloudURL, monitor Monitorer) {
+    if monitor == nil {
+        return
+    }
+
+    pre := oss.Prefix(cloudURL.object)
+    marker := oss.Marker("")
+    for i := 0; ; i++ {
+        lor, err := cmd.ossListObjectsRetry(bucket, marker, pre)
+        if err != nil {
+            monitor.setScanError(err)
+            return
+        }
+
+        monitor.updateScanNum(int64(len(lor.Objects)))
+
+        pre = oss.Prefix(lor.Prefix)
+        marker = oss.Marker(lor.NextMarker)
+        if !lor.IsTruncated {
+            break
+        }
+    }
+
+    monitor.setScanEnd()
+}
 
 func (cmd *Command) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, chObjects chan<- string, chError chan<- error) {
 	pre := oss.Prefix(cloudURL.object)
@@ -351,7 +379,7 @@ func (cmd *Command) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, chObje
 		lor, err := cmd.ossListObjectsRetry(bucket, marker, pre)
 		if err != nil {
 			chError <- err
-			break
+            break
 		}
 
 		for _, object := range lor.Objects {
@@ -366,6 +394,18 @@ func (cmd *Command) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, chObje
 	}
 	defer close(chObjects)
 	chError <- nil
+}
+
+func (cmd *Command) updateMonitor(err error, monitor *Monitor) {
+    if monitor == nil {
+        return
+    }
+    if err == nil {
+        monitor.updateOKNum(1)
+    } else {
+        monitor.updateErrNum(1)
+    }
+    fmt.Printf(monitor.progressBar(false))
 }
 
 // GetAllCommands returns all commands list

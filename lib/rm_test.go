@@ -8,23 +8,6 @@ import (
     . "gopkg.in/check.v1"
 )
 
-func (s *OssutilCommandSuite) rawRemove(args []string, recursive, force, bucket bool) (bool, error) {
-    command := "rm"
-    str := ""
-    options := OptionMapType{
-        "endpoint": &str,
-        "accessKeyID": &str,
-        "accessKeySecret": &str,
-        "stsToken": &str,
-        "configFile": &configFile,
-        "recursive": &recursive,
-        "force": &force,
-        "bucket": &bucket,
-    }
-    showElapse, err := cm.RunCommand(command, args, options)
-    return showElapse, err
-}
-
 func (s *OssutilCommandSuite) TestRemoveObject(c *C) {
     bucket := bucketNameMB
 
@@ -187,8 +170,7 @@ func (s *OssutilCommandSuite) TestErrRemove(c *C) {
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
 
-    object := "/object"
-    showElapse, err = s.rawRemove([]string{CloudURLToString(bucket, object)}, false, true, false)
+    showElapse, err = s.rawRemove([]string{"oss:///object"}, false, true, false)
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
 
@@ -201,15 +183,24 @@ func (s *OssutilCommandSuite) TestErrRemove(c *C) {
     c.Assert(bucketStat[StatName], Equals, bucket)
 
     // batch delete not exist objects
+    object := "batch_delete_notexst_object"
     showElapse, err = s.rawRemove([]string{CloudURLToString(bucket, object)}, true, true, false)
-    c.Assert(err, NotNil)
-    c.Assert(showElapse, Equals, false)
+    c.Assert(err, IsNil)
+    c.Assert(showElapse, Equals, true)
 
     // clear not exist bucket
     bucketName := bucketNamePrefix + "rmnotexist"
     showElapse, err = s.rawRemove([]string{CloudURLToString(bucketName, "")}, true, true, false)
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
+
+    // test oss batch delete not exist objects
+    objects := []string{}
+    ossBucket, err := removeCommand.command.ossBucket(bucket)
+    c.Assert(err, IsNil)
+    num, err := removeCommand.ossBatchDeleteObjectsRetry(ossBucket, objects) 
+    c.Assert(err, IsNil)
+    c.Assert(num, Equals, 0)
 }
 
 func (s *OssutilCommandSuite) TestErrDeleteObject(c *C) {

@@ -8,22 +8,6 @@ import (
     . "gopkg.in/check.v1"
 )
 
-func (s *OssutilCommandSuite) rawList(args []string, shortFormat, directory bool) (bool, error) {
-    command := "ls"
-    str := ""
-    options := OptionMapType{
-        "endpoint": &str,
-        "accessKeyID": &str,
-        "accessKeySecret": &str,
-        "stsToken": &str,
-        "configFile": &configFile,
-        "shortFormat": &shortFormat,
-        "directory": &directory,
-    }
-    showElapse, err := cm.RunCommand(command, args, options)
-    return showElapse, err
-}
-
 // test list buckets
 func (s *OssutilCommandSuite) TestListLoadConfig(c *C) {
     command := "ls"
@@ -164,29 +148,6 @@ func (s *OssutilCommandSuite) TestListWithBucketCname(c *C) {
     time.Sleep(7*time.Second)
 }
 
-/*
-func (s *OssutilCommandSuite) TestListBuckets(c *C) {
-    // "ls" 
-    bucket := bucketNamePrefix + "ls2" 
-    // put bucket
-    s.putBucket(bucket, c)
-    time.Sleep(10*time.Second)
-
-    // get result
-    buckets := s.listBuckets(false, c)
-    c.Assert(FindPos(bucket, buckets) != -1, Equals, true)
-    bucketNum := len(buckets)
-
-    // remove empty bucket
-    s.removeBucket(bucket, false, c)
-    time.Sleep(10*time.Second)
-
-    // get result
-    buckets = s.listBuckets(false, c)
-    c.Assert(FindPos(bucket, buckets) == -1, Equals, true)
-    c.Assert(len(buckets) <= bucketNum, Equals, true)
-}
-*/
 // list objects with not exist bucket 
 func (s *OssutilCommandSuite) TestListObjectsBucketNotExist(c *C) {
     bucket := bucketNameNotExist 

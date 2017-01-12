@@ -8,6 +8,9 @@ import (
     "fmt"
     "io/ioutil"
     "strings"
+    "strconv"
+    "path/filepath"
+    "math/rand"
     "testing"
     oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 
@@ -40,6 +43,7 @@ var (
     testResultFile, _   = os.OpenFile(resultPath, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
     uploadFileName      = "ossutil_test.upload_file"
     downloadFileName    = "ossutil_test.download_file"
+    downloadDir         = "ossutil_test.download_dir"
     inputFileName       = "ossutil_test.input_file"
     content             = "abc"
     cm                  = CommandManager{}
@@ -124,16 +128,29 @@ func (s *OssutilCommandSuite) TearDownSuite(c *C) {
     _ = os.Remove(resultPath)
     _ = os.Remove(uploadFileName)
     _ = os.Remove(downloadFileName)
+    _ = os.RemoveAll(downloadDir)
+    _ = os.RemoveAll(DefaultOutputDir)
     os.Stdout = out
     os.Stderr = errout
 }
 
 // Run after each test or benchmark runs
 func (s *OssutilCommandSuite) SetUpTest(c *C) {
+    configFile = "ossutil_test.boto"
 }
 
 // Run once after all tests or benchmarks have finished running
 func (s *OssutilCommandSuite) TearDownTest(c *C) {
+}
+
+var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+func randStr(n int) string {
+    b := make([]rune, n)
+    for i := range b {
+        b[i] = letters[rand.Intn(len(letters))]
+    }
+    return string(b)
 }
 
 func (s *OssutilCommandSuite) configNonInteractive(c *C) {
@@ -181,10 +198,26 @@ func (s *OssutilCommandSuite) removeBuckets(prefix string, c *C) {
     }
 }
 
+func (s *OssutilCommandSuite) rawList(args []string, shortFormat, directory bool) (bool, error) {
+    command := "ls"
+    str := ""
+    options := OptionMapType{
+        "endpoint": &str,
+        "accessKeyID": &str,
+        "accessKeySecret": &str,
+        "stsToken": &str,
+        "configFile": &configFile,
+        "shortFormat": &shortFormat,
+        "directory": &directory,
+    }
+    showElapse, err := cm.RunCommand(command, args, options)
+    return showElapse, err
+}
+
 func (s *OssutilCommandSuite) listBuckets(shortFormat bool, c *C) ([]string) {
     var args []string
-    out := os.Stdout
     testResultFile, _ = os.OpenFile(resultPath, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
+    out := os.Stdout
     os.Stdout = testResultFile 
     showElapse, err := s.rawList(args, shortFormat, false)
     c.Assert(err, IsNil)
@@ -211,13 +244,28 @@ func (s *OssutilCommandSuite) getBucketResults(c *C) ([]string) {
 }
 
 func (s *OssutilCommandSuite) getResult(c *C) ([]string) {
-    str := s.readFile(resultPath, c)
+    return s.getFileResult(resultPath, c)
+}
+
+func (s *OssutilCommandSuite) getFileResult(fileName string, c *C) ([]string) {
+    str := s.readFile(fileName, c)
     sli := strings.Split(str, "\n")
     result := []string{}
     for _, str := range sli {
         if str != ""{
             result = append(result, str)
         }
+    }
+    return result 
+}
+
+func (s *OssutilCommandSuite) getReportResult(fileName string, c *C) ([]string) {
+    result := s.getFileResult(fileName, c)
+    c.Assert(len(result) >= 1, Equals, true)
+    c.Assert(strings.HasPrefix(result[0], "#"), Equals, true)
+    result = result[1:]
+    for _, r := range result {
+        c.Assert(strings.HasPrefix(r, "[Error]"), Equals, true)
     }
     return result 
 }
@@ -234,6 +282,40 @@ func (s *OssutilCommandSuite) removeBucket(bucket string, clearObjects bool, c *
     }
 }
 
+func (s *OssutilCommandSuite) rawRemove(args []string, recursive, force, bucket bool) (bool, error) {
+    command := "rm"
+    str := ""
+    options := OptionMapType{
+        "endpoint": &str,
+        "accessKeyID": &str,
+        "accessKeySecret": &str,
+        "stsToken": &str,
+        "configFile": &configFile,
+        "recursive": &recursive,
+        "force": &force,
+        "bucket": &bucket,
+    }
+    showElapse, err := cm.RunCommand(command, args, options)
+    return showElapse, err
+}
+
+func (s *OssutilCommandSuite) initRemove(bucket, object string, recursive, force, tobucket bool) error {
+    args := []string{CloudURLToString(bucket, object)}
+    str := ""
+    options := OptionMapType{
+        "endpoint": &str,
+        "accessKeyID": &str,
+        "accessKeySecret": &str,
+        "stsToken": &str,
+        "configFile": &configFile,
+        "recursive": &recursive,
+        "force": &force,
+        "bucket": &tobucket,
+    }
+    err := removeCommand.Init(args, options)
+    return err
+}
+
 func (s *OssutilCommandSuite) removeObjects(bucket, prefix string, recursive, force bool, c *C) {
     args := []string{CloudURLToString(bucket, prefix)}
     showElapse, err := s.rawRemove(args, recursive, force, false)
@@ -243,8 +325,8 @@ func (s *OssutilCommandSuite) removeObjects(bucket, prefix string, recursive, fo
 
 func (s *OssutilCommandSuite) listObjects(bucket, prefix string, shortFormat, directory bool, c *C) ([]string) {
     args := []string{CloudURLToString(bucket, prefix)}
-    out := os.Stdout
     testResultFile, _ = os.OpenFile(resultPath, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
+    out := os.Stdout
     os.Stdout = testResultFile 
     showElapse, err := s.rawList(args, shortFormat, directory)
     os.Stdout = out
@@ -274,6 +356,43 @@ func (s *OssutilCommandSuite) getObjectResults(c *C) ([]string) {
     return objects 
 }
 
+func (s *OssutilCommandSuite) putBucketWithACL(bucket string, acl string) (bool, error) {
+    args := []string{CloudURLToString(bucket, "")}
+    showElapse, err := s.rawPutBucketWithACL(args, acl)
+    return showElapse, err
+}
+
+func (s *OssutilCommandSuite) rawPutBucketWithACL(args []string, acl string) (bool, error) {
+    command := "mb"
+    str := ""
+    options := OptionMapType{
+        "endpoint": &str,
+        "accessKeyID": &str,
+        "accessKeySecret": &str,
+        "stsToken": &str,
+        "configFile": &configFile,
+        "acl": &acl,
+    }
+    showElapse, err := cm.RunCommand(command, args, options)
+    return showElapse, err
+}
+
+func (s *OssutilCommandSuite) rawPutBucketWithACLLanguage(args []string, acl, language string) (bool, error) {
+    command := "mb"
+    str := ""
+    options := OptionMapType{
+        "endpoint": &str,
+        "accessKeyID": &str,
+        "accessKeySecret": &str,
+        "stsToken": &str,
+        "configFile": &configFile,
+        "acl": &acl,
+        "language": &language,
+    }
+    showElapse, err := cm.RunCommand(command, args, options)
+    return showElapse, err
+}
+
 func (s *OssutilCommandSuite) putBucket(bucket string, c *C) {
     command := "mb"
     args := []string{CloudURLToString(bucket, "")}
@@ -290,31 +409,130 @@ func (s *OssutilCommandSuite) putBucket(bucket string, c *C) {
     c.Assert(showElapse, Equals, true)
 }
 
+func (s *OssutilCommandSuite) rawCP(srcURL, destURL string, recursive, force, update bool, threshold int64, cpDir string) (bool, error) {
+    args := []string{srcURL, destURL}
+    showElapse, err := s.rawCPWithArgs(args, recursive, force, update, threshold, cpDir)
+    return showElapse, err
+}
+
+func (s *OssutilCommandSuite) rawCPWithArgs(args []string, recursive, force, update bool, threshold int64, cpDir string) (bool, error) {
+    command := "cp"
+    str := ""
+    thre := strconv.FormatInt(threshold, 10)
+    routines := strconv.Itoa(Routines)
+    options := OptionMapType{
+        "endpoint": &str,
+        "accessKeyID": &str,
+        "accessKeySecret": &str,
+        "stsToken": &str,
+        "configFile": &configFile,
+        "recursive": &recursive,
+        "force": &force,
+        "update": &update,
+        "bigfileThreshold": &thre,
+        "checkpointDir": &cpDir,
+        "routines": &routines,
+    }
+    showElapse, err := cm.RunCommand(command, args, options)
+    time.Sleep(sleepTime)
+    return showElapse, err
+}
+
+func (s *OssutilCommandSuite) rawCPWithOutputDir(srcURL, destURL string, recursive, force, update bool, threshold int64, outputDir string) (bool, error) {
+    command := "cp"
+    str := ""
+    args := []string{srcURL, destURL}
+    thre := strconv.FormatInt(threshold, 10)
+    routines := strconv.Itoa(Routines)
+    cpDir := CheckpointDir
+    options := OptionMapType{
+        "endpoint": &str,
+        "accessKeyID": &str,
+        "accessKeySecret": &str,
+        "stsToken": &str,
+        "configFile": &configFile,
+        "recursive": &recursive,
+        "force": &force,
+        "update": &update,
+        "bigfileThreshold": &thre,
+        "checkpointDir": &cpDir,
+        "routines": &routines,
+        "outputDir": &outputDir,
+    }
+    showElapse, err := cm.RunCommand(command, args, options)
+    time.Sleep(sleepTime)
+    return showElapse, err
+}
+
+func (s *OssutilCommandSuite) initCopyCommand(srcURL, destURL string, recursive, force, update bool, threshold int64, cpDir, outputDir string) error {
+    str := ""
+    args := []string{srcURL, destURL}
+    thre := strconv.FormatInt(threshold, 10)
+    routines := strconv.Itoa(Routines)
+    options := OptionMapType{
+        "endpoint": &str,
+        "accessKeyID": &str,
+        "accessKeySecret": &str,
+        "stsToken": &str,
+        "configFile": &configFile,
+        "recursive": &recursive,
+        "force": &force,
+        "update": &update,
+        "bigfileThreshold": &thre,
+        "checkpointDir": &cpDir,
+        "routines": &routines,
+        "outputDir": &outputDir,
+    }
+    err := copyCommand.Init(args, options)
+    return err
+}
+
 func (s *OssutilCommandSuite) putObject(bucket, object, fileName string, c *C) {
     args := []string{fileName, CloudURLToString(bucket, object)}
-    showElapse, err := s.rawCPWithArgs(args, false, true, false, BigFileThreshold, CheckpointDir) 
+    showElapse, err := s.rawCPWithArgs(args, false, true, false, DefaultBigFileThreshold, CheckpointDir) 
+    fmt.Println(err)
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true)
 }
 
 func (s *OssutilCommandSuite) getObject(bucket, object, fileName string, c *C) {
     args := []string{CloudURLToString(bucket, object), fileName}
-    showElapse, err := s.rawCPWithArgs(args, false, true, false, BigFileThreshold, CheckpointDir)
+    showElapse, err := s.rawCPWithArgs(args, false, true, false, DefaultBigFileThreshold, CheckpointDir)
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true)
 }
 
 func (s *OssutilCommandSuite) copyObject(srcBucket, srcObject, destBucket, destObject string, c *C) {
     args := []string{CloudURLToString(srcBucket, srcObject), CloudURLToString(destBucket, destObject)}
-    showElapse, err := s.rawCPWithArgs(args, false, true, false, BigFileThreshold, CheckpointDir)
+    showElapse, err := s.rawCPWithArgs(args, false, true, false, DefaultBigFileThreshold, CheckpointDir)
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true)
 }
 
+func (s *OssutilCommandSuite) rawGetStat(bucket, object string) (bool, error) {
+    args := []string{CloudURLToString(bucket, object)}
+    showElapse, err := s.rawGetStatWithArgs(args)
+    return showElapse, err 
+}
+
+func (s *OssutilCommandSuite) rawGetStatWithArgs(args []string) (bool, error) {
+    command := "stat"
+    str := ""
+    options := OptionMapType{
+        "endpoint": &str,
+        "accessKeyID": &str,
+        "accessKeySecret": &str,
+        "stsToken": &str,
+        "configFile": &configFile,
+    }
+    showElapse, err := cm.RunCommand(command, args, options)
+    return showElapse, err 
+}
+
 func (s *OssutilCommandSuite) getStat(bucket, object string, c *C) (map[string]string) {
     args := []string{CloudURLToString(bucket, object)}
-    out := os.Stdout
     testResultFile, _ = os.OpenFile(resultPath, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
+    out := os.Stdout
     os.Stdout = testResultFile 
     showElapse, err := s.rawGetStatWithArgs(args)
     c.Assert(err, IsNil)
@@ -355,6 +573,57 @@ func (s *OssutilCommandSuite) getHashResults(c *C) (map[string]string) {
     return stat 
 }
 
+func (s *OssutilCommandSuite) rawSetBucketACL(bucket, acl string, force bool) (bool, error) {
+    args := []string{CloudURLToString(bucket, ""), acl}
+    showElapse, err := s.rawSetACLWithArgs(args, false, true, force)
+    return showElapse, err
+}
+
+func (s *OssutilCommandSuite) rawSetObjectACL(bucket, object, acl string, recursive, force bool) (bool, error) {
+    args := []string{CloudURLToString(bucket, object), acl}
+    showElapse, err := s.rawSetACLWithArgs(args, recursive, false, force)
+    return showElapse, err
+}
+
+func (s *OssutilCommandSuite) rawSetACLWithArgs(args []string, recursive, bucket, force bool) (bool, error) {
+    command := "set-acl"
+    str := ""
+    routines := strconv.Itoa(Routines)
+    options := OptionMapType{
+        "endpoint": &str,
+        "accessKeyID": &str,
+        "accessKeySecret": &str,
+        "stsToken": &str,
+        "configFile": &configFile,
+        "routines": &routines,
+        "recursive": &recursive,
+        "bucket": &bucket,
+        "force": &force,
+    }
+    showElapse, err := cm.RunCommand(command, args, options)
+    time.Sleep(sleepTime)
+    return showElapse, err
+}
+
+func (s *OssutilCommandSuite) initSetACL(bucket, object, acl string, recursive, tobucket, force bool) error {
+    args := []string{CloudURLToString(bucket, object), acl}
+    str := ""
+    routines := strconv.Itoa(Routines)
+    options := OptionMapType{
+        "endpoint": &str,
+        "accessKeyID": &str,
+        "accessKeySecret": &str,
+        "stsToken": &str,
+        "configFile": &configFile,
+        "routines": &routines,
+        "recursive": &recursive,
+        "bucket": &tobucket,
+        "force": &force,
+    }
+    err := setACLCommand.Init(args, options)
+    return err
+}
+
 func (s *OssutilCommandSuite) setBucketACL(bucket, acl string, c *C) {
     args := []string{CloudURLToString(bucket, ""), acl}
     showElapse, err := s.rawSetACLWithArgs(args, false, true, false)
@@ -367,6 +636,87 @@ func (s *OssutilCommandSuite) setObjectACL(bucket, object, acl string, recursive
     showElapse, err := s.rawSetACLWithArgs(args, recursive, false, force)
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true)
+}
+
+func (s *OssutilCommandSuite) rawSetMeta(bucket, object, meta string, update, delete, recursive, force bool, language string) (bool, error) {
+    args := []string{CloudURLToString(bucket, object), meta}
+    showElapse, err := s.rawSetMetaWithArgs(args, update, delete, recursive, force, language) 
+    return showElapse, err
+}
+
+func (s *OssutilCommandSuite) rawSetMetaWithArgs(args []string, update, delete, recursive, force bool, language string) (bool, error) {
+    command := "set-meta"
+    str := ""
+    routines := strconv.Itoa(Routines)
+    options := OptionMapType{
+        "endpoint": &str,
+        "accessKeyID": &str,
+        "accessKeySecret": &str,
+        "stsToken": &str,
+        "configFile": &configFile,
+        "update": &update,
+        "delete": &delete,
+        "recursive": &recursive,
+        "force": &force,
+        "routines": &routines,
+        "language": &language,
+    }
+    showElapse, err := cm.RunCommand(command, args, options)
+    time.Sleep(2*sleepTime)
+    return showElapse, err
+}
+
+func (s *OssutilCommandSuite) setObjectMeta(bucket, object, meta string, update, delete, recursive, force bool, c *C) {
+    showElapse, err := s.rawSetMeta(bucket, object, meta, update, delete, recursive, force, DefaultLanguage) 
+    c.Assert(err, IsNil)
+    c.Assert(showElapse, Equals, true)
+}
+
+func (s *OssutilCommandSuite) initSetMeta(bucket, object, meta string, update, delete, recursive, force bool, language string) error {
+    args := []string{CloudURLToString(bucket, object), meta}
+    str := ""
+    routines := strconv.Itoa(Routines)
+    options := OptionMapType{
+        "endpoint": &str,
+        "accessKeyID": &str,
+        "accessKeySecret": &str,
+        "stsToken": &str,
+        "configFile": &configFile,
+        "update": &update,
+        "delete": &delete,
+        "recursive": &recursive,
+        "force": &force,
+        "routines": &routines,
+        "language": &language,
+    }
+    err := setMetaCommand.Init(args, options)
+    return err
+}
+
+func (s *OssutilCommandSuite) getFileList(dpath string) ([]string, error) {
+    fileList := []string{}
+    err := filepath.Walk(dpath, func(fpath string, f os.FileInfo, err error) error {
+        if f == nil {
+            return err
+        }
+
+        dpath = filepath.Clean(dpath)
+        fpath = filepath.Clean(fpath)
+        fileName, err := filepath.Rel(dpath, fpath) 
+        if err != nil {
+            return fmt.Errorf("list file error: %s, info: %s", fpath, err.Error())
+        }
+
+        if f.IsDir(){
+            if fpath != dpath {
+                fileList = append(fileList, fileName + string(os.PathSeparator))
+            }
+            return nil
+        }
+        fileList = append(fileList, fileName)
+        return nil
+    })
+    return fileList, err
 }
 
 func (s *OssutilCommandSuite) TestParseOptions(c *C) {
@@ -521,7 +871,7 @@ func (s *OssutilCommandSuite) TestErrOssDownloadFile(c *C) {
     c.Assert(err, IsNil)
 
     object := "object"
-    err = copyCommand.command.ossDownloadFileRetry(bucket, object, object)
+    err = copyCommand.ossDownloadFileRetry(bucket, object, object)
     c.Assert(err, NotNil)
 }
 
@@ -533,7 +883,6 @@ func (s *OssutilCommandSuite) TestUserAgent(c *C) {
     c.Assert(err, IsNil)
     c.Assert(client, NotNil)
 }
-
 
 func (s *OssutilCommandSuite) TestParseAndRunCommand(c *C) {
     args := []string{}

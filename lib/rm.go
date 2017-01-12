@@ -142,7 +142,8 @@ Usage:
 
 // RemoveCommand is the command remove bucket or objects 
 type RemoveCommand struct {
-	command Command
+	command     Command
+    monitor     RMMonitor
 }
 
 var removeCommand = RemoveCommand{
@@ -185,6 +186,7 @@ func (rc *RemoveCommand) Init(args []string, options OptionMapType) error {
 
 // RunCommand simulate inheritance, and polymorphism
 func (rc *RemoveCommand) RunCommand() error {
+    rc.monitor.init()
 	recursive, _ := GetBool(OptionRecursion, rc.command.options)
 	toBucket, _ := GetBool(OptionBucket, rc.command.options)
 	force, _ := GetBool(OptionForce, rc.command.options)
@@ -204,15 +206,20 @@ func (rc *RemoveCommand) RunCommand() error {
 	}
 
 	if !recursive && !toBucket {
-		return rc.removeObject(bucket, cloudURL)
-	}
-	if !recursive && toBucket {
-		return rc.removeBucket(bucket, cloudURL, force)
-	}
-	if recursive && !toBucket {
-		return rc.clearBucket(bucket, cloudURL, force)
-	}
-	return rc.removeBucketObjects(bucket, cloudURL, force)
+		err = rc.removeObject(bucket, cloudURL)
+	} else 	if !recursive && toBucket {
+		err = rc.removeBucket(bucket, cloudURL, force)
+	} else 	if recursive && !toBucket {
+		err = rc.clearBucket(bucket, cloudURL, force)
+	} else {
+        err = rc.removeBucketObjects(bucket, cloudURL, force)
+    }
+    exitStat := normalExit
+    if err != nil {
+        exitStat = errExit
+    }
+    fmt.Printf(rc.monitor.progressBar(true, exitStat))
+    return err
 }
 
 func (rc *RemoveCommand) removeObject(bucket *oss.Bucket, cloudURL CloudURL) error {
@@ -220,7 +227,50 @@ func (rc *RemoveCommand) removeObject(bucket *oss.Bucket, cloudURL CloudURL) err
 		return fmt.Errorf("remove bucket, miss --bucket option, if you mean remove object, invalid url: %s, miss object", rc.command.args[0])
 	}
 
-	return rc.ossDeleteObjectRetry(bucket, cloudURL.object)
+    rc.monitor.updateOP(rmObject)
+
+    exist, err := rc.touchObject(bucket, cloudURL)
+    if exist || err != nil {
+        err = rc.deleteObjectWithMonitor(bucket, cloudURL.object)
+        if err != nil {
+            rc.monitor.setOP(0)
+        }
+        return err
+    }
+    return nil
+}
+
+func (rc *RemoveCommand) touchObject(bucket *oss.Bucket, cloudURL CloudURL) (bool, error) {
+    _, err := rc.command.ossGetObjectMetaRetry(bucket, cloudURL.object)
+    if err == nil {
+        rc.monitor.updateScanNum(1)
+        rc.monitor.setScanEnd()
+        return true, nil
+    }
+
+    oerr := err.(ObjectError).err
+    switch oerr.(type) {
+    case oss.ServiceError:
+        if oerr.(oss.ServiceError).Code == "NoSuchKey" { 
+            rc.monitor.setScanEnd()
+            return false, nil
+        }
+        rc.monitor.setScanError(err)
+        return false, err 
+    default:
+        rc.monitor.setScanError(err)
+        return false, err
+    }
+}
+
+func (rc *RemoveCommand) deleteObjectWithMonitor(bucket *oss.Bucket, object string) error {
+    err := rc.ossDeleteObjectRetry(bucket, object)
+    if err == nil {
+        rc.updateObjectMonitor(1, 0)
+    } else {
+        rc.updateObjectMonitor(0, 1)
+    }
+    return err
 }
 
 func (rc *RemoveCommand) ossDeleteObjectRetry(bucket *oss.Bucket, object string) error {
@@ -231,9 +281,15 @@ func (rc *RemoveCommand) ossDeleteObjectRetry(bucket *oss.Bucket, object string)
 			return err
 		}
 		if int64(i) >= retryTimes {
-			return ObjectError{err, object}
+			return ObjectError{err, bucket.BucketName, object}
 		}
 	}
+}
+
+func (rc *RemoveCommand) updateObjectMonitor(okNum, errNum int64) {
+    rc.monitor.updateObjectNum(okNum)
+    rc.monitor.updateErrObjectNum(errNum)
+    fmt.Printf(rc.monitor.progressBar(false, normalExit))
 }
 
 func (rc *RemoveCommand) removeBucket(bucket *oss.Bucket, cloudURL CloudURL, force bool) error {
@@ -243,16 +299,18 @@ func (rc *RemoveCommand) removeBucket(bucket *oss.Bucket, cloudURL CloudURL, for
 
 	if !force {
 		var val string
-		fmt.Printf("Do you really mean to remove the bucket:%s(y or N)? ", cloudURL.bucket)
+		fmt.Printf("Do you really mean to remove the bucket: %s(y or N)? ", cloudURL.bucket)
 		if _, err := fmt.Scanln(&val); err != nil || (strings.ToLower(val) != "yes" && strings.ToLower(val) != "y") {
 			fmt.Println("operation is canceled.")
 			return nil
 		}
 	}
+    
+    rc.monitor.updateOP(rmBucket)
 
 	err := rc.ossDeleteBucketRetry(&bucket.Client, cloudURL.bucket)
     if err == nil {
-		fmt.Printf("removed bucket: %s.\n", cloudURL.bucket)
+        rc.monitor.updateRemovedBucket(cloudURL.bucket)
     }
     return err
 }
@@ -273,39 +331,35 @@ func (rc *RemoveCommand) ossDeleteBucketRetry(client *oss.Client, bucket string)
 func (rc *RemoveCommand) clearBucket(bucket *oss.Bucket, cloudURL CloudURL, force bool) error {
 	if !force {
 		var val string
-		fmt.Printf("Do you really mean to recursivlly remove %s? ", rc.command.args[0])
-		if _, err := fmt.Scanln(&val); err != nil || (val != "yes" && val != "y") {
+		fmt.Printf("Do you really mean to recursivlly remove %s(y or N)?", rc.command.args[0])
+		if _, err := fmt.Scanln(&val); err != nil || (strings.ToLower(val) != "yes" && strings.ToLower(val) != "y") {
 			fmt.Println("operation is canceled.")
 			return nil
 		}
 	}
 
+    rc.monitor.updateOP(rmObject)
+
 	// batch delete objects
-	num, err := rc.batchDeleteObjects(bucket, cloudURL)
-    if err != nil {
-		fmt.Printf("removed %d objects, when error happens.\n", num)
-		return err
-	}
-	fmt.Printf("scaned %d objects, removed %d objects.\n", num, num)
-	return nil
+    go rc.command.objectStatistic(bucket, cloudURL, &rc.monitor)
+	return rc.batchDeleteObjects(bucket, cloudURL)
 }
 
-func (rc *RemoveCommand) batchDeleteObjects(bucket *oss.Bucket, cloudURL CloudURL) (int, error) {
+func (rc *RemoveCommand) batchDeleteObjects(bucket *oss.Bucket, cloudURL CloudURL) error {
 	// list objects
-	num := 0
 	pre := oss.Prefix(cloudURL.object)
 	marker := oss.Marker("")
 	for i := 0; ; i++ {
 		lor, err := rc.command.ossListObjectsRetry(bucket, marker, pre)
 		if err != nil {
-			return num, BucketError{err, bucket.BucketName}
+			return BucketError{err, bucket.BucketName}
 		}
 
 		// batch delete
 		delNum, err := rc.ossBatchDeleteObjectsRetry(bucket, rc.getObjectsFromListResult(lor))
-		num += delNum
+        rc.updateObjectMonitor(int64(delNum), int64(len(lor.Objects) - delNum))
 		if err != nil {
-			return num, BucketError{err, bucket.BucketName}
+			return BucketError{err, bucket.BucketName}
 		}
 		pre = oss.Prefix(lor.Prefix)
 		marker = oss.Marker(lor.NextMarker)
@@ -313,7 +367,7 @@ func (rc *RemoveCommand) batchDeleteObjects(bucket *oss.Bucket, cloudURL CloudUR
 			break
 		}
 	}
-	return num, nil
+	return nil
 }
 
 func (rc *RemoveCommand) ossBatchDeleteObjectsRetry(bucket *oss.Bucket, objects []string) (int, error) {

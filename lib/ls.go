@@ -38,7 +38,7 @@ var specChineseList = SpecText{
         该用法列举指定bucket下的objects（如果指定了前缀，则列举拥有该前缀的objects），同时
     展示了object大小，最新更新时间和etag，但是如果指定了--short-format选项则只输出object名
     称。如果指定了--directory选项，则返回指定bucket下以指定前缀开头的首级目录下的文件和子
-    目录，但是不递归显示所有子目录，此时默认为精简格式。
+    目录，但是不递归显示所有子目录，此时默认为精简格式。所有的目录均以/结尾。
 `,
 
 	sampleText: ` 
@@ -68,7 +68,7 @@ var specChineseList = SpecText{
     5)ossutil ls oss://bucket1 -d
         oss://bucket1/obj1
         oss://bucket1/dir1
-        Object or Directory Number is: 2
+        Object and Directory Number is: 2
 `,
 }
 
@@ -132,7 +132,7 @@ Usage:
     5)ossutil ls oss://bucket1 -d
         oss://bucket1/obj1
         oss://bucket1/dir1
-        Object or Directory Number is: 2
+        Object and Directory Number is: 2
 `,
 }
 
@@ -291,7 +291,7 @@ func (lc *ListCommand) listObjects(bucket *oss.Bucket, cloudURL CloudURL, shortF
 	if !directory {
 		fmt.Printf("Object Number is: %d\n", num)
 	} else {
-		fmt.Printf("Object or Directory Number is: %d\n", num)
+		fmt.Printf("Object and Directory Number is: %d\n", num)
 	}
 
 	return nil
@@ -302,39 +302,31 @@ func (lc *ListCommand) displayResult(lor oss.ListObjectsResult, bucket string, s
 		fmt.Printf("%-30s %12s%s%-38s%s%s\n", "LastModifiedTime", "Size(B)", "   ", "ETAG", "  ", "ObjectName")
 	}
 
-	var output string
 	var num int
 	if !directory {
-		output, num = lc.showObjects(lor, bucket, shortFormat)
+		num = lc.showObjects(lor, bucket, shortFormat)
 	} else {
-		output, num = lc.showObjects(lor, bucket, true)
-		output1, num1 := lc.showDirectories(lor, bucket)
-        output += output1
+		num = lc.showObjects(lor, bucket, true)
+		num1 := lc.showDirectories(lor, bucket)
         num += num1 
 	}
-	fmt.Printf(output)
 	return num
 }
 
-func (lc *ListCommand) showObjects(lor oss.ListObjectsResult, bucket string, shortFormat bool) (string, int) {
-	var output string
+func (lc *ListCommand) showObjects(lor oss.ListObjectsResult, bucket string, shortFormat bool) int {
 	for _, object := range lor.Objects {
 		if !shortFormat {
-			output += fmt.Sprintf(
-				"%-30s %12d%s%-38s%s%s\n", utcToLocalTime(object.LastModified), object.Size, "   ",
-				strings.Trim(object.ETag, "\""), "  ", CloudURLToString(bucket, object.Key),
-			)
+			fmt.Printf("%-30s %12d%s%-38s%s%s\n", utcToLocalTime(object.LastModified), object.Size, "   ", strings.Trim(object.ETag, "\""), "  ", CloudURLToString(bucket, object.Key))
 		} else {
-			output += CloudURLToString(bucket, object.Key) + "\n"
+            fmt.Printf("%s\n", CloudURLToString(bucket, object.Key))
 		}
 	}
-	return output, len(lor.Objects)
+	return len(lor.Objects)
 }
 
-func (lc *ListCommand) showDirectories(lor oss.ListObjectsResult, bucket string) (string, int) {
-	var output string
+func (lc *ListCommand) showDirectories(lor oss.ListObjectsResult, bucket string) int {
 	for _, prefix := range lor.CommonPrefixes {
-		output += CloudURLToString(bucket, prefix) + "\n"
+        fmt.Printf("%s\n", CloudURLToString(bucket, prefix))
 	}
-	return output, len(lor.CommonPrefixes)
+	return len(lor.CommonPrefixes)
 }

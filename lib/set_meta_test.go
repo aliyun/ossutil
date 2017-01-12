@@ -9,40 +9,6 @@ import (
     . "gopkg.in/check.v1"
 )
 
-func (s *OssutilCommandSuite) rawSetMeta(bucket, object, meta string, update, delete, recursive, force bool, language string) (bool, error) {
-    args := []string{CloudURLToString(bucket, object), meta}
-    showElapse, err := s.rawSetMetaWithArgs(args, update, delete, recursive, force, language) 
-    return showElapse, err
-}
-
-func (s *OssutilCommandSuite) rawSetMetaWithArgs(args []string, update, delete, recursive, force bool, language string) (bool, error) {
-    command := "set-meta"
-    str := ""
-    routines := strconv.Itoa(Routines)
-    options := OptionMapType{
-        "endpoint": &str,
-        "accessKeyID": &str,
-        "accessKeySecret": &str,
-        "stsToken": &str,
-        "configFile": &configFile,
-        "update": &update,
-        "delete": &delete,
-        "recursive": &recursive,
-        "force": &force,
-        "routines": &routines,
-        "language": &language,
-    }
-    showElapse, err := cm.RunCommand(command, args, options)
-    time.Sleep(2*sleepTime)
-    return showElapse, err
-}
-
-func (s *OssutilCommandSuite) setObjectMeta(bucket, object, meta string, update, delete, recursive, force bool, c *C) {
-    showElapse, err := s.rawSetMeta(bucket, object, meta, update, delete, recursive, force, DefaultLanguage) 
-    c.Assert(err, IsNil)
-    c.Assert(showElapse, Equals, true)
-}
-
 func (s *OssutilCommandSuite) TestSetBucketMeta(c *C) {
     bucket := bucketNameExist 
 
@@ -267,8 +233,7 @@ func (s *OssutilCommandSuite) TestErrSetMeta(c *C) {
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
 
-    object = "/object"
-    showElapse, err = s.rawSetMeta(bucket, object, "x-oss-object-acl:private#X-Oss-Meta-A:A", false, false, true, true, DefaultLanguage)
+    showElapse, err = s.rawSetMetaWithArgs([]string{"oss:///object", "x-oss-object-acl:private#X-Oss-Meta-A:A"}, false, false, true, true, DefaultLanguage)
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
 

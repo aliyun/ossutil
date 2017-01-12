@@ -57,9 +57,16 @@ func (cu *CloudURL) checkBucketObject() error {
 	if cu.bucket == "" && cu.object != "" {
 		return fmt.Errorf("invalid cloud url: %s, miss bucket", cu.url)
 	}
-	if cu.object != "" && (strings.HasPrefix(cu.object, "/") || strings.HasPrefix(cu.object, "\\")) {
-		return fmt.Errorf("invalid cloud url: %s, object name should not begin with \"%s\"", cu.url, cu.object[0])
-	}
+    return nil
+}
+
+func (cu *CloudURL) checkObjectPrefix() error {
+    if strings.HasPrefix(cu.object, "/") {
+        return fmt.Errorf("invalid cloud url: %s, object name should not begin with \"/\"", cu.url)
+    }
+    if strings.HasPrefix(cu.object, "\\") {
+        return fmt.Errorf("invalid cloud url: %s, object name should not begin with \"\\\"", cu.url)
+    }
 	return nil
 }
 

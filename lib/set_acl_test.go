@@ -9,38 +9,6 @@ import (
     . "gopkg.in/check.v1"
 )
 
-func (s *OssutilCommandSuite) rawSetBucketACL(bucket, acl string, force bool) (bool, error) {
-    args := []string{CloudURLToString(bucket, ""), acl}
-    showElapse, err := s.rawSetACLWithArgs(args, false, true, force)
-    return showElapse, err
-}
-
-func (s *OssutilCommandSuite) rawSetObjectACL(bucket, object, acl string, recursive, force bool) (bool, error) {
-    args := []string{CloudURLToString(bucket, object), acl}
-    showElapse, err := s.rawSetACLWithArgs(args, recursive, false, force)
-    return showElapse, err
-}
-
-func (s *OssutilCommandSuite) rawSetACLWithArgs(args []string, recursive, bucket, force bool) (bool, error) {
-    command := "set-acl"
-    str := ""
-    routines := strconv.Itoa(Routines)
-    options := OptionMapType{
-        "endpoint": &str,
-        "accessKeyID": &str,
-        "accessKeySecret": &str,
-        "stsToken": &str,
-        "configFile": &configFile,
-        "routines": &routines,
-        "recursive": &recursive,
-        "bucket": &bucket,
-        "force": &force,
-    }
-    showElapse, err := cm.RunCommand(command, args, options)
-    time.Sleep(sleepTime)
-    return showElapse, err
-}
-
 func (s *OssutilCommandSuite) TestSetBucketACL(c *C) {
     bucket := bucketNameExist 
 

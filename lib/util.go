@@ -81,3 +81,10 @@ func getUserAgent() string {
 func utcToLocalTime(utc time.Time) time.Time {
     return utc.In(time.Local)
 }
+
+func max(a, b int64) int64 {
+    if a >= b {
+        return a
+    }
+    return b
+}

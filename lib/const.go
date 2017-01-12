@@ -1,5 +1,9 @@
 package lib
 
+import (
+    "os"
+)
+
 // all supported options of ossutil 
 const (
 	OptionConfigFile       string = "configFile"
@@ -15,6 +19,8 @@ const (
 	OptionForce                   = "force"
 	OptionUpdate                  = "update"
 	OptionDelete                  = "delete"
+    OptionContinue                = "continue"
+    OptionOutputDir               = "outputDir"
 	OptionBigFileThreshold        = "bigfileThreshold"
 	OptionCheckpointDir           = "checkpointDir"
 	OptionRetryTimes              = "retryTimes"
@@ -66,11 +72,14 @@ const (
 	DefaultLanguage                        = "CH"
     EnglishLanguage                        = "EN"
 	Scheme                          string = "oss"
-    DefaultConfigFile                      = "~/.ossutilconfig"
+    DefaultConfigFile                      = "~" + string(os.PathSeparator) +".ossutilconfig"
 	MaxUint                                = ^uint(0)
 	MaxInt                                 = int(MaxUint >> 1)
 	MaxUint64                              = ^uint64(0)
 	MaxInt64                               = int64(MaxUint64 >> 1)
+    ReportPrefix                           = "ossutil_report_"
+    ReportSuffix                           = ".report"
+    DefaultOutputDir                       = "ossutil_output"
 	CheckpointDir                          = ".ossutil_checkpoint"
 	CheckpointSep                          = "---"
 	MaxPartNum                             = 10000
@@ -78,7 +87,7 @@ const (
 	MinIdealPartNum                        = MaxPartNum / 500
 	MaxIdealPartSize                       = 524288000
 	MinIdealPartSize                       = 10485760
-	BigFileThreshold                       = 524288000
+	DefaultBigFileThreshold                = 104857600 
 	MaxBigFileThreshold                    = MaxInt64
 	MinBigFileThreshold                    = 0
 	RetryTimes                      int    = 3
@@ -91,4 +100,5 @@ const (
 	MinParallel                     int64  = 1
 	DefaultHashType                 string = "crc64"
 	MD5HashType                     string = "md5"
+    LogFilePrefix                          = "ossutil_log_"
 )

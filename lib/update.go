@@ -136,13 +136,13 @@ func (uc *UpdateCommand) RunCommand() error {
 
     if !force {
         if language == LEnglishLanguage {
-            fmt.Printf("sure to update ossutil(y or n)? ")
+            fmt.Printf("sure to update ossutil(y or N)? ")
         } else {
-            fmt.Printf("确定更新版本(y or n)? ")
+            fmt.Printf("确定更新版本(y or N)? ")
         }
 
         var val string
-        if _, err := fmt.Scanln(&val); err == nil && (val == "yes" || val == "y") {
+        if _, err := fmt.Scanln(&val); err == nil && (strings.ToLower(val) == "yes" || strings.ToLower(val) == "y") {
             return uc.updateVersion(version, language)
         }
 
@@ -191,7 +191,7 @@ func (uc *UpdateCommand) anonymousGetToFileRetry(bucketName, objectName, filePat
 			return err
 		}
 		if int64(i) >= retryTimes {
-			return ObjectError{err, objectName}
+			return ObjectError{err, bucketName, objectName}
 		}
 	}
 }

@@ -2,10 +2,10 @@ package lib
 
 import (
 	"fmt"
-	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"net/http"
 	"strings"
 	"time"
+	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
 
 var headerOptionMap = map[string]interface{}{
@@ -219,7 +219,8 @@ Usage:
 
 // SetMetaCommand is the command set meta for object
 type SetMetaCommand struct {
-	command Command
+	command     Command
+    monitor     Monitor
 }
 
 var setMetaCommand = SetMetaCommand{
@@ -264,6 +265,8 @@ func (sc *SetMetaCommand) Init(args []string, options OptionMapType) error {
 
 // RunCommand simulate inheritance, and polymorphism
 func (sc *SetMetaCommand) RunCommand() error {
+    sc.monitor.init("Setted meta on")
+
 	isUpdate, _ := GetBool(OptionUpdate, sc.command.options)
 	isDelete, _ := GetBool(OptionDelete, sc.command.options)
 	recursive, _ := GetBool(OptionRecursion, sc.command.options)
@@ -452,7 +455,7 @@ func (sc *SetMetaCommand) ossSetObjectMetaRetry(bucket *oss.Bucket, object strin
 			return err
 		}
 		if int64(i) >= retryTimes {
-			return ObjectError{err, object}
+			return ObjectError{err, bucket.BucketName, object}
 		}
 	}
 }
@@ -470,40 +473,42 @@ func (sc *SetMetaCommand) batchSetObjectMeta(bucket *oss.Bucket, cloudURL CloudU
 	// producer list objects
 	// consumer set meta
 	chObjects := make(chan string, ChannelBuf)
-	chFinishObjects := make(chan string, ChannelBuf)
 	chError := make(chan error, routines+1)
-	go sc.command.objectProducer(bucket, cloudURL, chObjects, chError)
+    chListError := make(chan error, 1)
+	go sc.command.objectStatistic(bucket, cloudURL, &sc.monitor)
+	go sc.command.objectProducer(bucket, cloudURL, chObjects, chListError)
 	for i := 0; int64(i) < routines; i++ {
-		go sc.setObjectMetaConsumer(bucket, headers, isUpdate, isDelete, chObjects, chFinishObjects, chError)
+		go sc.setObjectMetaConsumer(bucket, headers, isUpdate, isDelete, chObjects, chError)
 	}
 
 	completed := 0
-	num := 0
 	for int64(completed) <= routines {
 		select {
-		case <-chFinishObjects:
-			num++
-			fmt.Printf("\rsetted object meta on %d objects, when error happens...", num)
+        case err := <-chListError:
+            if err != nil {
+                return err
+            }
+            completed++
 		case err := <-chError:
 			if err != nil {
-				fmt.Printf("\rsetted object meta on %d objects, when error happens.\n", num)
+                fmt.Printf(sc.monitor.progressBar(true))
 				return err
 			}
 			completed++
 		}
 	}
-	fmt.Printf("\rSucceed:scanned %d objects, setted object meta on %d objects.\n", num, num)
+    fmt.Printf(sc.monitor.progressBar(true))
 	return nil
 }
 
-func (sc *SetMetaCommand) setObjectMetaConsumer(bucket *oss.Bucket, headers map[string]string, isUpdate, isDelete bool, chObjects <-chan string, chFinishObjects chan<- string, chError chan<- error) {
+func (sc *SetMetaCommand) setObjectMetaConsumer(bucket *oss.Bucket, headers map[string]string, isUpdate, isDelete bool, chObjects <-chan string, chError chan<- error) {
 	for object := range chObjects {
 		err := sc.setObjectMeta(bucket, object, headers, isUpdate, isDelete)
+        sc.command.updateMonitor(err, &sc.monitor)
 		if err != nil {
 			chError <- err
 			return
 		}
-		chFinishObjects <- object
 	}
 
 	chError <- nil

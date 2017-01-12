@@ -227,7 +227,7 @@ func (sc *StatCommand) ossGetObjectACLRetry(bucket *oss.Bucket, object string) (
 			return goar, err
 		}
 		if int64(i) >= retryTimes {
-			return goar, ObjectError{err, object}
+			return goar, ObjectError{err, bucket.BucketName, object}
 		}
 	}
 }

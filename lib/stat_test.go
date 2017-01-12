@@ -8,26 +8,6 @@ import (
     . "gopkg.in/check.v1"
 )
 
-func (s *OssutilCommandSuite) rawGetStat(bucket, object string) (bool, error) {
-    args := []string{CloudURLToString(bucket, object)}
-    showElapse, err := s.rawGetStatWithArgs(args)
-    return showElapse, err 
-}
-
-func (s *OssutilCommandSuite) rawGetStatWithArgs(args []string) (bool, error) {
-    command := "stat"
-    str := ""
-    options := OptionMapType{
-        "endpoint": &str,
-        "accessKeyID": &str,
-        "accessKeySecret": &str,
-        "stsToken": &str,
-        "configFile": &configFile,
-    }
-    showElapse, err := cm.RunCommand(command, args, options)
-    return showElapse, err 
-}
-
 func (s *OssutilCommandSuite) TestStatErrArgc(c *C) {
     bucket := bucketNameExist 
 

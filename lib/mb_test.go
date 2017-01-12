@@ -8,43 +8,6 @@ import (
     . "gopkg.in/check.v1"
 )
 
-func (s *OssutilCommandSuite) putBucketWithACL(bucket string, acl string) (bool, error) {
-    args := []string{CloudURLToString(bucket, "")}
-    showElapse, err := s.rawPutBucketWithACL(args, acl)
-    return showElapse, err
-}
-
-func (s *OssutilCommandSuite) rawPutBucketWithACL(args []string, acl string) (bool, error) {
-    command := "mb"
-    str := ""
-    options := OptionMapType{
-        "endpoint": &str,
-        "accessKeyID": &str,
-        "accessKeySecret": &str,
-        "stsToken": &str,
-        "configFile": &configFile,
-        "acl": &acl,
-    }
-    showElapse, err := cm.RunCommand(command, args, options)
-    return showElapse, err
-}
-
-func (s *OssutilCommandSuite) rawPutBucketWithACLLanguage(args []string, acl, language string) (bool, error) {
-    command := "mb"
-    str := ""
-    options := OptionMapType{
-        "endpoint": &str,
-        "accessKeyID": &str,
-        "accessKeySecret": &str,
-        "stsToken": &str,
-        "configFile": &configFile,
-        "acl": &acl,
-        "language": &language,
-    }
-    showElapse, err := cm.RunCommand(command, args, options)
-    return showElapse, err
-}
-
 func (s *OssutilCommandSuite) TestMakeBucket(c *C) {
     bucket := bucketNameMB 
 
