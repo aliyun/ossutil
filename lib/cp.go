@@ -877,7 +877,6 @@ func (cc *CopyCommand) uploadFiles(srcURLList []StorageURLer, destURL CloudURL) 
 	}
 
 	completed := 0
-    var ferr error 
 	for int64(completed) <= cc.cpOption.routines {
 		select {
         case err := <-chListError:
@@ -889,7 +888,6 @@ func (cc *CopyCommand) uploadFiles(srcURLList []StorageURLer, destURL CloudURL) 
             if err == nil {
                 completed++
             } else {
-                ferr = err
                 if !cc.cpOption.ctnu {
                     fmt.Printf(cc.monitor.progressBar(true, errExit))
                     return err
@@ -898,9 +896,6 @@ func (cc *CopyCommand) uploadFiles(srcURLList []StorageURLer, destURL CloudURL) 
 		}
 	}
     fmt.Printf(cc.monitor.progressBar(true, normalExit))
-    if ferr != nil {
-        fmt.Printf("Error: %s!\n", ferr)
-    }
 	return nil
 }
 
@@ -1275,7 +1270,7 @@ func (cc *CopyCommand) updateMonitor(skip bool, err error, isDir bool, size int6
 func (cc *CopyCommand) report(msg string, err error) {
     if cc.filterError(err) {
         cc.cpOption.reporter.ReportError(fmt.Sprintf("%s error, info: %s", msg, err.Error()))
-        cc.cpOption.reporter.Prompt()
+        cc.cpOption.reporter.Prompt(err)
     }
 }
 
@@ -1334,7 +1329,6 @@ func (cc *CopyCommand) downloadFiles(srcURL CloudURL, destURL FileURL) error {
 func (cc *CopyCommand) formatResultPrompt(err error) error {
     fmt.Printf(cc.monitor.progressBar(true, normalExit)) 
     if err != nil && cc.cpOption.ctnu {
-        fmt.Printf("Error: %s!\n", err)
         return nil
     }
     return err
