@@ -51,7 +51,12 @@ var specChineseConfig = SpecText{
         (3) endpoint, accessKeyID, accessKeySecret
             回车代表着跳过相应配置项的设置。注意：endpoint应该为一个二级域
         名(SLD)，例如：` + DefaultEndpoint + `。
-        (4) outputDir
+            以上选项一般为必选项。
+        (4) stsToken
+            如果您需要使用临时token来访问oss，您需要填入该项，否则请输入回车
+        跳过该项配置。
+            关于stsToken的更多信息，请参考：https://help.aliyun.com/document_detail/31931.html?spm=5176.doc31867.6.632.hZFNSv
+        (5) outputDir
             输出文件所在目录的路径。如果用户键入回车，将使用默认目录：当前目
         录下的：` + DefaultOutputDir + `，ossutil会在运行过程中将输出文件都生成到该文件
         夹下。输出文件目前包含：在cp命令中批量操作出错时，记录每个文件操作的
@@ -59,14 +64,14 @@ var specChineseConfig = SpecText{
             关于report文件，更详细的信息请参见cp命令的帮助。
             注意：outputDir如果不存在，ossutil在产生输出文件时会自动创建该目录，
         如果outputDir存在且并非目录，将会报错。
-        (5) bucket-endpoint
+        (6) bucket-endpoint
             ossutil询问用户是否有bucket-endpoint配对，请输入'y'或者'n'来进行
         配置或者跳过配置。如果用户在输入bucket信息时键入回车，则代表着结束
         bucket-endpoint的配置。注意：此处的endpoint应该为一个二级域名。
             如果配置了bucket-endpoint选项，当对某bucket进行操作时，ossutil会
         在该选项中寻找该bucket对应的endpoint，如果找到，该endpoint会覆盖基本
         配置中endpoint。
-        (6) bucket-cname
+        (7) bucket-cname
             与bucket-endpoint配置类似。
             如果配置了bucket-endpoint选项，当对某bucket进行操作时，ossutil会
         在该选项中寻找该bucket对应的endpoint，如果找到，则找到的endpoint会覆
@@ -154,7 +159,12 @@ Usage:
         (3) endpoint, accessKeyID, accessKeySecret
             Carriage return means skip the configuration of these options.
         Note: Endpoint means a second-level domain(SLD), eg: ` + DefaultEndpoint + `.
-        (4) outputDir
+            The three options are necessary in normal condition.
+        (4) stsToken
+            If you use stsToken to access oss, please enter your stsToken. If not, 
+        please enter carriage return to skip the configuration.
+            For more information about stsToken, see: https://help.aliyun.com/document_detail/31931.html?spm=5176.doc31867.6.632.hZFNSv
+        (5) outputDir
             The directory to place output file in. If user enter carriage return, 
         ossutil will use the default directory: ` + DefaultOutputDir + ` in current directory. 
         ossutil will place all output files generated during running in this 
@@ -164,7 +174,7 @@ Usage:
             Note: if outputDir is not exist, ossutil will create the directory 
         automatically, if outputDir you specified exists and is not a directory, 
         ossutil will return an error. 
-        (5) bucket-endpoint
+        (6) bucket-endpoint
             ossutil ask you if there are any bucket-endpoint pairs, please
         enter 'y' or 'n' to configure the pairs or skip. If you enter carriage
         return when configure bucket, it means the pairs' configuration is
@@ -172,7 +182,7 @@ Usage:
             When access a bucket, ossutil will search for endpoint corresponding 
         to the bucket in this section, if found, the endpoint has priority over 
         the endpoint in the base section.
-        (6) bucket-cname
+        (7) bucket-cname
             Similar to bucket-endpoint configuration.
             When access a bucket, ossutil will search for endpoint corresponding 
         tothe bucket in this section, if found, the endpoint has priority over 

@@ -2,10 +2,12 @@ package lib
 
 import (
 	"fmt"
-	configparser "github.com/alyu/configparser"
+    "os"
 	"os/user"
 	"strconv"
 	"strings"
+
+	configparser "github.com/alyu/configparser"
 )
 
 // sections in config file
@@ -53,7 +55,7 @@ func DecideConfigFile(configFile string) string {
 	}
 	usr, _ := user.Current()
 	dir := usr.HomeDir
-	if len(configFile) >=2 && configFile[:2] == "~/" {
+	if len(configFile) >=2 && configFile[:2] == "~" + string(os.PathSeparator) {
 		configFile = strings.Replace(configFile, "~", dir, 1)
 	}
 	return configFile
