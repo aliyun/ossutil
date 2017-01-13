@@ -101,15 +101,15 @@ func (m *Monitor) getProgressBar() string {
     snap := m.getSnapshot()
     if m.seekAheadEnd && m.seekAheadError == nil {
         if snap.errNum == 0 {
-            return getClearStr(fmt.Sprintf("Total %d objects. %s %d objects, Progress: %d%s...", m.totalNum, m.opStr, snap.okNum, m.getPrecent(snap), "%%")) 
+            return getClearStr(fmt.Sprintf("Total %d objects. %s %d objects, Progress: %d%s", m.totalNum, m.opStr, snap.okNum, m.getPrecent(snap), "%%")) 
         }
-        return getClearStr(fmt.Sprintf("Total %d objects. %s %d objects, Error %d objects, Progress: %d%s...", m.totalNum,  m.opStr, snap.okNum, snap.errNum, m.getPrecent(snap), "%%")) 
+        return getClearStr(fmt.Sprintf("Total %d objects. %s %d objects, Error %d objects, Progress: %d%s", m.totalNum,  m.opStr, snap.okNum, snap.errNum, m.getPrecent(snap), "%%")) 
     }
     scanNum := max(m.totalNum, snap.dealNum) 
     if snap.errNum == 0 {
-        return getClearStr(fmt.Sprintf("Scanned %d objects. %s %d objects...", scanNum, m.opStr, snap.okNum)) 
+        return getClearStr(fmt.Sprintf("Scanned %d objects. %s %d objects.", scanNum, m.opStr, snap.okNum)) 
     }
-    return getClearStr(fmt.Sprintf("Scanned %d objects. %s %d objects, Error %d objects...", scanNum, m.opStr, snap.okNum, snap.errNum)) 
+    return getClearStr(fmt.Sprintf("Scanned %d objects. %s %d objects, Error %d objects.", scanNum, m.opStr, snap.okNum, snap.errNum)) 
 }
 
 func (m *Monitor) getPrecent(snap MonitorSnap) int {
@@ -258,7 +258,7 @@ func (m *RMMonitor) getProgressBar() string {
     if m.op & rmAllTypeMarker != 0 {   
         snap := m.getSnapshot()
         if m.seekAheadEnd && m.seekAheadError == nil {
-            return getClearStr(fmt.Sprintf("Total %s. %s%s Progress: %d%s...", m.getTotalInfo(), m.getOKInfo(snap), m.getErrInfo(snap), m.getPrecent(snap), "%%")) 
+            return getClearStr(fmt.Sprintf("Total %s. %s%s Progress: %d%s", m.getTotalInfo(), m.getOKInfo(snap), m.getErrInfo(snap), m.getPrecent(snap), "%%")) 
         }
         m.totalObjectNum = max(m.totalObjectNum, snap.objectNum + snap.errObjectNum) 
         m.totalUploadIdNum = max(m.totalUploadIdNum, snap.uploadIdNum + snap.errUploadIdNum) 
@@ -480,16 +480,16 @@ func (m *CPMonitor) getProgressBar() string {
 
     if m.seekAheadEnd && m.seekAheadError == nil {
         if snap.errNum == 0 {
-            return getClearStr(fmt.Sprintf("Total num: %d, size: %d. Dealed num: %d%s%s, Progress: %d%s...", m.totalNum, m.totalSize, snap.dealNum, m.getDealNumDetail(snap), m.getTransferSizeDetail(snap), m.getPrecent(snap), "%%")) 
+            return getClearStr(fmt.Sprintf("Total num: %d, size: %s. Dealed num: %d%s%s, Progress: %d%s", m.totalNum, getSizeString(m.totalSize), snap.dealNum, m.getDealNumDetail(snap), m.getDealSizeDetail(snap), m.getPrecent(snap), "%%")) 
         }
-        return getClearStr(fmt.Sprintf("Total num: %d, size: %d. Dealed num: %d, error inside%s%s, Progress: %d%s...", m.totalNum, m.totalSize, snap.dealNum, m.getDealNumDetail(snap), m.getTransferSizeDetail(snap), m.getPrecent(snap), "%%")) 
+        return getClearStr(fmt.Sprintf("Total num: %d, size: %s. Dealed num: %d%s%s, Progress: %d%s", m.totalNum, getSizeString(m.totalSize), snap.dealNum, m.getDealNumDetail(snap), m.getDealSizeDetail(snap), m.getPrecent(snap), "%%")) 
     }
     scanNum := max(m.totalNum, snap.dealNum) 
     scanSize := max(m.totalSize, snap.dealSize)
     if snap.errNum == 0 {
-        return getClearStr(fmt.Sprintf("Scanned num: %d, size: %d. Dealed num: %d%s%s...", scanNum, scanSize, snap.dealNum, m.getDealNumDetail(snap), m.getTransferSizeDetail(snap))) 
+        return getClearStr(fmt.Sprintf("Scanned num: %d, size: %s. Dealed num: %d%s%s.", scanNum, getSizeString(scanSize), snap.dealNum, m.getDealNumDetail(snap), m.getDealSizeDetail(snap))) 
     }
-    return getClearStr(fmt.Sprintf("Scanned num: %d, size: %d. Dealed num: %d, error inside%s%s...", scanNum, scanSize, snap.dealNum, m.getDealNumDetail(snap), m.getTransferSizeDetail(snap))) 
+    return getClearStr(fmt.Sprintf("Scanned num: %d, size: %s. Dealed num: %d%s%s.", scanNum, getSizeString(scanSize), snap.dealNum, m.getDealNumDetail(snap), m.getDealSizeDetail(snap))) 
 }
 
 func (m *CPMonitor) getFinishBar(exitStat int) string {
@@ -503,13 +503,13 @@ func (m *CPMonitor) getWholeFinishBar() string {
     snap := m.getSnapshot()
     if m.seekAheadEnd && m.seekAheadError == nil {
         if snap.errNum == 0 {
-            return getClearStr(fmt.Sprintf("Succeed: Total num: %d, size: %d. OK num: %d%s%s.\n", m.totalNum, m.totalSize, snap.okNum, m.getDealNumDetail(snap), m.getSizeDetail(snap)))
+            return getClearStr(fmt.Sprintf("Succeed: Total num: %d, size: %s. OK num: %d%s%s.\n", m.totalNum, getSizeString(m.totalSize), snap.okNum, m.getDealNumDetail(snap), m.getSkipSize(snap)))
         }
-        return getClearStr(fmt.Sprintf("FinishWithError: Total num: %d, size: %d. Error num: %d. OK num: %d%s%s.\n", m.totalNum, m.totalSize, snap.errNum, snap.okNum, m.getOKNumDetail(snap), m.getSizeDetail(snap)))
+        return getClearStr(fmt.Sprintf("FinishWithError: Total num: %d, size: %s. Error num: %d. OK num: %d%s%s.\n", m.totalNum, getSizeString(m.totalSize), snap.errNum, snap.okNum, m.getOKNumDetail(snap), m.getSizeDetail(snap)))
     }
     scanNum := max(m.totalNum, snap.dealNum)
     if snap.errNum == 0 {
-        return getClearStr(fmt.Sprintf("Succeed: Total num: %d, size: %d. OK num: %d%s%s.\n", scanNum, snap.dealSize, snap.okNum, m.getDealNumDetail(snap), m.getSizeDetail(snap)))
+        return getClearStr(fmt.Sprintf("Succeed: Total num: %d, size: %s. OK num: %d%s%s.\n", scanNum, getSizeString(snap.dealSize), snap.okNum, m.getDealNumDetail(snap), m.getSkipSize(snap)))
     }
     return getClearStr(fmt.Sprintf("FinishWithError: Scanned %d %s. Error num: %d. OK num: %d%s%s.\n", scanNum, m.getSubject(), snap.errNum, snap.okNum, m.getOKNumDetail(snap), m.getSizeDetail(snap)))
 }
@@ -517,7 +517,7 @@ func (m *CPMonitor) getWholeFinishBar() string {
 func (m *CPMonitor) getDefeatBar() string {
     snap := m.getSnapshot()
     if m.seekAheadEnd && m.seekAheadError == nil {
-        return getClearStr(fmt.Sprintf("Total num: %d, size: %d. Dealed num: %d%s%s. When error happens.\n", m.totalNum, m.totalSize, snap.okNum, m.getOKNumDetail(snap), m.getSizeDetail(snap))) 
+        return getClearStr(fmt.Sprintf("Total num: %d, size: %s. Dealed num: %d%s%s. When error happens.\n", m.totalNum, getSizeString(m.totalSize), snap.okNum, m.getOKNumDetail(snap), m.getSizeDetail(snap))) 
     }
     scanNum := max(m.totalNum, snap.dealNum)
     return getClearStr(fmt.Sprintf("Scanned %d %s. Dealed num: %d%s%s. When error happens.\n", scanNum, m.getSubject(), snap.okNum, m.getOKNumDetail(snap), m.getSizeDetail(snap))) 
@@ -575,18 +575,25 @@ func (m *CPMonitor) getOPStr() string {
     }
 }
 
-func (m *CPMonitor) getTransferSizeDetail(snap CPMonitorSnap) string {
-    return fmt.Sprintf(", Transfer size: %d", snap.transferSize)
+func (m *CPMonitor) getDealSizeDetail(snap CPMonitorSnap) string {
+    return fmt.Sprintf(", OK size: %s", getSizeString(snap.dealSize))
+}
+
+func (m *CPMonitor) getSkipSize(snap CPMonitorSnap) string {
+    if snap.skipSize != 0 {
+        return fmt.Sprintf(", Skip size: %s", getSizeString(snap.skipSize))
+    }
+    return ""
 }
 
 func (m *CPMonitor) getSizeDetail(snap CPMonitorSnap) string {
     if snap.skipSize == 0 {
-        return fmt.Sprintf(", Transfer size: %d", snap.transferSize)
+        return fmt.Sprintf(", Transfer size: %s", getSizeString(snap.transferSize))
     }
     if snap.transferSize == 0{
-        return fmt.Sprintf(", Skip size: %d", snap.skipSize)
+        return fmt.Sprintf(", Skip size: %s", getSizeString(snap.skipSize))
     }
-    return fmt.Sprintf(", OK size: %d(transfer: %d, skip: %d)", snap.transferSize + snap.skipSize, snap.transferSize, snap.skipSize)
+    return fmt.Sprintf(", OK size: %s(transfer: %s, skip: %s)", getSizeString(snap.transferSize + snap.skipSize), getSizeString(snap.transferSize), getSizeString(snap.skipSize))
 }
 
 func (m *CPMonitor) getPrecent(snap CPMonitorSnap) int {

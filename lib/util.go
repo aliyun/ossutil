@@ -88,3 +88,20 @@ func max(a, b int64) int64 {
     }
     return b
 }
+
+func getSizeString(size int64) string {
+    str := fmt.Sprintf("%d", size) 
+    if size < 0 {
+        return str
+    }
+    len := len(str)
+    strList := []string{}
+    i := len % 3
+    if i != 0 {
+        strList = append(strList, str[0:i])
+    }
+    for ; i < len; i+=3 { 
+        strList = append(strList, str[i:i+3])
+    }
+    return strings.Join(strList, ",")
+}

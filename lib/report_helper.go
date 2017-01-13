@@ -10,7 +10,7 @@ import (
 type Reporter struct {
     rlogger     *log.Logger
     written     bool 
-    prompt      string
+    prompted    bool
     path        string
     comment     string
     outputDir   string
@@ -32,7 +32,8 @@ func (re *Reporter) Init(outputDir, comment string) error {
     re.path = re.outputDir + string(os.PathSeparator) + ReportPrefix + time.Now().Format("20060102_150405") + ReportSuffix   
     re.comment = comment
     re.written = false
-    re.prompt = fmt.Sprintf("Error occurs, see more information in file: %s\n", re.path) 
+    re.prompted = false
+    //re.prompt = fmt.Sprintf("Error occurs, see more information in file: %s\n", re.path) 
     f, err := os.OpenFile(re.path, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0664)
     if err != nil {
         return fmt.Errorf("Create reporter file error: %s", err.Error())
@@ -56,7 +57,7 @@ func (re *Reporter) HasPrompt() bool {
     if re == nil {
         return false
     }
-    return re.prompt != ""
+    return re.prompted == false
 }
 
 func (re *Reporter) Comment() {
@@ -77,8 +78,8 @@ func (re *Reporter) ReportError(msg string) {
 
 func (re *Reporter) Prompt() {
     if re != nil && re.written && re.HasPrompt() {
-        fmt.Printf(getClearStr(re.prompt))
-        re.prompt = ""
+        re.prompted = true
+        fmt.Printf(getClearStr(fmt.Sprintf("Error occurs, see more information in file: %s\n", re.path)))
     }
 }
 
