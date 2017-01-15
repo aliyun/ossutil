@@ -22,9 +22,6 @@ var specChineseList = SpecText{
     长格式，ossutil在列举buckets或者objects的同时展示它们的一些附加信息。如果指定了
     --short-format选项，则显示精简格式。
 
-    对于用户使用multipart方式上传且未complete的object，ossutil在显示objects或者目录时，
-    不会显示这些objects。（关于multipart的更多信息请查看oss官网API文档。）
-
 用法：
 
     该命令有两种用法：
@@ -32,17 +29,16 @@ var specChineseList = SpecText{
     1) ossutil ls [oss://] [-s] [-m] [-a]
         如果用户列举时缺失url参数，则ossutil获取用户的身份凭证信息（从配置文件中读取），
     并列举该身份凭证下的所有buckets，并显示每个bucket的最新更新时间和位置信息。如果指定
-    了--short-format选项则只输出bucket名称。该用法不支持--directory选项。--multipart选
-    项只输出未completed的multipart及其对应uploadID。--all-type选项显示普通的object和未
-	completed的multipart及其对应uploadID。
+    了--short-format选项则只输出bucket名称。该用法不支持--directory选项。
 
     2) ossutil ls oss://bucket[/prefix] [-s] [-d] [-m] [-a]
         该用法列举指定bucket下的objects（如果指定了前缀，则列举拥有该前缀的objects），同时
     展示了object大小，最新更新时间和etag，但是如果指定了--short-format选项则只输出object名
     称。如果指定了--directory选项，则返回指定bucket下以指定前缀开头的第一层目录下的文件和子
-    目录，但是不递归显示所有子目录，此时默认为精简格式。如果指定了--multipart选项，则返回指
-    定bucket下以指定前缀开头的第一层目录下的未completed的multipart和及其对应uploadID。
-	--all-type选项显示普通的object和未completed的multipart及其对应uploadID。
+    目录，但是不递归显示所有子目录，此时默认为精简格式。
+		如果指定了--multipart选项，则显示指定URL(oss://bucket[/prefix])下未完成的上传任务。
+		如果指定了--all-type选项，则显示指定URL(oss://bucket[/prefix])下的object和未完成的
+	上传任务。
 
 `,
 
@@ -114,17 +110,20 @@ Usage:
 
     There are two usages:
 
-    1) ossutil ls [oss://] [-s]
+    1) ossutil ls [oss://] [-s] [-m] [-a]
         If you list without a url, ossutil lists all the buckets using the credentials
     in config file with last modified time and location in addition. --show_format option 
     will ignore last modified time and location. The usage do not support --directory 
     option.
 
-    2) ossutil ls oss://bucket[/prefix] [-s] [-d]
+    2) ossutil ls oss://bucket[/prefix] [-s] [-d] [-m] [-a]
         The usage list objects under the specified bucket(with the prefix if you specified), 
     with object size, last modified time and etag in addition, --short-format option ignores 
     all the additional information. --directory option returns top-level subdirectory names 
-    instead of contents of the subdirectory, which in default show by short format. 
+    instead of contents of the subdirectory, which in default show by short format.
+		--multipart option will show  multipart upload tasks under the url(oss://bucket[/prefix])。 
+		--all-type option will show objects and multipart upload tasks under the 
+	url(oss://bucket[/prefix])。
 `,
 
 	sampleText: ` 
@@ -157,19 +156,20 @@ Usage:
         Object or Directory Number is: 2
 
     6)ossutil ls oss://bucket1 -m 
-             ObjectName                                UploadID
-        oss://bucket1/obj1                15754AF7980C4DFB8193F190837520BB
-        oss://bucket2/obj2                3998971ACAF94AD9AC48EAC1988BE863 
-        Object Number is: 2
+        UploadID                            MultipartName
+        15754AF7980C4DFB8193F190837520BB    oss://bucket1/obj1
+        3998971ACAF94AD9AC48EAC1988BE863    oss://bucket2/obj2
+        UploadId Number is: 2
     
     7)ossutil ls oss://bucket1 -a 
         LastModifiedTime              Size(B)  ETAG                              ObjectName
         2016-04-08 14:50:47 +0000 UTC 6476984  4F16FDAE7AC404CEC8B727FCC67779D6  oss://bucket1/sample.txt
         2015-06-05 14:06:29 +0000 UTC  201933  7E2F4A7F1AC9D2F0996E8332D5EA5B41  oss://bucket1/dir1/obj11
-         ObjectName                                UploadID
-        oss://bucket1/obj1                15754AF7980C4DFB8193F190837520BB
-        oss://bucket2/obj2                3998971ACAF94AD9AC48EAC1988BE863
-        Object Number is: 4
+        Object Number is: 2
+        UploadID                            MultipartName
+        15754AF7980C4DFB8193F190837520BB    oss://bucket1/obj1
+        3998971ACAF94AD9AC48EAC1988BE863    oss://bucket2/obj2
+        Multipart Number is: 2
 
 `,
 }
@@ -304,20 +304,20 @@ func (lc *ListCommand) listFiles(cloudURL CloudURL) error {
 	directory, _ := GetBool(OptionDirectory, lc.command.options)
 	isMultipart, _ := GetBool(OptionMultipart, lc.command.options)
 	isAllType, _ := GetBool(OptionAllType, lc.command.options)
-	isObject := true
+	var typeSet uint
+	typeSet = ObjectBit
 
 	if isMultipart {
-		isObject = false
+		typeSet = MultipartBit
 	}
 	if isAllType {
-		isObject = true
-		isMultipart = true
+		typeSet = ObjectBit | MultipartBit
 	}
 
-	return lc.listObjects(bucket, cloudURL, shortFormat, directory, isObject, isMultipart)
+	return lc.listObjects(bucket, cloudURL, shortFormat, directory, typeSet)
 }
 
-func (lc *ListCommand) listObjects(bucket *oss.Bucket, cloudURL CloudURL, shortFormat bool, directory bool, isObject, isMultipart bool) error {
+func (lc *ListCommand) listObjects(bucket *oss.Bucket, cloudURL CloudURL, shortFormat bool, directory bool, typeSet uint) error {
 	objectNum := 0
 	multipartNum := 0
 	pre := oss.Prefix(cloudURL.object)
@@ -327,7 +327,7 @@ func (lc *ListCommand) listObjects(bucket *oss.Bucket, cloudURL CloudURL, shortF
 		del = oss.Delimiter("/")
 	}
 
-	if isObject {
+	if typeSet&ObjectBit != 0 {
 		for i := 0; ; i++ {
 			lor, err := lc.command.ossListObjectsRetry(bucket, marker, pre, del)
 			if err != nil {
@@ -344,11 +344,11 @@ func (lc *ListCommand) listObjects(bucket *oss.Bucket, cloudURL CloudURL, shortF
 		if !directory {
 			fmt.Printf("Object Number is: %d\n", objectNum)
 		} else {
-			fmt.Printf("Object or Directory Number is: %d\n", objectNum)
+			fmt.Printf("Object and Directory Number is: %d\n", objectNum)
 		}
 	}
 
-	if isMultipart {
+	if typeSet&MultipartBit != 0 {
 		for i := 0; ; i++ {
 			lmr, err := lc.command.ossListMultipartUploadsRetry(bucket, marker, pre, del)
 			if err != nil {

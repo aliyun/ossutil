@@ -309,7 +309,7 @@ func (s *OssutilCommandSuite) TestAllTypeObject(c *C) {
 	c.Assert(objects[0], Equals, normal_object)
 }
 
-func (s *OssutilCommandSuite) TestMultipartObject(c *C) {
+func (s *OssutilCommandSuite) TestMultipartUpload(c *C) {
 	bucketName := bucketNameMB
 
 	s.clearAllMultipartInBucket(bucketName, c)
@@ -354,7 +354,7 @@ func (s *OssutilCommandSuite) TestMultipartObject(c *C) {
 	c.Assert(len(lmr.Uploads), Equals, 0)
 }
 
-func (s *OssutilCommandSuite) TestMultipartObject_Prefix(c *C) {
+func (s *OssutilCommandSuite) TestMultipartUpload_Prefix(c *C) {
 	bucketName := bucketNameMB
 	bucket, err := copyCommand.command.ossBucket(bucketName)
 	c.Assert(err, IsNil)

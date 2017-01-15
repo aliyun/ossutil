@@ -359,7 +359,7 @@ func (s *OssutilCommandSuite) TestListBucketIDKey(c *C) {
 }
 
 // list multipart
-func (s *OssutilCommandSuite) TestListMultipartObjects(c *C) {
+func (s *OssutilCommandSuite) TestListMultipartUploads(c *C) {
 
 	bucketName := bucketNameDest
 	// "rm -arf oss://bucket/"

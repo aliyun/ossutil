@@ -41,7 +41,7 @@ var specChineseRemove = SpecText{
         如果未指定--recursive和--bucket选项，删除指定的单个object，此时请确保url精确指
     定了待删除的object，ossutil不会进行前缀匹配。无论是否指定--force选项，ossutil都不会
     进行询问提示。如果此时指定了--bucket选项，将会报错，单独删除bucket参考用法4)。
-        如果指定--multipart选项, 删除指定的未completed的multipart。
+        如果指定--multipart选项, 删除指定url下未完成的上传任务。
 
     2) ossutil rm oss://bucket -b [-f]
         （删除bucket，不删除objects）
@@ -55,29 +55,28 @@ var specChineseRemove = SpecText{
     用法查找与指定url前缀匹配的所有objects（prefix为空代表bucket下的所有objects），删除
     这些objects。由于未指定--bucket选项，则ossutil保留bucket。如果指定了--force选项，则
     删除前不会进行询问提示。
-        如果指定--multipart选项, 该用法查找与指定url前缀匹配的所有未completed的
-    multipart （prefix为空代表bucket下的所有completed的multipart）
-        如果指定--all-type, 该操作不会区分completed的multipart和普通的object，执行删除符
-	合匹配的completed的multipart和普通object。
+		如果指定了--multipart选项，删除指定url下未完成的上传任务。
+		如果指定了--all-type，删除指定URL的object，并删除该url下未完成的上传任务。
 
     4) ossutil rm oss://bucket[/prefix] -r -b [-a] [-f]
         （删除bucket和objects）
         如果同时指定了--bucket和--recursive选项，ossutil进行批量删除后会尝试去一并删除
     bucket。当用户想要删除某个bucket连同其中的所有objects时，可采用该操作。如果指定了
     --force选项，则删除前不会进行询问提示。
-         如果指定--all-type, 该操作不会区分未completed的multipart和普通的object，
-    执行上述删除completed的multipart及普通object操作。
+		如果指定了--all-type, 删除指定URL的object，并删除该url下未完成的上传任务。
     
     该命令不支持的用法
     1) ossutil rm oss://bucket/object -m -b [-f]
-        不能尝试删除一个未completed的multipart文件后删除一个bucket
+        不能尝试删除一个指定url下未完成的上传任务后删除一个bucket。
     2) ossutil rm oss://bucket/object -a -b [-f]
-        不能尝试删除一个文件(包括普通object和未completed的multipart)后删除一个bucket
+        不能尝试删除一个指定URL的object和未完成的上传任务后删除一个bucket。
 
 `,
 
 	sampleText: ` 
     ossutil rm oss://bucket1/obj1
+    ossutil rm oss://bucket1/obj1 -m
+    ossutil rm oss://bucket1/obj1 -a
     ossutil rm oss://bucket1/dir -r 
     ossutil rm oss://bucket1 -b
     ossutil rm oss://bucket2 -r -b -f
@@ -132,22 +131,39 @@ Usage:
     sure url exactly specified the bucket you want to remove, or error occurs. If --force 
     option is specified, ossutil will not show prompt question. 
 
-    3) ossutil rm oss://bucket[/prefix] -r [-f]
+    3) ossutil rm oss://bucket[/prefix] -r [-m] [-a] [-f]
         (Remove objects, reserve bucket)
         If you remove with --recursive option, without --bucket option, ossutil remove all 
     the objects that prefix-matching the url you specified(empty prefix means all objects in 
     the bucket), bucket will be reserved because of missing --bucket option.
+		If --multipart option is specified, ossutil will remove uncompleted upload tasks
+	under the url you specified.
+		If --all-type option is specified, ossutil will remove objects and uncompleted upload 
+	tasks under the url you specified.
 
-    4) ossutil rm oss://bucket[/prefix] -r -b [-f] 
+
+    4) ossutil rm oss://bucket[/prefix] -r -b [-a] [-f] 
         (Remove bucket and objects inside)
         If you remove with both --recursive and --bucket option, after ossutil removed all 
     the prefix-matching objects, ossutil will try to remove the bucket together. If user want 
     to remove bucket and objects inside, the usage is recommended. If --force option is 
     specified, ossutil will not show prompt question. 
+		If --all-type option is specified, ossutil will remove objects and uncompleted upload 
+		tasks under the url(oss://bucket[/prefix]) you specified.
+
+	Invalid operations
+    1) ossutil rm oss://bucket/object -m -b [-f]
+		It's invalid that remove the bucket after remove uncompleted upload tasks you specified。
+    2) ossutil rm oss://bucket/object -a -b [-f]
+        It's invalid that remove bucket after remove objects and uncompleted uplodd tasks you 
+	specified。
+
 `,
 
 	sampleText: ` 
     ossutil rm oss://bucket1/obj1
+	ossutil rm oss://bucket1/obj1 -m
+    ossutil rm oss://bucket1/obj1 -a
     ossutil rm oss://bucket1/dir -r 
     ossutil rm oss://bucket1 -b
     ossutil rm oss://bucket2 -r -b -f
@@ -339,7 +355,7 @@ func (rc *RemoveCommand) ossDeleteMultipartUploadsRetry(bucket *oss.Bucket, obje
 	marker := oss.Marker("")
 	del := oss.Delimiter("")
 
-	for i := 0; ; i++ {
+	for i := 1; ; i++ {
 		lmr, err := rc.command.ossListMultipartUploadsRetry(bucket, marker, pre, del)
 		if err != nil {
 			return err

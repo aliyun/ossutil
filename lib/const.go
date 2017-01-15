@@ -106,9 +106,3 @@ const (
 	ObjectBit    = 0x0010
 	MultipartBit = 0x0100
 )
-
-const (
-	NotAllTypeBit   = 0x0
-	NotObjectBit    = 0x0
-	NotMultipartBit = 0x0
-)
