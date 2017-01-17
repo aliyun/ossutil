@@ -55,21 +55,21 @@ var specChineseRemove = SpecText{
     用法查找与指定url前缀匹配的所有objects（prefix为空代表bucket下的所有objects），删除
     这些objects。由于未指定--bucket选项，则ossutil保留bucket。如果指定了--force选项，则
     删除前不会进行询问提示。
-		如果指定了--multipart选项，删除指定url下未完成的上传任务。
-		如果指定了--all-type，删除指定URL的object，并删除该url下未完成的上传任务。
+        如果指定了--multipart选项，删除指定url下未完成的上传任务。
+        如果指定了--all-type，删除指定url的object，并删除该url下未完成的上传任务。
 
     4) ossutil rm oss://bucket[/prefix] -r -b [-a] [-f]
         （删除bucket和objects）
         如果同时指定了--bucket和--recursive选项，ossutil进行批量删除后会尝试去一并删除
     bucket。当用户想要删除某个bucket连同其中的所有objects时，可采用该操作。如果指定了
     --force选项，则删除前不会进行询问提示。
-		如果指定了--all-type, 删除指定URL的object，并删除该url下未完成的上传任务。
+        如果指定了--all-type, 删除指定url的object，并删除该url下未完成的上传任务。
     
     该命令不支持的用法
     1) ossutil rm oss://bucket/object -m -b [-f]
         不能尝试删除一个指定url下未完成的上传任务后删除一个bucket。
     2) ossutil rm oss://bucket/object -a -b [-f]
-        不能尝试删除一个指定URL的object和未完成的上传任务后删除一个bucket。
+        不能尝试删除一个指定url的object和未完成的上传任务后删除一个bucket。
 
 `,
 
@@ -136,10 +136,10 @@ Usage:
         If you remove with --recursive option, without --bucket option, ossutil remove all 
     the objects that prefix-matching the url you specified(empty prefix means all objects in 
     the bucket), bucket will be reserved because of missing --bucket option.
-		If --multipart option is specified, ossutil will remove uncompleted upload tasks
-	under the url you specified.
-		If --all-type option is specified, ossutil will remove objects and uncompleted upload 
-	tasks under the url you specified.
+        If --multipart option is specified, ossutil will remove uncompleted upload tasks
+    under the url(oss://bucket[/prefix]) you specified.
+        If --all-type option is specified, ossutil will remove objects and uncompleted upload 
+    tasks under the url you specified.
 
 
     4) ossutil rm oss://bucket[/prefix] -r -b [-a] [-f] 
@@ -148,14 +148,14 @@ Usage:
     the prefix-matching objects, ossutil will try to remove the bucket together. If user want 
     to remove bucket and objects inside, the usage is recommended. If --force option is 
     specified, ossutil will not show prompt question. 
-		If --all-type option is specified, ossutil will remove objects and uncompleted upload 
-		tasks under the url(oss://bucket[/prefix]) you specified.
+        If --all-type option is specified, ossutil will remove objects and uncompleted upload 
+    tasks under the url(oss://bucket[/prefix]) you specified.
 
 	Invalid operations
     1) ossutil rm oss://bucket/object -m -b [-f]
 		It's invalid that remove the bucket after remove uncompleted upload tasks you specified。
     2) ossutil rm oss://bucket/object -a -b [-f]
-        It's invalid that remove bucket after remove objects and uncompleted uplodd tasks you 
+        It's invalid that remove bucket after remove objects and uncompleted upload tasks you 
 	specified。
 
 `,

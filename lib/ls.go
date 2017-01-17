@@ -26,7 +26,7 @@ var specChineseList = SpecText{
 
     该命令有两种用法：
 
-    1) ossutil ls [oss://] [-s] [-m] [-a]
+    1) ossutil ls [oss://] [-s]
         如果用户列举时缺失url参数，则ossutil获取用户的身份凭证信息（从配置文件中读取），
     并列举该身份凭证下的所有buckets，并显示每个bucket的最新更新时间和位置信息。如果指定
     了--short-format选项则只输出bucket名称。该用法不支持--directory选项。
@@ -36,8 +36,8 @@ var specChineseList = SpecText{
     展示了object大小，最新更新时间和etag，但是如果指定了--short-format选项则只输出object名
     称。如果指定了--directory选项，则返回指定bucket下以指定前缀开头的第一层目录下的文件和子
     目录，但是不递归显示所有子目录，此时默认为精简格式。
-		如果指定了--multipart选项，则显示指定URL(oss://bucket[/prefix])下未完成的上传任务。
-		如果指定了--all-type选项，则显示指定URL(oss://bucket[/prefix])下的object和未完成的
+        如果指定了--multipart选项，则显示指定URL(oss://bucket[/prefix])下未完成的上传任务。
+        如果指定了--all-type选项，则显示指定URL(oss://bucket[/prefix])下的object和未完成的
 	上传任务。
 
 `,
@@ -72,9 +72,9 @@ var specChineseList = SpecText{
         Object or Directory Number is: 2
 
     6)ossutil ls oss://bucket1 -m 
-        UploadID                            MultipartName
-        15754AF7980C4DFB8193F190837520BB    oss://bucket1/obj1
-        3998971ACAF94AD9AC48EAC1988BE863    oss://bucket2/obj2
+        InitiatedTime                  UploadID                          MultipartName
+        2017-01-13 03:45:26 +0000 UTC  15754AF7980C4DFB8193F190837520BB  oss://bucket1/obj1
+        2017-01-13 03:45:25 +0000 UTC  3998971ACAF94AD9AC48EAC1988BE863  oss://bucket1/obj2
         UploadId Number is: 2
     
     7)ossutil ls oss://bucket1 -a 
@@ -82,10 +82,10 @@ var specChineseList = SpecText{
         2016-04-08 14:50:47 +0000 UTC 6476984  4F16FDAE7AC404CEC8B727FCC67779D6  oss://bucket1/sample.txt
         2015-06-05 14:06:29 +0000 UTC  201933  7E2F4A7F1AC9D2F0996E8332D5EA5B41  oss://bucket1/dir1/obj11
         Object Number is: 2
-        UploadID                            MultipartName
-        15754AF7980C4DFB8193F190837520BB    oss://bucket1/obj1
-        3998971ACAF94AD9AC48EAC1988BE863    oss://bucket2/obj2
-        Multipart Number is: 2
+        InitiatedTime                  UploadID                          MultipartName
+        2017-01-13 03:45:26 +0000 UTC  15754AF7980C4DFB8193F190837520BB  oss://bucket1/obj1
+        2017-01-13 03:45:25 +0000 UTC  3998971ACAF94AD9AC48EAC1988BE863  oss://bucket1/obj2
+        UploadId Number is: 2
          
 `,
 }
@@ -121,8 +121,8 @@ Usage:
     with object size, last modified time and etag in addition, --short-format option ignores 
     all the additional information. --directory option returns top-level subdirectory names 
     instead of contents of the subdirectory, which in default show by short format.
-		--multipart option will show  multipart upload tasks under the url(oss://bucket[/prefix])。 
-		--all-type option will show objects and multipart upload tasks under the 
+        --multipart option will show multipart upload tasks under the url(oss://bucket[/prefix])。 
+        --all-type option will show objects and multipart upload tasks under the 
 	url(oss://bucket[/prefix])。
 `,
 
@@ -156,9 +156,9 @@ Usage:
         Object or Directory Number is: 2
 
     6)ossutil ls oss://bucket1 -m 
-        UploadID                            MultipartName
-        15754AF7980C4DFB8193F190837520BB    oss://bucket1/obj1
-        3998971ACAF94AD9AC48EAC1988BE863    oss://bucket2/obj2
+        InitiatedTime                  UploadID                          MultipartName
+        2017-01-13 03:45:26 +0000 UTC  15754AF7980C4DFB8193F190837520BB  oss://bucket1/obj1
+        2017-01-13 03:45:25 +0000 UTC  3998971ACAF94AD9AC48EAC1988BE863  oss://bucket1/obj2
         UploadId Number is: 2
     
     7)ossutil ls oss://bucket1 -a 
@@ -166,10 +166,10 @@ Usage:
         2016-04-08 14:50:47 +0000 UTC 6476984  4F16FDAE7AC404CEC8B727FCC67779D6  oss://bucket1/sample.txt
         2015-06-05 14:06:29 +0000 UTC  201933  7E2F4A7F1AC9D2F0996E8332D5EA5B41  oss://bucket1/dir1/obj11
         Object Number is: 2
-        UploadID                            MultipartName
-        15754AF7980C4DFB8193F190837520BB    oss://bucket1/obj1
-        3998971ACAF94AD9AC48EAC1988BE863    oss://bucket2/obj2
-        Multipart Number is: 2
+        InitiatedTime                  UploadID                          MultipartName
+        2017-01-13 03:45:26 +0000 UTC  15754AF7980C4DFB8193F190837520BB  oss://bucket1/obj1
+        2017-01-13 03:45:25 +0000 UTC  3998971ACAF94AD9AC48EAC1988BE863  oss://bucket1/obj2
+        UploadId Number is: 2
 
 `,
 }
@@ -408,10 +408,9 @@ func (lc *ListCommand) showDirectories(lor oss.ListObjectsResult, bucket string)
 	return output, len(lor.CommonPrefixes)
 }
 
-// multipart objects display
 func (lc *ListCommand) displayMultipartUploadsResult(lmr oss.ListMultipartUploadResult, bucket string, shortFormat bool, directory bool, i int) int {
 	if i == 0 && !shortFormat && len(lmr.Uploads) > 0 {
-		fmt.Printf("%s%-28s%s\n", "UploadId", " ", "MultipartName")
+		fmt.Printf("%s%-18s%s%-26s%s\n", "InitiatedTime", " ", "UploadID", " ", "MultipartName")
 	}
 
 	var output string
@@ -425,7 +424,7 @@ func (lc *ListCommand) showMultipartUploads(lmr oss.ListMultipartUploadResult, b
 	for _, upload := range lmr.Uploads {
 		if !shortFormat {
 			output += fmt.Sprintf(
-				"%s%-4s%s\n", upload.UploadID, " ", CloudURLToString(bucket, upload.Key),
+				"%s%-2s%s%-2s%s\n", upload.Initiated, " ", upload.UploadID, " ", CloudURLToString(bucket, upload.Key),
 			)
 		} else {
 			output += CloudURLToString(bucket, upload.Key) + "\n"
