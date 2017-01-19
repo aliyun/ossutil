@@ -86,10 +86,10 @@ const (
     SnapshotConnector                      = "==>"
     SnapshotSep                            = "#"
 	MaxPartNum                             = 10000
-	MaxIdealPartNum                        = MaxPartNum / 20
+	MaxIdealPartNum                        = MaxPartNum / 10
 	MinIdealPartNum                        = MaxPartNum / 500
 	MaxIdealPartSize                       = 524288000
-	MinIdealPartSize                       = 10485760
+	MinIdealPartSize                       = 1048576
 	DefaultBigFileThreshold                = 104857600 
 	MaxBigFileThreshold                    = MaxInt64
 	MinBigFileThreshold                    = 0
@@ -97,9 +97,9 @@ const (
 	MaxRetryTimes                   int64  = 500
 	MinRetryTimes                   int64  = 1
 	Routines                        int    = 3
-	MaxRoutines                     int64  = 32
+	MaxRoutines                     int64  = 100
 	MinRoutines                     int64  = 1
-	MaxParallel                     int64  = 32
+	MaxParallel                     int64  = 100
 	MinParallel                     int64  = 1
 	DefaultHashType                 string = "crc64"
 	MD5HashType                     string = "md5"
