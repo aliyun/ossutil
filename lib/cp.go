@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+    "github.com/syndtr/goleveldb/leveldb"
 	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
 
@@ -29,14 +30,16 @@ const (
 )
 
 type CopyOptionType struct {
-	recursive bool
-	force     bool
-	update    bool
-	threshold int64
-	cpDir     string
-	routines  int64
-    ctnu      bool
-    reporter  *Reporter
+	recursive       bool
+	force           bool
+	update          bool
+	threshold       int64
+	cpDir           string
+	routines        int64
+    ctnu            bool
+    reporter        *Reporter
+    snapshotPath    string
+    snapshotldb     *leveldb.DB
 }
 
 type fileInfoType struct {
@@ -51,11 +54,16 @@ type objectInfoType struct {
 }
 
 var (
-    mu sync.RWMutex
-    chProgressSignal chan bool
+    mu                  sync.RWMutex
+    snapmu              sync.RWMutex
+    chProgressSignal    chan chProgressSignalType
+    SignalNum           = 0
 )
 
-const SignalNum = 2
+type chProgressSignalType struct {
+    finish      bool
+    exitStat    int
+}
 
 // OssProgressListener progress listener
 type OssProgressListener struct {
@@ -71,7 +79,7 @@ func (l *OssProgressListener) ProgressChanged(event *oss.ProgressEvent) {
         l.currSize = event.ConsumedBytes
         l.monitor.updateTransferSize(l.currSize - l.lastSize)
         if len(chProgressSignal) <= SignalNum {
-            chProgressSignal <- true
+            chProgressSignal <- chProgressSignalType{false, normalExit}
         }
     }
 }
@@ -84,17 +92,17 @@ var specChineseCopy = SpecText{
 	paramText: "src_url dest_url [options]",
 
 	syntaxText: ` 
-    ossutil cp file_url cloud_url  [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [-c file] 
-    ossutil cp cloud_url file_url  [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [-c file] 
-    ossutil cp cloud_url cloud_url [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [-c file] 
+    ossutil cp file_url cloud_url  [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--snapshot-path=sdir]
+    ossutil cp cloud_url file_url  [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--snapshot-path=sdir] 
+    ossutil cp cloud_url cloud_url [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--snapshot-path=sdir]
 `,
 
 	detailHelpText: ` 
     该命令允许：从本地文件系统上传文件到oss，从oss下载object到本地文件系统，在oss
     上进行object拷贝。分别对应下述三种操作：
-        ossutil cp file_url oss://bucket[/prefix] [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file]
-        ossutil cp oss://bucket[/prefix] file_url [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file]
-        ossutil cp oss://src_bucket[/src_prefix] oss://dest_bucket[/dest_prefix] [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file]
+        ossutil cp file_url oss://bucket[/prefix] [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] [--snapshot-path=sdir]
+        ossutil cp oss://bucket[/prefix] file_url [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] [--snapshot-path=sdir]
+        ossutil cp oss://src_bucket[/src_prefix] oss://dest_bucket[/dest_prefix] [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] [--snapshot-path=sdir]
 
     其中file_url代表本地文件系统中的文件路径，支持相对路径或绝对路径，请遵循本地文
     件系统的使用格式；
@@ -132,12 +140,48 @@ var specChineseCopy = SpecText{
     注意：ossutil不做report文件的维护工作，请自行查看及清理您的report文件，避免产生过多的
     report文件。
 
+
+增量上传：
+
 --update选项（-u）
     
     如果指定了该选项，ossutil只有当目标文件（或object）不存在，或源文件（或object）新于
     目标文件（或object）时，才执行拷贝。当指定了该选项时，无论--force选项是否指定了，在
     目标文件存在时，ossutil都不会提示，直接采取上述策略。
-    该选项可用于当批量拷贝失败时，重传时跳过已经成功的文件。
+    该选项可用于当批量拷贝失败时，重传时跳过已经成功的文件。实现增量上传。
+
+--snapshot-path选项
+
+    该选项用于在某些场景下加速增量上传批量文件（目前，下载和拷贝不支持该选项）。此场景为：
+    文件数较多且两次上传期间没有其他用户更改了oss上的对应object。
+
+    在cp上传文件时使用该选项，ossutil在指定的目录下生成文件记录文件上传的快照信息，在下一
+    次指定该选项上传时，ossutil会读取指定路径下的快照信息进行增量上传。用户指定的snapshot-path
+    必须为本地文件系统上的可写目录，若该路径目录不存在，ossutil会创建该文件用于记录快照信息，
+    如果该路径文件已存在，ossutil会读取里面的快照信息，根据快照信息进行增量上传（只上传上次
+    未成功上传的文件和本地进行过修改的文件），并更新快照信息。
+
+    注意：
+    （1）因为该命令通过在本地记录成功上传的文件的本地lastModifiedTime，从而在下次上传时通过
+    比较lastModifiedTime来决定是否跳过相同文件的上传，所以在使用该选项时，请确保两次上传期
+    间没有其他用户更改了oss上的对应object。当不满足该场景时，如果想要增量上传批量文件，请使
+    用--update选项。
+    （2）ossutil不会主动删除snapshot-path下的快照信息，为了避免快照信息过多，当您确定快照信
+    息无用时，请您自行清理snapshot-path。
+    （3）由于读写snapshot信息需要额外开销，当要批量上传的文件数比较少或网络状况比较好或有其
+    他用户操作相同object时，并不建议使用该选项。可以使用--update选项来增量上传。
+
+注意：--update选项和--snapshot-path选项可以同时使用，ossutil会优先根据snapshot-path信息判断
+    是否跳过上传，如果不满足跳过条件，再根据--update判断是否跳过上传。如果指定了这两种增量上
+    传策略之中的任何一种，ossutil将根据策略判断是否进行上传/下载/拷贝，当遇到目标端的文件已
+    存在，也不会询问用户是否进行替换操作，此时--force选项不再生效。
+    
+
+--force选项
+
+    如果dest_url指定的文件或objects在oss上已经存在，并且未指定--update或--snapshot-path选项，
+    ossutil会询问是否进行替换操作（输入非法时默认不替换），如果指定了--force选项，则不询问，
+    强制替换。该选项只有在未指定--update或--snapshot-path选项时有效，否则按指定的选项操作。
 
 --output-dir选项
     
@@ -146,12 +190,6 @@ var specChineseCopy = SpecText{
     输出文件表示ossutil在运行过程中产生的输出文件，目前包含：在cp命令中ossutil运行出错时
     产生的report文件。
     
---force选项
-
-    如果dest_url指定的文件或objects已经存在，并且未指定--update选项，ossutil会询问是否进
-    行替换操作（输入非法时默认不替换），如果指定了--force选项，则不询问，强制替换。该选项
-    只有在未指定--update选项时有效，否则按--update选项操作。
-
 
 大文件断点续传：
 
@@ -176,22 +214,26 @@ var specChineseCopy = SpecText{
 
 批量文件迁移：
 
-    ossutil支持通过本地文件系统中转的方式进行批量文件迁移，在这种场景下，通常的使用方式是：
+    ossutil支持批量文件迁移，在这种场景下，通常的使用方式是：
     （1）批量上传：
-        ossutil cp your_dir oss://your_bucket -r -u -f
+        ossutil cp your_dir oss://your_bucket -r -f -u
     （2）批量下载：
-        ossutil cp oss://your_bucket your_dir -r -u -f
+        ossutil cp oss://your_bucket your_dir -r -f -u
     （3）同region的Bucket间迁移：
-        ossutil cp oss://your_srcbucket oss://your_destbucket -r -u -f
+        ossutil cp oss://your_srcbucket oss://your_destbucket -r -f -u
 
     具体每个选项的意义，请见上文帮助。
     在运行完一轮文件迁移后，请根据屏幕提示查看report文件，处理出错文件。
+
+    在批量上传时，如果文件数比较多且没有其他用户操作相同object时，可以使用--snapshot-path选项
+    进行额外的增量上传加速，更多信息参考上文关于--snapshot-path选项的介绍。命令为：
+        ossutil cp your_dir oss://your_bucket -r -f -u --shapshot-path=your-path
 
 用法：
 
     该命令有三种用法：
 
-    1) ossutil cp file_url oss://bucket[/prefix] [-r] [-f] [--update] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file]
+    1) ossutil cp file_url oss://bucket[/prefix] [-r] [-f] [--update] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] [--snapshot-path=sdir]
         该用法上传本地文件系统中文件或目录到oss。file_url可以为文件或目录。当file_url为文件
     时，无论是否指定--recursive选项都不会影响结果。当file_url为目录时，即使目录为空或者只含
     有一个文件，也必须使用--recursive选项，注意，此时ossutil会将file_url下的文件或子目录上传
@@ -203,7 +245,7 @@ var specChineseCopy = SpecText{
                             file_url的路径。
                             否则，object名为：dest_url+/+文件或子目录相对file_url的路径。
 
-    2) ossutil cp oss://bucket[/prefix] file_url [-r] [-f] [--update] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file]
+    2) ossutil cp oss://bucket[/prefix] file_url [-r] [-f] [--update] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] [--snapshot-path=sdir]
         该用法下载oss上的单个或多个Object到本地文件系统。如果未指定--recursive选项，则ossutil
     认为src_url精确指定了待拷贝的单个object，此时不支持prefix匹配，如果object不存在则报错。如
     果指定了--recursive选项，ossutil会搜索prefix匹配的objects，批量拷贝这些objects，此时file_url
@@ -214,7 +256,7 @@ var specChineseCopy = SpecText{
     注意：对于以/结尾且大小为0的object，会在本地文件系统创建一个目录，而不是尝试创建一个文件。
     对于其他object会尝试创建文件。
 
-    3) ossutil cp oss://src_bucket[/src_prefix] oss://dest_bucket[/dest_prefix] [-r] [-f] [--update] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file]
+    3) ossutil cp oss://src_bucket[/src_prefix] oss://dest_bucket[/dest_prefix] [-r] [-f] [--update] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] [--snapshot-path=sdir]
         该用法在oss间进行object的拷贝。其中src_bucket与dest_bucket可以相同，注意，当src_url与
     dest_url完全相同时，ossutil不会做任何事情，直接提示退出。设置meta请使用set-meta命令。如果未
     指定--recursive选项，则认为src_url精确指定了待拷贝的单个object，此时不支持prefix匹配，如果
@@ -262,6 +304,15 @@ var specChineseCopy = SpecText{
     ossutil cp local_dir oss://bucket1/b -r --output-dir=your_dir 
     如果某文件上传发生服务器内部错误等失败，会在your_dir中产生report文件记录错误信息，并尝试其他文件的上传操作。
 
+    ossutil cp local_dir oss://bucket1/b -r -u
+    使用--update策略进行增量上传
+
+    ossutil cp local_dir oss://bucket1/b -r --snapshot-path=your_local_path
+    使用--snapshot-path策略进行增量上传
+
+    ossutil cp local_dir oss://bucket1/b -r -u --snapshot-path=your_local_path
+    同时使用--snapshot-path和--update策略进行增量上传
+
     2) 从oss下载object
     假设oss上有下列objects：
         oss://bucket/abcdir1/a
@@ -299,6 +350,9 @@ var specChineseCopy = SpecText{
     ossutil cp oss://bucket/ local_dir -r --output-dir=your_dir 
     如果某文件下载发生服务器内部错误等失败，会在your_dir中产生report文件记录错误信息，并尝试其他文件的下载操作。
         
+    ossutil cp oss://bucket/ local_dir -r -u
+    使用--update策略进行增量下载
+
     3) 在oss间拷贝
     假设oss上有下列objects：
         oss://bucket/abcdir1/a
@@ -357,6 +411,9 @@ var specChineseCopy = SpecText{
 
     ossutil cp oss://bucket/ oss://bucket1/ -r --output-dir=your_dir 
     如果某文件拷贝发生服务器内部错误等失败，会在your_dir中产生report文件记录错误文件的信息，并尝试其他文件的拷贝操作。
+
+    ossutil cp oss://bucket/ oss://bucket1/ -r -u
+    使用--update策略进行增量拷贝
 `,
 }
 
@@ -367,9 +424,9 @@ var specEnglishCopy = SpecText{
 	paramText: "src_url dest_url [options]",
 
 	syntaxText: ` 
-    ossutil cp file_url cloud_url  [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [-c file] 
-    ossutil cp cloud_url file_url  [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [-c file] 
-    ossutil cp cloud_url cloud_url [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [-c file] 
+    ossutil cp file_url cloud_url  [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--snapshot-path=sdir]
+    ossutil cp cloud_url file_url  [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--snapshot-path=sdir] 
+    ossutil cp cloud_url cloud_url [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--snapshot-path=sdir]
 `,
 
 	detailHelpText: ` 
@@ -378,9 +435,9 @@ var specEnglishCopy = SpecText{
     2. Download object from oss to local file system
     3. Copy objects between oss
     Which matches with the following three kinds of operations:
-        ossutil cp file_url oss://bucket[/prefix] [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file]
-        ossutil cp oss://bucket[/prefix] file_url [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file]
-        ossutil cp oss://src_bucket[/src_prefix] oss://dest_bucket[/dest_prefix] [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file]
+        ossutil cp file_url oss://bucket[/prefix] [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] [--snapshot-path=sdir]
+        ossutil cp oss://bucket[/prefix] file_url [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] [--snapshot-path=sdir]
+        ossutil cp oss://src_bucket[/src_prefix] oss://dest_bucket[/dest_prefix] [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] [--snapshot-path=sdir]
 
     file_url means the file in local file system, it supports relative path and absolute 
     path, the usage of file_url is same with your local file system. oss://bucket[/prefix] 
@@ -423,13 +480,59 @@ var specEnglishCopy = SpecText{
     Note: ossutil will not mainten the report file, please check and clear your output directory 
     regularlly to avoid too many report files in your output directory. 
 
---update option
+
+Incremental Upload:
+
+--update option(-u)
 
     Use the --update option to copy only when the source file is newer than the destination file 
     when the destination file is missing. If --update option is specified, when the destionation 
     file is existed, ossutil will not prompt and copy when newer, no matter if --force option is 
     specified or not.
     The option can be used when batch copy failed, skip the succeed files in retry.
+
+--snapshot-path option
+
+    This option is used to accelerate the incremental upload of batch files in certain scenarios(
+    currently, download and copy do not support this option). The scenarios is: lots of files and 
+    no other user updated the corresponding object in oss during the two uploads.
+    
+    If you use the option when batch copy files, ossutil will generate files to record the snapshot 
+    information in the specified directory. When the next time you upload files with the option, 
+    ossutil will read the snapshot information under the specified directory for incremental upload. 
+    The snapshot-path you specified must be a local file system directory can be written in, if the 
+    directory does not exist, ossutil creates the files for recording snapshot information, else 
+    ossutil will read snapshot information from the directory for incremental upload(ossutil will 
+    only upload the files which has not been successfully upload to oss and the files has been locally 
+    modified), and update the snapshot information to the directory. 
+    
+    Note: 
+    (1) The option record the lastModifiedTime of local files which has been successfully upload in 
+        local file system, and compare the lastModifiedTime of local files in the next cp to decided 
+        whether to skip the upload of the files, so if you use the option to achieve incremental upload, 
+        please make sure no other user updated the corresponding object in oss during the two uploads. 
+        If you can not guarantee the scenarios, please use --update option to achieve incremental upload. 
+    (2) Ossutil does not automatically delete snapshot-path snapshot information, in order to avoid too 
+        much snapshot information, when the snapshot information is useless, please clean up your own 
+        snapshot-path on your own.
+    (3) Due to the extra cost of reading and writing snapshot information, if the file num is not very big, 
+        or the network condition is good, or there may be some other users to modify the corresponding 
+        object in oss during the two uploads, it's not suggested to use the option. you can use --update 
+        option for incremental upload. 
+
+Note: --update option and --snapshot-path can be used together, ossutil priority will be based on snapshot 
+    information to determine whether to skip upload, if not satisfied, ossutil will then based on --update 
+    to determine whether to skip upload. If any of those two policies is specified, ossutil will ingnore 
+    --force option, which means whether or not the destionation file exists, ossutil will not ask user 
+    whether to replace the file, and determine whether to upload according to incremental upload policies.
+
+
+--force option
+
+    If the file dest_url specified is existed, and --update and --snapshot-path option is not specified, 
+    ossutil will ask if replace the file(if the input is invalid, the file will not be replaced). If 
+    --force option is specified here, ossutil will not prompt, replace by force. The option is useful 
+    only when --update and --snapshot-path option is not specified. 
 
 --output-dir option
     
@@ -439,13 +542,6 @@ var specEnglishCopy = SpecText{
     error.  
 
     Output file contains: report file which used to record error message generated by cp command.
-
---force option
-
-    If the file dest_url specified is existed, and --update option is not specified, ossutil will 
-    ask if replace the file(if the input is invalid, the file will not be replaced). If --force 
-    option is specified here, ossutil will not prompt, replace by force. The option is useful only 
-    when --update not specified. 
 
 
 Resume copy of big file:
@@ -477,21 +573,26 @@ Batch file migration:
 
     ossutil support batch file migration by transfer files through local file system, the usual usage is: 
     (1) Batch file upload:
-        ossutil cp your_dir oss://your_bucket -r -u -f
+        ossutil cp your_dir oss://your_bucket -r -f -u
     (2) Batch file download:
-        ossutil cp oss://your_bucket your_dir -r -u -f
+        ossutil cp oss://your_bucket your_dir -r -f -u
     (3) File copy between buckets in the same region：
-        ossutil cp oss://your_srcbucket oss://your_destbucket -r -u -f
+        ossutil cp oss://your_srcbucket oss://your_destbucket -r -f -u
 
     The meaning of every option, see help above.
     After each migration, please check your report file.
 
+    When batch file upload, if the file num is big and no other user modified the corresponding object in 
+    oss during the two uploads, you can use --snapshot-path to accelerate the incremental upload, see more 
+    information in help text of --snapshot-path option above. 
+    The command is: 
+        ossutil cp your_dir oss://your_bucket -r -f -u --shapshot-path=your-path
 
 Usage:
 
     There are three usages:
 
-    1) ossutil cp file_url oss://bucket[/prefix] [-r] [-f] [--update] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file]
+    1) ossutil cp file_url oss://bucket[/prefix] [-r] [-f] [--update] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] [--snapshot-path=sdir]
         The usage upload file in local system to oss. file_url can be file or directory. If file_url 
     is file, no matter --recursive option is specified or not will not affect the result. If file_url 
     is directory, even if the directory is empty or only contains one file, we must specify --recursive 
@@ -503,7 +604,7 @@ Usage:
                              else, object name is: dest_url.
         If file_url is directory: if prefix is empty or end with "/", object name is: dest_url + file path relative to file_url.
         
-    2) ossutil cp oss://bucket[/prefix] file_url [-r] [-f] [--update] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file]
+    2) ossutil cp oss://bucket[/prefix] file_url [-r] [-f] [--update] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] [--snapshot-path=sdir]
         The usage download one or many objects to local system. If --recursive option is not specified, 
     ossutil considers src_url exactly specified the single object you want to download, prefix-matching 
     is not supported now, if the object not exists, error occurs. If --recursive option is specified, 
@@ -515,7 +616,7 @@ Usage:
     Warning: If the object name is end with / and size is zero, ossutil will create a directory in local 
     system, instead of creating a file.
 
-    3) ossutil cp oss://src_bucket[/src_prefix] oss://dest_bucket[/dest_prefix] [-r] [-f] [--update] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file]
+    3) ossutil cp oss://src_bucket[/src_prefix] oss://dest_bucket[/dest_prefix] [-r] [-f] [--update] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] [--snapshot-path=sdir]
         The usage copy objects between oss. The src_bucket can be same with dest_bucket. Pay attention 
     please, if src_url is the same with dest_url, ossutil will do nothing but exit after prompt. Set meta 
     please use "set-meta" command. If --recursive option is not specified, ossutil considers src_url exactly 
@@ -570,6 +671,15 @@ Usage:
     If an 5xx error occurs while upload a file, ossutil will generate a report file and record the error 
     information to the file, and store the file in your_dir, and continue to upload the remaining files.
 
+    ossutil cp local_dir oss://bucket1/b -r -u
+    Use --update policy for incremental upload
+
+    ossutil cp local_dir oss://bucket1/b -r --snapshot-path=your_local_path
+    Use --snapshot-path policy for incremental upload
+
+    ossutil cp local_dir oss://bucket1/b -r -u --snapshot-path=your_local_path
+    Use --snapshot-path and --update policies for incremental upload
+
     2) download from oss
     Suppose there are following objects in oss:
         oss://bucket/abcdir1/a
@@ -606,6 +716,9 @@ Usage:
     ossutil cp oss://bucket/ local_dir -r --output-dir=your_dir
     If an 5xx error occurs while download a file, ossutil will generate a report file and record the error 
     information to the file, and store the file in your_dir, and download to upload the remaining files.
+
+    ossutil cp oss://bucket/ local_dir -r -u
+    Use --update policy for incremental download
 
     3) Copy between oss 
     Suppose there are following objects in oss:
@@ -665,6 +778,9 @@ Usage:
     ossutil cp oss://bucket/ oss://bucket1/ -r --output-dir=your_dir 
     If an 5xx error occurs while copy a file, ossutil will generate a report file and record the error 
     information to the file, and store the file in your_dir, and continue to copy the remaining files.
+
+    ossutil cp oss://bucket/ oss://bucket1/ -r -u
+    Use --update policy for incremental copy
 `,
 }
 
@@ -700,6 +816,7 @@ var copyCommand = CopyCommand{
 			OptionRetryTimes,
 			OptionRoutines,
             OptionParallel,
+            OptionSnapshotPath,
 		},
 	},
 }
@@ -732,6 +849,7 @@ func (cc *CopyCommand) RunCommand() error {
         cc.cpOption.ctnu = true
     }
     outputDir, _ := GetString(OptionOutputDir, cc.command.options)
+    cc.cpOption.snapshotPath, _ = GetString(OptionSnapshotPath, cc.command.options) 
 
 	//get file list
 	srcURLList, err := cc.getStorageURLs(cc.command.args[0 : len(cc.command.args)-1])
@@ -748,20 +866,31 @@ func (cc *CopyCommand) RunCommand() error {
 	if err := cc.checkCopyArgs(srcURLList, destURL, opType); err != nil {
 		return err
 	}
-
-	// create ckeckpoint dir
-	if err := os.MkdirAll(cc.cpOption.cpDir, 0755); err != nil {
-		return err
-	}
+    if err := cc.checkCopyOptions(opType); err != nil {
+        return err
+    }
 
     // init reporter 
     if cc.cpOption.reporter, err = GetReporter(cc.cpOption.ctnu, outputDir, commandLine); err != nil {
         return err
     }
 
+	// create ckeckpoint dir
+	if err := os.MkdirAll(cc.cpOption.cpDir, 0755); err != nil {
+		return err
+	}
+
+    // load snapshot
+    if cc.cpOption.snapshotPath != "" {
+        if cc.cpOption.snapshotldb, err = leveldb.OpenFile(cc.cpOption.snapshotPath, nil); err != nil {
+            return fmt.Errorf("load snapshot error, reason: %s", err.Error())
+        }
+        defer cc.cpOption.snapshotldb.Close()
+    }
+
     cc.monitor.init(opType)
 
-    chProgressSignal = make(chan bool, 10)
+    chProgressSignal = make(chan chProgressSignalType, 10)
     go cc.progressBar()
 
 	switch opType {
@@ -774,9 +903,9 @@ func (cc *CopyCommand) RunCommand() error {
 	}
 
     cc.cpOption.reporter.Clear()
-
+    
 	if err == nil {
-		return os.RemoveAll(cc.cpOption.cpDir)
+		_ = os.RemoveAll(cc.cpOption.cpDir)
 	}
 	return err
 }
@@ -819,7 +948,7 @@ func (cc *CopyCommand) checkCopyArgs(srcURLList []StorageURLer, destURL StorageU
 	switch opType {
 	case operationTypePut:
 		if destURL.IsFileURL() {
-			return fmt.Errorf("Copy files between local file system is not allowed in ossutil, if you want to upload to oss, please make sure dest_url starts with \"%s\", which is: %s now", SchemePrefix, destURL.ToString())
+			return fmt.Errorf("copy files between local file system is not allowed in ossutil, if you want to upload to oss, please make sure dest_url starts with \"%s\", which is: %s now", SchemePrefix, destURL.ToString())
 		}
 		for _, url := range srcURLList {
 			if url.IsCloudURL() {
@@ -841,11 +970,23 @@ func (cc *CopyCommand) checkCopyArgs(srcURLList []StorageURLer, destURL StorageU
 	return nil
 }
 
+func (cc *CopyCommand) checkCopyOptions(opType operationType) error {
+    if operationTypePut != opType && cc.cpOption.snapshotPath != "" {
+        msg := fmt.Sprintf("only upload support option: \"%s\"", OptionSnapshotPath)
+        return CommandError{cc.command.name, msg}
+    }
+    return nil
+}
+
 func (cc *CopyCommand) progressBar() {
     // fetch all reveal
-    for _ = range chProgressSignal {
-        fmt.Printf(cc.monitor.progressBar(false, normalExit))
+    for signal := range chProgressSignal {
+        fmt.Printf(cc.monitor.progressBar(signal.finish, signal.exitStat))
     }
+}
+
+func (cc *CopyCommand) closeProgress() {
+    SignalNum = -1
 }
 
 //function for upload files
@@ -889,12 +1030,14 @@ func (cc *CopyCommand) uploadFiles(srcURLList []StorageURLer, destURL CloudURL) 
                 completed++
             } else {
                 if !cc.cpOption.ctnu {
+                    cc.closeProgress()
                     fmt.Printf(cc.monitor.progressBar(true, errExit))
                     return err
                 }
             }
 		}
 	}
+    cc.closeProgress()
     fmt.Printf(cc.monitor.progressBar(true, normalExit))
 	return nil
 }
@@ -1041,7 +1184,7 @@ func (cc *CopyCommand) uploadConsumer(bucket *oss.Bucket, destURL CloudURL, chFi
 				    return
                 }
                 continue
-			}
+            }
 		}
 	}
 
@@ -1067,8 +1210,8 @@ func (cc *CopyCommand) filterPath(filePath string, cpDir string) bool {
 
 func (cc *CopyCommand) uploadFileWithReport(bucket *oss.Bucket, destURL CloudURL, file fileInfoType) error {
     skip, err, isDir, size, msg := cc.uploadFile(bucket, destURL, file) 
-    cc.report(msg, err)
     cc.updateMonitor(skip, err, isDir, size)
+    cc.report(msg, err)
     return err
 }
 
@@ -1077,13 +1220,7 @@ func (cc *CopyCommand) uploadFile(bucket *oss.Bucket, destURL CloudURL, file fil
 	objectName := cc.makeObjectName(destURL, file)
 
 	filePath := file.filePath
-	if file.dir != "" {
-        if strings.HasSuffix(file.dir, "/") || strings.HasSuffix(file.dir, "\\") { 
-		    filePath = file.dir + file.filePath
-        } else {
-		    filePath = file.dir + string(os.PathSeparator) + file.filePath
-        }
-	}
+    filePath = filepath.Join(file.dir, filePath)
 
     skip = false
     rerr = nil
@@ -1102,7 +1239,10 @@ func (cc *CopyCommand) uploadFile(bucket *oss.Bucket, destURL CloudURL, file fil
         size = f.Size()
     }
 
-	if skip, rerr = cc.skipUpload(bucket, objectName, destURL, f.ModTime()); rerr != nil || skip {
+    srct := f.ModTime().Unix()
+    absPath, _ := filepath.Abs(filePath)
+    spath := cc.formatSnapshotKey(absPath, destURL.bucket, objectName)
+	if skip, rerr = cc.skipUpload(spath, bucket, objectName, destURL, srct); rerr != nil || skip {
 		return
 	}
 
@@ -1110,6 +1250,9 @@ func (cc *CopyCommand) uploadFile(bucket *oss.Bucket, destURL CloudURL, file fil
 	if f.IsDir() {
         rerr = cc.ossPutObjectRetry(bucket, objectName, "")
         isDir = true
+        if err := cc.updateSnapshot(rerr, spath, srct); err != nil {
+            rerr = err
+        }
 		return
 	}
 
@@ -1118,6 +1261,9 @@ func (cc *CopyCommand) uploadFile(bucket *oss.Bucket, destURL CloudURL, file fil
 	//decide whether to use resume upload
 	if f.Size() < cc.cpOption.threshold {
         rerr = cc.ossUploadFileRetry(bucket, objectName, filePath, oss.Progress(listener))
+        if err := cc.updateSnapshot(rerr, spath, srct); err != nil {
+            rerr = err
+        }
 		return
 	}
 
@@ -1127,6 +1273,9 @@ func (cc *CopyCommand) uploadFile(bucket *oss.Bucket, destURL CloudURL, file fil
 	//checkpoint file
 	cp := oss.Checkpoint(true, cc.formatCPFileName(cc.cpOption.cpDir, filePath, objectName))
     rerr = cc.ossResumeUploadRetry(bucket, objectName, filePath, partSize, oss.Routines(rt), cp, oss.Progress(listener))
+    if err := cc.updateSnapshot(rerr, spath, srct); err != nil {
+        rerr = err
+    }
 	return
 }
 
@@ -1141,27 +1290,40 @@ func (cc *CopyCommand) makeObjectName(destURL CloudURL, file fileInfoType) strin
 	return destURL.object
 }
 
-func (cc *CopyCommand) skipUpload(bucket *oss.Bucket, objectName string, destURL CloudURL, srct time.Time) (bool, error) {
-	if cc.cpOption.update {
-		if props, err := cc.command.ossGetObjectMetaRetry(bucket, objectName); err == nil {
-			destt, err := time.Parse(http.TimeFormat, props.Get(oss.HTTPHeaderLastModified))
-			if err != nil {
-				return false, err
-			}
-			if destt.Unix() >= srct.Unix() {
-				return true, nil
-			}
-		}
-	} else {
-		if !cc.cpOption.force {
-			if _, err := cc.command.ossGetObjectMetaRetry(bucket, objectName); err == nil {
-				if !cc.confirm(CloudURLToString(destURL.bucket, objectName)) {
-					return true, nil
-				}
-			}
-		}
+func (cc *CopyCommand) skipUpload(spath string, bucket *oss.Bucket, objectName string, destURL CloudURL, srct int64) (bool, error) {
+    if cc.cpOption.snapshotPath != "" || cc.cpOption.update {
+        if cc.cpOption.snapshotPath != "" {
+            tstr, err := cc.cpOption.snapshotldb.Get([]byte(spath), nil)
+            if err == nil {
+                t, _ := strconv.ParseInt(string(tstr), 10, 64)
+                if t == srct {
+                    return true, nil
+                }
+            }
+        }
+        if cc.cpOption.update {
+            if props, err := cc.command.ossGetObjectMetaRetry(bucket, objectName); err == nil {
+                destt, err := time.Parse(http.TimeFormat, props.Get(oss.HTTPHeaderLastModified))
+                if err != nil {
+                    return false, err
+                }
+                if destt.Unix() >= srct {
+                    return true, nil
+                }
+            }
+        }
+	} else if !cc.cpOption.force {
+        if _, err := cc.command.ossGetObjectMetaRetry(bucket, objectName); err == nil {
+            if !cc.confirm(CloudURLToString(destURL.bucket, objectName)) {
+                return true, nil
+            }
+        }
 	}
 	return false, nil
+}
+
+func (cc *CopyCommand) formatSnapshotKey(absPath, bucket, object string) string {
+    return absPath + SnapshotConnector + CloudURLToString(bucket, object) 
 }
 
 func (cc *CopyCommand) confirm(str string) bool {
@@ -1252,6 +1414,13 @@ func (cc *CopyCommand) ossResumeUploadRetry(bucket *oss.Bucket, objectName strin
 	}
 }
 
+func (cc *CopyCommand) report(msg string, err error) {
+    if cc.filterError(err) {
+        cc.cpOption.reporter.ReportError(fmt.Sprintf("%s error, info: %s", msg, err.Error()))
+        cc.cpOption.reporter.Prompt(err)
+    }
+}
+
 func (cc *CopyCommand) updateMonitor(skip bool, err error, isDir bool, size int64) {
     if err != nil {
         cc.monitor.updateErr(0, 1)
@@ -1263,14 +1432,7 @@ func (cc *CopyCommand) updateMonitor(skip bool, err error, isDir bool, size int6
         cc.monitor.updateFile(size, 1)
     }
     if len(chProgressSignal) <= SignalNum {
-        chProgressSignal <- true 
-    }
-}
-
-func (cc *CopyCommand) report(msg string, err error) {
-    if cc.filterError(err) {
-        cc.cpOption.reporter.ReportError(fmt.Sprintf("%s error, info: %s", msg, err.Error()))
-        cc.cpOption.reporter.Prompt(err)
+        chProgressSignal <- chProgressSignalType{false, normalExit}
     }
 }
 
@@ -1327,7 +1489,8 @@ func (cc *CopyCommand) downloadFiles(srcURL CloudURL, destURL FileURL) error {
 }
 
 func (cc *CopyCommand) formatResultPrompt(err error) error {
-    fmt.Printf(cc.monitor.progressBar(true, normalExit)) 
+    cc.closeProgress()
+    fmt.Printf(cc.monitor.progressBar(true, normalExit))
     if err != nil && cc.cpOption.ctnu {
         return nil
     }
@@ -1357,8 +1520,8 @@ func (cc *CopyCommand) adjustDestURLForDownload(destURL FileURL) (string, error)
 
 func (cc *CopyCommand) downloadSingleFileWithReport(bucket *oss.Bucket, objectInfo objectInfoType, filePath string) error {
     skip, err, size, msg := cc.downloadSingleFile(bucket, objectInfo, filePath)
-    cc.report(msg, err)
     cc.updateMonitor(skip, err, false, size)
+    cc.report(msg, err)
     return err
 }
 
@@ -1483,6 +1646,17 @@ func (cc *CopyCommand) truncateFile(filePath string, size int64) error {
     return nil
 }
 
+func (cc *CopyCommand) updateSnapshot(err error, spath string, srct int64) error {
+    if cc.cpOption.snapshotPath != "" && err == nil {
+        srctstr := fmt.Sprintf("%d", srct)
+        err := cc.cpOption.snapshotldb.Put([]byte(spath), []byte(srctstr), nil)
+        if err != nil {
+            return fmt.Errorf("dump snapshot error: %s", err.Error())
+        }
+    }
+    return nil
+}
+
 func (cc *CopyCommand) batchDownloadFiles(bucket *oss.Bucket, srcURL CloudURL, filePath string) error {
 	chObjects := make(chan objectInfoType, ChannelBuf)
 	chError := make(chan error, cc.cpOption.routines)
@@ -1589,6 +1763,7 @@ func (cc *CopyCommand) waitRoutinueComplete(chError, chListError <-chan error, o
             } else {
                 ferr = err
                 if !cc.cpOption.ctnu {
+                    cc.closeProgress()
                     fmt.Printf(cc.monitor.progressBar(true, errExit))
                     return err
                 }
@@ -1646,8 +1821,8 @@ func (cc *CopyCommand) checkCopyFileArgs(srcURL, destURL CloudURL) error {
 
 func (cc *CopyCommand) copySingleFileWithReport(bucket *oss.Bucket, objectInfo objectInfoType, srcURL, destURL CloudURL) error {
     skip, err, size, msg := cc.copySingleFile(bucket, objectInfo, srcURL, destURL)
-    cc.report(msg, err)
     cc.updateMonitor(skip, err, false, size)
+    cc.report(msg, err)
     return err
 }
 

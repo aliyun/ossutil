@@ -90,9 +90,11 @@ func max(a, b int64) int64 {
 }
 
 func getSizeString(size int64) string {
-    str := fmt.Sprintf("%d", size) 
+    prefix := ""
+    str := fmt.Sprintf("%d", size)
     if size < 0 {
-        return str
+        prefix = "-"
+        str = str[1:]
     }
     len := len(str)
     strList := []string{}
@@ -100,8 +102,9 @@ func getSizeString(size int64) string {
     if i != 0 {
         strList = append(strList, str[0:i])
     }
-    for ; i < len; i+=3 { 
+    for ; i < len; i+=3 {
         strList = append(strList, str[i:i+3])
     }
-    return strings.Join(strList, ",")
+    return fmt.Sprintf("%s%s", prefix, strings.Join(strList, ","))
 }
+

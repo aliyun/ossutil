@@ -90,10 +90,10 @@ func (m *Monitor) progressBar(finish bool) string {
     if m.finish {
         return ""
     }
+    m.finish = m.finish || finish
     if !finish {
         return m.getProgressBar()
     }
-    m.finish = true
     return m.getFinishBar() 
 }
 
@@ -247,10 +247,10 @@ func (m *RMMonitor) progressBar(finish bool, exitStat int) string {
     if m.finish {
         return ""
     }
+    m.finish = m.finish || finish
     if !finish {
         return m.getProgressBar()
     }
-    m.finish = true
     return m.getFinishBar(exitStat) 
 }
 
@@ -465,10 +465,10 @@ func (m *CPMonitor) progressBar(finish bool, exitStat int) string {
     if m.finish {
         return ""
     }
+    m.finish = m.finish || finish 
     if !finish {
         return m.getProgressBar()
     }
-    m.finish = true
     return m.getFinishBar(exitStat) 
 }
 

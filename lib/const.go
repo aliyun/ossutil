@@ -23,6 +23,7 @@ const (
     OptionOutputDir               = "outputDir"
 	OptionBigFileThreshold        = "bigfileThreshold"
 	OptionCheckpointDir           = "checkpointDir"
+    OptionSnapshotPath            = "snapshotPath"
 	OptionRetryTimes              = "retryTimes"
 	OptionRoutines                = "routines"
 	OptionParallel                = "parallel"
@@ -82,6 +83,8 @@ const (
     DefaultOutputDir                       = "ossutil_output"
 	CheckpointDir                          = ".ossutil_checkpoint"
 	CheckpointSep                          = "---"
+    SnapshotConnector                      = "==>"
+    SnapshotSep                            = "#"
 	MaxPartNum                             = 10000
 	MaxIdealPartNum                        = MaxPartNum / 20
 	MinIdealPartNum                        = MaxPartNum / 500

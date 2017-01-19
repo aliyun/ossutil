@@ -487,10 +487,33 @@ func (s *OssutilCommandSuite) initCopyCommand(srcURL, destURL string, recursive,
     return err
 }
 
+func (s *OssutilCommandSuite) initCopyWithSnapshot(srcURL, destURL string, recursive, force, update bool, threshold int64, snapshotPath string) error {
+    str := ""
+    args := []string{srcURL, destURL}
+    thre := strconv.FormatInt(threshold, 10)
+    routines := strconv.Itoa(Routines)
+    cpDir := CheckpointDir
+    options := OptionMapType{
+        "endpoint": &str,
+        "accessKeyID": &str,
+        "accessKeySecret": &str,
+        "stsToken": &str,
+        "configFile": &configFile,
+        "recursive": &recursive,
+        "force": &force,
+        "update": &update,
+        "bigfileThreshold": &thre,
+        "checkpointDir": &cpDir,
+        "routines": &routines,
+        "snapshotPath": &snapshotPath,
+    }
+    err := copyCommand.Init(args, options)
+    return err
+}
+
 func (s *OssutilCommandSuite) putObject(bucket, object, fileName string, c *C) {
     args := []string{fileName, CloudURLToString(bucket, object)}
     showElapse, err := s.rawCPWithArgs(args, false, true, false, DefaultBigFileThreshold, CheckpointDir) 
-    fmt.Println(err)
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true)
 }
@@ -890,4 +913,27 @@ func (s *OssutilCommandSuite) TestParseAndRunCommand(c *C) {
     showElapse, err := RunCommand(args, options)
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, false)
+}
+
+func (s *OssutilCommandSuite) TestGetSizeString(c *C) {
+    c.Assert(getSizeString(0), Equals, "0")
+    c.Assert(getSizeString(1), Equals, "1")
+    c.Assert(getSizeString(12), Equals, "12")
+    c.Assert(getSizeString(123), Equals, "123")
+    c.Assert(getSizeString(1234), Equals, "1,234")
+    c.Assert(getSizeString(12345), Equals, "12,345")
+    c.Assert(getSizeString(123456), Equals, "123,456")
+    c.Assert(getSizeString(1234567), Equals, "1,234,567")
+    c.Assert(getSizeString(123456789012), Equals, "123,456,789,012")
+    c.Assert(getSizeString(1234567890123), Equals, "1,234,567,890,123")
+    c.Assert(getSizeString(-0), Equals, "0")
+    c.Assert(getSizeString(-1), Equals, "-1")
+    c.Assert(getSizeString(-12), Equals, "-12")
+    c.Assert(getSizeString(-123), Equals, "-123")
+    c.Assert(getSizeString(-1234), Equals, "-1,234")
+    c.Assert(getSizeString(-12345), Equals, "-12,345")
+    c.Assert(getSizeString(-123456), Equals, "-123,456")
+    c.Assert(getSizeString(-1234567), Equals, "-1,234,567")
+    c.Assert(getSizeString(-123456789012), Equals, "-123,456,789,012")
+    c.Assert(getSizeString(-1234567890123), Equals, "-1,234,567,890,123")
 }

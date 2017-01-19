@@ -141,7 +141,7 @@ func CloudURLFromString(url string) (CloudURL, error) {
 		return CloudURL{}, err
 	}
 	if !storageURL.IsCloudURL() {
-		return CloudURL{}, fmt.Errorf("invalid cloud url: %s, please make sure the url starts with: %s", url, SchemePrefix)
+		return CloudURL{}, fmt.Errorf("invalid cloud url: \"%s\", please make sure the url starts with: \"%s\"", url, SchemePrefix)
 	}
 	return storageURL.(CloudURL), nil
 }
