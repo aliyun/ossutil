@@ -6,7 +6,8 @@ import (
     "os"
     "time"
     "strings"
-
+    
+    oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
     . "gopkg.in/check.v1"
 )
 
@@ -611,15 +612,31 @@ func (s *OssutilCommandSuite) TestErrCopy(c *C) {
 func (s *OssutilCommandSuite) TestPreparePartOption(c *C) {
     partSize, routines := copyCommand.preparePartOption(100000000000)
     c.Assert(partSize, Equals, int64(250000000))
-    c.Assert(routines, Equals, 5)
+    c.Assert(routines, Equals, 15)
+
+    partSize, routines = copyCommand.preparePartOption(100000000000000)
+    c.Assert(partSize, Equals, int64(10000000000))
+    c.Assert(routines, Equals, 32)
 
     partSize, routines = copyCommand.preparePartOption(80485760)
-    c.Assert(partSize, Equals, int64(12816225))
-    c.Assert(routines, Equals, 2)
+    c.Assert(partSize, Equals, int64(2560000))
+    c.Assert(routines, Equals, 10)
+
+    partSize, routines = copyCommand.preparePartOption(20121443)
+    c.Assert(partSize, Equals, int64(2560000))
+    c.Assert(routines, Equals, 3)
 
     partSize, routines = copyCommand.preparePartOption(MaxInt64)
     c.Assert(partSize, Equals, int64(922337203685478))
-    c.Assert(routines, Equals, 10)
+    c.Assert(routines, Equals, 32)
+
+    partSize, routines = copyCommand.preparePartOption(1)
+    c.Assert(partSize, Equals, int64(oss.MinPartSize))
+    c.Assert(routines, Equals, 1)
+
+    partSize, routines = copyCommand.preparePartOption(0)
+    c.Assert(partSize, Equals, int64(oss.MinPartSize))
+    c.Assert(routines, Equals, 1)
 
     p := 7 
     parallel := strconv.Itoa(p) 
@@ -1274,4 +1291,3 @@ func (s *OssutilCommandSuite) TestSnapshot(c *C) {
     err = copyCommand.RunCommand()
     c.Assert(err, NotNil)
 }
-
