@@ -400,6 +400,7 @@ func (cc *ConfigCommand) configInteractive(configFile, language string) error {
         }
 	}
 
+    // maintain
     /*if llanguage == LEnglishLanguage {
         fmt.Printf("\nBucket-Endpoint config endpoint for particular bucket, Bucket-Cname config cname host for particular bucket. Priority: Bucket-Cname > Bucket-Endpoint > endpoint. Try \"help config\" for more information.") 
     } else {
@@ -411,7 +412,7 @@ func (cc *ConfigCommand) configInteractive(configFile, language string) error {
         } else {
 		    fmt.Printf("\n是否需要配置：%s(y or N)?", sec)
         }
-		if _, err := fmt.Scanln(&val); err == nil && (strings.ToLower(val) == "yes" || strings.ToLower(val) == "y") {
+		if _, err := fmt.Scanln(&val); err == nil && (strings.EqualFold(val, "yes") || strings.EqualFold(val, "y")) {
 			section = config.NewSection(sec)
 			nameList := strings.SplitN(sec, "-", 2)
 			for {

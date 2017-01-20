@@ -142,7 +142,7 @@ func (uc *UpdateCommand) RunCommand() error {
         }
 
         var val string
-        if _, err := fmt.Scanln(&val); err == nil && (strings.ToLower(val) == "yes" || strings.ToLower(val) == "y") {
+        if _, err := fmt.Scanln(&val); err == nil && (strings.EqualFold(val, "yes") || strings.EqualFold(val, "y")) {
             return uc.updateVersion(version, language)
         }
 

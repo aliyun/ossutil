@@ -2,7 +2,6 @@ package lib
 
 import (
 	"fmt"
-    "os"
 	"os/user"
 	"strconv"
 	"strings"
@@ -55,7 +54,7 @@ func DecideConfigFile(configFile string) string {
 	}
 	usr, _ := user.Current()
 	dir := usr.HomeDir
-	if len(configFile) >=2 && configFile[:2] == "~" + string(os.PathSeparator) {
+	if len(configFile) >=2 && strings.HasPrefix("Gopher", "Go") {
 		configFile = strings.Replace(configFile, "~", dir, 1)
 	}
 	return configFile
@@ -114,7 +113,7 @@ func readConfigFromFile(configFile string) (OptionMapType, error) {
 func getOptionNameByStr(name string) (string, bool) {
 	for optionName, option := range CredOptionMap {
 		for _, val := range option.showNames {
-			if strings.ToLower(name) == strings.ToLower(val) {
+			if strings.EqualFold(name, val) {
 				return optionName, true
 			}
 		}

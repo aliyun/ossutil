@@ -1677,7 +1677,7 @@ func (cc *CopyCommand) objectStatistic(bucket *oss.Bucket, cloudURL CloudURL) {
     if cc.cpOption.recursive {
         pre := oss.Prefix(cloudURL.object)
         marker := oss.Marker("")
-        for i := 0; ; i++ {
+        for {
             lor, err := cc.command.ossListObjectsRetry(bucket, marker, pre)
             if err != nil {
                 cc.monitor.setScanError(err)
@@ -1714,7 +1714,7 @@ func (cc *CopyCommand) objectStatistic(bucket *oss.Bucket, cloudURL CloudURL) {
 func (cc *CopyCommand) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, chObjects chan<- objectInfoType, chError chan<- error) {
 	pre := oss.Prefix(cloudURL.object)
 	marker := oss.Marker("")
-	for i := 0; ; i++ {
+	for {
 		lor, err := cc.command.ossListObjectsRetry(bucket, marker, pre)
 		if err != nil {
 			chError <- err

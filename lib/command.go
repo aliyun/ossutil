@@ -353,7 +353,7 @@ func (cmd *Command) objectStatistic(bucket *oss.Bucket, cloudURL CloudURL, monit
 
     pre := oss.Prefix(cloudURL.object)
     marker := oss.Marker("")
-    for i := 0; ; i++ {
+    for {
         lor, err := cmd.ossListObjectsRetry(bucket, marker, pre)
         if err != nil {
             monitor.setScanError(err)
@@ -375,7 +375,7 @@ func (cmd *Command) objectStatistic(bucket *oss.Bucket, cloudURL CloudURL, monit
 func (cmd *Command) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, chObjects chan<- string, chError chan<- error) {
 	pre := oss.Prefix(cloudURL.object)
 	marker := oss.Marker("")
-	for i := 0; ; i++ {
+	for {
 		lor, err := cmd.ossListObjectsRetry(bucket, marker, pre)
 		if err != nil {
 			chError <- err

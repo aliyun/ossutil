@@ -31,7 +31,7 @@ func FindPos(elem string, elemArray []string) int {
 // FindPosCaseInsen find the elem position in a string array, ignore case
 func FindPosCaseInsen(elem string, elemArray []string) int {
 	for p, v := range elemArray {
-		if strings.ToLower(v) == strings.ToLower(elem) {
+		if strings.EqualFold(v, elem) {
 			return p
 		}
 	}
