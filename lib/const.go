@@ -14,6 +14,8 @@ const (
     OptionACL                     = "acl"
 	OptionShortFormat             = "shortFormat"
 	OptionDirectory               = "directory"
+    OptionMultipart               = "multipart"
+    OptionAllType                 = "allType"
 	OptionRecursion               = "recursive"
 	OptionBucket                  = "bucket"
 	OptionForce                   = "force"
@@ -105,3 +107,11 @@ const (
 	MD5HashType                     string = "md5"
     LogFilePrefix                          = "ossutil_log_"
 )
+
+const (
+    objectType          = 0x00000001
+    multipartType       = 0x00000010
+    allType             = objectType | multipartType // marker for objects 
+    bucketType          = 0x10000000
+)
+

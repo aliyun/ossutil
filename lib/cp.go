@@ -29,7 +29,7 @@ const (
     opCopy             = "copy"
 )
 
-type CopyOptionType struct {
+type copyOptionType struct {
 	recursive       bool
 	force           bool
 	update          bool
@@ -57,7 +57,7 @@ var (
     mu                  sync.RWMutex
     snapmu              sync.RWMutex
     chProgressSignal    chan chProgressSignalType
-    SignalNum           = 0
+    signalNum           = 0
 )
 
 type chProgressSignalType struct {
@@ -78,7 +78,7 @@ func (l *OssProgressListener) ProgressChanged(event *oss.ProgressEvent) {
         l.lastSize = l.currSize
         l.currSize = event.ConsumedBytes
         l.monitor.updateTransferSize(l.currSize - l.lastSize)
-        if len(chProgressSignal) <= SignalNum {
+        if len(chProgressSignal) <= signalNum {
             chProgressSignal <- chProgressSignalType{false, normalExit}
         }
     }
@@ -108,6 +108,8 @@ var specChineseCopy = SpecText{
     件系统的使用格式；
     oss://bucket[/prefix]代表oss上的object，支持前缀匹配，不支持通配符。
     ossutil通过oss://前缀区分本地文件系统的文件和oss文件。
+
+    注意：在oss间拷贝文件，目前只支持拷贝object，不支持拷贝未complete的Multipart。
 
 
 --recursive选项
@@ -210,6 +212,8 @@ var specChineseCopy = SpecText{
     3）上传到oss时，如果.ossutil_checkpoint目录包含在file_url中，.ossutil_checkpoint目录不会
     被上传到oss。该目录路径可以用--checkpoint-dir选项指定，如果指定了该选项，请确保指定的目录
     可以被删除。
+    4）如果使用rm命令删除了未complete的Multipart Upload，可能会造成下次cp命令断点续传失败（报
+    错：NoSuchUpload），这种时候如果想要重新上传整个文件，请删除相应的checkpoint文件。
 
 
 批量文件迁移：
@@ -228,6 +232,7 @@ var specChineseCopy = SpecText{
     在批量上传时，如果文件数比较多且没有其他用户操作相同object时，可以使用--snapshot-path选项
     进行额外的增量上传加速，更多信息参考上文关于--snapshot-path选项的介绍。命令为：
         ossutil cp your_dir oss://your_bucket -r -f -u --shapshot-path=your-path
+
 
 用法：
 
@@ -299,10 +304,12 @@ var specChineseCopy = SpecText{
         oss://bucket1/b/d/dd
 
     ossutil cp local_dir oss://bucket1/b -r
-    如果某文件上传发生服务器内部错误等失败，会在当前目录下的ossutil_output目录中产生report文件记录错误信息，并尝试其他文件的上传操作。
+    如果某文件上传发生服务器内部错误等失败，会在当前目录下的ossutil_output目录中产生report文件
+    记录错误信息，并尝试其他文件的上传操作。
 
     ossutil cp local_dir oss://bucket1/b -r --output-dir=your_dir 
-    如果某文件上传发生服务器内部错误等失败，会在your_dir中产生report文件记录错误信息，并尝试其他文件的上传操作。
+    如果某文件上传发生服务器内部错误等失败，会在your_dir中产生report文件记录错误信息，并尝试其
+    他文件的上传操作。
 
     ossutil cp local_dir oss://bucket1/b -r -u
     使用--update策略进行增量上传
@@ -345,10 +352,12 @@ var specChineseCopy = SpecText{
         目录abcdir2中生成目录a和b，目录b中生成文件e
 
     ossutil cp oss://bucket/ local_dir -r
-    如果某文件下载发生服务器内部错误等失败，会在当前目录下的ossutil_output目录中产生report文件记录错误信息，并尝试其他文件的下载操作。
+    如果某文件下载发生服务器内部错误等失败，会在当前目录下的ossutil_output目录中产生report文件
+    记录错误信息，并尝试其他文件的下载操作。
 
     ossutil cp oss://bucket/ local_dir -r --output-dir=your_dir 
-    如果某文件下载发生服务器内部错误等失败，会在your_dir中产生report文件记录错误信息，并尝试其他文件的下载操作。
+    如果某文件下载发生服务器内部错误等失败，会在your_dir中产生report文件记录错误信息，并尝试其
+    他文件的下载操作。
         
     ossutil cp oss://bucket/ local_dir -r -u
     使用--update策略进行增量下载
@@ -407,10 +416,12 @@ var specChineseCopy = SpecText{
     报错，因为此时目标object名称为空，非法
 
     ossutil cp oss://bucket/ oss://bucket1/ -r
-    如果某文件拷贝发生服务器内部错误等失败，会在当前目录下的ossutil_output目录中产生report文件记录错误信息，并尝试其他文件的拷贝操作。
+    如果某文件拷贝发生服务器内部错误等失败，会在当前目录下的ossutil_output目录中产生report文件
+    记录错误信息，并尝试其他文件的拷贝操作。
 
     ossutil cp oss://bucket/ oss://bucket1/ -r --output-dir=your_dir 
-    如果某文件拷贝发生服务器内部错误等失败，会在your_dir中产生report文件记录错误文件的信息，并尝试其他文件的拷贝操作。
+    如果某文件拷贝发生服务器内部错误等失败，会在your_dir中产生report文件记录错误文件的信息，并
+    尝试其他文件的拷贝操作。
 
     ossutil cp oss://bucket/ oss://bucket1/ -r -u
     使用--update策略进行增量拷贝
@@ -446,6 +457,9 @@ var specEnglishCopy = SpecText{
     ossutil sperate file of local system and oss objects by the prefix of oss://, which means 
     if the url starts with oss://, ossutil considers it as object, else, ossutil considers it 
     as file in local system. 
+
+    Note: when copy between oss, ossutil only support copy objects, the Multipart Uploads uncompleted is not supported.
+
 
 --recursive option:
 
@@ -567,6 +581,9 @@ Resume copy of big file:
     3) When upload file to oss, if .ossutil_checkpoint directory is included in file_url, .ossutil_checkpoint 
         will not be uploaded to oss. The path of checkpoint directory can be specified by --checkpoint-dir 
         option, please make sure the directory you specified can be removed.
+    4) If you remove the uncompleted multipart upload tasks by rm command, may cause resume upload/download/copy 
+        fail the next time(Error: NoSuchUpload). If you want to reupload/download/copy the entire file again, 
+        please remove the checkpoint file in checkpoint directory.
 
 
 Batch file migration:
@@ -587,6 +604,7 @@ Batch file migration:
     information in help text of --snapshot-path option above. 
     The command is: 
         ossutil cp your_dir oss://your_bucket -r -f -u --shapshot-path=your-path
+
 
 Usage:
 
@@ -787,7 +805,7 @@ Usage:
 // CopyCommand is the command upload, download and copy objects
 type CopyCommand struct {
 	command     Command
-    cpOption    CopyOptionType
+    cpOption    copyOptionType
     monitor     CPMonitor
 }
 
@@ -986,7 +1004,7 @@ func (cc *CopyCommand) progressBar() {
 }
 
 func (cc *CopyCommand) closeProgress() {
-    SignalNum = -1
+    signalNum = -1
 }
 
 //function for upload files
@@ -1271,7 +1289,7 @@ func (cc *CopyCommand) uploadFile(bucket *oss.Bucket, destURL CloudURL, file fil
 	//part size
 	partSize, rt := cc.preparePartOption(f.Size())
 	//checkpoint file
-	cp := oss.Checkpoint(true, cc.formatCPFileName(cc.cpOption.cpDir, filePath, objectName))
+	cp := oss.Checkpoint(true, cc.formatCPFileName(cc.cpOption.cpDir, absPath, CloudURLToString(bucket.BucketName, objectName)))
     rerr = cc.ossResumeUploadRetry(bucket, objectName, filePath, partSize, oss.Routines(rt), cp, oss.Progress(listener))
     if err := cc.updateSnapshot(rerr, spath, srct); err != nil {
         rerr = err
@@ -1401,7 +1419,9 @@ func (cc *CopyCommand) preparePartOption(fileSize int64) (int64, int) {
 }
 
 func (cc *CopyCommand) formatCPFileName(cpDir, srcf, destf string) string {
-	return cpDir + string(os.PathSeparator) + srcf + CheckpointSep + destf + ".cp"
+	path := cpDir + string(os.PathSeparator) + srcf + CheckpointSep + destf + ".cp"
+    os.MkdirAll(path, 0755) 
+	return path 
 }
 
 func (cc *CopyCommand) ossResumeUploadRetry(bucket *oss.Bucket, objectName string, filePath string, partSize int64, options ...oss.Option) error {
@@ -1434,7 +1454,7 @@ func (cc *CopyCommand) updateMonitor(skip bool, err error, isDir bool, size int6
     } else {
         cc.monitor.updateFile(size, 1)
     }
-    if len(chProgressSignal) <= SignalNum {
+    if len(chProgressSignal) <= signalNum {
         chProgressSignal <- chProgressSignalType{false, normalExit}
     }
 }
@@ -1572,7 +1592,8 @@ func (cc *CopyCommand) downloadSingleFile(bucket *oss.Bucket, objectInfo objectI
 	}
 
 	partSize, rt := cc.preparePartOption(size)
-	cp := oss.Checkpoint(true, cc.formatCPFileName(cc.cpOption.cpDir, object, filePath))
+    absPath, _ := filepath.Abs(fileName)
+	cp := oss.Checkpoint(true, cc.formatCPFileName(cc.cpOption.cpDir, CloudURLToString(bucket.BucketName, object), absPath))
 	return false, cc.ossResumeDownloadRetry(bucket, object, fileName, size, partSize, oss.Routines(rt), cp, oss.Progress(listener)), 0, msg
 }
 
@@ -1871,7 +1892,7 @@ func (cc *CopyCommand) copySingleFile(bucket *oss.Bucket, objectInfo objectInfoT
 
     var listener *OssProgressListener = &OssProgressListener{&cc.monitor, 0, 0}
 	partSize, rt := cc.preparePartOption(size)
-	cp := oss.Checkpoint(true, cc.formatCPFileName(cc.cpOption.cpDir, srcURL.bucket + "-" + srcObject, destURL.bucket + "-" + destObject))
+	cp := oss.Checkpoint(true, cc.formatCPFileName(cc.cpOption.cpDir, CloudURLToString(srcURL.bucket, srcObject), CloudURLToString(destURL.bucket, destObject)))
 	return false, cc.ossResumeCopyRetry(srcURL.bucket, srcObject, destURL.bucket, destObject, partSize, oss.Routines(rt), cp, oss.Progress(listener)), 0, msg
 }
 

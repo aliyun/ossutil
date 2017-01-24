@@ -63,7 +63,7 @@ var (
     bucketNameSetACL    = "nodelete-ossutil-test-setacl"
     bucketNameSetACL1   = "nodelete-ossutil-test-setacl1"
     bucketNameMB        = "nodelete-ossutil-test-mb"    // bucket with at most one object 
-    bucketNameList      = "nodelete-ossutil-test-list"    // bucket with at most one object 
+    bucketNameList      = "nodelete-ossutil-test-ls" 
     bucketNameNotExist  = bucketNamePrefix + "notexistbucket"  // bucket not exist
 )
 
@@ -198,34 +198,51 @@ func (s *OssutilCommandSuite) removeBuckets(prefix string, c *C) {
     }
 }
 
-func (s *OssutilCommandSuite) rawList(args []string, shortFormat, directory bool) (bool, error) {
-    command := "ls"
+func (s *OssutilCommandSuite) rawList(args []string, cmdline string) (bool, error) {
+    array := strings.Split(cmdline, " ")
+    if len(array) < 2 {
+        return false, fmt.Errorf("ls test wrong cmdline given")
+    }
+
+    parameter := strings.Split(array[1], "-")
+    if len(parameter) < 2 {
+        return false, fmt.Errorf("ls test wrong cmdline given")
+    }
+
+    command := array[0]
+    sf := strings.Contains(parameter[1], "s")
+    d := strings.Contains(parameter[1], "d")
+    m := strings.Contains(parameter[1], "m")
+    a := strings.Contains(parameter[1], "a")
+
     str := ""
     options := OptionMapType{
-        "endpoint": &str,
-        "accessKeyID": &str,
+        "endpoint":        &str,
+        "accessKeyID":     &str,
         "accessKeySecret": &str,
-        "stsToken": &str,
-        "configFile": &configFile,
-        "shortFormat": &shortFormat,
-        "directory": &directory,
+        "stsToken":        &str,
+        "configFile":      &configFile,
+        "shortFormat":     &sf,
+        "directory":       &d,
+        "multipart":       &m,
+        "allType":         &a,
     }
     showElapse, err := cm.RunCommand(command, args, options)
     return showElapse, err
 }
 
-func (s *OssutilCommandSuite) listBuckets(shortFormat bool, c *C) ([]string) {
+func (s *OssutilCommandSuite) listBuckets(shortFormat bool, c *C) []string {
     var args []string
-    testResultFile, _ = os.OpenFile(resultPath, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
     out := os.Stdout
-    os.Stdout = testResultFile 
-    showElapse, err := s.rawList(args, shortFormat, false)
+    testResultFile, _ = os.OpenFile(resultPath, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
+    os.Stdout = testResultFile
+    showElapse, err := s.rawList(args, "ls -s")
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true)
     os.Stdout = out
 
     // get result
-    buckets := s.getBucketResults(c) 
+    buckets := s.getBucketResults(c)
     _ = os.Remove(resultPath)
     return buckets
 }
@@ -299,18 +316,77 @@ func (s *OssutilCommandSuite) rawRemove(args []string, recursive, force, bucket 
     return showElapse, err
 }
 
-func (s *OssutilCommandSuite) initRemove(bucket, object string, recursive, force, tobucket bool) error {
+func (s *OssutilCommandSuite) removeWrapper(cmdline string, bucket string, object string, c *C) (bool, error) {
+    array := strings.Split(cmdline, " ")
+    if len(array) < 2 {
+        return false, fmt.Errorf("rm test wrong cmdline given")
+    }
+
+    parameter := strings.Split(array[1], "-")
+    if len(parameter) < 2 {
+        return false, fmt.Errorf("rm test wrong cmdline given")
+    }
+
+    command := array[0]
+    a := strings.Contains(parameter[1], "a")
+    m := strings.Contains(parameter[1], "m")
+    b := strings.Contains(parameter[1], "b")
+    r := strings.Contains(parameter[1], "r")
+    f := strings.Contains(parameter[1], "f")
+
     args := []string{CloudURLToString(bucket, object)}
     str := ""
     options := OptionMapType{
-        "endpoint": &str,
-        "accessKeyID": &str,
+        "endpoint":        &str,
+        "accessKeyID":     &str,
         "accessKeySecret": &str,
-        "stsToken": &str,
-        "configFile": &configFile,
-        "recursive": &recursive,
-        "force": &force,
-        "bucket": &tobucket,
+        "stsToken":        &str,
+        "configFile":      &configFile,
+        "bucket":          &b,
+        "allType":         &a,
+        "multipart":       &m,
+        "recursive":       &r,
+        "force":           &f,
+    }
+    showElapse, err := cm.RunCommand(command, args, options)
+    return showElapse, err
+}
+
+func (s *OssutilCommandSuite) clearAllMultipartInBucket(bucket string, c *C) {
+    _, e := s.removeWrapper("rm -afr", bucket, "", c)
+    c.Assert(e, IsNil)
+}
+
+func (s *OssutilCommandSuite) initRemove(bucket string, object string, cmdline string) error {
+    array := strings.Split(cmdline, " ")
+    if len(array) < 2 {
+        return fmt.Errorf("rm test wrong cmdline given")
+    }
+
+    parameter := strings.Split(array[1], "-")
+    if len(parameter) < 2 {
+        return fmt.Errorf("rm test wrong cmdline given")
+    }
+
+    a := strings.Contains(parameter[1], "a")
+    m := strings.Contains(parameter[1], "m")
+    b := strings.Contains(parameter[1], "b")
+    r := strings.Contains(parameter[1], "r")
+    f := strings.Contains(parameter[1], "f")
+
+    args := []string{CloudURLToString(bucket, object)}
+    str := ""
+    options := OptionMapType{
+        "endpoint":        &str,
+        "accessKeyID":     &str,
+        "accessKeySecret": &str,
+        "stsToken":        &str,
+        "configFile":      &configFile,
+        "bucket":          &b,
+        "allType":         &a,
+        "multipart":       &m,
+        "recursive":       &r,
+        "force":           &f,
     }
     err := removeCommand.Init(args, options)
     return err
@@ -323,20 +399,20 @@ func (s *OssutilCommandSuite) removeObjects(bucket, prefix string, recursive, fo
     c.Assert(showElapse, Equals, true)
 }
 
-func (s *OssutilCommandSuite) listObjects(bucket, prefix string, shortFormat, directory bool, c *C) ([]string) {
+func (s *OssutilCommandSuite) listObjects(bucket, prefix string, cmdline string, c *C) []string {
     args := []string{CloudURLToString(bucket, prefix)}
-    testResultFile, _ = os.OpenFile(resultPath, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
     out := os.Stdout
-    os.Stdout = testResultFile 
-    showElapse, err := s.rawList(args, shortFormat, directory)
+    testResultFile, _ = os.OpenFile(resultPath, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
+    os.Stdout = testResultFile
+    showElapse, err := s.rawList(args, cmdline)
     os.Stdout = out
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true)
 
     // get result
-    objects := s.getObjectResults(c) 
+    objects := s.getObjectResults(c)
     _ = os.Remove(resultPath)
-    return objects 
+    return objects
 }
 
 func (s *OssutilCommandSuite) getObjectResults(c *C) ([]string) {

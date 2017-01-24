@@ -6,14 +6,23 @@ import (
     //"time"
     "strings"
 
+    oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
     . "gopkg.in/check.v1"
 )
 
 func (s *OssutilCommandSuite) TestUploadProgressBar(c *C) {
+    bucket := bucketNameExist
+
+    // rm -marf
+    err := s.initRemove(bucket, "", "rm -arf") 
+    c.Assert(err, IsNil)
+    err = removeCommand.RunCommand()
+    c.Assert(err, IsNil)
+
     // single file
     udir := randStr(11) 
     _ = os.RemoveAll(udir)
-    err := os.MkdirAll(udir, 0755)
+    err = os.MkdirAll(udir, 0755)
     c.Assert(err, IsNil)
     object := "TestUploadProgressBar" + randStr(10)
 
@@ -24,8 +33,6 @@ func (s *OssutilCommandSuite) TestUploadProgressBar(c *C) {
         s.createFile(udir + string(os.PathSeparator) + filePath, randStr((i+3)*30*num), c)
         len += (i+3)*30*num 
     }
-
-    bucket := bucketNameExist
 
     // init copyCommand
     err = s.initCopyCommand(udir, CloudURLToString(bucket, object), true, true, false, DefaultBigFileThreshold, CheckpointDir, DefaultOutputDir)
@@ -785,7 +792,7 @@ func (s *OssutilCommandSuite) TestRemoveSingleProgress(c *C) {
 
     // remove single not exist object
     object := randStr(10)
-    err := s.initRemove(bucket, object, false, true, false)
+    err := s.initRemove(bucket, object, "rm -f")
     c.Assert(err, IsNil)
 
     testResultFile, _ = os.OpenFile(resultPath, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
@@ -799,7 +806,7 @@ func (s *OssutilCommandSuite) TestRemoveSingleProgress(c *C) {
     c.Assert(strings.Contains(pstr, fmt.Sprintf("total %d objects", 0)), Equals, true)
     c.Assert(strings.Contains(pstr, "error"), Equals, false)
 
-    c.Assert(int64(removeCommand.monitor.op), Equals, int64(rmObject))
+    c.Assert(int64(removeCommand.monitor.op), Equals, int64(objectType))
     c.Assert(removeCommand.monitor.removedBucket, Equals, "")
 
     snap := removeCommand.monitor.getSnapshot()
@@ -826,7 +833,7 @@ func (s *OssutilCommandSuite) TestRemoveSingleProgress(c *C) {
     // remove single exist object
     s.putObject(bucket, object, uploadFileName, c)
 
-    err = s.initRemove(bucket, object, false, true, false)
+    err = s.initRemove(bucket, object, "rm -f")
     c.Assert(err, IsNil)
 
     testResultFile, _ = os.OpenFile(resultPath, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
@@ -866,7 +873,7 @@ func (s *OssutilCommandSuite) TestBatchRemoveProgress(c *C) {
     bucket := bucketNameExist
 
     // batch remove not exist objects
-    err := s.initRemove(bucket, "TestBatchRemoveProgresssss", true, true, false)
+    err := s.initRemove(bucket, "TestBatchRemoveProgresssss", "rm -rf")
     c.Assert(err, IsNil)
 
     testResultFile, _ = os.OpenFile(resultPath, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
@@ -880,7 +887,7 @@ func (s *OssutilCommandSuite) TestBatchRemoveProgress(c *C) {
     c.Assert(strings.Contains(pstr, fmt.Sprintf("total %d objects", 0)), Equals, true)
     c.Assert(strings.Contains(pstr, "error"), Equals, false)
 
-    c.Assert(int64(removeCommand.monitor.op), Equals, int64(rmObject))
+    c.Assert(int64(removeCommand.monitor.op), Equals, int64(objectType))
     c.Assert(removeCommand.monitor.removedBucket, Equals, "")
 
     snap := removeCommand.monitor.getSnapshot()
@@ -909,7 +916,7 @@ func (s *OssutilCommandSuite) TestBatchRemoveProgress(c *C) {
         s.putObject(bucket, object, uploadFileName, c)
     }
 
-    err = s.initRemove(bucket, "TestBatchRemoveProgress", true, true, false)
+    err = s.initRemove(bucket, "TestBatchRemoveProgress", "rm -rf")
     c.Assert(err, IsNil)
 
     testResultFile, _ = os.OpenFile(resultPath, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
@@ -957,7 +964,7 @@ func (s *OssutilCommandSuite) TestBatchRemoveProgress(c *C) {
     str = strings.ToLower(removeCommand.monitor.getFinishBar(normalExit))
     c.Assert(strings.TrimSpace(str), Equals, "")
 
-    removeCommand.monitor.setOP(rmObject)
+    removeCommand.monitor.setOP(objectType)
     str = strings.ToLower(removeCommand.monitor.getFinishBar(normalExit))
     c.Assert(strings.Contains(str, "succeed:"), Equals, false)
     c.Assert(strings.Contains(str, "when error happens"), Equals, true)
@@ -971,8 +978,176 @@ func (s *OssutilCommandSuite) TestBatchRemoveProgress(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestRemoveUploadIdProgress(c *C) {
+    bucketName := bucketNameExist
+    bucket, _ := removeCommand.command.ossBucket(bucketName)
+
+    // rm -marf
+    err := s.initRemove(bucketName, "", "rm -marf") 
+    c.Assert(err, IsNil)
+    err = removeCommand.RunCommand()
+    c.Assert(err, IsNil)
+
+    // rm -m without object, error
+    err = s.initRemove(bucketName, "", "rm -m")
+    c.Assert(err, IsNil)
+    testResultFile, _ = os.OpenFile(resultPath, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
+    out := os.Stdout
+    os.Stdout = testResultFile
+    err = removeCommand.RunCommand()
+    c.Assert(err, NotNil)
+    os.Stdout = out
+    pstr := strings.ToLower(s.readFile(resultPath, c))
+    c.Assert(strings.Contains(pstr, "succeed"), Equals, false)
+    c.Assert(strings.Contains(pstr, fmt.Sprintf("total %d objects", 0)), Equals, false)
+
+    // rm -a without object, error
+    err = s.initRemove(bucketName, "", "rm -a")
+    c.Assert(err, IsNil)
+    testResultFile, _ = os.OpenFile(resultPath, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
+    out = os.Stdout
+    os.Stdout = testResultFile
+    err = removeCommand.RunCommand()
+    c.Assert(err, NotNil)
+    os.Stdout = out
+    pstr = strings.ToLower(s.readFile(resultPath, c))
+    c.Assert(strings.Contains(pstr, "succeed"), Equals, false)
+
+    object := randStr(10)
+    num := 10
+    for i := 0; i < num; i++ {
+        _, err = bucket.InitiateMultipartUpload(object)
+        c.Assert(err, IsNil)
+    }
+    // put object
+    s.putObject(bucketName, object, uploadFileName, c)
+
+    // rm -mb, error 
+    err = s.initRemove(bucketName, "", "rm -mb")
+    c.Assert(err, IsNil)
+    err = removeCommand.RunCommand()
+    c.Assert(err, NotNil)
+
+    // rm -ab, error
+    err = s.initRemove(bucketName, "", "rm -ab")
+    c.Assert(err, IsNil)
+    err = removeCommand.RunCommand()
+    c.Assert(err, NotNil)
+
+    // rm -m single object
+    err = s.initRemove(bucketName, object, "rm -m") 
+    c.Assert(err, IsNil)
+    out = os.Stdout
+    os.Stdout = testResultFile
+    err = removeCommand.RunCommand()
+    c.Assert(err, IsNil)
+    os.Stdout = out
+    pstr = strings.ToLower(s.readFile(resultPath, c))
+    c.Assert(strings.Contains(pstr, "succeed"), Equals, true)
+    c.Assert(strings.Contains(pstr, "error"), Equals, false)
+
+    c.Assert(int64(removeCommand.monitor.op), Equals, int64(multipartType))
+    c.Assert(removeCommand.monitor.removedBucket, Equals, "")
+
+    snap := removeCommand.monitor.getSnapshot()
+    c.Assert(snap.objectNum, Equals, int64(0)) 
+    c.Assert(snap.uploadIdNum, Equals, int64(num))
+    c.Assert(snap.errObjectNum, Equals, int64(0))
+    c.Assert(snap.errUploadIdNum, Equals, int64(0))
+    c.Assert(snap.dealNum, Equals, int64(num))
+    c.Assert(snap.errNum, Equals, int64(0))
+
+    s.getObject(bucketName, object, downloadFileName, c)
+
+    str := strings.ToLower(removeCommand.monitor.getProgressBar())
+    c.Assert(strings.Contains(str, fmt.Sprintf("removed %d uploadids", num)), Equals, true)
+    c.Assert(strings.Contains(str, "objects"), Equals, false)
+    c.Assert(strings.Contains(str, "error"), Equals, false)
+
+    str = strings.ToLower(removeCommand.monitor.getFinishBar(normalExit))
+    c.Assert(strings.Contains(str, "succeed:"), Equals, true)
+    c.Assert(strings.Contains(str, "objects"), Equals, false)
+    c.Assert(strings.Contains(str, fmt.Sprintf("total %d uploadids", num)), Equals, true)
+    c.Assert(strings.Contains(str, fmt.Sprintf("removed %d uploadids", num)), Equals, true)
+    c.Assert(strings.Contains(str, "err"), Equals, false)
+    c.Assert(strings.Contains(strings.TrimSpace(pstr), strings.TrimSpace(str)), Equals, true)
+
+    // rm -a 
+    for i := 0; i < num; i++ {
+        _, err = bucket.InitiateMultipartUpload(object)
+        c.Assert(err, IsNil)
+    }
+    // put object
+    object1 := object + "1" 
+    s.putObject(bucketName, object1, uploadFileName, c)
+    for i := 0; i < num; i++ {
+        _, err = bucket.InitiateMultipartUpload(object1)
+        c.Assert(err, IsNil)
+    }
+
+    err = s.initRemove(bucketName, object, "rm -a") 
+    c.Assert(err, IsNil)
+    out = os.Stdout
+    os.Stdout = testResultFile
+    err = removeCommand.RunCommand()
+    c.Assert(err, IsNil)
+    os.Stdout = out
+    pstr = strings.ToLower(s.readFile(resultPath, c))
+    c.Assert(strings.Contains(pstr, "succeed"), Equals, true)
+    c.Assert(strings.Contains(pstr, "error"), Equals, false)
+
+    c.Assert(int64(removeCommand.monitor.op), Equals, int64(allType))
+    c.Assert(removeCommand.monitor.removedBucket, Equals, "")
+
+    snap = removeCommand.monitor.getSnapshot()
+    c.Assert(snap.objectNum, Equals, int64(1)) 
+    c.Assert(snap.uploadIdNum, Equals, int64(num))
+    c.Assert(snap.errObjectNum, Equals, int64(0))
+    c.Assert(snap.errUploadIdNum, Equals, int64(0))
+    c.Assert(snap.dealNum, Equals, int64(num+1))
+    c.Assert(snap.errNum, Equals, int64(0))
+
+    s.getObject(bucketName, object1, downloadFileName, c)
+    lmr, e := bucket.ListMultipartUploads(oss.Prefix(object1))
+    c.Assert(e, IsNil)
+    c.Assert(len(lmr.Uploads), Equals, num)
+
+    str = strings.ToLower(removeCommand.monitor.getProgressBar())
+    c.Assert(strings.Contains(str, fmt.Sprintf("removed %d objects, %d uploadids", 1, num)), Equals, true)
+    c.Assert(strings.Contains(str, "error"), Equals, false)
+
+    str = strings.ToLower(removeCommand.monitor.getFinishBar(normalExit))
+    c.Assert(strings.Contains(str, "succeed:"), Equals, true)
+    c.Assert(strings.Contains(str, fmt.Sprintf("total %d objects, %d uploadids", 1, num)), Equals, true)
+    c.Assert(strings.Contains(str, fmt.Sprintf("removed %d objects, %d uploadids", 1, num)), Equals, true)
+    c.Assert(strings.Contains(str, "err"), Equals, false)
+    c.Assert(strings.Contains(strings.TrimSpace(pstr), strings.TrimSpace(str)), Equals, true)
+
+    // rm -arf
+    err = s.initRemove(bucketName, object, "rm -arf") 
+    c.Assert(err, IsNil)
+    out = os.Stdout
+    os.Stdout = testResultFile
+    err = removeCommand.RunCommand()
+    c.Assert(err, IsNil)
+    os.Stdout = out
+    pstr = strings.ToLower(s.readFile(resultPath, c))
+    c.Assert(strings.Contains(pstr, "succeed"), Equals, true)
+    c.Assert(strings.Contains(pstr, "error"), Equals, false)
+
+    c.Assert(int64(removeCommand.monitor.op), Equals, int64(allType))
+    c.Assert(removeCommand.monitor.removedBucket, Equals, "")
+
+    snap = removeCommand.monitor.getSnapshot()
+    c.Assert(snap.objectNum, Equals, int64(1)) 
+    c.Assert(snap.uploadIdNum, Equals, int64(num))
+    c.Assert(snap.errObjectNum, Equals, int64(0))
+    c.Assert(snap.errUploadIdNum, Equals, int64(0))
+    c.Assert(snap.dealNum, Equals, int64(num+1))
+    c.Assert(snap.errNum, Equals, int64(0))
+
+    // progress
     removeCommand.monitor.init() 
-    removeCommand.monitor.setOP(rmUploadId)
+    removeCommand.monitor.setOP(multipartType)
     removeCommand.monitor.updateUploadIdNum(2)
     removeCommand.monitor.updateErrUploadIdNum(1)
     c.Assert(removeCommand.monitor.objectNum, Equals, int64(0))
@@ -980,7 +1155,7 @@ func (s *OssutilCommandSuite) TestRemoveUploadIdProgress(c *C) {
     c.Assert(removeCommand.monitor.errObjectNum, Equals, int64(0))
     c.Assert(removeCommand.monitor.errUploadIdNum, Equals, int64(1))
 
-    str := strings.ToLower(removeCommand.monitor.getProgressBar())
+    str = strings.ToLower(removeCommand.monitor.getProgressBar())
     c.Assert(strings.Contains(str, fmt.Sprintf("scanned %d uploadids", 3)), Equals, true)
     c.Assert(strings.Contains(str, fmt.Sprintf("removed %d uploadids", 2)), Equals, true)
     c.Assert(strings.Contains(str, "error"), Equals, true)
@@ -995,7 +1170,7 @@ func (s *OssutilCommandSuite) TestRemoveUploadIdProgress(c *C) {
 
 func (s *OssutilCommandSuite) TestRemoveBucketProgress(c *C) {
     // remove not exist bucket 
-    err := s.initRemove(bucketNameNotExist, "", false, true, true)
+    err := s.initRemove(bucketNameNotExist, "", "rm -bf")
     c.Assert(err, IsNil)
 
     testResultFile, _ = os.OpenFile(resultPath, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
@@ -1007,11 +1182,79 @@ func (s *OssutilCommandSuite) TestRemoveBucketProgress(c *C) {
     pstr := strings.ToLower(s.readFile(resultPath, c))
     c.Assert(strings.Contains(pstr, "succeed"), Equals, false)
 
-    bucket := bucketNamePrefix + "progress" 
-    s.putBucket(bucket, c)
+    bucketName := bucketNamePrefix + "progress" 
+    s.putBucket(bucketName, c)
     //time.Sleep(10*time.Second)
 
-    err = s.initRemove(bucket, "", false, true, true)
+    bucket, _ := removeCommand.command.ossBucket(bucketName)
+
+    // rm -mrb
+    object := "TestRemoveBucketProgress" 
+    s.putObject(bucketName, object, uploadFileName, c)
+    num := 10
+    for i := 0; i < num; i++ {
+        _, err = bucket.InitiateMultipartUpload(object)
+        c.Assert(err, IsNil)
+    }
+    object1 := "another_object" 
+    s.putObject(bucketName, object1, uploadFileName, c)
+    for i := 0; i < num; i++ {
+        _, err = bucket.InitiateMultipartUpload(object1)
+        c.Assert(err, IsNil)
+    }
+
+    err = s.initRemove(bucketName, "", "rm -mrbf") 
+    c.Assert(err, IsNil)
+    out = os.Stdout
+    os.Stdout = testResultFile
+    err = removeCommand.RunCommand()
+    c.Assert(err, NotNil)
+    os.Stdout = out
+    pstr = strings.ToLower(s.readFile(resultPath, c))
+    c.Assert(strings.Contains(pstr, "error"), Equals, true)
+
+    c.Assert(int64(removeCommand.monitor.op), Equals, int64(multipartType|bucketType))
+    c.Assert(removeCommand.monitor.removedBucket, Equals, "")
+
+    snap := removeCommand.monitor.getSnapshot()
+    c.Assert(snap.objectNum, Equals, int64(0)) 
+    c.Assert(snap.uploadIdNum, Equals, int64(2*num))
+    c.Assert(snap.errObjectNum, Equals, int64(0))
+    c.Assert(snap.errUploadIdNum, Equals, int64(0))
+    c.Assert(snap.dealNum, Equals, int64(2*num))
+    c.Assert(snap.errNum, Equals, int64(0))
+    c.Assert(snap.removedBucket, Equals, "")
+
+    str := strings.ToLower(removeCommand.monitor.getProgressBar())
+    c.Assert(strings.Contains(str, fmt.Sprintf("removed %d uploadids", 2*num)), Equals, true)
+
+    str = strings.ToLower(removeCommand.monitor.getFinishBar(normalExit))
+    c.Assert(strings.Contains(str, "succeed:"), Equals, false)
+    c.Assert(strings.Contains(str, fmt.Sprintf("total %d uploadids", 2*num)), Equals, true)
+    c.Assert(strings.Contains(str, fmt.Sprintf("removed %d uploadids", 2*num)), Equals, true)
+    c.Assert(strings.Contains(str, "error"), Equals, true)
+    c.Assert(strings.Contains(strings.TrimSpace(pstr), strings.TrimSpace(str)), Equals, true)
+
+    // rm -marf
+    err = s.initRemove(bucketName, "", "rm -marf") 
+    c.Assert(err, IsNil)
+    err = removeCommand.RunCommand()
+    c.Assert(err, IsNil)
+
+    c.Assert(int64(removeCommand.monitor.op), Equals, int64(allType))
+    c.Assert(removeCommand.monitor.removedBucket, Equals, "")
+
+    snap = removeCommand.monitor.getSnapshot()
+    c.Assert(snap.objectNum, Equals, int64(2)) 
+    c.Assert(snap.uploadIdNum, Equals, int64(0))
+    c.Assert(snap.errObjectNum, Equals, int64(0))
+    c.Assert(snap.errUploadIdNum, Equals, int64(0))
+    c.Assert(snap.dealNum, Equals, int64(2))
+    c.Assert(snap.errNum, Equals, int64(0))
+    c.Assert(snap.removedBucket, Equals, "")
+
+    // rm -bf
+    err = s.initRemove(bucketName, "", "rm -bf")
     testResultFile, _ = os.OpenFile(resultPath, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
     out = os.Stdout
     os.Stdout = testResultFile
@@ -1019,22 +1262,22 @@ func (s *OssutilCommandSuite) TestRemoveBucketProgress(c *C) {
     c.Assert(err, IsNil)
     os.Stdout = out
     pstr = strings.ToLower(s.readFile(resultPath, c))
-    c.Assert(strings.Contains(pstr, fmt.Sprintf("removed bucket: %s", bucket)), Equals, true)
+    c.Assert(strings.Contains(pstr, fmt.Sprintf("removed bucket: %s", bucketName)), Equals, true)
 
-    snap := removeCommand.monitor.getSnapshot()
-    c.Assert(int64(removeCommand.monitor.op), Equals, int64(rmBucket))
+    snap = removeCommand.monitor.getSnapshot()
+    c.Assert(int64(removeCommand.monitor.op), Equals, int64(bucketType))
     c.Assert(snap.objectNum, Equals, int64(0)) 
     c.Assert(snap.uploadIdNum, Equals, int64(0))
     c.Assert(snap.errObjectNum, Equals, int64(0))
     c.Assert(snap.errUploadIdNum, Equals, int64(0))
     c.Assert(snap.dealNum, Equals, int64(0))
     c.Assert(snap.errNum, Equals, int64(0))
-    c.Assert(snap.removedBucket, Equals, bucket)
+    c.Assert(snap.removedBucket, Equals, bucketName)
 
-    str := strings.ToLower(removeCommand.monitor.getProgressBar())
+    str = strings.ToLower(removeCommand.monitor.getProgressBar())
     c.Assert(strings.TrimSpace(str), Equals, "")
 
     str = strings.ToLower(removeCommand.monitor.getFinishBar(normalExit))
-    c.Assert(strings.Contains(pstr, fmt.Sprintf("removed bucket: %s", bucket)), Equals, true)
+    c.Assert(strings.Contains(pstr, fmt.Sprintf("removed bucket: %s", bucketName)), Equals, true)
     c.Assert(strings.Contains(strings.TrimSpace(pstr), strings.TrimSpace(str)), Equals, true)
 }

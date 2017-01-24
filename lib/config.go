@@ -400,44 +400,6 @@ func (cc *ConfigCommand) configInteractive(configFile, language string) error {
         }
 	}
 
-    // maintain
-    /*if llanguage == LEnglishLanguage {
-        fmt.Printf("\nBucket-Endpoint config endpoint for particular bucket, Bucket-Cname config cname host for particular bucket. Priority: Bucket-Cname > Bucket-Endpoint > endpoint. Try \"help config\" for more information.") 
-    } else {
-        fmt.Printf("\nBucket-Endpoint为每个bucket单独配置相应的endpoint，Bucket-Cname为每个bucket单独配置相应的cname域名，优先级：Bucket-Cname > Bucket-Endpoint > endpoint. 更多信息请见help config.") 
-    }
-	for _, sec := range []string{BucketEndpointSection, BucketCnameSection} {
-        if llanguage == LEnglishLanguage {
-		    fmt.Printf("\nIs there any %s configurations(y or N)?", sec)
-        } else {
-		    fmt.Printf("\n是否需要配置：%s(y or N)?", sec)
-        }
-		if _, err := fmt.Scanln(&val); err == nil && (strings.EqualFold(val, "yes") || strings.EqualFold(val, "y")) {
-			section = config.NewSection(sec)
-			nameList := strings.SplitN(sec, "-", 2)
-			for {
-				bucket := ""
-				host := ""
-                if llanguage == LEnglishLanguage {
-				    fmt.Printf("Please enter the %s:", nameList[0])
-                } else {
-				    fmt.Printf("请输入%s：", nameList[0])
-                }
-				if _, err := fmt.Scanln(&bucket); err != nil || "" == strings.TrimSpace(bucket) {
-                    if llanguage == LEnglishLanguage {
-					    fmt.Printf("No %s entered, the configuration of %s ended.\n", nameList[0], sec)
-                    } else {
-                        fmt.Printf("未输入%s，%s项的配置结束。\n", nameList[0], sec)
-                    }
-					break
-				}
-				fmt.Printf("Please enter the %s:", nameList[1])
-				_, _ = fmt.Scanln(&host)
-				section.Add(bucket, host)
-			}
-		}
-	}*/
-
 	if err := configparser.Save(config, configFile); err != nil {
 		return err
 	}

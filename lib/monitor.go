@@ -138,14 +138,6 @@ func (m *Monitor) getFinishBar() string {
 }
 
 
-// for rm
-const (
-	rmObject            = 0x0001 
-    rmUploadId          = 0x0010	
-    rmBucket int64      = 0x10000000
-    rmAllTypeMarker     = rmObject | rmUploadId // marker for objects
-)
-
 type RMMonitorSnap struct {
     objectNum       int64
     uploadIdNum     int64
@@ -255,7 +247,7 @@ func (m *RMMonitor) progressBar(finish bool, exitStat int) string {
 }
 
 func (m *RMMonitor) getProgressBar() string {
-    if m.op & rmAllTypeMarker != 0 {   
+    if m.op & allType != 0 {   
         snap := m.getSnapshot()
         if m.seekAheadEnd && m.seekAheadError == nil {
             return getClearStr(fmt.Sprintf("Total %s. %s%s Progress: %d%s", m.getTotalInfo(), m.getOKInfo(snap), m.getErrInfo(snap), m.getPrecent(snap), "%%")) 
@@ -269,11 +261,10 @@ func (m *RMMonitor) getProgressBar() string {
 
 func (m *RMMonitor) getTotalInfo() string {
     strList := []string{}
-    op := m.op & rmAllTypeMarker 
-    if op & rmObject != 0 {
+    if m.op & objectType != 0 {
         strList = append(strList, fmt.Sprintf("%d objects", m.totalObjectNum))
     }
-    if op & rmUploadId != 0 {
+    if m.op & multipartType != 0 {
         strList = append(strList, fmt.Sprintf("%d uploadIds", m.totalUploadIdNum))
     }
     return strings.Join(strList, ", ") 
@@ -281,14 +272,13 @@ func (m *RMMonitor) getTotalInfo() string {
 
 func (m *RMMonitor) getOKInfo(snap RMMonitorSnap) string {
     strList := []string{}
-    op := m.op & rmAllTypeMarker
-    if op == 0 {
+    if m.op & allType == 0 {
         return ""
     }
-    if op & rmObject != 0 {
+    if m.op & objectType != 0 {
         strList = append(strList, fmt.Sprintf("%d objects", snap.objectNum))
     }
-    if op & rmUploadId != 0 {
+    if m.op & multipartType != 0 {
         strList = append(strList, fmt.Sprintf("%d uploadIds", snap.uploadIdNum))
     }
     return fmt.Sprintf("Removed %s.", strings.Join(strList, ", "))
@@ -324,7 +314,7 @@ func (m *RMMonitor) getFinishBar(exitStat int) string {
 }
 
 func (m *RMMonitor) getObjectFinishBar(snap RMMonitorSnap, exitStat int) string {
-    if m.op & rmAllTypeMarker != 0 {
+    if m.op & allType != 0 {
         if m.seekAheadEnd && m.seekAheadError == nil {
             if m.getExitStat(snap, exitStat) == errExit {     
                 return getClearStr(fmt.Sprintf("Total %s. %s when error happens.\n", m.getTotalInfo(), m.getOKInfo(snap)))
@@ -342,14 +332,14 @@ func (m *RMMonitor) getObjectFinishBar(snap RMMonitorSnap, exitStat int) string 
 }
 
 func (m *RMMonitor) getExitStat(snap RMMonitorSnap, exitStat int) int {
-    if exitStat != normalExit || snap.errNum != 0 || (m.op & rmBucket != 0 && snap.removedBucket == "") {
+    if exitStat != normalExit || snap.errNum != 0 || (m.op & bucketType != 0 && snap.removedBucket == "") {
         return errExit
     }
     return normalExit
 }
 
 func (m *RMMonitor) getBucketFinishBar(snap RMMonitorSnap) string {
-    if m.op & rmBucket != 0 && snap.removedBucket != ""{
+    if m.op & bucketType != 0 && snap.removedBucket != ""{
         return getClearStr(fmt.Sprintf("Removed Bucket: %s\n", snap.removedBucket))
     }
     return getClearStr("") 
