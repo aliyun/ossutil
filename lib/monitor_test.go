@@ -24,7 +24,7 @@ func (s *OssutilCommandSuite) TestUploadProgressBar(c *C) {
     _ = os.RemoveAll(udir)
     err = os.MkdirAll(udir, 0755)
     c.Assert(err, IsNil)
-    object := "TestUploadProgressBar" + randStr(10)
+    object := "TestUploadProgressBar"
 
     num := 2 
     len := 0
@@ -68,7 +68,7 @@ func (s *OssutilCommandSuite) TestUploadProgressBar(c *C) {
     c.Assert(snap.errNum, Equals, int64(0))
     c.Assert(snap.okNum, Equals, int64(num))
     c.Assert(snap.dealNum, Equals, int64(num))
-    c.Assert(copyCommand.monitor.getPrecent(snap), Equals, 100)
+    c.Assert(copyCommand.monitor.getPrecent(snap) == 100 || copyCommand.monitor.getPrecent(snap) == 0, Equals, true)
 
     str = strings.ToLower(copyCommand.monitor.getProgressBar())
     c.Assert(strings.Contains(str, fmt.Sprintf("total num: %d", num)), Equals, true)
@@ -134,7 +134,7 @@ func (s *OssutilCommandSuite) TestUploadProgressBar(c *C) {
     c.Assert(snap.errNum, Equals, int64(0))
     c.Assert(snap.okNum, Equals, int64(num+num1+2))
     c.Assert(snap.dealNum, Equals, int64(num+num1+2))
-    c.Assert(copyCommand.monitor.getPrecent(snap), Equals, 100)
+    c.Assert(copyCommand.monitor.getPrecent(snap) == 100 || copyCommand.monitor.getPrecent(snap) == 0, Equals, true)
 
     str = strings.ToLower(copyCommand.monitor.getProgressBar())
     c.Assert(strings.Contains(str, fmt.Sprintf("total num: %d", snap.dealNum)), Equals, true)
@@ -188,7 +188,7 @@ func (s *OssutilCommandSuite) TestDownloadProgressBar(c *C) {
     c.Assert(snap.errNum, Equals, int64(0))
     c.Assert(snap.okNum, Equals, int64(1))
     c.Assert(snap.dealNum, Equals, int64(1))
-    c.Assert(copyCommand.monitor.getPrecent(snap), Equals, 100)
+    c.Assert(copyCommand.monitor.getPrecent(snap) == 100 || copyCommand.monitor.getPrecent(snap) == 0, Equals, true)
 
     str = strings.ToLower(copyCommand.monitor.getProgressBar())
     c.Assert(strings.Contains(str, fmt.Sprintf("total num: %d", 1)), Equals, true)
@@ -244,7 +244,7 @@ func (s *OssutilCommandSuite) TestCopyProgressBar(c *C) {
     c.Assert(snap.errNum, Equals, int64(0))
     c.Assert(snap.okNum, Equals, int64(2))
     c.Assert(snap.dealNum, Equals, int64(2))
-    c.Assert(copyCommand.monitor.getPrecent(snap), Equals, 100)
+    c.Assert(copyCommand.monitor.getPrecent(snap) == 100 || copyCommand.monitor.getPrecent(snap) == 0, Equals, true)
 
     str = strings.ToLower(copyCommand.monitor.getProgressBar())
     c.Assert(strings.Contains(str, fmt.Sprintf("total num: %d", 2)), Equals, true)
@@ -480,7 +480,7 @@ func (s *OssutilCommandSuite) TestSingleFileProgress(c *C) {
         c.Assert(snap.errNum, Equals, int64(0))
         c.Assert(snap.okNum, Equals, int64(1))
         c.Assert(snap.dealNum, Equals, int64(1))
-        c.Assert(copyCommand.monitor.getPrecent(snap), Equals, 100)
+        c.Assert(copyCommand.monitor.getPrecent(snap) == 100 || copyCommand.monitor.getPrecent(snap) == 0, Equals, true)
 
         str = strings.ToLower(copyCommand.monitor.getProgressBar())
         c.Assert(strings.Contains(str, fmt.Sprintf("total num: %d", 1)), Equals, true)
@@ -517,7 +517,7 @@ func (s *OssutilCommandSuite) TestSingleFileProgress(c *C) {
         c.Assert(snap.errNum, Equals, int64(0))
         c.Assert(snap.okNum, Equals, int64(1))
         c.Assert(snap.dealNum, Equals, int64(1))
-        c.Assert(copyCommand.monitor.getPrecent(snap), Equals, 100)
+        c.Assert(copyCommand.monitor.getPrecent(snap) == 100 || copyCommand.monitor.getPrecent(snap) == 0, Equals, true)
 
         str = strings.ToLower(copyCommand.monitor.getProgressBar())
         c.Assert(strings.Contains(str, fmt.Sprintf("total num: %d", 1)), Equals, true)
@@ -554,12 +554,11 @@ func (s *OssutilCommandSuite) TestSingleFileProgress(c *C) {
         c.Assert(snap.errNum, Equals, int64(0))
         c.Assert(snap.okNum, Equals, int64(1))
         c.Assert(snap.dealNum, Equals, int64(1))
-        c.Assert(copyCommand.monitor.getPrecent(snap), Equals, 100)
+        c.Assert(copyCommand.monitor.getPrecent(snap) == 100 || copyCommand.monitor.getPrecent(snap) == 0, Equals, true)
 
         str = strings.ToLower(copyCommand.monitor.getProgressBar())
-        c.Assert(strings.Contains(str, fmt.Sprintf("total num: %d", 1)), Equals, true)
+        c.Assert(strings.Contains(str, fmt.Sprintf("num: %d", 1)), Equals, true)
         c.Assert(strings.Contains(str, "error"), Equals, false)
-        c.Assert(strings.Contains(str, "progress"), Equals, true)
         c.Assert(strings.Contains(str, "skip"), Equals, true)
         c.Assert(strings.Contains(str, "directories"), Equals, false)
         c.Assert(strings.Contains(str, "upload"), Equals, false)
@@ -616,7 +615,7 @@ func (s *OssutilCommandSuite) TestSetACLProgress(c *C) {
     c.Assert(snap.okNum, Equals, int64(num)) 
     c.Assert(snap.errNum, Equals, int64(0))
     c.Assert(snap.dealNum, Equals, int64(num))
-    c.Assert(setACLCommand.monitor.getPrecent(snap), Equals, 100)
+    c.Assert(setACLCommand.monitor.getPrecent(snap) == 100 || setACLCommand.monitor.getPrecent(snap) == 0, Equals, true)
 
     str := strings.ToLower(setACLCommand.monitor.getProgressBar())
     c.Assert(strings.Contains(str, fmt.Sprintf("total %d objects", 2)), Equals, true)
@@ -726,7 +725,7 @@ func (s *OssutilCommandSuite) TestSetMetaProgress(c *C) {
     c.Assert(snap.okNum, Equals, int64(num)) 
     c.Assert(snap.errNum, Equals, int64(0))
     c.Assert(snap.dealNum, Equals, int64(num))
-    c.Assert(setMetaCommand.monitor.getPrecent(snap), Equals, 100)
+    c.Assert(setMetaCommand.monitor.getPrecent(snap) == 100 || setMetaCommand.monitor.getPrecent(snap) == 0, Equals, true)
 
     str := strings.ToLower(setMetaCommand.monitor.getProgressBar())
     c.Assert(strings.Contains(str, fmt.Sprintf("total %d objects", 2)), Equals, true)
@@ -816,7 +815,7 @@ func (s *OssutilCommandSuite) TestRemoveSingleProgress(c *C) {
     c.Assert(snap.errUploadIdNum, Equals, int64(0))
     c.Assert(snap.dealNum, Equals, int64(0))
     c.Assert(snap.errNum, Equals, int64(0))
-    c.Assert(removeCommand.monitor.getPrecent(snap), Equals, 100)
+    c.Assert(removeCommand.monitor.getPrecent(snap) == 100 || removeCommand.monitor.getPrecent(snap) == 0, Equals, true)
 
     str := strings.ToLower(removeCommand.monitor.getProgressBar())
     c.Assert(strings.Contains(str, fmt.Sprintf("total %d objects", 0)), Equals, true)
@@ -854,7 +853,7 @@ func (s *OssutilCommandSuite) TestRemoveSingleProgress(c *C) {
     c.Assert(snap.errUploadIdNum, Equals, int64(0))
     c.Assert(snap.dealNum, Equals, int64(1))
     c.Assert(snap.errNum, Equals, int64(0))
-    c.Assert(removeCommand.monitor.getPrecent(snap), Equals, 100)
+    c.Assert(removeCommand.monitor.getPrecent(snap) == 100 || removeCommand.monitor.getPrecent(snap) == 0, Equals, true)
 
     str = strings.ToLower(removeCommand.monitor.getProgressBar())
     c.Assert(strings.Contains(str, fmt.Sprintf("total %d objects", 1)), Equals, true)
@@ -937,7 +936,7 @@ func (s *OssutilCommandSuite) TestBatchRemoveProgress(c *C) {
     c.Assert(snap.errUploadIdNum, Equals, int64(0))
     c.Assert(snap.dealNum, Equals, int64(num))
     c.Assert(snap.errNum, Equals, int64(0))
-    c.Assert(removeCommand.monitor.getPrecent(snap), Equals, 100)
+    c.Assert(removeCommand.monitor.getPrecent(snap) == 100 || removeCommand.monitor.getPrecent(snap) == 0, Equals, true)
 
     str = strings.ToLower(removeCommand.monitor.getProgressBar())
     c.Assert(strings.Contains(str, fmt.Sprintf("total %d objects", num)), Equals, true)
@@ -1188,7 +1187,6 @@ func (s *OssutilCommandSuite) TestRemoveBucketProgress(c *C) {
 
     bucket, _ := removeCommand.command.ossBucket(bucketName)
 
-    // rm -mrb
     object := "TestRemoveBucketProgress" 
     s.putObject(bucketName, object, uploadFileName, c)
     num := 10
@@ -1203,6 +1201,25 @@ func (s *OssutilCommandSuite) TestRemoveBucketProgress(c *C) {
         c.Assert(err, IsNil)
     }
 
+    // rm -arb without -f
+    err = s.initRemove(bucketName, "", "rm -arb") 
+    c.Assert(err, IsNil)
+    err = removeCommand.RunCommand()
+    c.Assert(err, IsNil)
+
+    c.Assert(int64(removeCommand.monitor.op), Equals, int64(0))
+    c.Assert(removeCommand.monitor.removedBucket, Equals, "")
+
+    snap := removeCommand.monitor.getSnapshot()
+    c.Assert(snap.objectNum, Equals, int64(0)) 
+    c.Assert(snap.uploadIdNum, Equals, int64(0))
+    c.Assert(snap.errObjectNum, Equals, int64(0))
+    c.Assert(snap.errUploadIdNum, Equals, int64(0))
+    c.Assert(snap.dealNum, Equals, int64(0))
+    c.Assert(snap.errNum, Equals, int64(0))
+    c.Assert(snap.removedBucket, Equals, "")
+
+    // rm -mrb
     err = s.initRemove(bucketName, "", "rm -mrbf") 
     c.Assert(err, IsNil)
     out = os.Stdout
@@ -1216,7 +1233,7 @@ func (s *OssutilCommandSuite) TestRemoveBucketProgress(c *C) {
     c.Assert(int64(removeCommand.monitor.op), Equals, int64(multipartType|bucketType))
     c.Assert(removeCommand.monitor.removedBucket, Equals, "")
 
-    snap := removeCommand.monitor.getSnapshot()
+    snap = removeCommand.monitor.getSnapshot()
     c.Assert(snap.objectNum, Equals, int64(0)) 
     c.Assert(snap.uploadIdNum, Equals, int64(2*num))
     c.Assert(snap.errObjectNum, Equals, int64(0))
@@ -1280,4 +1297,54 @@ func (s *OssutilCommandSuite) TestRemoveBucketProgress(c *C) {
     str = strings.ToLower(removeCommand.monitor.getFinishBar(normalExit))
     c.Assert(strings.Contains(pstr, fmt.Sprintf("removed bucket: %s", bucketName)), Equals, true)
     c.Assert(strings.Contains(strings.TrimSpace(pstr), strings.TrimSpace(str)), Equals, true)
+}
+
+func (s *OssutilCommandSuite) TestRemoveErrorId(c *C) {
+    cfile := configFile
+    configFile = "ossutil_test.config_boto"
+    data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s", endpoint, "abc", "ghi")
+    s.createFile(configFile, data, c)
+
+    err := s.initRemove(bucketNameExist, "notexistobject", "rm -f")
+    c.Assert(err, IsNil)
+
+    err = removeCommand.RunCommand()
+    c.Assert(err, NotNil)
+
+    c.Assert(int64(removeCommand.monitor.op), Equals, int64(0))
+    c.Assert(removeCommand.monitor.removedBucket, Equals, "")
+
+    snap := removeCommand.monitor.getSnapshot()
+    c.Assert(snap.objectNum, Equals, int64(0)) 
+    c.Assert(snap.uploadIdNum, Equals, int64(0))
+    c.Assert(snap.errObjectNum, Equals, int64(1))
+    c.Assert(snap.errUploadIdNum, Equals, int64(0))
+    c.Assert(snap.dealNum, Equals, int64(1))
+    c.Assert(snap.errNum, Equals, int64(1))
+    c.Assert(snap.removedBucket, Equals, "")
+
+    str := strings.ToLower(removeCommand.monitor.getFinishBar(normalExit))
+    c.Assert(strings.Contains(str, "succeed:"), Equals, false)
+    c.Assert(strings.Contains(str, "error"), Equals, false)
+
+    err = s.initRemove(bucketNameExist, "notexistobject", "rm -m")
+    c.Assert(err, IsNil)
+
+    err = removeCommand.RunCommand()
+    c.Assert(err, NotNil)
+
+    c.Assert(int64(removeCommand.monitor.op), Equals, int64(multipartType))
+    c.Assert(removeCommand.monitor.removedBucket, Equals, "")
+
+    snap = removeCommand.monitor.getSnapshot()
+    c.Assert(snap.objectNum, Equals, int64(0)) 
+    c.Assert(snap.uploadIdNum, Equals, int64(0))
+    c.Assert(snap.errObjectNum, Equals, int64(0))
+    c.Assert(snap.errUploadIdNum, Equals, int64(0))
+    c.Assert(snap.dealNum, Equals, int64(0))
+    c.Assert(snap.errNum, Equals, int64(0))
+    c.Assert(snap.removedBucket, Equals, "")
+
+    _ = os.Remove(configFile)
+    configFile = cfile
 }
