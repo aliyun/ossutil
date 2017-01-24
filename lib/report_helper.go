@@ -33,7 +33,6 @@ func (re *Reporter) Init(outputDir, comment string) error {
     re.comment = comment
     re.written = false
     re.prompted = false
-    //re.prompt = fmt.Sprintf("Error occurs, see more information in file: %s\n", re.path) 
     f, err := os.OpenFile(re.path, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0664)
     if err != nil {
         return fmt.Errorf("Create reporter file error: %s", err.Error())

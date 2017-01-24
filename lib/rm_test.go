@@ -3,7 +3,6 @@ package lib
 import (
 	"fmt"
 	"os"
-	//"strings"
 	"time"
 
 	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"

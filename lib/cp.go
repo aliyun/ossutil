@@ -1320,12 +1320,9 @@ func (cc *CopyCommand) skipUpload(spath string, bucket *oss.Bucket, objectName s
             }
         }
         if cc.cpOption.update {
-            if props, err := cc.command.ossGetObjectMetaRetry(bucket, objectName); err == nil {
+            if props, err := cc.command.ossGetObjectStatRetry(bucket, objectName); err == nil {
                 destt, err := time.Parse(http.TimeFormat, props.Get(oss.HTTPHeaderLastModified))
-                if err != nil {
-                    return false, err
-                }
-                if destt.Unix() >= srct {
+                if err == nil && destt.Unix() >= srct {
                     return true, nil
                 }
             }
@@ -1560,7 +1557,7 @@ func (cc *CopyCommand) downloadSingleFile(bucket *oss.Bucket, objectInfo objectI
     msg := fmt.Sprintf("%s %s to %s", opDownload, CloudURLToString(bucket.BucketName, object), fileName)
 
 	if size < 0 {
-		props, err := cc.command.ossGetObjectMetaRetry(bucket, object)
+		props, err := cc.command.ossGetObjectStatRetry(bucket, object)
 		if err != nil {
 			return false, err, size, msg
 		}
@@ -1716,7 +1713,7 @@ func (cc *CopyCommand) objectStatistic(bucket *oss.Bucket, cloudURL CloudURL) {
             }
         }
     } else {
-        props, err := cc.command.ossGetObjectMetaRetry(bucket, cloudURL.object)
+        props, err := cc.command.ossGetObjectStatRetry(bucket, cloudURL.object)
         if err != nil {
             cc.monitor.setScanError(err)
             return
@@ -1869,7 +1866,7 @@ func (cc *CopyCommand) copySingleFile(bucket *oss.Bucket, objectInfo objectInfoT
 
 	//get object size
 	if size < 0 {
-		props, err := cc.command.ossGetObjectMetaRetry(bucket, srcObject)
+		props, err := cc.command.ossGetObjectStatRetry(bucket, srcObject)
 		if err != nil {
 			return false, err, size, msg
 		}
@@ -1919,16 +1916,12 @@ func (cc *CopyCommand) skipCopy(destURL CloudURL, destObject string, srct time.T
 	}
 
 	if cc.cpOption.update {
-		if props, err := cc.command.ossGetObjectMetaRetry(destBucket, destObject); err == nil {
+		if props, err := cc.command.ossGetObjectStatRetry(destBucket, destObject); err == nil {
 			destt, err := time.Parse(http.TimeFormat, props.Get(oss.HTTPHeaderLastModified))
-			if err != nil {
-				return false, err
-			}
-			if destt.Unix() >= srct.Unix() {
+			if err == nil && destt.Unix() >= srct.Unix() {
 				return true, nil
 			}
 		}
-
 	} else {
 		if !cc.cpOption.force {
 			if _, err := cc.command.ossGetObjectMetaRetry(destBucket, destObject); err == nil {
