@@ -352,12 +352,13 @@ func (s *OssutilCommandSuite) TestCPObjectUpdate(c *C) {
     s.getObject(bucket, object, downloadFileName, c)
     str := s.readFile(downloadFileName, c) 
     c.Assert(str, Equals, newData)
+    time.Sleep(time.Second)
 
     // put old object with update
     showElapse, err := s.rawCP(oldFile, CloudURLToString(bucket, object), false, false, true, DefaultBigFileThreshold, CheckpointDir)  
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true)
-    time.Sleep(7*time.Second)
+    //time.Sleep(7*time.Second)
 
     s.getObject(bucket, object, downloadFileName, c)
     str = s.readFile(downloadFileName, c) 
