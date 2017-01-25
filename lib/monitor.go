@@ -254,7 +254,7 @@ func (m *RMMonitor) getProgressBar() string {
         }
         m.totalObjectNum = max(m.totalObjectNum, snap.objectNum + snap.errObjectNum) 
         m.totalUploadIdNum = max(m.totalUploadIdNum, snap.uploadIdNum + snap.errUploadIdNum) 
-        return getClearStr(fmt.Sprintf("Scanned %s. %s%s..", m.getTotalInfo(), m.getOKInfo(snap), m.getErrInfo(snap))) 
+        return getClearStr(fmt.Sprintf("Scanned %s. %s%s", m.getTotalInfo(), m.getOKInfo(snap), m.getErrInfo(snap))) 
     }
     return getClearStr("")
 }
