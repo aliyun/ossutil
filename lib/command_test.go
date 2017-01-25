@@ -288,17 +288,11 @@ func (s *OssutilCommandSuite) getReportResult(fileName string, c *C) ([]string) 
 }
 
 func (s *OssutilCommandSuite) removeBucket(bucket string, clearObjects bool, c *C) {
-    var showElapse bool
-    var err error
-    if !clearObjects {
-        args := []string{CloudURLToString(bucket, "")}
-        showElapse, err = s.rawRemove(args, false, true, true)
-    } else {
-        showElapse, err = s.removeWrapper("rm -arbf", bucket, "", c)
-    }
+    args := []string{CloudURLToString(bucket, "")}
+    showElapse, err := s.rawRemove(args, clearObjects, true, true)
     if err != nil {
-        verr := err.(BucketError).err
-        c.Assert(verr.(oss.ServiceError).Code == "NoSuchBucket" || verr.(oss.ServiceError).Code == "BucketNotEmpty", Equals, true)
+        error := err.(BucketError).err
+        c.Assert(error.(oss.ServiceError).Code == "NoSuchBucket" || error.(oss.ServiceError).Code == "BucketNotEmpty", Equals, true)
         c.Assert(showElapse, Equals, false)
     } else {
         c.Assert(showElapse, Equals, true)
