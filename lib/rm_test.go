@@ -33,7 +33,7 @@ func (s *OssutilCommandSuite) TestRemoveObject(c *C) {
 func (s *OssutilCommandSuite) TestRemoveObjects(c *C) {
 	bucket := bucketNamePrefix + "rmb1"
 	s.putBucket(bucket, c)
-	time.Sleep(14 * time.Second)
+	//time.Sleep(14 * time.Second)
 
 	// put object
 	num := 2
@@ -225,11 +225,11 @@ func (s *OssutilCommandSuite) TestAllTypeObject(c *C) {
 
 	normal_object := "TestAllTypeObject"
 	s.putObject(bucketName, normal_object, uploadFileName, c)
-	time.Sleep(2 * sleepTime)
+	//time.Sleep(2 * sleepTime)
 
 	object := "TestMultipartObjectRm"
 	s.putObject(bucketName, object, uploadFileName, c)
-	time.Sleep(2 * sleepTime)
+	//time.Sleep(2 * sleepTime)
 
 	objects := s.listObjects(bucketName, object, "ls - ", c)
 	c.Assert(len(objects), Equals, 1)

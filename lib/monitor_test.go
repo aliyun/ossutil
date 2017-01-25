@@ -1078,6 +1078,7 @@ func (s *OssutilCommandSuite) TestRemoveUploadIdProgress(c *C) {
     }
     // put object
     object1 := object + "1" 
+    s.putObject(bucketName, object, uploadFileName, c)
     s.putObject(bucketName, object1, uploadFileName, c)
     for i := 0; i < num; i++ {
         _, err = bucket.InitiateMultipartUpload(object1)
@@ -1184,7 +1185,6 @@ func (s *OssutilCommandSuite) TestRemoveBucketProgress(c *C) {
 
     bucketName := bucketNamePrefix + "progress" 
     s.putBucket(bucketName, c)
-    //time.Sleep(10*time.Second)
 
     bucket, _ := removeCommand.command.ossBucket(bucketName)
 
