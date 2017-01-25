@@ -73,7 +73,6 @@ func (s *OssutilCommandSuite) TestUploadProgressBar(c *C) {
     str = strings.ToLower(copyCommand.monitor.getProgressBar())
     c.Assert(strings.Contains(str, fmt.Sprintf("num: %d", num)), Equals, true)
     c.Assert(strings.Contains(str, "error"), Equals, false)
-    c.Assert(strings.Contains(str, "progress"), Equals, true)
     c.Assert(strings.Contains(str, "skip"), Equals, false)
     c.Assert(strings.Contains(str, "directories"), Equals, false)
 
@@ -141,7 +140,6 @@ func (s *OssutilCommandSuite) TestUploadProgressBar(c *C) {
     str = strings.ToLower(copyCommand.monitor.getProgressBar())
     c.Assert(strings.Contains(str, fmt.Sprintf("num: %d", snap.dealNum)), Equals, true)
     c.Assert(strings.Contains(str, "error"), Equals, false)
-    c.Assert(strings.Contains(str, "progress"), Equals, true)
     c.Assert(strings.Contains(str, "skip"), Equals, true)
     c.Assert(strings.Contains(str, "directories"), Equals, true)
 
@@ -195,7 +193,6 @@ func (s *OssutilCommandSuite) TestDownloadProgressBar(c *C) {
     str = strings.ToLower(copyCommand.monitor.getProgressBar())
     c.Assert(strings.Contains(str, fmt.Sprintf("num: %d", 1)), Equals, true)
     c.Assert(strings.Contains(str, "error"), Equals, false)
-    c.Assert(strings.Contains(str, "progress"), Equals, true)
     c.Assert(strings.Contains(str, "skip"), Equals, false)
     c.Assert(strings.Contains(str, "directories"), Equals, false)
 
@@ -251,7 +248,6 @@ func (s *OssutilCommandSuite) TestCopyProgressBar(c *C) {
     str = strings.ToLower(copyCommand.monitor.getProgressBar())
     c.Assert(strings.Contains(str, fmt.Sprintf("num: %d", 2)), Equals, true)
     c.Assert(strings.Contains(str, "error"), Equals, false)
-    c.Assert(strings.Contains(str, "progress"), Equals, true)
     c.Assert(strings.Contains(str, "skip"), Equals, false)
     c.Assert(strings.Contains(str, "directories"), Equals, false)
 
@@ -377,7 +373,6 @@ func (s *OssutilCommandSuite) TestProgressBarContinueErr(c *C) {
     str := strings.ToLower(copyCommand.monitor.getProgressBar())
     c.Assert(strings.Contains(str, fmt.Sprintf("num: %d", snap.dealNum)), Equals, true)
     c.Assert(strings.Contains(str, "error"), Equals, true)
-    c.Assert(strings.Contains(str, "progress"), Equals, true)
     c.Assert(strings.Contains(str, "skip"), Equals, false)
     c.Assert(strings.Contains(str, "directories"), Equals, false)
 
@@ -451,7 +446,6 @@ func (s *OssutilCommandSuite) TestSingleFileProgress(c *C) {
         str = strings.ToLower(copyCommand.monitor.getProgressBar())
         c.Assert(strings.Contains(str, fmt.Sprintf("num: %d", 1)), Equals, true)
         c.Assert(strings.Contains(str, "error"), Equals, false)
-        c.Assert(strings.Contains(str, "progress"), Equals, true)
         c.Assert(strings.Contains(str, "skip"), Equals, false)
         c.Assert(strings.Contains(str, "directories"), Equals, false)
         c.Assert(strings.Contains(str, "upload"), Equals, true)
@@ -487,7 +481,6 @@ func (s *OssutilCommandSuite) TestSingleFileProgress(c *C) {
         str = strings.ToLower(copyCommand.monitor.getProgressBar())
         c.Assert(strings.Contains(str, fmt.Sprintf("num: %d", 1)), Equals, true)
         c.Assert(strings.Contains(str, "error"), Equals, false)
-        c.Assert(strings.Contains(str, "progress"), Equals, true)
         c.Assert(strings.Contains(str, "skip"), Equals, false)
         c.Assert(strings.Contains(str, "directories"), Equals, false)
         c.Assert(strings.Contains(str, "upload"), Equals, false)
@@ -524,7 +517,6 @@ func (s *OssutilCommandSuite) TestSingleFileProgress(c *C) {
         str = strings.ToLower(copyCommand.monitor.getProgressBar())
         c.Assert(strings.Contains(str, fmt.Sprintf("num: %d", 1)), Equals, true)
         c.Assert(strings.Contains(str, "error"), Equals, false)
-        c.Assert(strings.Contains(str, "progress"), Equals, true)
         c.Assert(strings.Contains(str, "skip"), Equals, false)
         c.Assert(strings.Contains(str, "directories"), Equals, false)
         c.Assert(strings.Contains(str, "upload"), Equals, false)
@@ -731,7 +723,6 @@ func (s *OssutilCommandSuite) TestSetMetaProgress(c *C) {
     str := strings.ToLower(setMetaCommand.monitor.getProgressBar())
     c.Assert(strings.Contains(str, fmt.Sprintf("%d objects", 2)), Equals, true)
     c.Assert(strings.Contains(str, "error"), Equals, false)
-    c.Assert(strings.Contains(str, "progress"), Equals, true)
 
     str = strings.ToLower(setMetaCommand.monitor.getFinishBar())
     c.Assert(strings.Contains(str, "succeed:"), Equals, true)
@@ -821,7 +812,6 @@ func (s *OssutilCommandSuite) TestRemoveSingleProgress(c *C) {
     str := strings.ToLower(removeCommand.monitor.getProgressBar())
     c.Assert(strings.Contains(str, fmt.Sprintf("%d objects", 0)), Equals, true)
     c.Assert(strings.Contains(str, "error"), Equals, false)
-    c.Assert(strings.Contains(str, "progress"), Equals, true)
 
     str = strings.ToLower(removeCommand.monitor.getFinishBar(normalExit))
     c.Assert(strings.Contains(str, "succeed:"), Equals, true)
@@ -859,7 +849,6 @@ func (s *OssutilCommandSuite) TestRemoveSingleProgress(c *C) {
     str = strings.ToLower(removeCommand.monitor.getProgressBar())
     c.Assert(strings.Contains(str, fmt.Sprintf("%d objects", 1)), Equals, true)
     c.Assert(strings.Contains(str, "error"), Equals, false)
-    c.Assert(strings.Contains(str, "progress"), Equals, true)
 
     str = strings.ToLower(removeCommand.monitor.getFinishBar(normalExit))
     c.Assert(strings.Contains(str, "succeed:"), Equals, true)
@@ -941,7 +930,6 @@ func (s *OssutilCommandSuite) TestBatchRemoveProgress(c *C) {
     str = strings.ToLower(removeCommand.monitor.getProgressBar())
     c.Assert(strings.Contains(str, fmt.Sprintf("%d objects", num)), Equals, true)
     c.Assert(strings.Contains(str, "error"), Equals, false)
-    c.Assert(strings.Contains(str, "progress"), Equals, true)
 
     str = strings.ToLower(removeCommand.monitor.getFinishBar(normalExit))
     c.Assert(strings.Contains(str, "succeed:"), Equals, true)
