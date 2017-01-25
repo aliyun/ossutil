@@ -222,14 +222,13 @@ func (s *OssutilCommandSuite) TestAllTypeObject(c *C) {
 	bucketName := bucketNameMB
 
 	s.clearAllMultipartInBucket(bucketName, c)
+    time.Sleep(2*time.Second)
 
 	normal_object := "TestAllTypeObject"
 	s.putObject(bucketName, normal_object, uploadFileName, c)
-	//time.Sleep(2 * sleepTime)
 
 	object := "TestMultipartObjectRm"
 	s.putObject(bucketName, object, uploadFileName, c)
-	//time.Sleep(2 * sleepTime)
 
 	objects := s.listObjects(bucketName, object, "ls - ", c)
 	c.Assert(len(objects), Equals, 1)
