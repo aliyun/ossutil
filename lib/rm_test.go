@@ -104,6 +104,7 @@ func (s *OssutilCommandSuite) TestRemoveObjects(c *C) {
 		"configFile":      &cfile,
 		"recursive":       &ok,
 		"bucket":          &ok,
+        "allType":         &ok,
 		"force":           &ok,
 	}
 	showElapse, err := cm.RunCommand(command, args, options)
@@ -117,6 +118,7 @@ func (s *OssutilCommandSuite) TestRemoveObjects(c *C) {
 		"configFile":      &cfile,
 		"recursive":       &ok,
 		"bucket":          &ok,
+        "allType":         &ok,
 		"force":           &ok,
 	}
 	showElapse, err = cm.RunCommand(command, args, options)
@@ -124,7 +126,7 @@ func (s *OssutilCommandSuite) TestRemoveObjects(c *C) {
 	c.Assert(showElapse, Equals, true)
 
 	_ = os.Remove(cfile)
-	time.Sleep(2 * 7 * time.Second)
+	time.Sleep(7 * time.Second)
 
 	// list buckets
 	buckets = s.listBuckets(false, c)
