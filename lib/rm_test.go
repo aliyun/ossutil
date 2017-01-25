@@ -222,7 +222,10 @@ func (s *OssutilCommandSuite) TestAllTypeObject(c *C) {
     bucketName := bucketNamePrefix + "alltype" 
     s.putBucket(bucketName, c)
 
-	s.clearAllMultipartInBucket(bucketName, c)
+	//s.clearAllMultipartInBucket(bucketName, c)
+    err = s.initRemove(bucketName, "", "rm -marf") 
+    c.Assert(err, IsNil)
+    removeCommand.RunCommand()
     
 	normal_object := "TestAllTypeObject"
 	s.putObject(bucketName, normal_object, uploadFileName, c)
@@ -258,10 +261,9 @@ func (s *OssutilCommandSuite) TestAllTypeObject(c *C) {
 	c.Assert(len(objects), Equals, 1)
 	c.Assert(objects[0], Equals, normal_object)
 
-    err = s.initRemove(bucketName, "", "rm -marfb") 
+    err = s.initRemove(bucketName, "", "rm -marf") 
     c.Assert(err, IsNil)
-    err = removeCommand.RunCommand()
-    c.Assert(err, IsNil)
+    removeCommand.RunCommand()
 }
 
 func (s *OssutilCommandSuite) TestMultipartUpload(c *C) {
