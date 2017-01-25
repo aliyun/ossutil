@@ -219,7 +219,8 @@ func (s *OssutilCommandSuite) TestErrDeleteObject(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestAllTypeObject(c *C) {
-	bucketName := bucketNameMB
+    bucketName := bucketNamePrefix + "alltype" 
+    s.putBucket(bucketName, c)
 
 	s.clearAllMultipartInBucket(bucketName, c)
 
