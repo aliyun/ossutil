@@ -92,6 +92,8 @@ func (s *OssutilCommandSuite) TestUploadProgressBar(c *C) {
     // mkdir a subdir in dir
     subdir := udir + string(os.PathSeparator) + "subdir" 
     subdir1 := udir + string(os.PathSeparator) + "subdir1" 
+    _ = os.RemoveAll(subdir)
+    _ = os.RemoveAll(subdir1)
     err = os.MkdirAll(subdir, 0755)
     c.Assert(err, IsNil)
     err = os.MkdirAll(subdir1, 0755)
@@ -620,7 +622,6 @@ func (s *OssutilCommandSuite) TestSetACLProgress(c *C) {
     str := strings.ToLower(setACLCommand.monitor.getProgressBar())
     c.Assert(strings.Contains(str, fmt.Sprintf("%d objects", 2)), Equals, true)
     c.Assert(strings.Contains(str, "error"), Equals, false)
-    c.Assert(strings.Contains(str, "progress"), Equals, true)
 
     str = strings.ToLower(setACLCommand.monitor.getFinishBar())
     c.Assert(strings.Contains(str, "succeed:"), Equals, true)
