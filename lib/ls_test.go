@@ -343,8 +343,7 @@ func (s *OssutilCommandSuite) TestListMultipartUploads(c *C) {
 		"force":           &ok,
 		"allType":         &ok,
 	}
-	_, e := cm.RunCommand(command, args, options)
-	c.Assert(e, IsNil)
+	cm.RunCommand(command, args, options)
 
 	object := "TestMultipartObjectLs"
 	s.putObject(bucketName, object, uploadFileName, c)

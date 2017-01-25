@@ -656,7 +656,6 @@ func (s *OssutilCommandSuite) TestSetACLProgress(c *C) {
     c.Assert(snap.dealNum, Equals, int64(0))
 
     str = strings.ToLower(setACLCommand.monitor.getProgressBar())
-    c.Assert(strings.Contains(str, fmt.Sprintf("scanned %d objects", 0)), Equals, true)
     c.Assert(strings.Contains(str, "error"), Equals, false)
     c.Assert(strings.Contains(str, "progress"), Equals, false)
 

@@ -226,14 +226,15 @@ func (s *OssutilCommandSuite) TestAllTypeObject(c *C) {
     err := s.initRemove(bucketName, "", "rm -marf") 
     c.Assert(err, IsNil)
     removeCommand.RunCommand()
+    time.Sleep(7*time.Second)
     
 	normal_object := "TestAllTypeObject"
 	s.putObject(bucketName, normal_object, uploadFileName, c)
-	time.Sleep(2 * sleepTime)
+	//time.Sleep(2 * sleepTime)
 
 	object := "TestMultipartObjectRm"
 	s.putObject(bucketName, object, uploadFileName, c)
-	time.Sleep(2 * sleepTime)
+	//time.Sleep(2 * sleepTime)
 
 	objects := s.listObjects(bucketName, object, "ls - ", c)
 	c.Assert(len(objects), Equals, 1)
@@ -247,7 +248,7 @@ func (s *OssutilCommandSuite) TestAllTypeObject(c *C) {
 
 	lmr, e := bucket.ListMultipartUploads(oss.Prefix(object))
 	c.Assert(e, IsNil)
-	c.Assert(len(lmr.Uploads), Equals, 20)
+	c.Assert(len(lmr.Uploads) >= 20, Equals, true)
 
 	_, e = s.removeWrapper("rm -arf", bucketName, object, c)
 	c.Assert(e, IsNil)
@@ -264,6 +265,8 @@ func (s *OssutilCommandSuite) TestAllTypeObject(c *C) {
     err = s.initRemove(bucketName, "", "rm -marf") 
     c.Assert(err, IsNil)
     removeCommand.RunCommand()
+
+    time.Sleep(7*time.Second)
 }
 
 func (s *OssutilCommandSuite) TestMultipartUpload(c *C) {
