@@ -223,7 +223,7 @@ func (s *OssutilCommandSuite) TestAllTypeObject(c *C) {
     s.putBucket(bucketName, c)
 
 	//s.clearAllMultipartInBucket(bucketName, c)
-    err = s.initRemove(bucketName, "", "rm -marf") 
+    err := s.initRemove(bucketName, "", "rm -marf") 
     c.Assert(err, IsNil)
     removeCommand.RunCommand()
     
