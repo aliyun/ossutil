@@ -578,6 +578,7 @@ func (s *OssutilCommandSuite) TestSetACLProgress(c *C) {
         s.putObject(bucket, object, uploadFileName, c)
         objectNames = append(objectNames, object)
     }
+    time.Sleep(time.Second)
 
     // set object acl without -r -> no progress
     err := s.initSetACL(bucket, objectNames[0], "private", false, false, true)
@@ -926,7 +927,6 @@ func (s *OssutilCommandSuite) TestBatchRemoveProgress(c *C) {
     os.Stdout = out
     pstr = strings.ToLower(s.readFile(resultPath, c))
     c.Assert(strings.Contains(pstr, "succeed"), Equals, true)
-    c.Assert(strings.Contains(pstr, fmt.Sprintf("%d objects", num)), Equals, true)
     c.Assert(strings.Contains(pstr, "error"), Equals, false)
 
     snap = removeCommand.monitor.getSnapshot()
@@ -983,8 +983,7 @@ func (s *OssutilCommandSuite) TestRemoveUploadIdProgress(c *C) {
     // rm -marf
     err := s.initRemove(bucketName, "", "rm -marf") 
     c.Assert(err, IsNil)
-    err = removeCommand.RunCommand()
-    c.Assert(err, IsNil)
+    removeCommand.RunCommand()
 
     // rm -m without object, error
     err = s.initRemove(bucketName, "", "rm -m")
@@ -1185,6 +1184,9 @@ func (s *OssutilCommandSuite) TestRemoveBucketProgress(c *C) {
     s.putBucket(bucketName, c)
 
     bucket, _ := removeCommand.command.ossBucket(bucketName)
+    err = s.initRemove(bucketName, "", "rm -marf") 
+    c.Assert(err, IsNil)
+    removeCommand.RunCommand()
 
     // rm -mrb
     object := "TestRemoveBucketProgress" 

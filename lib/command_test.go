@@ -353,8 +353,7 @@ func (s *OssutilCommandSuite) removeWrapper(cmdline string, bucket string, objec
 }
 
 func (s *OssutilCommandSuite) clearAllMultipartInBucket(bucket string, c *C) {
-    _, e := s.removeWrapper("rm -afr", bucket, "", c)
-    c.Assert(e, IsNil)
+    s.removeWrapper("rm -afr", bucket, "", c)
 }
 
 func (s *OssutilCommandSuite) initRemove(bucket string, object string, cmdline string) error {
