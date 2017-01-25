@@ -1078,7 +1078,6 @@ func (s *OssutilCommandSuite) TestRemoveUploadIdProgress(c *C) {
     }
     // put object
     object1 := object + "1" 
-    s.putObject(bucketName, object, uploadFileName, c)
     s.putObject(bucketName, object1, uploadFileName, c)
     for i := 0; i < num; i++ {
         _, err = bucket.InitiateMultipartUpload(object1)
@@ -1188,6 +1187,7 @@ func (s *OssutilCommandSuite) TestRemoveBucketProgress(c *C) {
 
     bucket, _ := removeCommand.command.ossBucket(bucketName)
 
+    // rm -mrb
     object := "TestRemoveBucketProgress" 
     s.putObject(bucketName, object, uploadFileName, c)
     num := 10
@@ -1202,25 +1202,6 @@ func (s *OssutilCommandSuite) TestRemoveBucketProgress(c *C) {
         c.Assert(err, IsNil)
     }
 
-    // rm -arb without -f
-    err = s.initRemove(bucketName, "", "rm -arb") 
-    c.Assert(err, IsNil)
-    err = removeCommand.RunCommand()
-    c.Assert(err, IsNil)
-
-    c.Assert(int64(removeCommand.monitor.op), Equals, int64(0))
-    c.Assert(removeCommand.monitor.removedBucket, Equals, "")
-
-    snap := removeCommand.monitor.getSnapshot()
-    c.Assert(snap.objectNum, Equals, int64(0)) 
-    c.Assert(snap.uploadIdNum, Equals, int64(0))
-    c.Assert(snap.errObjectNum, Equals, int64(0))
-    c.Assert(snap.errUploadIdNum, Equals, int64(0))
-    c.Assert(snap.dealNum, Equals, int64(0))
-    c.Assert(snap.errNum, Equals, int64(0))
-    c.Assert(snap.removedBucket, Equals, "")
-
-    // rm -mrb
     err = s.initRemove(bucketName, "", "rm -mrbf") 
     c.Assert(err, IsNil)
     out = os.Stdout
@@ -1234,7 +1215,7 @@ func (s *OssutilCommandSuite) TestRemoveBucketProgress(c *C) {
     c.Assert(int64(removeCommand.monitor.op), Equals, int64(multipartType|bucketType))
     c.Assert(removeCommand.monitor.removedBucket, Equals, "")
 
-    snap = removeCommand.monitor.getSnapshot()
+    snap := removeCommand.monitor.getSnapshot()
     c.Assert(snap.objectNum, Equals, int64(0)) 
     c.Assert(snap.uploadIdNum, Equals, int64(2*num))
     c.Assert(snap.errObjectNum, Equals, int64(0))
@@ -1298,54 +1279,4 @@ func (s *OssutilCommandSuite) TestRemoveBucketProgress(c *C) {
     str = strings.ToLower(removeCommand.monitor.getFinishBar(normalExit))
     c.Assert(strings.Contains(pstr, fmt.Sprintf("removed bucket: %s", bucketName)), Equals, true)
     c.Assert(strings.Contains(strings.TrimSpace(pstr), strings.TrimSpace(str)), Equals, true)
-}
-
-func (s *OssutilCommandSuite) TestRemoveErrorId(c *C) {
-    cfile := configFile
-    configFile = "ossutil_test.config_boto"
-    data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s", endpoint, "abc", "ghi")
-    s.createFile(configFile, data, c)
-
-    err := s.initRemove(bucketNameExist, "notexistobject", "rm -f")
-    c.Assert(err, IsNil)
-
-    err = removeCommand.RunCommand()
-    c.Assert(err, NotNil)
-
-    c.Assert(int64(removeCommand.monitor.op), Equals, int64(0))
-    c.Assert(removeCommand.monitor.removedBucket, Equals, "")
-
-    snap := removeCommand.monitor.getSnapshot()
-    c.Assert(snap.objectNum, Equals, int64(0)) 
-    c.Assert(snap.uploadIdNum, Equals, int64(0))
-    c.Assert(snap.errObjectNum, Equals, int64(1))
-    c.Assert(snap.errUploadIdNum, Equals, int64(0))
-    c.Assert(snap.dealNum, Equals, int64(1))
-    c.Assert(snap.errNum, Equals, int64(1))
-    c.Assert(snap.removedBucket, Equals, "")
-
-    str := strings.ToLower(removeCommand.monitor.getFinishBar(normalExit))
-    c.Assert(strings.Contains(str, "succeed:"), Equals, false)
-    c.Assert(strings.Contains(str, "error"), Equals, false)
-
-    err = s.initRemove(bucketNameExist, "notexistobject", "rm -m")
-    c.Assert(err, IsNil)
-
-    err = removeCommand.RunCommand()
-    c.Assert(err, NotNil)
-
-    c.Assert(int64(removeCommand.monitor.op), Equals, int64(multipartType))
-    c.Assert(removeCommand.monitor.removedBucket, Equals, "")
-
-    snap = removeCommand.monitor.getSnapshot()
-    c.Assert(snap.objectNum, Equals, int64(0)) 
-    c.Assert(snap.uploadIdNum, Equals, int64(0))
-    c.Assert(snap.errObjectNum, Equals, int64(0))
-    c.Assert(snap.errUploadIdNum, Equals, int64(0))
-    c.Assert(snap.dealNum, Equals, int64(0))
-    c.Assert(snap.errNum, Equals, int64(0))
-    c.Assert(snap.removedBucket, Equals, "")
-
-    _ = os.Remove(configFile)
-    configFile = cfile
 }
