@@ -258,7 +258,7 @@ func (s *OssutilCommandSuite) TestAllTypeObject(c *C) {
 	c.Assert(len(objects), Equals, 1)
 	c.Assert(objects[0], Equals, normal_object)
 
-    err := s.initRemove(bucketName, "", "rm -marfb") 
+    err = s.initRemove(bucketName, "", "rm -marfb") 
     c.Assert(err, IsNil)
     err = removeCommand.RunCommand()
     c.Assert(err, IsNil)
