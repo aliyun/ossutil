@@ -3,7 +3,6 @@ package lib
 import (
 	"fmt"
 	"os"
-	//"strings"
 	"time"
 
 	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
@@ -149,29 +148,7 @@ func (s *OssutilCommandSuite) TestListWithBucketCname(c *C) {
 	s.removeBucket(bucket, true, c)
 	time.Sleep(7 * time.Second)
 }
-/*
-func (s *OssutilCommandSuite) TestListBuckets(c *C) {
-	// "ls"
-	bucket := bucketNamePrefix + "ls2"
-	// put bucket
-	s.putBucket(bucket, c)
-	time.Sleep(10 * time.Second)
 
-	// get result
-	buckets := s.listBuckets(false, c)
-	c.Assert(FindPos(bucket, buckets) != -1, Equals, true)
-	bucketNum := len(buckets)
-
-	// remove empty bucket
-	s.removeBucket(bucket, false, c)
-	time.Sleep(10 * time.Second)
-
-	// get result
-	buckets = s.listBuckets(false, c)
-	c.Assert(FindPos(bucket, buckets) == -1, Equals, true)
-	c.Assert(len(buckets) <= bucketNum, Equals, true)
-}
-*/
 // list objects with not exist bucket
 func (s *OssutilCommandSuite) TestListObjectsBucketNotExist(c *C) {
 	bucket := bucketNameNotExist
