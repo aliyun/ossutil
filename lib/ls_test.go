@@ -3,8 +3,6 @@ package lib
 import (
 	"fmt"
 	"os"
-	//"strings"
-	"time"
 
 	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 	. "gopkg.in/check.v1"
@@ -100,14 +98,14 @@ func (s *OssutilCommandSuite) TestListConfigFile(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestListWithBucketEndpoint(c *C) {
-	bucket := bucketNameExist
+	bucketName := bucketNameExist
 
 	cfile := "ossutil_test.config_boto"
-	data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Endpoint]\n%s=%s", "abc", accessKeyID, accessKeySecret, bucket, endpoint)
+	data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Endpoint]\n%s=%s", "abc", accessKeyID, accessKeySecret, bucketName, endpoint)
 	s.createFile(cfile, data, c)
 
 	command := "ls"
-	args := []string{CloudURLToString(bucket, "")}
+	args := []string{CloudURLToString(bucketName, "")}
 	str := ""
 	options := OptionMapType{
 		"endpoint":        &str,
@@ -124,15 +122,15 @@ func (s *OssutilCommandSuite) TestListWithBucketEndpoint(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestListWithBucketCname(c *C) {
-	bucket := bucketNamePrefix + "ls1"
-	s.putBucket(bucket, c)
+    bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
 
 	cfile := "ossutil_test.config_boto"
-	data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Endpoint]\n%s=%s\n[Bucket-Cname]\n%s=%s", "abc", accessKeyID, accessKeySecret, bucket, "abc", bucket, bucket+"."+endpoint)
+	data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Endpoint]\n%s=%s\n[Bucket-Cname]\n%s=%s", "abc", accessKeyID, accessKeySecret, bucketName, "abc", bucketName, bucketName+"."+endpoint)
 	s.createFile(cfile, data, c)
 
 	command := "ls"
-	args := []string{CloudURLToString(bucket, "")}
+	args := []string{CloudURLToString(bucketName, "")}
 	str := ""
 	options := OptionMapType{
 		"endpoint":        &str,
@@ -146,37 +144,14 @@ func (s *OssutilCommandSuite) TestListWithBucketCname(c *C) {
 	c.Assert(showElapse, Equals, true)
 
 	_ = os.Remove(cfile)
-	s.removeBucket(bucket, true, c)
-	time.Sleep(7 * time.Second)
+	s.removeBucket(bucketName, true, c)
 }
-/*
-func (s *OssutilCommandSuite) TestListBuckets(c *C) {
-	// "ls"
-	bucket := bucketNamePrefix + "ls2"
-	// put bucket
-	s.putBucket(bucket, c)
-	time.Sleep(10 * time.Second)
 
-	// get result
-	buckets := s.listBuckets(false, c)
-	c.Assert(FindPos(bucket, buckets) != -1, Equals, true)
-	bucketNum := len(buckets)
-
-	// remove empty bucket
-	s.removeBucket(bucket, false, c)
-	time.Sleep(10 * time.Second)
-
-	// get result
-	buckets = s.listBuckets(false, c)
-	c.Assert(FindPos(bucket, buckets) == -1, Equals, true)
-	c.Assert(len(buckets) <= bucketNum, Equals, true)
-}
-*/
 // list objects with not exist bucket
 func (s *OssutilCommandSuite) TestListObjectsBucketNotExist(c *C) {
-	bucket := bucketNameNotExist
+    bucketName := bucketNamePrefix + randLowStr(10)
 	command := "ls"
-	args := []string{CloudURLToString(bucket, "")}
+	args := []string{CloudURLToString(bucketName, "")}
 	str := ""
 	options := OptionMapType{
 		"endpoint":        &str,
@@ -192,20 +167,20 @@ func (s *OssutilCommandSuite) TestListObjectsBucketNotExist(c *C) {
 
 // list objects
 func (s *OssutilCommandSuite) TestListObjects(c *C) {
-	bucket := bucketNameList
+    bucketName := bucketNamePrefix + randLowStr(10)
+    s.putBucket(bucketName, c)
 
 	// put objects
 	num := 3
 	for i := 0; i < num; i++ {
 		object := fmt.Sprintf("lstest:#%d", i)
-		s.putObject(bucket, object, uploadFileName, c)
+		s.putObject(bucketName, object, uploadFileName, c)
 	}
 
 	object := "another_object"
-	s.putObject(bucket, object, uploadFileName, c)
-	time.Sleep(sleepTime)
+	s.putObject(bucketName, object, uploadFileName, c)
 
-	objectStat := s.getStat(bucket, object, c)
+	objectStat := s.getStat(bucketName, object, c)
 	c.Assert(objectStat[StatACL], Equals, "default")
 	c.Assert(len(objectStat["Etag"]), Equals, 32)
 	c.Assert(objectStat["Last-Modified"] != "", Equals, true)
@@ -215,30 +190,32 @@ func (s *OssutilCommandSuite) TestListObjects(c *C) {
 	num1 := 2
 	for i := 0; i < num1; i++ {
 		object := fmt.Sprintf("lstest:#%d/", i)
-		s.putObject(bucket, object, uploadFileName, c)
+		s.putObject(bucketName, object, uploadFileName, c)
 
 		object = fmt.Sprintf("lstest:#%d/%d/", i, i)
-		s.putObject(bucket, object, uploadFileName, c)
+		s.putObject(bucketName, object, uploadFileName, c)
 	}
 
 	// "ls oss://bucket -s"
-	//objects := s.listObjects(bucket, "", true, false, false, false, c)
+	//objects := s.listObjects(bucketName, "", true, false, false, false, c)
 	//c.Assert(len(objects), Equals, num + 2*num1 + 1)
 
 	// "ls oss://bucket/prefix -s"
-	objects := s.listObjects(bucket, "lstest:", "ls -s", c)
+	objects := s.listObjects(bucketName, "lstest:", "ls -s", c)
 	c.Assert(len(objects), Equals, num+2*num1)
 
 	// "ls oss://bucket/prefix"
-	objects = s.listObjects(bucket, "lstest:#", "ls - ", c)
+	objects = s.listObjects(bucketName, "lstest:#", "ls - ", c)
 	c.Assert(len(objects), Equals, num+2*num1)
 
 	// "ls oss://bucket/prefix -d"
-	objects = s.listObjects(bucket, "lstest:#", "ls -d", c)
+	objects = s.listObjects(bucketName, "lstest:#", "ls -d", c)
 	c.Assert(len(objects), Equals, num+num1)
 
-	objects = s.listObjects(bucket, "lstest:#1/", "ls -d", c)
+	objects = s.listObjects(bucketName, "lstest:#1/", "ls -d", c)
 	c.Assert(len(objects), Equals, 2)
+
+    s.removeBucket(bucketName, true, c)
 }
 
 func (s *OssutilCommandSuite) TestErrList(c *C) {
@@ -246,8 +223,9 @@ func (s *OssutilCommandSuite) TestErrList(c *C) {
 	c.Assert(err, NotNil)
 	c.Assert(showElapse, Equals, false)
 
-	bucket := bucketNameNotExist
-	showElapse, err = s.rawList([]string{CloudURLToString(bucket, "")}, "ls -d")
+    // not exist bucket
+    bucketName := bucketNamePrefix + randLowStr(10)
+	showElapse, err = s.rawList([]string{CloudURLToString(bucketName, "")}, "ls -d")
 	c.Assert(err, NotNil)
 	c.Assert(showElapse, Equals, false)
 
@@ -258,10 +236,11 @@ func (s *OssutilCommandSuite) TestErrList(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestListIDKey(c *C) {
-	bucket := bucketNamePrefix + "lsidkey"
+    bucketName := bucketNamePrefix + randLowStr(10)
+    s.putBucket(bucketName, c)
 
 	cfile := "ossutil_test.config_boto"
-	data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Endpoint]\n%s=%s[Bucket-Cname]\n%s=%s", "abc", "def", "ghi", bucket, "abc", bucket, "abc")
+	data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Endpoint]\n%s=%s[Bucket-Cname]\n%s=%s", "abc", "def", "ghi", bucketName, "abc", bucketName, "abc")
 	s.createFile(cfile, data, c)
 
 	command := "ls"
@@ -289,18 +268,20 @@ func (s *OssutilCommandSuite) TestListIDKey(c *C) {
 	c.Assert(showElapse, Equals, true)
 
 	_ = os.Remove(cfile)
+
+    s.removeBucket(bucketName, true, c)
 }
 
 func (s *OssutilCommandSuite) TestListBucketIDKey(c *C) {
-	bucket := bucketNameExist
+	bucketName := bucketNameExist
 
 	cfile := "ossutil_test.config_boto"
-	data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Endpoint]\n%s=%s[Bucket-Cname]\n%s=%s", "abc", "def", "ghi", bucket, "abc", bucket, "abc")
+	data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Endpoint]\n%s=%s[Bucket-Cname]\n%s=%s", "abc", "def", "ghi", bucketName, "abc", bucketName, "abc")
 	s.createFile(cfile, data, c)
 
 	command := "ls"
 	str := ""
-	args := []string{CloudURLToString(bucket, "")}
+	args := []string{CloudURLToString(bucketName, "")}
 	options := OptionMapType{
 		"endpoint":        &str,
 		"accessKeyID":     &str,
@@ -327,7 +308,8 @@ func (s *OssutilCommandSuite) TestListBucketIDKey(c *C) {
 
 // list multipart
 func (s *OssutilCommandSuite) TestListMultipartUploads(c *C) {
-	bucketName := bucketNameDest
+    bucketName := bucketNamePrefix + randLowStr(10)
+    s.putBucket(bucketName, c)
 	// "rm -arf oss://bucket/"
 	command := "rm"
 	args := []string{CloudURLToString(bucketName, "")}
@@ -347,7 +329,6 @@ func (s *OssutilCommandSuite) TestListMultipartUploads(c *C) {
 
 	object := "TestMultipartObjectLs"
 	s.putObject(bucketName, object, uploadFileName, c)
-	time.Sleep(5 * sleepTime)
 
 	// list object
 	objects := s.listObjects(bucketName, object, "ls - ", c)
@@ -364,7 +345,6 @@ func (s *OssutilCommandSuite) TestListMultipartUploads(c *C) {
 		c.Assert(err, IsNil)
 	}
 
-	time.Sleep(2 * sleepTime)
 	lmr, e := bucket.ListMultipartUploads(oss.Prefix(object))
 	c.Assert(e, IsNil)
 	c.Assert(len(lmr.Uploads), Equals, 20+len(lmr_origin.Uploads))
@@ -397,4 +377,6 @@ func (s *OssutilCommandSuite) TestListMultipartUploads(c *C) {
 	lmr, e = bucket.ListMultipartUploads(oss.Prefix(object))
 	c.Assert(e, IsNil)
 	c.Assert(len(lmr.Uploads), Equals, 20+len(lmr_origin.Uploads))
+
+    s.removeBucket(bucketName, true, c)
 }

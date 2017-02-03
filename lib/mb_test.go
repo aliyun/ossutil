@@ -3,39 +3,40 @@ package lib
 import (
     "fmt"
     "os"
-    "time"
 
     . "gopkg.in/check.v1"
 )
 
 func (s *OssutilCommandSuite) TestMakeBucket(c *C) {
-    bucket := bucketNameMB 
+    bucketName := bucketNamePrefix + randLowStr(10)
+    s.putBucket(bucketName, c)
 
     // put bucket already exists
-    s.putBucket(bucket, c)
+    s.putBucket(bucketName, c)
 
     // get bucket stat 
-    bucketStat := s.getStat(bucketNameDest, "", c) 
-    c.Assert(bucketStat[StatName], Equals, bucketNameDest)
+    bucketStat := s.getStat(bucketName, "", c) 
+    c.Assert(bucketStat[StatName], Equals, bucketName)
     c.Assert(bucketStat[StatACL], Equals, "private")
 
     // put bucket with ACL
     for _, acl := range []string{"public-read-write"} {
-        showElapse, err := s.putBucketWithACL(bucket, acl)
+        showElapse, err := s.putBucketWithACL(bucketName, acl)
         c.Assert(err, IsNil)
         c.Assert(showElapse, Equals, true)
-        time.Sleep(sleepTime)
 
-        bucketStat := s.getStat(bucket, "", c) 
-        c.Assert(bucketStat[StatName], Equals, bucket)
+        bucketStat := s.getStat(bucketName, "", c) 
+        c.Assert(bucketStat[StatName], Equals, bucketName)
         c.Assert(bucketStat[StatACL], Equals, acl)
     }
+
+    s.removeBucket(bucketName, true, c)
 }
 
 func (s *OssutilCommandSuite) TestMakeBucketErrorName(c *C) {
-    for _, bucket := range []string{"中文测试", "a"} {
+    for _, bucketName := range []string{"中文测试", "a"} {
         command := "mb"
-        args := []string{CloudURLToString(bucket, "")}
+        args := []string{CloudURLToString(bucketName, "")}
         str := ""
         options := OptionMapType{
             "endpoint": &str,
@@ -48,32 +49,32 @@ func (s *OssutilCommandSuite) TestMakeBucketErrorName(c *C) {
         c.Assert(err, NotNil)
         c.Assert(showElapse, Equals, false)
 
-        showElapse, err = s.rawGetStat(bucket, "")
+        showElapse, err = s.rawGetStat(bucketName, "")
         c.Assert(err, NotNil)
         c.Assert(showElapse, Equals, false)
     }
 }
 
 func (s *OssutilCommandSuite) TestMakeBucketErrorACL(c *C) {
-    bucket := bucketNamePrefix + "mb1" 
+    bucketName := bucketNamePrefix + randLowStr(10) 
     for _, language := range []string{DefaultLanguage, EnglishLanguage, LEnglishLanguage, "unknown"} {
         for _, acl := range []string{"default", "def", "erracl"} {
-            showElapse, err := s.rawPutBucketWithACLLanguage([]string{CloudURLToString(bucket, "")}, acl, language)
+            showElapse, err := s.rawPutBucketWithACLLanguage([]string{CloudURLToString(bucketName, "")}, acl, language)
             c.Assert(err, NotNil)
             c.Assert(showElapse, Equals, false)
-            time.Sleep(7*time.Second)
 
-            showElapse, err = s.rawGetStat(bucket, "")
+            showElapse, err = s.rawGetStat(bucketName, "")
             c.Assert(err, NotNil)
             c.Assert(showElapse, Equals, false)
         }
     }
+    s.removeBucket(bucketName, true, c)
 }
 
 func (s *OssutilCommandSuite) TestMakeBucketErrorOption(c *C) {
-    bucket := bucketNamePrefix + "mb2"
+    bucketName := bucketNamePrefix + randLowStr(10)
     command := "mb"
-    args := []string{CloudURLToString(bucket, "")}
+    args := []string{CloudURLToString(bucketName, "")}
     str := ""
     ok := true
     options := OptionMapType{
@@ -101,15 +102,15 @@ func (s *OssutilCommandSuite) TestErrMakeBucket(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestMakeBucketIDKey(c *C) {
-    bucket := bucketNamePrefix + "assembleoptions"
+    bucketName := bucketNamePrefix + randLowStr(10)
 
     cfile := "ossutil_test.config_boto"
-    data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Endpoint]\n%s=%s", "abc", "def", "ghi", bucket, "abc") 
+    data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Endpoint]\n%s=%s", "abc", "def", "ghi", bucketName, "abc") 
     s.createFile(cfile, data, c)
 
     command := "mb"
     str := ""
-    args := []string{CloudURLToString(bucket, "")}
+    args := []string{CloudURLToString(bucketName, "")}
     options := OptionMapType{
         "endpoint": &str,
         "accessKeyID": &str,
@@ -133,5 +134,5 @@ func (s *OssutilCommandSuite) TestMakeBucketIDKey(c *C) {
 
     _ = os.Remove(cfile)
 
-    s.removeBucket(bucket, false, c)
+    s.removeBucket(bucketName, false, c)
 }

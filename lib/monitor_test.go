@@ -11,10 +11,10 @@ import (
 )
 
 func (s *OssutilCommandSuite) TestUploadProgressBar(c *C) {
-    bucket := bucketNameExist
+    bucketName := bucketNameExist
 
     // rm -marf
-    err := s.initRemove(bucket, "", "rm -arf") 
+    err := s.initRemove(bucketName, "", "rm -arf") 
     c.Assert(err, IsNil)
     err = removeCommand.RunCommand()
     c.Assert(err, IsNil)
@@ -35,7 +35,7 @@ func (s *OssutilCommandSuite) TestUploadProgressBar(c *C) {
     }
 
     // init copyCommand
-    err = s.initCopyCommand(udir, CloudURLToString(bucket, object), true, true, false, DefaultBigFileThreshold, CheckpointDir, DefaultOutputDir)
+    err = s.initCopyCommand(udir, CloudURLToString(bucketName, object), true, true, false, DefaultBigFileThreshold, CheckpointDir, DefaultOutputDir)
     c.Assert(err, IsNil)
 
     // check output
@@ -108,7 +108,7 @@ func (s *OssutilCommandSuite) TestUploadProgressBar(c *C) {
     }
 
     // init copyCommand
-    err = s.initCopyCommand(udir, CloudURLToString(bucket, object), true, true, true, DefaultBigFileThreshold, CheckpointDir, DefaultOutputDir)
+    err = s.initCopyCommand(udir, CloudURLToString(bucketName, object), true, true, true, DefaultBigFileThreshold, CheckpointDir, DefaultOutputDir)
     c.Assert(err, IsNil)
 
     // copy with update
@@ -156,12 +156,12 @@ func (s *OssutilCommandSuite) TestUploadProgressBar(c *C) {
 
 func (s *OssutilCommandSuite) TestDownloadProgressBar(c *C) {
     s.createFile(uploadFileName, "", c)
-    bucket := bucketNameExist
+    bucketName := bucketNameExist
     object := randStr(10)
-    s.putObject(bucket, object, uploadFileName, c)
+    s.putObject(bucketName, object, uploadFileName, c)
 
     // normal download single object of content length 0
-    err := s.initCopyCommand(CloudURLToString(bucket, object), downloadDir, true, true, false, DefaultBigFileThreshold, CheckpointDir, DefaultOutputDir)
+    err := s.initCopyCommand(CloudURLToString(bucketName, object), downloadDir, true, true, false, DefaultBigFileThreshold, CheckpointDir, DefaultOutputDir)
     c.Assert(err, IsNil)
 
     // check output
@@ -263,19 +263,19 @@ func (s *OssutilCommandSuite) TestCopyProgressBar(c *C) {
 func (s *OssutilCommandSuite) TestProgressBarStatisticErr(c *C) {
     // test batch download err 
     s.createFile(uploadFileName, "TestProgressBarStatisticErr", c)
-    bucket := bucketNameExist
+    bucketName := bucketNameExist
     num := 2
     for i := 0; i < num; i++ {
         object := randStr(10)
-        s.putObject(bucket, object, uploadFileName, c)
+        s.putObject(bucketName, object, uploadFileName, c)
     }
 
     cfile := configFile
     configFile = "ossutil_test.config_boto"
-    data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Endpoint]\n%s=%s[Bucket-Cname]\n%s=%s", "abc", "def", "ghi", bucket, "abc", bucket, "abc") 
+    data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Endpoint]\n%s=%s[Bucket-Cname]\n%s=%s", "abc", "def", "ghi", bucketName, "abc", bucketName, "abc") 
     s.createFile(configFile, data, c)
 
-    err := s.initCopyCommand(CloudURLToString(bucket, ""), downloadDir, true, true, false, DefaultBigFileThreshold, CheckpointDir, DefaultOutputDir)
+    err := s.initCopyCommand(CloudURLToString(bucketName, ""), downloadDir, true, true, false, DefaultBigFileThreshold, CheckpointDir, DefaultOutputDir)
     c.Assert(err, IsNil)
 
     // check output
@@ -323,7 +323,7 @@ func (s *OssutilCommandSuite) TestProgressBarStatisticErr(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestProgressBarContinueErr(c *C) {
-    bucket := bucketNameExist
+    bucketName := bucketNameExist
     udir := randStr(11) 
     _ = os.RemoveAll(udir)
     err := os.MkdirAll(udir, 0755)
@@ -342,7 +342,7 @@ func (s *OssutilCommandSuite) TestProgressBarContinueErr(c *C) {
     data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n", "abc", accessKeyID, accessKeySecret) 
     s.createFile(configFile, data, c)
 
-    err = s.initCopyCommand(udir, CloudURLToString(bucket, ""), true, true, false, DefaultBigFileThreshold, CheckpointDir, DefaultOutputDir)
+    err = s.initCopyCommand(udir, CloudURLToString(bucketName, ""), true, true, false, DefaultBigFileThreshold, CheckpointDir, DefaultOutputDir)
     c.Assert(err, IsNil)
 
     _ = os.Remove(configFile)
@@ -385,7 +385,7 @@ func (s *OssutilCommandSuite) TestProgressBarContinueErr(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestSingleFileProgress(c *C) {
-    bucket := bucketNameExist
+    bucketName := bucketNameExist
     object := randStr(10)
     destObject := randStr(10)
 
@@ -395,7 +395,7 @@ func (s *OssutilCommandSuite) TestSingleFileProgress(c *C) {
 
     for threshold := range []int64{1024, DefaultBigFileThreshold} {
         // init copyCommand
-        err := s.initCopyCommand(uploadFileName, CloudURLToString(bucket, object), false, true, false, int64(threshold), CheckpointDir, DefaultOutputDir)
+        err := s.initCopyCommand(uploadFileName, CloudURLToString(bucketName, object), false, true, false, int64(threshold), CheckpointDir, DefaultOutputDir)
         c.Assert(err, IsNil)
         copyCommand.monitor.init(operationTypePut)
 
@@ -453,7 +453,7 @@ func (s *OssutilCommandSuite) TestSingleFileProgress(c *C) {
         c.Assert(strings.Contains(str, "copy"), Equals, false)
 
         // download
-        err = s.initCopyCommand(CloudURLToString(bucket, object), downloadFileName, false, true, false, 1024, CheckpointDir, DefaultOutputDir)
+        err = s.initCopyCommand(CloudURLToString(bucketName, object), downloadFileName, false, true, false, 1024, CheckpointDir, DefaultOutputDir)
         c.Assert(err, IsNil)
         copyCommand.monitor.init(operationTypeGet)
 
@@ -488,7 +488,7 @@ func (s *OssutilCommandSuite) TestSingleFileProgress(c *C) {
         c.Assert(strings.Contains(str, "copy"), Equals, false)
 
         // copy
-        err = s.initCopyCommand(CloudURLToString(bucket, object), CloudURLToString(bucket, destObject), false, true, false, 1024, CheckpointDir, DefaultOutputDir)
+        err = s.initCopyCommand(CloudURLToString(bucketName, object), CloudURLToString(bucketName, destObject), false, true, false, 1024, CheckpointDir, DefaultOutputDir)
         c.Assert(err, IsNil)
         copyCommand.monitor.init(operationTypeCopy)
 
@@ -524,7 +524,7 @@ func (s *OssutilCommandSuite) TestSingleFileProgress(c *C) {
         c.Assert(strings.Contains(str, "copy"), Equals, true)
 
         // copy skip
-        err = s.initCopyCommand(CloudURLToString(bucket, object), CloudURLToString(bucket, destObject), false, true, true, 1024, CheckpointDir, DefaultOutputDir)
+        err = s.initCopyCommand(CloudURLToString(bucketName, object), CloudURLToString(bucketName, destObject), false, true, true, 1024, CheckpointDir, DefaultOutputDir)
         c.Assert(err, IsNil)
         copyCommand.monitor.init(operationTypeCopy)
 
@@ -561,19 +561,19 @@ func (s *OssutilCommandSuite) TestSingleFileProgress(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestSetACLProgress(c *C) {
-    bucket := bucketNameExist
+    bucketName := bucketNameExist
 
     num := 2
     objectNames := []string{}
     for i := 0; i < num; i++ {
         object := fmt.Sprintf("TestSetACLProgress%d", i)
-        s.putObject(bucket, object, uploadFileName, c)
+        s.putObject(bucketName, object, uploadFileName, c)
         objectNames = append(objectNames, object)
     }
     time.Sleep(time.Second)
 
     // set object acl without -r -> no progress
-    err := s.initSetACL(bucket, objectNames[0], "private", false, false, true)
+    err := s.initSetACL(bucketName, objectNames[0], "private", false, false, true)
     c.Assert(err, IsNil)
 
     // check output
@@ -593,7 +593,7 @@ func (s *OssutilCommandSuite) TestSetACLProgress(c *C) {
     c.Assert(snap.dealNum, Equals, int64(0))
 
     // batch set object acl -> progress
-    err = s.initSetACL(bucket, "TestSetACLProgress", "private", true, false, true)
+    err = s.initSetACL(bucketName, "TestSetACLProgress", "private", true, false, true)
     c.Assert(err, IsNil)
 
     testResultFile, _ = os.OpenFile(resultPath, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
@@ -628,7 +628,7 @@ func (s *OssutilCommandSuite) TestSetACLProgress(c *C) {
     data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n", endpoint, accessKeyID, "") 
     s.createFile(configFile, data, c)
 
-    err = s.initSetACL(bucket, "TestSetACLProgress", "private", true, false, true)
+    err = s.initSetACL(bucketName, "TestSetACLProgress", "private", true, false, true)
     c.Assert(err, IsNil)
 
     _ = os.Remove(configFile)
@@ -670,18 +670,18 @@ func (s *OssutilCommandSuite) TestSetACLProgress(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestSetMetaProgress(c *C) {
-    bucket := bucketNameExist
+    bucketName := bucketNameExist
 
     num := 2
     objectNames := []string{}
     for i := 0; i < num; i++ {
         object := fmt.Sprintf("TestSetMetaProgress%d", i)
-        s.putObject(bucket, object, uploadFileName, c)
+        s.putObject(bucketName, object, uploadFileName, c)
         objectNames = append(objectNames, object)
     }
 
     // set object meta without -r -> no progress
-    err := s.initSetMeta(bucket, objectNames[0], "x-oss-object-acl:default#X-Oss-Meta-A:A", true, false, false, true, DefaultLanguage)
+    err := s.initSetMeta(bucketName, objectNames[0], "x-oss-object-acl:default#X-Oss-Meta-A:A", true, false, false, true, DefaultLanguage)
     c.Assert(err, IsNil)
 
     // check output
@@ -701,7 +701,7 @@ func (s *OssutilCommandSuite) TestSetMetaProgress(c *C) {
     c.Assert(snap.dealNum, Equals, int64(0))
 
     // batch set object acl -> progress
-    err = s.initSetMeta(bucket, "TestSetMetaProgress", "x-oss-object-acl:default#X-Oss-Meta-A:A", true, false, true, true, DefaultLanguage)
+    err = s.initSetMeta(bucketName, "TestSetMetaProgress", "x-oss-object-acl:default#X-Oss-Meta-A:A", true, false, true, true, DefaultLanguage)
     c.Assert(err, IsNil)
 
     testResultFile, _ = os.OpenFile(resultPath, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
@@ -736,7 +736,7 @@ func (s *OssutilCommandSuite) TestSetMetaProgress(c *C) {
     data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n", endpoint, accessKeyID, "") 
     s.createFile(configFile, data, c)
 
-    err = s.initSetMeta(bucket, "TestSetMetaProgress", "x-oss-object-acl:default#X-Oss-Meta-A:A", true, false, true, true, DefaultLanguage)
+    err = s.initSetMeta(bucketName, "TestSetMetaProgress", "x-oss-object-acl:default#X-Oss-Meta-A:A", true, false, true, true, DefaultLanguage)
     c.Assert(err, IsNil)
 
     _ = os.Remove(configFile)
@@ -779,11 +779,11 @@ func (s *OssutilCommandSuite) TestSetMetaProgress(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestRemoveSingleProgress(c *C) {
-    bucket := bucketNameExist
+    bucketName := bucketNameExist
 
     // remove single not exist object
     object := randStr(10)
-    err := s.initRemove(bucket, object, "rm -f")
+    err := s.initRemove(bucketName, object, "rm -f")
     c.Assert(err, IsNil)
 
     testResultFile, _ = os.OpenFile(resultPath, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
@@ -821,9 +821,9 @@ func (s *OssutilCommandSuite) TestRemoveSingleProgress(c *C) {
     c.Assert(strings.Contains(strings.TrimSpace(pstr), strings.TrimSpace(str)), Equals, true)
 
     // remove single exist object
-    s.putObject(bucket, object, uploadFileName, c)
+    s.putObject(bucketName, object, uploadFileName, c)
 
-    err = s.initRemove(bucket, object, "rm -f")
+    err = s.initRemove(bucketName, object, "rm -f")
     c.Assert(err, IsNil)
 
     testResultFile, _ = os.OpenFile(resultPath, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
@@ -859,10 +859,10 @@ func (s *OssutilCommandSuite) TestRemoveSingleProgress(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestBatchRemoveProgress(c *C) {
-    bucket := bucketNameExist
+    bucketName := bucketNameExist
 
     // batch remove not exist objects
-    err := s.initRemove(bucket, "TestBatchRemoveProgresssss", "rm -rf")
+    err := s.initRemove(bucketName, "TestBatchRemoveProgresssss", "rm -rf")
     c.Assert(err, IsNil)
 
     testResultFile, _ = os.OpenFile(resultPath, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
@@ -902,10 +902,10 @@ func (s *OssutilCommandSuite) TestBatchRemoveProgress(c *C) {
     num := 2
     for i := 0; i < num; i++ {
         object := fmt.Sprintf("TestBatchRemoveProgress%d", i)
-        s.putObject(bucket, object, uploadFileName, c)
+        s.putObject(bucketName, object, uploadFileName, c)
     }
 
-    err = s.initRemove(bucket, "TestBatchRemoveProgress", "rm -rf")
+    err = s.initRemove(bucketName, "TestBatchRemoveProgress", "rm -rf")
     c.Assert(err, IsNil)
 
     testResultFile, _ = os.OpenFile(resultPath, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)

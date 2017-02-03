@@ -53,18 +53,10 @@ var (
 )
 
 var (
-    bucketNamePrefix    = "ossutil-test-"
-    bucketNameExist     = "nodelete-ossutil-test-normalcase1"
-    bucketNameDest      = "nodelete-ossutil-test-dest"  // bucket not change acl
-    bucketNameCP        = "nodelete-ossutil-test-cp"
-    bucketNameBCP       = "nodelete-ossutil-test-bcp"
-    bucketNameSetMeta   = "nodelete-ossutil-test-setmeta"
-    bucketNameSetMeta1  = "nodelete-ossutil-test-setmeta1"
-    bucketNameSetACL    = "nodelete-ossutil-test-setacl"
-    bucketNameSetACL1   = "nodelete-ossutil-test-setacl1"
-    bucketNameMB        = "nodelete-ossutil-test-mb"    // bucket with at most one object 
-    bucketNameList      = "nodelete-ossutil-test-ls" 
-    bucketNameNotExist  = bucketNamePrefix + "notexistbucket"  // bucket not exist
+    bucketNamePrefix    = "ossutil-test-" + randLowStr(5)
+    bucketNameExist     = "nodelete-ossutil-test-normalcase"
+    bucketNameDest      = "nodelete-ossutil-test-dest"
+    bucketNameNotExist  = "nodelete-ossutil-test-notexist"
 )
 
 // Run once when the suite starts running
@@ -110,19 +102,16 @@ func SetUpCredential() {
 }
 
 func (s *OssutilCommandSuite) SetUpBucketEnv(c *C) {
+    s.putBucket(bucketNameExist, c)
+    s.putBucket(bucketNameDest, c)
     s.removeBuckets(bucketNamePrefix, c)
-    for _, bucket := range []string{bucketNameExist, bucketNameDest, bucketNameCP, bucketNameBCP, bucketNameSetMeta, bucketNameSetMeta1, bucketNameSetACL, bucketNameSetACL1, bucketNameMB, bucketNameList} { 
-        s.putBucket(bucket, c)
-    }
-    time.Sleep(3*sleepTime)
-    for _, bucket := range []string{bucketNameExist, bucketNameDest, bucketNameCP, bucketNameBCP, bucketNameSetMeta, bucketNameSetMeta1, bucketNameSetACL, bucketNameSetACL1, bucketNameMB, bucketNameList} { 
-        s.removeObjects(bucket, "", true, true, c)
-        time.Sleep(7*time.Second)
-    }
 }
 
 // Run before each test or benchmark starts running
 func (s *OssutilCommandSuite) TearDownSuite(c *C) {
+    s.removeBuckets(bucketNamePrefix, c)
+    s.removeBucket(bucketNameExist, true, c)
+    s.removeBucket(bucketNameDest, true, c)
     testLogger.Println("test command completed")
     _ = os.Remove(configFile)
     _ = os.Remove(resultPath)
@@ -151,6 +140,10 @@ func randStr(n int) string {
         b[i] = letters[rand.Intn(len(letters))]
     }
     return string(b)
+}
+
+func randLowStr(n int) string {
+    return strings.ToLower(randStr(n))
 }
 
 func (s *OssutilCommandSuite) configNonInteractive(c *C) {
@@ -289,10 +282,16 @@ func (s *OssutilCommandSuite) getReportResult(fileName string, c *C) ([]string) 
 
 func (s *OssutilCommandSuite) removeBucket(bucket string, clearObjects bool, c *C) {
     args := []string{CloudURLToString(bucket, "")}
-    showElapse, err := s.rawRemove(args, clearObjects, true, true)
+    var showElapse bool
+    var err error
+    if !clearObjects {
+        showElapse, err = s.rawRemove(args, false, true, true)
+    } else {
+        showElapse, err = s.removeWrapper("rm -arfb", bucket, "", c)
+    }
     if err != nil {
-        error := err.(BucketError).err
-        c.Assert(error.(oss.ServiceError).Code == "NoSuchBucket" || error.(oss.ServiceError).Code == "BucketNotEmpty", Equals, true)
+        verr := err.(BucketError).err
+        c.Assert(verr.(oss.ServiceError).Code == "NoSuchBucket" || verr.(oss.ServiceError).Code == "BucketNotEmpty", Equals, true)
         c.Assert(showElapse, Equals, false)
     } else {
         c.Assert(showElapse, Equals, true)
@@ -352,10 +351,6 @@ func (s *OssutilCommandSuite) removeWrapper(cmdline string, bucket string, objec
     return showElapse, err
 }
 
-func (s *OssutilCommandSuite) clearAllMultipartInBucket(bucket string, c *C) {
-    s.removeWrapper("rm -afr", bucket, "", c)
-}
-
 func (s *OssutilCommandSuite) initRemove(bucket string, object string, cmdline string) error {
     array := strings.Split(cmdline, " ")
     if len(array) < 2 {
@@ -394,6 +389,12 @@ func (s *OssutilCommandSuite) initRemove(bucket string, object string, cmdline s
 func (s *OssutilCommandSuite) removeObjects(bucket, prefix string, recursive, force bool, c *C) {
     args := []string{CloudURLToString(bucket, prefix)}
     showElapse, err := s.rawRemove(args, recursive, force, false)
+    c.Assert(err, IsNil)
+    c.Assert(showElapse, Equals, true)
+}
+
+func (s *OssutilCommandSuite) clearObjects(bucket, prefix string, c *C) {
+    showElapse, err := s.removeWrapper("rm -afr", bucket, prefix, c)
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true)
 }
@@ -509,7 +510,6 @@ func (s *OssutilCommandSuite) rawCPWithArgs(args []string, recursive, force, upd
         "routines": &routines,
     }
     showElapse, err := cm.RunCommand(command, args, options)
-    time.Sleep(sleepTime)
     return showElapse, err
 }
 
@@ -535,7 +535,6 @@ func (s *OssutilCommandSuite) rawCPWithOutputDir(srcURL, destURL string, recursi
         "outputDir": &outputDir,
     }
     showElapse, err := cm.RunCommand(command, args, options)
-    time.Sleep(sleepTime)
     return showElapse, err
 }
 
@@ -699,7 +698,6 @@ func (s *OssutilCommandSuite) rawSetACLWithArgs(args []string, recursive, bucket
         "force": &force,
     }
     showElapse, err := cm.RunCommand(command, args, options)
-    time.Sleep(sleepTime)
     return showElapse, err
 }
 
@@ -760,7 +758,6 @@ func (s *OssutilCommandSuite) rawSetMetaWithArgs(args []string, update, delete, 
         "language": &language,
     }
     showElapse, err := cm.RunCommand(command, args, options)
-    time.Sleep(2*sleepTime)
     return showElapse, err
 }
 
