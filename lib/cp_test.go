@@ -697,7 +697,7 @@ func (s *OssutilCommandSuite) TestCPIDKey(c *C) {
 
     object := "testobject" 
 
-    ufile := "ossutil_test.cpidkey"
+    ufile := randStr(12) 
     data := "欢迎使用ossutil"
     s.createFile(ufile, data, c)
 
@@ -754,7 +754,7 @@ func (s *OssutilCommandSuite) TestUploadOutputDir(c *C) {
     bucketName := bucketNamePrefix + randLowStr(10)
     s.putBucket(bucketName, c)
     object := randStr(10) 
-    ufile := "ossutil_test.testoutputdir"
+    ufile := randStr(12) 
     data := "content" 
     s.createFile(ufile, data, c)
 
@@ -878,7 +878,7 @@ func (s *OssutilCommandSuite) TestBatchUploadOutputDir(c *C) {
     c.Assert(err, NotNil) 
     c.Assert(os.IsNotExist(err), Equals, true)
 
-// err copy -> outputdir
+    // err copy -> outputdir
     cfile := configFile
     configFile = randStr(10) 
     data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n", "abc", accessKeyID, accessKeySecret) 
@@ -1117,7 +1117,7 @@ func (s *OssutilCommandSuite) TestConfigOutputDir(c *C) {
     bucketName := bucketNamePrefix + randLowStr(10)
     s.putBucket(bucketName, c)
     object := randStr(10) 
-    ufile := "ossutil_test.testoutputdir"
+    ufile := randStr(12) 
     data := "content" 
     s.createFile(ufile, data, c)
 

@@ -782,7 +782,6 @@ func (s *OssutilCommandSuite) TestSetMetaProgress(c *C) {
     str = strings.ToLower(setMetaCommand.monitor.getProgressBar())
     c.Assert(strings.Contains(str, fmt.Sprintf("%d objects", 0)), Equals, true)
     c.Assert(strings.Contains(str, "error"), Equals, false)
-    c.Assert(strings.Contains(str, "progress"), Equals, false)
 
     str = strings.ToLower(setMetaCommand.monitor.getFinishBar())
     c.Assert(strings.Contains(str, "succeed:"), Equals, true)
