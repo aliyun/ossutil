@@ -36,15 +36,16 @@ var (
 
 var (
     logPath             = "ossutil_test_" + time.Now().Format("20060102_150405") + ".log"
-    configFile          = "ossutil_test.boto"
+    ConfigFile          = "ossutil_test.boto" + randStr(5)
+    configFile          = ConfigFile 
     testLogFile, _      = os.OpenFile(logPath, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
     testLogger          = log.New(testLogFile, "", log.Ldate|log.Ltime|log.Lshortfile)
-    resultPath          = "ossutil_test.result"
+    resultPath          = "ossutil_test.result" + randStr(5)
     testResultFile, _   = os.OpenFile(resultPath, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
-    uploadFileName      = "ossutil_test.upload_file"
-    downloadFileName    = "ossutil_test.download_file"
-    downloadDir         = "ossutil_test.download_dir"
-    inputFileName       = "ossutil_test.input_file"
+    uploadFileName      = "ossutil_test.upload_file" + randStr(5)
+    downloadFileName    = "ossutil_test.download_file" + randStr(5)
+    downloadDir         = "ossutil_test.download_dir" + randStr(5)
+    inputFileName       = "ossutil_test.input_file" + randStr(5)
     content             = "abc"
     cm                  = CommandManager{}
     out                 = os.Stdout
@@ -53,9 +54,9 @@ var (
 )
 
 var (
-    bucketNamePrefix    = "ossutil-test-" + randLowStr(5)
-    bucketNameExist     = "nodelete-ossutil-test-normalcase"
-    bucketNameDest      = "nodelete-ossutil-test-dest"
+    bucketNamePrefix    = "ossutil-test-" + randLowStr(6)
+    bucketNameExist     = "special-" + bucketNamePrefix + "existbucket" 
+    bucketNameDest      = "special-" + bucketNamePrefix + "destbucket" 
     bucketNameNotExist  = "nodelete-ossutil-test-notexist"
 )
 
@@ -102,16 +103,16 @@ func SetUpCredential() {
 }
 
 func (s *OssutilCommandSuite) SetUpBucketEnv(c *C) {
+    s.removeBuckets(bucketNamePrefix, c)
     s.putBucket(bucketNameExist, c)
     s.putBucket(bucketNameDest, c)
-    s.removeBuckets(bucketNamePrefix, c)
 }
 
 // Run before each test or benchmark starts running
 func (s *OssutilCommandSuite) TearDownSuite(c *C) {
-    s.removeBuckets(bucketNamePrefix, c)
     s.removeBucket(bucketNameExist, true, c)
     s.removeBucket(bucketNameDest, true, c)
+    s.removeBuckets(bucketNamePrefix, c)
     testLogger.Println("test command completed")
     _ = os.Remove(configFile)
     _ = os.Remove(resultPath)
@@ -125,7 +126,7 @@ func (s *OssutilCommandSuite) TearDownSuite(c *C) {
 
 // Run after each test or benchmark runs
 func (s *OssutilCommandSuite) SetUpTest(c *C) {
-    configFile = "ossutil_test.boto"
+    configFile = ConfigFile 
 }
 
 // Run once after all tests or benchmarks have finished running
@@ -312,6 +313,7 @@ func (s *OssutilCommandSuite) rawRemove(args []string, recursive, force, bucket 
         "bucket": &bucket,
     }
     showElapse, err := cm.RunCommand(command, args, options)
+    time.Sleep(sleepTime)
     return showElapse, err
 }
 
@@ -348,6 +350,7 @@ func (s *OssutilCommandSuite) removeWrapper(cmdline string, bucket string, objec
         "force":           &f,
     }
     showElapse, err := cm.RunCommand(command, args, options)
+    time.Sleep(sleepTime)
     return showElapse, err
 }
 
@@ -483,6 +486,7 @@ func (s *OssutilCommandSuite) putBucket(bucket string, c *C) {
     showElapse, err := cm.RunCommand(command, args, options)
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true)
+    time.Sleep(sleepTime)
 }
 
 func (s *OssutilCommandSuite) rawCP(srcURL, destURL string, recursive, force, update bool, threshold int64, cpDir string) (bool, error) {
@@ -590,6 +594,7 @@ func (s *OssutilCommandSuite) putObject(bucket, object, fileName string, c *C) {
     showElapse, err := s.rawCPWithArgs(args, false, true, false, DefaultBigFileThreshold, CheckpointDir) 
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true)
+    time.Sleep(sleepTime)
 }
 
 func (s *OssutilCommandSuite) getObject(bucket, object, fileName string, c *C) {

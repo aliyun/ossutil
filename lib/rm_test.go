@@ -3,6 +3,7 @@ package lib
 import (
 	"fmt"
 	"os"
+    "time"
 
 	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 	. "gopkg.in/check.v1"
@@ -124,6 +125,7 @@ func (s *OssutilCommandSuite) TestRemoveObjects(c *C) {
 	c.Assert(showElapse, Equals, true)
 
 	_ = os.Remove(cfile)
+    time.Sleep(7*time.Second)
 
 	// list buckets
 	bucketNames = s.listBuckets(false, c)
@@ -233,10 +235,10 @@ func (s *OssutilCommandSuite) TestAllTypeObject(c *C) {
     c.Assert(err, IsNil)
     removeCommand.RunCommand()
     
-	normal_object := "TestAllTypeObject"
+	normal_object := randStr(10) 
 	s.putObject(bucketName, normal_object, uploadFileName, c)
 
-	object := "TestMultipartObjectRm"
+	object := randStr(10) 
 	s.putObject(bucketName, object, uploadFileName, c)
 
 	objects := s.listObjects(bucketName, object, "ls - ", c)

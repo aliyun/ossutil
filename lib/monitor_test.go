@@ -11,7 +11,8 @@ import (
 )
 
 func (s *OssutilCommandSuite) TestUploadProgressBar(c *C) {
-    bucketName := bucketNameExist
+ 	bucketName := bucketNamePrefix + randLowStr(10) 
+    s.putBucket(bucketName, c)
 
     // rm -marf
     err := s.initRemove(bucketName, "", "rm -arf") 
@@ -152,11 +153,15 @@ func (s *OssutilCommandSuite) TestUploadProgressBar(c *C) {
     c.Assert(strings.Contains(strings.TrimSpace(pstr), strings.TrimSpace(str)), Equals, true)
 
     _ = os.RemoveAll(udir)
+
+    s.removeBucket(bucketName, true, c)
 }
 
 func (s *OssutilCommandSuite) TestDownloadProgressBar(c *C) {
     s.createFile(uploadFileName, "", c)
-    bucketName := bucketNameExist
+
+	bucketName := bucketNamePrefix + randLowStr(10) 
+    s.putBucket(bucketName, c)
     object := randStr(10)
     s.putObject(bucketName, object, uploadFileName, c)
 
@@ -203,12 +208,16 @@ func (s *OssutilCommandSuite) TestDownloadProgressBar(c *C) {
     c.Assert(strings.Contains(str, "skip"), Equals, false)
     c.Assert(strings.Contains(str, "directories"), Equals, false)
     c.Assert(strings.Contains(strings.TrimSpace(pstr), strings.TrimSpace(str)), Equals, true)
+
+    s.removeBucket(bucketName, true, c)
 }
 
 func (s *OssutilCommandSuite) TestCopyProgressBar(c *C) {
     s.createFile(uploadFileName, randStr(15), c)
-    srcBucket := bucketNameExist
-    destBucket := bucketNameDest
+    srcBucket := bucketNamePrefix + randLowStr(10) 
+    s.putBucket(srcBucket, c)
+    destBucket := bucketNamePrefix + randLowStr(10)
+    s.putBucket(destBucket, c)
     num := 2
     for i := 0; i < num; i++ {
         object := fmt.Sprintf("TestCopyProgressBar%d", i)
@@ -258,12 +267,16 @@ func (s *OssutilCommandSuite) TestCopyProgressBar(c *C) {
     c.Assert(strings.Contains(str, "skip"), Equals, false)
     c.Assert(strings.Contains(str, "directories"), Equals, false)
     c.Assert(strings.Contains(strings.TrimSpace(pstr), strings.TrimSpace(str)), Equals, true)
+
+    s.removeBucket(srcBucket, true, c)
+    s.removeBucket(destBucket, true, c)
 }
 
 func (s *OssutilCommandSuite) TestProgressBarStatisticErr(c *C) {
     // test batch download err 
     s.createFile(uploadFileName, "TestProgressBarStatisticErr", c)
-    bucketName := bucketNameExist
+    bucketName := bucketNamePrefix + randLowStr(10)
+    s.putBucket(bucketName, c)
     num := 2
     for i := 0; i < num; i++ {
         object := randStr(10)
@@ -320,10 +333,13 @@ func (s *OssutilCommandSuite) TestProgressBarStatisticErr(c *C) {
 
     str1 := strings.ToLower(copyCommand.monitor.getFinishBar(normalExit))
     c.Assert(strings.Contains(strings.TrimSpace(pstr), strings.TrimSpace(str1)), Equals, false)
+
+    s.removeBucket(bucketName, true, c)
 }
 
 func (s *OssutilCommandSuite) TestProgressBarContinueErr(c *C) {
-    bucketName := bucketNameExist
+    bucketName := bucketNamePrefix + randLowStr(10)
+    s.putBucket(bucketName, c)
     udir := randStr(11) 
     _ = os.RemoveAll(udir)
     err := os.MkdirAll(udir, 0755)
@@ -382,10 +398,13 @@ func (s *OssutilCommandSuite) TestProgressBarContinueErr(c *C) {
     c.Assert(strings.Contains(str, fmt.Sprintf("error num: %d", snap.errNum)), Equals, true)
 
     _ = os.RemoveAll(udir)
+
+    s.removeBucket(bucketName, true, c)
 }
 
 func (s *OssutilCommandSuite) TestSingleFileProgress(c *C) {
-    bucketName := bucketNameExist
+    bucketName := bucketNamePrefix + randLowStr(10)
+    s.putBucket(bucketName, c)
     object := randStr(10)
     destObject := randStr(10)
 
@@ -476,7 +495,6 @@ func (s *OssutilCommandSuite) TestSingleFileProgress(c *C) {
         c.Assert(snap.errNum, Equals, int64(0))
         c.Assert(snap.okNum, Equals, int64(1))
         c.Assert(snap.dealNum, Equals, int64(1))
-        c.Assert(copyCommand.monitor.getPrecent(snap) == 100 || copyCommand.monitor.getPrecent(snap) == 0, Equals, true)
 
         str = strings.ToLower(copyCommand.monitor.getProgressBar())
         c.Assert(strings.Contains(str, fmt.Sprintf("num: %d", 1)), Equals, true)
@@ -558,10 +576,12 @@ func (s *OssutilCommandSuite) TestSingleFileProgress(c *C) {
         c.Assert(strings.Contains(str, "upload"), Equals, false)
         c.Assert(strings.Contains(str, "download"), Equals, false)
     }
+    s.removeBucket(bucketName, true, c)
 }
 
 func (s *OssutilCommandSuite) TestSetACLProgress(c *C) {
-    bucketName := bucketNameExist
+    bucketName := bucketNamePrefix + randLowStr(10)
+    s.putBucket(bucketName, c)
 
     num := 2
     objectNames := []string{}
@@ -667,10 +687,13 @@ func (s *OssutilCommandSuite) TestSetACLProgress(c *C) {
     c.Assert(strings.Contains(str, "succeed:"), Equals, false)
     c.Assert(strings.Contains(str, "when error happens"), Equals, true)
     c.Assert(strings.Contains(str, "setted acl on 0 objects"), Equals, true)
+
+    s.removeBucket(bucketName, true, c)
 }
 
 func (s *OssutilCommandSuite) TestSetMetaProgress(c *C) {
-    bucketName := bucketNameExist
+    bucketName := bucketNamePrefix + randLowStr(10)
+    s.putBucket(bucketName, c)
 
     num := 2
     objectNames := []string{}
@@ -757,7 +780,7 @@ func (s *OssutilCommandSuite) TestSetMetaProgress(c *C) {
     c.Assert(snap.dealNum, Equals, int64(0))
 
     str = strings.ToLower(setMetaCommand.monitor.getProgressBar())
-    c.Assert(strings.Contains(str, fmt.Sprintf("scanned %d objects", 0)), Equals, true)
+    c.Assert(strings.Contains(str, fmt.Sprintf("%d objects", 0)), Equals, true)
     c.Assert(strings.Contains(str, "error"), Equals, false)
     c.Assert(strings.Contains(str, "progress"), Equals, false)
 
@@ -776,10 +799,13 @@ func (s *OssutilCommandSuite) TestSetMetaProgress(c *C) {
     c.Assert(strings.Contains(str, "succeed:"), Equals, false)
     c.Assert(strings.Contains(str, "when error happens"), Equals, true)
     c.Assert(strings.Contains(str, "setted meta on 0 objects"), Equals, true)
+
+    s.removeBucket(bucketName, true, c)
 }
 
 func (s *OssutilCommandSuite) TestRemoveSingleProgress(c *C) {
-    bucketName := bucketNameExist
+    bucketName := bucketNamePrefix + randLowStr(10)
+    s.putBucket(bucketName, c)
 
     // remove single not exist object
     object := randStr(10)
@@ -856,10 +882,13 @@ func (s *OssutilCommandSuite) TestRemoveSingleProgress(c *C) {
     c.Assert(strings.Contains(str, fmt.Sprintf("removed %d objects", 1)), Equals, true)
     c.Assert(strings.Contains(str, "err"), Equals, false)
     c.Assert(strings.Contains(strings.TrimSpace(pstr), strings.TrimSpace(str)), Equals, true)
+
+    s.removeBucket(bucketName, true, c)
 }
 
 func (s *OssutilCommandSuite) TestBatchRemoveProgress(c *C) {
-    bucketName := bucketNameExist
+    bucketName := bucketNamePrefix + randLowStr(10)
+    s.putBucket(bucketName, c)
 
     // batch remove not exist objects
     err := s.initRemove(bucketName, "TestBatchRemoveProgresssss", "rm -rf")
@@ -962,10 +991,13 @@ func (s *OssutilCommandSuite) TestBatchRemoveProgress(c *C) {
     c.Assert(strings.Contains(str, fmt.Sprintf("scanned %d objects", 1)), Equals, true)
     c.Assert(strings.Contains(str, "error"), Equals, true)
     c.Assert(strings.Contains(str, "progress"), Equals, false)
+
+    s.removeBucket(bucketName, true, c)
 }
 
 func (s *OssutilCommandSuite) TestRemoveUploadIdProgress(c *C) {
-    bucketName := bucketNameExist
+    bucketName := bucketNamePrefix + randLowStr(10)
+    s.putBucket(bucketName, c)
     bucket, _ := removeCommand.command.ossBucket(bucketName)
 
     // rm -marf
@@ -1152,6 +1184,8 @@ func (s *OssutilCommandSuite) TestRemoveUploadIdProgress(c *C) {
     c.Assert(strings.Contains(str, "when error happens"), Equals, true)
     c.Assert(strings.Contains(str, "scanned"), Equals, true)
     c.Assert(strings.Contains(str, fmt.Sprintf("removed %d uploadids", 2)), Equals, true)
+
+    s.removeBucket(bucketName, true, c)
 }
 
 func (s *OssutilCommandSuite) TestRemoveBucketProgress(c *C) {
@@ -1168,7 +1202,7 @@ func (s *OssutilCommandSuite) TestRemoveBucketProgress(c *C) {
     pstr := strings.ToLower(s.readFile(resultPath, c))
     c.Assert(strings.Contains(pstr, "succeed"), Equals, false)
 
-    bucketName := bucketNamePrefix + "progress" 
+    bucketName := bucketNamePrefix + randLowStr(10) 
     s.putBucket(bucketName, c)
 
     bucket, _ := removeCommand.command.ossBucket(bucketName)
