@@ -115,6 +115,7 @@ func (s *OssutilCommandSuite) TearDownSuite(c *C) {
     s.removeBucket(bucketNameDest, true, c)
     testLogger.Println("test command completed")
     _ = os.Remove(configFile)
+    _ = os.Remove(configFile+".bak")
     _ = os.Remove(resultPath)
     _ = os.Remove(uploadFileName)
     _ = os.Remove(downloadFileName)

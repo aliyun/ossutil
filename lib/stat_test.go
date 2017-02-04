@@ -108,7 +108,7 @@ func (s *OssutilCommandSuite) TestStatIDKey(c *C) {
     bucketName := bucketNamePrefix + randLowStr(10)
     s.putBucket(bucketName, c)
 
-    cfile := "ossutil_test.config_boto"
+    cfile := randStr(10) 
     data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Endpoint]\n%s=%s[Bucket-Cname]\n%s=%s", "abc", "def", "ghi", bucketName, "abc", bucketName, "abc") 
     s.createFile(cfile, data, c)
 

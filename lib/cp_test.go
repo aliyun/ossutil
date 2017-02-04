@@ -701,7 +701,7 @@ func (s *OssutilCommandSuite) TestCPIDKey(c *C) {
     data := "欢迎使用ossutil"
     s.createFile(ufile, data, c)
 
-    cfile := "ossutil_test.config_boto"
+    cfile := randStr(10) 
     data = fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Endpoint]\n%s=%s[Bucket-Cname]\n%s=%s", "abc", "def", "ghi", bucketName, "abc", bucketName, "abc") 
     s.createFile(cfile, data, c)
 
@@ -776,7 +776,7 @@ func (s *OssutilCommandSuite) TestUploadOutputDir(c *C) {
 
     // SignatureDoesNotMatch err copy -> no outputdir
     cfile := configFile
-    configFile = "ossutil_test.config_boto"
+    configFile = randStr(10) 
     data = fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Endpoint]\n%s=%s", endpoint, accessKeyID, "abc", bucketName, endpoint) 
     s.createFile(configFile, data, c)
 
@@ -880,7 +880,7 @@ func (s *OssutilCommandSuite) TestBatchUploadOutputDir(c *C) {
 
 // err copy -> outputdir
     cfile := configFile
-    configFile = "ossutil_test.config_boto"
+    configFile = randStr(10) 
     data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n", "abc", accessKeyID, accessKeySecret) 
     s.createFile(configFile, data, c)
     testResultFile, _ = os.OpenFile(resultPath, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
@@ -957,7 +957,7 @@ func (s *OssutilCommandSuite) TestDownloadOutputDir(c *C) {
 
     // err copy without -r -> no outputdir
     cfile := configFile
-    configFile = "ossutil_test.config_boto"
+    configFile = randStr(10) 
     data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Cname]\n%s=%s", endpoint, accessKeyID, accessKeySecret, bucketName, "abc") 
     s.createFile(configFile, data, c)
 
@@ -1020,7 +1020,7 @@ func (s *OssutilCommandSuite) TestCopyOutputDir(c *C) {
 
     // list err copy without -r -> no outputdir
     cfile := configFile
-    configFile = "ossutil_test.config_boto"
+    configFile = randStr(10) 
     data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Cname]\n%s=%s", endpoint, accessKeyID, accessKeySecret, srcBucket, "abc") 
     s.createFile(configFile, data, c)
     showElapse, err = s.rawCPWithOutputDir(CloudURLToString(srcBucket, object), CloudURLToString(destBucket, object), false, true, false, 1, dir) 
@@ -1086,7 +1086,7 @@ func (s *OssutilCommandSuite) TestBatchCopyOutputDir(c *C) {
 
     // test objectStatistic err
     cfile := configFile
-    configFile = "ossutil_test.config_boto"
+    configFile = randStr(10) 
     data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Endpoint]\n%s=%s[Bucket-Cname]\n%s=%s", "abc", "def", "ghi", srcBucket, "abc", srcBucket, "abc") 
     s.createFile(configFile, data, c)
 
@@ -1123,7 +1123,7 @@ func (s *OssutilCommandSuite) TestConfigOutputDir(c *C) {
 
     // err copy -> outputdir
     cfile := configFile
-    configFile = "ossutil_test.config_boto"
+    configFile = randStr(10) 
     data = fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Cname]\n%s=%s", endpoint, accessKeyID, accessKeySecret, bucketName, "abc") 
     s.createFile(configFile, data, c)
 

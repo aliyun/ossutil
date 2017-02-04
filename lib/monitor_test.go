@@ -14,10 +14,16 @@ func (s *OssutilCommandSuite) TestUploadProgressBar(c *C) {
  	bucketName := bucketNamePrefix + randLowStr(12) 
     s.putBucket(bucketName, c)
 
+    // rm -marf
+    err := s.initRemove(bucketName, "", "rm -arf")
+    c.Assert(err, IsNil)
+    err = removeCommand.RunCommand()
+    c.Assert(err, IsNil)
+
     // single file
     udir := randStr(11) 
     _ = os.RemoveAll(udir)
-    err := os.MkdirAll(udir, 0755)
+    err = os.MkdirAll(udir, 0755)
     c.Assert(err, IsNil)
     object := randStr(11) 
 
@@ -279,7 +285,7 @@ func (s *OssutilCommandSuite) TestProgressBarStatisticErr(c *C) {
     }
 
     cfile := configFile
-    configFile = "ossutil_test.config_boto"
+    configFile = randStr(10) 
     data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Endpoint]\n%s=%s[Bucket-Cname]\n%s=%s", "abc", "def", "ghi", bucketName, "abc", bucketName, "abc") 
     s.createFile(configFile, data, c)
 
@@ -349,7 +355,7 @@ func (s *OssutilCommandSuite) TestProgressBarContinueErr(c *C) {
     }
 
     cfile := configFile
-    configFile = "ossutil_test.config_boto"
+    configFile = randStr(10) 
     data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n", "abc", accessKeyID, accessKeySecret) 
     s.createFile(configFile, data, c)
 
@@ -639,7 +645,7 @@ func (s *OssutilCommandSuite) TestSetACLProgress(c *C) {
 
     // batch set acl list error
     cfile := configFile
-    configFile = "ossutil_test.config_boto"
+    configFile = randStr(10) 
     data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n", endpoint, accessKeyID, "") 
     s.createFile(configFile, data, c)
 
@@ -749,7 +755,7 @@ func (s *OssutilCommandSuite) TestSetMetaProgress(c *C) {
 
     // batch set acl list error
     cfile := configFile
-    configFile = "ossutil_test.config_boto"
+    configFile = randStr(10) 
     data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n", endpoint, accessKeyID, "") 
     s.createFile(configFile, data, c)
 

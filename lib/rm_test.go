@@ -91,7 +91,7 @@ func (s *OssutilCommandSuite) TestRemoveObjects(c *C) {
 	c.Assert(FindPos(bucketName, bucketNames) != -1, Equals, true)
 
 	// error remove bucket with config
-	cfile := "ossutil_test.config_boto"
+	cfile := randStr(10) 
 	data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Endpoint]\n%s=%s[Bucket-Cname]\n%s=%s", "abc", "def", "ghi", bucketName, "abc", bucketName, "abc")
 	s.createFile(cfile, data, c)
 
