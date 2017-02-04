@@ -19,7 +19,7 @@ func (s *OssutilCommandSuite) TestCPObject(c *C) {
 
     // put object
     s.createFile(uploadFileName, content, c)
-    object := "TestCPObject_cp" 
+    object := randStr(12) 
     s.putObject(bucketName, object, uploadFileName, c)
 
     // get object
@@ -55,7 +55,7 @@ func (s *OssutilCommandSuite) TestCPObject(c *C) {
     c.Assert(str, Equals, data1)
 
     // get to file in not exist directory
-    notexistdir := "NOTEXISTDIR"
+    notexistdir := "NOTEXISTDIR" + randStr(5)
     s.getObject(bucketName, object, notexistdir + string(os.PathSeparator) + downloadFileName, c)
     str = s.readFile(notexistdir + string(os.PathSeparator) + downloadFileName, c) 
     c.Assert(str, Equals, data)
@@ -69,7 +69,7 @@ func (s *OssutilCommandSuite) TestCPObject(c *C) {
     c.Assert(objectStat[StatACL], Equals, "default")
     
     // get dest file
-    filePath := downloadFileName + "1" 
+    filePath := downloadFileName + randStr(5) 
     s.getObject(bucketName, destObject, filePath, c)
     str = s.readFile(filePath, c) 
     c.Assert(str, Equals, data)
