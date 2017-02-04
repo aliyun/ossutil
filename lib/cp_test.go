@@ -1320,7 +1320,7 @@ func (s *OssutilCommandSuite) TestSnapshot(c *C) {
     c.Assert(err, IsNil)
 
     // -u --snapshot-path
-    time.Sleep(time.Second)
+    time.Sleep(7*time.Second)
     s.createFile(uploadFileName, data, c)
     err = s.initCopyWithSnapshot(uploadFileName, CloudURLToString(bucketName, object), false, true, true, DefaultBigFileThreshold, spath)
     c.Assert(err, IsNil)

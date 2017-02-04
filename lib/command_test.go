@@ -53,9 +53,9 @@ var (
 )
 
 var (
-    bucketNamePrefix    = "ossutil-test-" + randLowStr(5)
-    bucketNameExist     = "nodelete-ossutil-test-normalcase"
-    bucketNameDest      = "nodelete-ossutil-test-dest"
+    bucketNamePrefix    = "ossutil-test-" + randLowStr(6)
+    bucketNameExist     = bucketNamePrefix + "existbucket" 
+    bucketNameDest      = bucketNamePrefix + "destbucket" 
     bucketNameNotExist  = "nodelete-ossutil-test-notexist"
 )
 
@@ -590,6 +590,7 @@ func (s *OssutilCommandSuite) putObject(bucket, object, fileName string, c *C) {
     showElapse, err := s.rawCPWithArgs(args, false, true, false, DefaultBigFileThreshold, CheckpointDir) 
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true)
+    time.Sleep(sleepTime)
 }
 
 func (s *OssutilCommandSuite) getObject(bucket, object, fileName string, c *C) {
