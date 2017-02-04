@@ -11,21 +11,15 @@ import (
 )
 
 func (s *OssutilCommandSuite) TestUploadProgressBar(c *C) {
- 	bucketName := bucketNamePrefix + randLowStr(10) 
+ 	bucketName := bucketNamePrefix + randLowStr(12) 
     s.putBucket(bucketName, c)
-
-    // rm -marf
-    err := s.initRemove(bucketName, "", "rm -arf") 
-    c.Assert(err, IsNil)
-    err = removeCommand.RunCommand()
-    c.Assert(err, IsNil)
 
     // single file
     udir := randStr(11) 
     _ = os.RemoveAll(udir)
     err = os.MkdirAll(udir, 0755)
     c.Assert(err, IsNil)
-    object := "TestUploadProgressBar"
+    object := randStr(11) 
 
     num := 2 
     len := 0
@@ -34,6 +28,7 @@ func (s *OssutilCommandSuite) TestUploadProgressBar(c *C) {
         s.createFile(udir + string(os.PathSeparator) + filePath, randStr((i+3)*30*num), c)
         len += (i+3)*30*num 
     }
+    time.Sleep(2*sleepTime)
 
     // init copyCommand
     err = s.initCopyCommand(udir, CloudURLToString(bucketName, object), true, true, false, DefaultBigFileThreshold, CheckpointDir, DefaultOutputDir)
@@ -531,7 +526,6 @@ func (s *OssutilCommandSuite) TestSingleFileProgress(c *C) {
         c.Assert(snap.errNum, Equals, int64(0))
         c.Assert(snap.okNum, Equals, int64(1))
         c.Assert(snap.dealNum, Equals, int64(1))
-        c.Assert(copyCommand.monitor.getPrecent(snap) == 100 || copyCommand.monitor.getPrecent(snap) == 0, Equals, true)
 
         str = strings.ToLower(copyCommand.monitor.getProgressBar())
         c.Assert(strings.Contains(str, fmt.Sprintf("num: %d", 1)), Equals, true)
@@ -671,7 +665,6 @@ func (s *OssutilCommandSuite) TestSetACLProgress(c *C) {
 
     str = strings.ToLower(setACLCommand.monitor.getProgressBar())
     c.Assert(strings.Contains(str, "error"), Equals, false)
-    c.Assert(strings.Contains(str, "progress"), Equals, false)
 
     str = strings.ToLower(setACLCommand.monitor.getFinishBar())
     c.Assert(strings.Contains(str, "succeed:"), Equals, true)
