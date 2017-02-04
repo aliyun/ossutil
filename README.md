@@ -3,14 +3,15 @@
 [![Build Status](https://travis-ci.org/aliyun/ossutil.svg?branch=master)](https://travis-ci.org/aliyun/ossutil)
 [![Coverage Status](https://coveralls.io/repos/github/aliyun/ossutil/badge.svg?branch=master)](https://coveralls.io/github/aliyun/ossutil?branch=master)
 ## 关于
-> - 此工具采用go语言，基于OSS[阿里云对象存储服务](http://www.aliyun.com/product/oss/)官方GO SDK 1.0.0 构建。
+> - 此工具采用go语言，基于OSS[阿里云对象存储服务](http://www.aliyun.com/product/oss/)官方GO SDK 1.3.0 构建。
 > - 阿里云对象存储（Object Storage Service，简称OSS），是阿里云对外提供的海量，安全，低成本，高可靠的云存储服务。
 > - OSS适合存放任意文件类型，适合各种网站、开发企业及开发者使用。
 > - 该工具旨在为用户提供一个方便的，以命令行方式管理OSS数据的途径。
-> - 当前版本未提供Bucket管理功能和Multipart管理功能，相关功能会在后续版本中开发。
+> - 当前版本提供了列举和删除Multipart Uploads功能。
+> - 当前版本未提供Bucket管理功能功能，相关功能会在后续版本中开发。
 
 ## 版本
-> - 当前版本：1.0.0.Beta1
+> - 当前版本：1.0.0.Beta2
 
 ## 运行环境
 > - linux, windows 
@@ -18,6 +19,7 @@
 ## 依赖的库 
 > - goopt (github.com/droundy/goopt) 
 > - configparser (github.com/alyu/configparser)
+> - github.com/syndtr/goleveldb/leveldb
 > - oss (github.com/aliyun/aliyun-oss-go-sdk/oss)
 > - gopkg.in/check.v1 (gopkg.in/check.v1)
 
@@ -31,7 +33,6 @@
 #### 查看某命令的帮助文档
 ```go
     ./ossutil help cmd 
-    或 ./ossutil cmd --man
 ```
     
 #### 配置ossutil 
@@ -43,6 +44,12 @@
 ```go
     ./ossutil ls
     或 ./ossutil ls oss://
+```
+
+#### 列举objects和Multipart Uploads
+```go
+    ./ossutil ls -a
+    或 ./ossutil ls oss:// -a
 ```
 
 #### 上传文件
@@ -77,4 +84,4 @@
 > - Ting Zhang 
 
 ## License
-> - MIT
+> - MIT 

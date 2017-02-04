@@ -8,6 +8,7 @@ install:
 - go get github.com/droundy/goopt
 - go get github.com/alyu/configparser
 - go get github.com/aliyun/aliyun-oss-go-sdk/oss
+- go get github.com/syndtr/goleveldb/leveldb
 script:
 - cd lib
 - travis_wait 120 go test -v -covermode=count -coverprofile=coverage.out -timeout=120m

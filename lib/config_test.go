@@ -25,6 +25,8 @@ func (s *OssutilConfigSuite) SetUpSuite(c *C) {
 // Run before each test or benchmark starts running
 func (s *OssutilConfigSuite) TearDownSuite(c *C) {
     testLogger.Println("test config completed")
+    os.Stdout = out
+    os.Stderr = errout
 }
 
 // Run after each test or benchmark runs
@@ -113,7 +115,7 @@ func (s *OssutilConfigSuite) TestConfigInteractive(c *C) {
 
     opts, err := LoadConfig(configFile) 
     c.Assert(err, IsNil)
-    c.Assert(len(opts), Equals, 1)
+    c.Assert(len(opts), Equals, 2)
     c.Assert(opts[OptionLanguage], Equals, DefaultLanguage)
 }
 
@@ -136,7 +138,7 @@ func (s *OssutilConfigSuite) TestConfigInteractiveLanguage(c *C) {
 
     opts, err := LoadConfig(configFile) 
     c.Assert(err, IsNil)
-    c.Assert(len(opts), Equals, 1)
+    c.Assert(len(opts), Equals, 2)
 }
 
 func (s *OssutilConfigSuite) TestConfigLanguageEN(c *C) {
@@ -157,7 +159,7 @@ func (s *OssutilConfigSuite) TestConfigLanguageEN(c *C) {
 
     opts, err := LoadConfig(configFile) 
     c.Assert(err, IsNil)
-    c.Assert(len(opts), Equals, 1)
+    c.Assert(len(opts), Equals, 2)
     c.Assert(opts[OptionLanguage], Equals, language)
 }
 
@@ -179,7 +181,7 @@ func (s *OssutilConfigSuite) TestConfigLanguageCH(c *C) {
 
     opts, err := LoadConfig(configFile) 
     c.Assert(err, IsNil)
-    c.Assert(len(opts), Equals, 1)
+    c.Assert(len(opts), Equals, 2)
     c.Assert(opts[OptionLanguage], Equals, language)
 }
 

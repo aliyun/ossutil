@@ -31,7 +31,7 @@ func FindPos(elem string, elemArray []string) int {
 // FindPosCaseInsen find the elem position in a string array, ignore case
 func FindPosCaseInsen(elem string, elemArray []string) int {
 	for p, v := range elemArray {
-		if strings.ToLower(v) == strings.ToLower(elem) {
+		if strings.EqualFold(v, elem) {
 			return p
 		}
 	}
@@ -81,3 +81,30 @@ func getUserAgent() string {
 func utcToLocalTime(utc time.Time) time.Time {
     return utc.In(time.Local)
 }
+
+func max(a, b int64) int64 {
+    if a >= b {
+        return a
+    }
+    return b
+}
+
+func getSizeString(size int64) string {
+    prefix := ""
+    str := fmt.Sprintf("%d", size)
+    if size < 0 {
+        prefix = "-"
+        str = str[1:]
+    }
+    len := len(str)
+    strList := []string{}
+    i := len % 3
+    if i != 0 {
+        strList = append(strList, str[0:i])
+    }
+    for ; i < len; i+=3 {
+        strList = append(strList, str[i:i+3])
+    }
+    return fmt.Sprintf("%s%s", prefix, strings.Join(strList, ","))
+}
+

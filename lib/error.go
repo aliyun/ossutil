@@ -27,11 +27,12 @@ func (e BucketError) Error() string {
 // ObjectError happens when access object error
 type ObjectError struct {
 	err    error
+    bucket string
 	object string
 }
 
 func (e ObjectError) Error() string {
-	return fmt.Sprintf("%s, Object=%s", e.err.Error(), e.object)
+	return fmt.Sprintf("%s, Bucket=%s, Object=%s", e.err.Error(), e.bucket, e.object)
 }
 
 // FileError happens when access file error
@@ -43,3 +44,13 @@ type FileError struct {
 func (e FileError) Error() string {
 	return fmt.Sprintf("%s, File=%s", e.err.Error(), e.file)
 }
+
+type CopyError struct {
+	err  error
+}
+
+func (e CopyError) Error() string {
+	return e.err.Error()
+}
+
+

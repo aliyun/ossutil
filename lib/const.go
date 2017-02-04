@@ -1,5 +1,9 @@
 package lib
 
+import (
+    "os"
+)
+
 // all supported options of ossutil 
 const (
 	OptionConfigFile       string = "configFile"
@@ -10,13 +14,18 @@ const (
     OptionACL                     = "acl"
 	OptionShortFormat             = "shortFormat"
 	OptionDirectory               = "directory"
+    OptionMultipart               = "multipart"
+    OptionAllType                 = "allType"
 	OptionRecursion               = "recursive"
 	OptionBucket                  = "bucket"
 	OptionForce                   = "force"
 	OptionUpdate                  = "update"
 	OptionDelete                  = "delete"
+    OptionContinue                = "continue"
+    OptionOutputDir               = "outputDir"
 	OptionBigFileThreshold        = "bigfileThreshold"
 	OptionCheckpointDir           = "checkpointDir"
+    OptionSnapshotPath            = "snapshotPath"
 	OptionRetryTimes              = "retryTimes"
 	OptionRoutines                = "routines"
 	OptionParallel                = "parallel"
@@ -66,29 +75,43 @@ const (
 	DefaultLanguage                        = "CH"
     EnglishLanguage                        = "EN"
 	Scheme                          string = "oss"
-    DefaultConfigFile                      = "~/.ossutilconfig"
+    DefaultConfigFile                      = "~" + string(os.PathSeparator) +".ossutilconfig"
 	MaxUint                                = ^uint(0)
 	MaxInt                                 = int(MaxUint >> 1)
 	MaxUint64                              = ^uint64(0)
 	MaxInt64                               = int64(MaxUint64 >> 1)
+    ReportPrefix                           = "ossutil_report_"
+    ReportSuffix                           = ".report"
+    DefaultOutputDir                       = "ossutil_output"
 	CheckpointDir                          = ".ossutil_checkpoint"
 	CheckpointSep                          = "---"
+    SnapshotConnector                      = "==>"
+    SnapshotSep                            = "#"
 	MaxPartNum                             = 10000
-	MaxIdealPartNum                        = MaxPartNum / 20
+	MaxIdealPartNum                        = MaxPartNum / 10
 	MinIdealPartNum                        = MaxPartNum / 500
 	MaxIdealPartSize                       = 524288000
-	MinIdealPartSize                       = 10485760
-	BigFileThreshold                       = 524288000
+	MinIdealPartSize                       = 1048576
+	DefaultBigFileThreshold                = 104857600 
 	MaxBigFileThreshold                    = MaxInt64
 	MinBigFileThreshold                    = 0
 	RetryTimes                      int    = 3
 	MaxRetryTimes                   int64  = 500
 	MinRetryTimes                   int64  = 1
-	Routines                        int    = 3
-	MaxRoutines                     int64  = 32
+	Routines                        int    = 5
+	MaxRoutines                     int64  = 100
 	MinRoutines                     int64  = 1
-	MaxParallel                     int64  = 32
+	MaxParallel                     int64  = 100
 	MinParallel                     int64  = 1
 	DefaultHashType                 string = "crc64"
 	MD5HashType                     string = "md5"
+    LogFilePrefix                          = "ossutil_log_"
 )
+
+const (
+    objectType          = 0x00000001
+    multipartType       = 0x00000010
+    allType             = objectType | multipartType // marker for objects 
+    bucketType          = 0x10000000
+)
+

@@ -1,16 +1,21 @@
 package lib
 
 import (
+    "os"
 	"fmt"
     "time"
+    "strings"
 	"reflect"
-    "os"
     "runtime"
 )
+
+var commandLine string
 
 // ParseAndRunCommand parse command line user input, get command and options, then run command 
 func ParseAndRunCommand() (error) {
 	ts := time.Now().UnixNano()
+
+    commandLine = getCommandLine()
 
     clearEnv()
 
@@ -29,6 +34,10 @@ func ParseAndRunCommand() (error) {
         return nil
     }
     return nil
+}
+
+func getCommandLine() string {
+    return strings.Join(os.Args, " ")
 }
 
 func clearEnv() {
