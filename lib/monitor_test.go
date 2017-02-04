@@ -17,7 +17,7 @@ func (s *OssutilCommandSuite) TestUploadProgressBar(c *C) {
     // single file
     udir := randStr(11) 
     _ = os.RemoveAll(udir)
-    err = os.MkdirAll(udir, 0755)
+    err := os.MkdirAll(udir, 0755)
     c.Assert(err, IsNil)
     object := randStr(11) 
 
