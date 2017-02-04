@@ -258,7 +258,7 @@ func (s *OssutilCommandSuite) TestBatchCPObject(c *C) {
     _ = os.RemoveAll(dir)
 
     // create dir in dir 
-    dir = "TestBatchCPObject_dir"
+    dir = randStr(10) 
     subdir := randStr(10) 
     err = os.MkdirAll(dir + string(os.PathSeparator) + subdir, 0755)
     c.Assert(err, IsNil)
@@ -285,7 +285,7 @@ func (s *OssutilCommandSuite) TestBatchCPObject(c *C) {
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true)
     
-    time.Sleep(7*time.Second)
+    time.Sleep(2*time.Second)
 
     // get files
     downDir := "下载目录"

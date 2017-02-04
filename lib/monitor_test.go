@@ -470,6 +470,7 @@ func (s *OssutilCommandSuite) TestSingleFileProgress(c *C) {
         c.Assert(strings.Contains(str, "upload"), Equals, true)
         c.Assert(strings.Contains(str, "download"), Equals, false)
         c.Assert(strings.Contains(str, "copy"), Equals, false)
+        time.Sleep(sleepTime)
 
         // download
         err = s.initCopyCommand(CloudURLToString(bucketName, object), downloadFileName, false, true, false, 1024, CheckpointDir, DefaultOutputDir)
