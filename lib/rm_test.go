@@ -3,6 +3,7 @@ package lib
 import (
 	"fmt"
 	"os"
+    "time"
 
 	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 	. "gopkg.in/check.v1"
@@ -124,6 +125,7 @@ func (s *OssutilCommandSuite) TestRemoveObjects(c *C) {
 	c.Assert(showElapse, Equals, true)
 
 	_ = os.Remove(cfile)
+    time.Sleep(7*time.Second)
 
 	// list buckets
 	bucketNames = s.listBuckets(false, c)

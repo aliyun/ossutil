@@ -36,15 +36,16 @@ var (
 
 var (
     logPath             = "ossutil_test_" + time.Now().Format("20060102_150405") + ".log"
-    configFile          = "ossutil_test.boto"
+    ConfigFile          = "ossutil_test.boto" + randStr(5)
+    configFile          = ConfigFile 
     testLogFile, _      = os.OpenFile(logPath, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
     testLogger          = log.New(testLogFile, "", log.Ldate|log.Ltime|log.Lshortfile)
-    resultPath          = "ossutil_test.result"
+    resultPath          = "ossutil_test.result" + randStr(5)
     testResultFile, _   = os.OpenFile(resultPath, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
-    uploadFileName      = "ossutil_test.upload_file"
-    downloadFileName    = "ossutil_test.download_file"
-    downloadDir         = "ossutil_test.download_dir"
-    inputFileName       = "ossutil_test.input_file"
+    uploadFileName      = "ossutil_test.upload_file" + randStr(5)
+    downloadFileName    = "ossutil_test.download_file" + randStr(5)
+    downloadDir         = "ossutil_test.download_dir" + randStr(5)
+    inputFileName       = "ossutil_test.input_file" + randStr(5)
     content             = "abc"
     cm                  = CommandManager{}
     out                 = os.Stdout
@@ -102,6 +103,7 @@ func SetUpCredential() {
 }
 
 func (s *OssutilCommandSuite) SetUpBucketEnv(c *C) {
+    s.removeBuckets(bucketNamePrefix, c)
     s.putBucket(bucketNameExist, c)
     s.putBucket(bucketNameDest, c)
 }
@@ -124,7 +126,7 @@ func (s *OssutilCommandSuite) TearDownSuite(c *C) {
 
 // Run after each test or benchmark runs
 func (s *OssutilCommandSuite) SetUpTest(c *C) {
-    configFile = "ossutil_test.boto"
+    configFile = ConfigFile 
 }
 
 // Run once after all tests or benchmarks have finished running
