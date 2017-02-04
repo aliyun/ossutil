@@ -52,7 +52,6 @@ func (s *OssutilCommandSuite) TestGetStatNotExist(c *C) {
     c.Assert(showElapse, Equals, false)
 
     s.putBucket(bucketName, c)
-    s.clearObjects(bucketName, "", c)
 
     showElapse, err = s.rawGetStat(bucketName, "")
     c.Assert(err, IsNil)

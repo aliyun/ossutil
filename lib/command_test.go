@@ -313,6 +313,7 @@ func (s *OssutilCommandSuite) rawRemove(args []string, recursive, force, bucket 
         "bucket": &bucket,
     }
     showElapse, err := cm.RunCommand(command, args, options)
+    time.Sleep(sleepTime)
     return showElapse, err
 }
 
@@ -349,6 +350,7 @@ func (s *OssutilCommandSuite) removeWrapper(cmdline string, bucket string, objec
         "force":           &f,
     }
     showElapse, err := cm.RunCommand(command, args, options)
+    time.Sleep(sleepTime)
     return showElapse, err
 }
 
@@ -484,6 +486,7 @@ func (s *OssutilCommandSuite) putBucket(bucket string, c *C) {
     showElapse, err := cm.RunCommand(command, args, options)
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true)
+    time.Sleep(sleepTime)
 }
 
 func (s *OssutilCommandSuite) rawCP(srcURL, destURL string, recursive, force, update bool, threshold int64, cpDir string) (bool, error) {
