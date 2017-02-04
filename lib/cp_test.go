@@ -348,9 +348,9 @@ func (s *OssutilCommandSuite) TestCPObjectUpdate(c *C) {
 
     // create older file and newer file
     oldData := "old data"
-    oldFile := "oldFile"
+    oldFile := "oldFile" + randStr(5)
     newData := "new data"
-    newFile := "newFile"
+    newFile := "newFile" + randStr(5)
     s.createFile(oldFile, oldData, c)
     time.Sleep(7*time.Second)
     s.createFile(newFile, newData, c)
@@ -422,7 +422,7 @@ func (s *OssutilCommandSuite) TestCPObjectUpdate(c *C) {
     s.putBucket(destBucket, c)
 
     destData := "data for dest bucket"
-    destFile := "destFile"
+    destFile := "destFile" + randStr(5)
     s.createFile(destFile, destData, c)
     s.putObject(destBucket, object, destFile, c) 
 
@@ -1263,7 +1263,7 @@ func (s *OssutilCommandSuite) TestSnapshot(c *C) {
     data := randStr(20)
     s.createFile(uploadFileName, data, c)
     object := randStr(10)
-    spath := "ossutil.snapshot-dir"
+    spath := "ossutil.snapshot-dir" + randStr(6)
     _ = os.RemoveAll(spath)
 
     err := s.initCopyWithSnapshot(uploadFileName, CloudURLToString(bucketName, object), false, false, false, DefaultBigFileThreshold, spath)

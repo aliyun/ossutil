@@ -14,16 +14,10 @@ func (s *OssutilCommandSuite) TestUploadProgressBar(c *C) {
  	bucketName := bucketNamePrefix + randLowStr(12) 
     s.putBucket(bucketName, c)
 
-    // rm -marf
-    err := s.initRemove(bucketName, "", "rm -arf")
-    c.Assert(err, IsNil)
-    err = removeCommand.RunCommand()
-    c.Assert(err, IsNil)
-
     // single file
     udir := randStr(11) 
     _ = os.RemoveAll(udir)
-    err = os.MkdirAll(udir, 0755)
+    err := os.MkdirAll(udir, 0755)
     c.Assert(err, IsNil)
     object := randStr(11) 
 
@@ -34,7 +28,7 @@ func (s *OssutilCommandSuite) TestUploadProgressBar(c *C) {
         s.createFile(udir + string(os.PathSeparator) + filePath, randStr((i+3)*30*num), c)
         len += (i+3)*30*num 
     }
-    time.Sleep(2*sleepTime)
+    time.Sleep(3*sleepTime)
 
     // init copyCommand
     err = s.initCopyCommand(udir, CloudURLToString(bucketName, object), true, true, false, DefaultBigFileThreshold, CheckpointDir, DefaultOutputDir)
