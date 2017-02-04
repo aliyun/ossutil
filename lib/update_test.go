@@ -58,8 +58,8 @@ func (s *OssutilCommandSuite) TestUpdateDiffVersion(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestRevertRename(c *C) {
-    filePath := ".ossutil_tempf"
-    renameFilePath := ".ossutil_tempr"
+    filePath := ".ossutil_tempf" + randStr(5)
+    renameFilePath := ".ossutil_tempr" + randStr(5)
 
     s.createFile(filePath, filePath + "i", c)
     s.createFile(renameFilePath, renameFilePath + "i", c)
