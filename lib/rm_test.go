@@ -233,10 +233,10 @@ func (s *OssutilCommandSuite) TestAllTypeObject(c *C) {
     c.Assert(err, IsNil)
     removeCommand.RunCommand()
     
-	normal_object := "TestAllTypeObject"
+	normal_object := randStr(10) 
 	s.putObject(bucketName, normal_object, uploadFileName, c)
 
-	object := "TestMultipartObjectRm"
+	object := randStr(10) 
 	s.putObject(bucketName, object, uploadFileName, c)
 
 	objects := s.listObjects(bucketName, object, "ls - ", c)

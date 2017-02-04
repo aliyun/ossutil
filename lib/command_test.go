@@ -54,8 +54,8 @@ var (
 
 var (
     bucketNamePrefix    = "ossutil-test-" + randLowStr(6)
-    bucketNameExist     = bucketNamePrefix + "existbucket" 
-    bucketNameDest      = bucketNamePrefix + "destbucket" 
+    bucketNameExist     = "special-" + bucketNamePrefix + "existbucket" 
+    bucketNameDest      = "special-" + bucketNamePrefix + "destbucket" 
     bucketNameNotExist  = "nodelete-ossutil-test-notexist"
 )
 
@@ -104,14 +104,13 @@ func SetUpCredential() {
 func (s *OssutilCommandSuite) SetUpBucketEnv(c *C) {
     s.putBucket(bucketNameExist, c)
     s.putBucket(bucketNameDest, c)
-    s.removeBuckets(bucketNamePrefix, c)
 }
 
 // Run before each test or benchmark starts running
 func (s *OssutilCommandSuite) TearDownSuite(c *C) {
-    s.removeBuckets(bucketNamePrefix, c)
     s.removeBucket(bucketNameExist, true, c)
     s.removeBucket(bucketNameDest, true, c)
+    s.removeBuckets(bucketNamePrefix, c)
     testLogger.Println("test command completed")
     _ = os.Remove(configFile)
     _ = os.Remove(resultPath)

@@ -757,7 +757,7 @@ func (s *OssutilCommandSuite) TestSetMetaProgress(c *C) {
     c.Assert(snap.dealNum, Equals, int64(0))
 
     str = strings.ToLower(setMetaCommand.monitor.getProgressBar())
-    c.Assert(strings.Contains(str, fmt.Sprintf("scanned %d objects", 0)), Equals, true)
+    c.Assert(strings.Contains(str, fmt.Sprintf("%d objects", 0)), Equals, true)
     c.Assert(strings.Contains(str, "error"), Equals, false)
     c.Assert(strings.Contains(str, "progress"), Equals, false)
 
@@ -1168,7 +1168,7 @@ func (s *OssutilCommandSuite) TestRemoveBucketProgress(c *C) {
     pstr := strings.ToLower(s.readFile(resultPath, c))
     c.Assert(strings.Contains(pstr, "succeed"), Equals, false)
 
-    bucketName := bucketNamePrefix + "progress" 
+    bucketName := bucketNamePrefix + randLowStr(10) 
     s.putBucket(bucketName, c)
 
     bucket, _ := removeCommand.command.ossBucket(bucketName)
