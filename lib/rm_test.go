@@ -364,6 +364,30 @@ func (s *OssutilCommandSuite) TestMultipartUpload_Prefix(c *C) {
     s.removeBucket(bucketName, true, c)
 }
 
+func (s *OssutilCommandSuite) TestAbortNotExistUploadId(c *C) {
+    bucketName := bucketNamePrefix + randLowStr(10)
+    s.putBucket(bucketName, c)
+
+	// put object
+	object := "TestMultipartObject"
+	s.putObject(bucketName, object, uploadFileName, c)
+
+	bucket, err := copyCommand.command.ossBucket(bucketName)
+	imur, err := bucket.InitiateMultipartUpload(object)
+	c.Assert(err, IsNil)
+    c.Assert(imur.Bucket, Equals, bucketName)
+    c.Assert(imur.Key, Equals, object)
+    c.Assert(imur.UploadID != "", Equals, true)
+
+    err = removeCommand.ossAbortMultipartUploadRetry(bucket, object, imur.UploadID)
+    c.Assert(err, IsNil)
+
+    err = removeCommand.ossAbortMultipartUploadRetry(bucket, object, imur.UploadID)
+    c.Assert(err, IsNil)
+
+    s.removeBucket(bucketName, true, c)
+}
+
 func (s *OssutilCommandSuite) TestMultipartError(c *C) {
 	bucketName := bucketNameExist 
 	object := "TestMultipartError"

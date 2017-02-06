@@ -653,7 +653,7 @@ func (rc *RemoveCommand) multipartUploadsProducer(bucket *oss.Bucket, cloudURL C
 		}
 
         for _, uploadId := range lmr.Uploads {
-            if !rc.rmOption.recursive && uploadId.Key != cloudURL.object{
+            if !rc.rmOption.recursive && uploadId.Key != cloudURL.object {
                 break
             }
             chUploadIds <- uploadIdInfoType{uploadId.Key, uploadId.UploadID}
@@ -697,9 +697,19 @@ func (rc *RemoveCommand) ossAbortMultipartUploadRetry(bucket *oss.Bucket, key, u
 	retryTimes, _ := GetInt(OptionRetryTimes, rc.command.options)
 	for i := 1; ; i++ {
         err := bucket.AbortMultipartUpload(imur)
+
 		if err == nil {
 			return err
 		}
+
+        switch err.(type) {
+        case oss.ServiceError:
+        if err.(oss.ServiceError).Code == "NoSuchUpload" {
+            fmt.Println("&&&&&&&&&&hehe")
+            return nil
+        }
+        }
+
 		if int64(i) >= retryTimes {
 			return ObjectError{err, bucket.BucketName, key}
 		}
