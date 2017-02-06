@@ -705,7 +705,6 @@ func (rc *RemoveCommand) ossAbortMultipartUploadRetry(bucket *oss.Bucket, key, u
         switch err.(type) {
         case oss.ServiceError:
         if err.(oss.ServiceError).Code == "NoSuchUpload" {
-            fmt.Println("&&&&&&&&&&hehe")
             return nil
         }
         }
