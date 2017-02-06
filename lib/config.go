@@ -64,20 +64,33 @@ var specChineseConfig = SpecText{
             关于report文件，更详细的信息请参见cp命令的帮助。
             注意：outputDir如果不存在，ossutil在产生输出文件时会自动创建该目录，
         如果outputDir存在且并非目录，将会报错。
+
+        下述交互式bucket-endpoint和bucket-cname配置被取消，但配置文件中该两项
+        配置仍然起效。
         (6) bucket-endpoint
-            ossutil询问用户是否有bucket-endpoint配对，请输入'y'或者'n'来进行
-        配置或者跳过配置。如果用户在输入bucket信息时键入回车，则代表着结束
-        bucket-endpoint的配置。注意：此处的endpoint应该为一个二级域名。
-            如果配置了bucket-endpoint选项，当对某bucket进行操作时，ossutil会
-        在该选项中寻找该bucket对应的endpoint，如果找到，该endpoint会覆盖基本
-        配置中endpoint。
+            bucket-endpoint对每个指定的bucket单独配置endpoint，此配置会优先于
+        配置文件中关于默认endpoint的配置。
+            在该版本中，ossutil取消了交互式配置中，关于bucket-endpoint配对的配
+        置，但配置文件中该项配置仍然起效，所以如果用户想对每个bucket单独指定
+        endpoint，仍然可以在配置文件中进行配置。注意：此处的endpoint应该为一个
+        二级域名(SLD)，例如：` + DefaultEndpoint + `。
+            如果配置了bucket-endpoint选项，当对某bucket进行操作时，ossutil会在
+        该选项中寻找该bucket对应的endpoint，如果找到，该endpoint会覆盖基本配置
+        中endpoint。但是运行命令时如果指定了--endpoint选项，--endpoint选项为最
+        高优先级。
         (7) bucket-cname
-            与bucket-endpoint配置类似。
-            如果配置了bucket-endpoint选项，当对某bucket进行操作时，ossutil会
-        在该选项中寻找该bucket对应的endpoint，如果找到，则找到的endpoint会覆
-        盖bucket-endpoint选项和基本配置中的endpoint。
+            bucket-cname为每个指定的bucket单独配置CNAME域名（CDN加速域名），此
+        配置会优先于配置文件中bucket-endpoint及endpoint的配置。
+            关于CNAME域名的更多信息见：https://help.aliyun.com/document_detail/27112.html?spm=5176.product27099.4.6.Lf06oS#1.
+            在该版本中，ossutil取消了交互式配置中，关于bucket-cname配对的配置，
+        但配置文件中该项配置仍然起效，所以如果用户想对每个bucket单独指定CNAME
+        域名，仍然可以在配置文件中进行配置。
+            如果配置了bucket-cname选项，当对某bucket进行操作时，ossutil会在该
+        选项中寻找该bucket对应的CNAME域名，如果找到，则找到的CNAME域名会覆盖
+        bucket-endpoint选项和基本配置中的endpoint。运行命令时如果指定了--endpoint
+        选项，--endpoint选项为最高优先级。
         
-        即优先级：bucket-cname > bucket-endpoint > endpoint > 默认endpoint
+        优先级：--endpoint > bucket-cname > bucket-endpoint > endpoint > 默认endpoint
 
     2) ossutil config options
         如果用户使用命令时输入了除--language和--config-file之外的任何选项，则
@@ -174,21 +187,31 @@ Usage:
             Note: if outputDir is not exist, ossutil will create the directory 
         automatically, if outputDir you specified exists and is not a directory, 
         ossutil will return an error. 
+
+        In interactive config, bucket-endpoint and bucket-cname is removed, but 
+        the two sections in config file are still effective. 
         (6) bucket-endpoint
-            ossutil ask you if there are any bucket-endpoint pairs, please
-        enter 'y' or 'n' to configure the pairs or skip. If you enter carriage
-        return when configure bucket, it means the pairs' configuration is
-        ended. Notice that endpoint means a second-level domain(SLD).
+            bucket-endpoint specify endpoint for every individual bucket, the 
+        section is prior to endpoint in base section.  
+            In current version, bucket-endpoint interactive configuration is 
+        removed, but the option in config file is still effective. Note, the 
+        endpoint should be a second-level domain(SLD), eg: ` + DefaultEndpoint + `. 
             When access a bucket, ossutil will search for endpoint corresponding 
-        to the bucket in this section, if found, the endpoint has priority over 
-        the endpoint in the base section.
+        to the bucket in this section, if found, the endpoint is prior to the 
+        endpoint in the base section. If --endpoint option is specified, --endpoint 
+        option has the highest priority.
         (7) bucket-cname
-            Similar to bucket-endpoint configuration.
+            bucket-cname specify CNAME host for every individual bucket, the section 
+        is prior to bucket-endpoint and endpoint in the base section.
+            More information about CNAME host see: https://help.aliyun.com/document_detail/27112.html?spm=5176.product27099.4.6.Lf06oS#1. 
+            In current version, bucket-cname interactive configuration is removed, 
+        but the option in config file is still effective.
             When access a bucket, ossutil will search for endpoint corresponding 
         tothe bucket in this section, if found, the endpoint has priority over 
-        the endpoint in bucket-endpoint and the endpoint in the base section.
+        the endpoint in bucket-endpoint and the endpoint in the base section. If 
+        --endpoint option is specified, --endpoint option has the highest priority.
 
-        PRI: bucket-cname > bucket-endpoint > endpoint > default endpoint
+        PRI: --endpoint option > bucket-cname > bucket-endpoint > endpoint > default endpoint
 
     2) ossutil config options
         If any options except --language and --config-file is specified, the 
