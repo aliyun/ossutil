@@ -413,10 +413,6 @@ func (m *CPMonitor) updateTransferSize(size int64) {
     atomic.AddInt64(&m.transferSize, size)
 }
 
-func (m *CPMonitor) updateFileNum(num int64) {
-    atomic.AddInt64(&m.fileNum, num)
-}
-
 func (m *CPMonitor) updateFile(size, num int64) {
     atomic.AddInt64(&m.fileNum, num)
     atomic.AddInt64(&m.transferSize, size)

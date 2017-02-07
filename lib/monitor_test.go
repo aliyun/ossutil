@@ -637,6 +637,9 @@ func (s *OssutilCommandSuite) TestSetACLProgress(c *C) {
     c.Assert(strings.Contains(str, "err"), Equals, false)
     c.Assert(strings.Contains(strings.TrimSpace(pstr), strings.TrimSpace(str)), Equals, true)
 
+    str = strings.ToLower(setACLCommand.monitor.progressBar(true))
+    c.Assert(str, Equals, "")
+
     // batch set acl list error
     cfile := configFile
     configFile = randStr(10) 
@@ -681,6 +684,10 @@ func (s *OssutilCommandSuite) TestSetACLProgress(c *C) {
     c.Assert(strings.Contains(str, "succeed:"), Equals, false)
     c.Assert(strings.Contains(str, "when error happens"), Equals, true)
     c.Assert(strings.Contains(str, "setted acl on 0 objects"), Equals, true)
+
+    setACLCommand.monitor.init("Setted acl on")
+    snap = setACLCommand.monitor.getSnapshot()
+    c.Assert(setACLCommand.monitor.getPrecent(snap) == 0, Equals, true)
 
     s.removeBucket(bucketName, true, c)
 }
@@ -838,6 +845,9 @@ func (s *OssutilCommandSuite) TestRemoveSingleProgress(c *C) {
     c.Assert(strings.Contains(str, fmt.Sprintf("removed %d objects", 0)), Equals, true)
     c.Assert(strings.Contains(str, "err"), Equals, false)
     c.Assert(strings.Contains(strings.TrimSpace(pstr), strings.TrimSpace(str)), Equals, true)
+
+    str = strings.ToLower(removeCommand.monitor.progressBar(true, normalExit)) 
+    c.Assert(str, Equals, "")
 
     // remove single exist object
     s.putObject(bucketName, object, uploadFileName, c)
@@ -1288,6 +1298,8 @@ func (s *OssutilCommandSuite) TestRemoveBucketProgress(c *C) {
     c.Assert(snap.dealNum, Equals, int64(0))
     c.Assert(snap.errNum, Equals, int64(0))
     c.Assert(snap.removedBucket, Equals, bucketName)
+
+    c.Assert(removeCommand.monitor.getOKInfo(snap), Equals, "")
 
     str = strings.ToLower(removeCommand.monitor.getProgressBar())
     c.Assert(strings.TrimSpace(str), Equals, "")
