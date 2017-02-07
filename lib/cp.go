@@ -65,6 +65,12 @@ type chProgressSignalType struct {
     exitStat    int
 }
 
+func freshProgress() {
+    if len(chProgressSignal) <= signalNum {
+        chProgressSignal <- chProgressSignalType{false, normalExit}
+    }
+}
+
 // OssProgressListener progress listener
 type OssProgressListener struct {
     monitor     *CPMonitor
@@ -78,9 +84,7 @@ func (l *OssProgressListener) ProgressChanged(event *oss.ProgressEvent) {
         l.lastSize = l.currSize
         l.currSize = event.ConsumedBytes
         l.monitor.updateTransferSize(l.currSize - l.lastSize)
-        if len(chProgressSignal) <= signalNum {
-            chProgressSignal <- chProgressSignalType{false, normalExit}
-        }
+        freshProgress()
     }
 }
 
@@ -1103,6 +1107,7 @@ func (cc *CopyCommand) fileStatistic(srcURLList []StorageURLer) {
     }
 
     cc.monitor.setScanEnd()
+    freshProgress()
 }
 
 func (cc *CopyCommand) getFileListStatistic(dpath string) error {
@@ -1451,9 +1456,7 @@ func (cc *CopyCommand) updateMonitor(skip bool, err error, isDir bool, size int6
     } else {
         cc.monitor.updateFile(size, 1)
     }
-    if len(chProgressSignal) <= signalNum {
-        chProgressSignal <- chProgressSignalType{false, normalExit}
-    }
+    freshProgress()
 }
 
 func (cc *CopyCommand) filterError(err error) bool {
@@ -1727,6 +1730,7 @@ func (cc *CopyCommand) objectStatistic(bucket *oss.Bucket, cloudURL CloudURL) {
     }
 
     cc.monitor.setScanEnd()
+    freshProgress()
 }
 
 func (cc *CopyCommand) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, chObjects chan<- objectInfoType, chError chan<- error) {

@@ -78,12 +78,12 @@ func (m *Monitor) updateErrNum(num int64) {
     atomic.AddInt64(&m.errNum, num)
 }
 
-func (m *Monitor) getSnapshot() MonitorSnap {
+func (m *Monitor) getSnapshot() *MonitorSnap {
     var snap MonitorSnap
     snap.okNum = m.okNum
     snap.errNum = m.errNum
     snap.dealNum = snap.okNum + snap.errNum
-    return snap
+    return &snap
 }
 
 func (m *Monitor) progressBar(finish bool) string {
@@ -112,7 +112,7 @@ func (m *Monitor) getProgressBar() string {
     return getClearStr(fmt.Sprintf("Scanned %d objects. %s %d objects, Error %d objects.", scanNum, m.opStr, snap.okNum, snap.errNum)) 
 }
 
-func (m *Monitor) getPrecent(snap MonitorSnap) int {
+func (m *Monitor) getPrecent(snap *MonitorSnap) int {
     if m.seekAheadEnd && m.seekAheadError == nil {
         if m.totalNum != 0 {
             return int(float64((snap.dealNum) * 100.0) / float64(m.totalNum))
@@ -223,7 +223,7 @@ func (m *RMMonitor) updateRemovedBucket(bucket string) {
     m.removedBucket = bucket
 }
 
-func (m *RMMonitor) getSnapshot() RMMonitorSnap {
+func (m *RMMonitor) getSnapshot() *RMMonitorSnap {
     var snap RMMonitorSnap
     snap.objectNum = m.objectNum 
     snap.uploadIdNum = m.uploadIdNum 
@@ -232,7 +232,7 @@ func (m *RMMonitor) getSnapshot() RMMonitorSnap {
     snap.dealNum = snap.objectNum + snap.uploadIdNum + snap.errObjectNum + snap.errUploadIdNum 
     snap.errNum = snap.errObjectNum + snap.errUploadIdNum
     snap.removedBucket = m.removedBucket
-    return snap
+    return &snap
 }
 
 func (m *RMMonitor) progressBar(finish bool, exitStat int) string {
@@ -270,7 +270,7 @@ func (m *RMMonitor) getTotalInfo() string {
     return strings.Join(strList, ", ") 
 }
 
-func (m *RMMonitor) getOKInfo(snap RMMonitorSnap) string {
+func (m *RMMonitor) getOKInfo(snap *RMMonitorSnap) string {
     strList := []string{}
     if m.op & allType == 0 {
         return ""
@@ -284,7 +284,7 @@ func (m *RMMonitor) getOKInfo(snap RMMonitorSnap) string {
     return fmt.Sprintf("Removed %s.", strings.Join(strList, ", "))
 }
 
-func (m *RMMonitor) getErrInfo(snap RMMonitorSnap) string {
+func (m *RMMonitor) getErrInfo(snap *RMMonitorSnap) string {
     if snap.errNum != 0 {
         strList := []string{}
         if snap.errObjectNum != 0 {
@@ -298,7 +298,7 @@ func (m *RMMonitor) getErrInfo(snap RMMonitorSnap) string {
     return ""
 }
 
-func (m *RMMonitor) getPrecent(snap RMMonitorSnap) int {
+func (m *RMMonitor) getPrecent(snap *RMMonitorSnap) int {
     if m.seekAheadEnd && m.seekAheadError == nil {
         if m.totalObjectNum + m.totalUploadIdNum != 0 {
             return int(float64((snap.dealNum) * 100.0) / float64(m.totalObjectNum + m.totalUploadIdNum))
@@ -313,7 +313,7 @@ func (m *RMMonitor) getFinishBar(exitStat int) string {
     return m.getObjectFinishBar(snap, exitStat) + m.getBucketFinishBar(snap)
 }
 
-func (m *RMMonitor) getObjectFinishBar(snap RMMonitorSnap, exitStat int) string {
+func (m *RMMonitor) getObjectFinishBar(snap *RMMonitorSnap, exitStat int) string {
     if m.op & allType != 0 {
         if m.seekAheadEnd && m.seekAheadError == nil {
             if m.getExitStat(snap, exitStat) == errExit {     
@@ -331,14 +331,14 @@ func (m *RMMonitor) getObjectFinishBar(snap RMMonitorSnap, exitStat int) string 
     return getClearStr("") 
 }
 
-func (m *RMMonitor) getExitStat(snap RMMonitorSnap, exitStat int) int {
+func (m *RMMonitor) getExitStat(snap *RMMonitorSnap, exitStat int) int {
     if exitStat != normalExit || snap.errNum != 0 || (m.op & bucketType != 0 && snap.removedBucket == "") {
         return errExit
     }
     return normalExit
 }
 
-func (m *RMMonitor) getBucketFinishBar(snap RMMonitorSnap) string {
+func (m *RMMonitor) getBucketFinishBar(snap *RMMonitorSnap) string {
     if m.op & bucketType != 0 && snap.removedBucket != ""{
         return getClearStr(fmt.Sprintf("Removed Bucket: %s\n", snap.removedBucket))
     }
@@ -437,7 +437,7 @@ func (m *CPMonitor) updateErr(size, num int64) {
     atomic.AddInt64(&m.transferSize, size)
 }
 
-func (m *CPMonitor) getSnapshot() CPMonitorSnap {
+func (m *CPMonitor) getSnapshot() *CPMonitorSnap {
     var snap CPMonitorSnap  
     snap.transferSize = m.transferSize
     snap.skipSize = m.skipSize
@@ -448,7 +448,7 @@ func (m *CPMonitor) getSnapshot() CPMonitorSnap {
     snap.errNum = m.errNum
     snap.okNum = snap.fileNum + snap.dirNum + snap.skipNum
     snap.dealNum = snap.okNum + snap.errNum 
-    return snap
+    return &snap
 }
 
 func (m *CPMonitor) progressBar(finish bool, exitStat int) string {
@@ -522,15 +522,15 @@ func (m *CPMonitor) getSubject() string {
     }
 }
 
-func (m *CPMonitor) getDealNumDetail(snap CPMonitorSnap) string {
+func (m *CPMonitor) getDealNumDetail(snap *CPMonitorSnap) string {
     return m.getNumDetail(snap, true)
 }
 
-func (m *CPMonitor) getOKNumDetail(snap CPMonitorSnap) string {
+func (m *CPMonitor) getOKNumDetail(snap *CPMonitorSnap) string {
     return m.getNumDetail(snap, false)
 }
 
-func (m *CPMonitor) getNumDetail(snap CPMonitorSnap, hasErr bool) string {
+func (m *CPMonitor) getNumDetail(snap *CPMonitorSnap, hasErr bool) string {
     if snap.dealNum == 0 || (!hasErr && snap.okNum == 0) {
         return ""
     }
@@ -565,18 +565,18 @@ func (m *CPMonitor) getOPStr() string {
     }
 }
 
-func (m *CPMonitor) getDealSizeDetail(snap CPMonitorSnap) string {
+func (m *CPMonitor) getDealSizeDetail(snap *CPMonitorSnap) string {
     return fmt.Sprintf(", OK size: %s", getSizeString(snap.dealSize))
 }
 
-func (m *CPMonitor) getSkipSize(snap CPMonitorSnap) string {
+func (m *CPMonitor) getSkipSize(snap *CPMonitorSnap) string {
     if snap.skipSize != 0 {
         return fmt.Sprintf(", Skip size: %s", getSizeString(snap.skipSize))
     }
     return ""
 }
 
-func (m *CPMonitor) getSizeDetail(snap CPMonitorSnap) string {
+func (m *CPMonitor) getSizeDetail(snap *CPMonitorSnap) string {
     if snap.skipSize == 0 {
         return fmt.Sprintf(", Transfer size: %s", getSizeString(snap.transferSize))
     }
@@ -586,7 +586,7 @@ func (m *CPMonitor) getSizeDetail(snap CPMonitorSnap) string {
     return fmt.Sprintf(", OK size: %s(transfer: %s, skip: %s)", getSizeString(snap.transferSize + snap.skipSize), getSizeString(snap.transferSize), getSizeString(snap.skipSize))
 }
 
-func (m *CPMonitor) getPrecent(snap CPMonitorSnap) int {
+func (m *CPMonitor) getPrecent(snap *CPMonitorSnap) int {
     if m.seekAheadEnd && m.seekAheadError == nil {
         if m.totalSize != 0 {
             return int(float64((snap.dealSize) * 100.0) / float64(m.totalSize))
