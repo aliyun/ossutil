@@ -1405,19 +1405,25 @@ func (cc *CopyCommand) preparePartOption(fileSize int64) (int64, int) {
         return partSize, int(parallel)
     }
 
+    var rt int
 	if partNum < 3 {
-		return partSize, 1
-	}
-	if partNum <= 10 {
-		return partSize, 3
-	}
-    if partNum <= 100 {
-        return partSize, 10
+        rt = 1 
+	} else if partNum <= 30 {
+        rt = 2
+	} else if partNum <= 100 {
+        rt = 3
+    } else if partNum <= 300 {
+        rt = 4
+    } else if partNum <= 500 {
+        rt = 5
+	} else {
+        rt = 6
     }
-	if partNum <= 500 {
-		return partSize, 15
-	}
-	return partSize, 32 
+    rt = maxint(rt * getCPUNum(), 1) 
+    if int64(rt) > partNum {
+        rt = int(partNum)
+    }
+	return partSize, rt 
 }
 
 func (cc *CopyCommand) formatCPFileName(cpDir, srcf, destf string) string {

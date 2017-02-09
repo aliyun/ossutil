@@ -89,6 +89,20 @@ func max(a, b int64) int64 {
     return b
 }
 
+func maxint(a, b int) int {
+    if a >= b {
+        return a
+    }
+    return b
+}
+
+func minint(a, b int) int {
+    if a <= b {
+        return a
+    }
+    return b
+}
+
 func getSizeString(size int64) string {
     prefix := ""
     str := fmt.Sprintf("%d", size)
@@ -108,3 +122,6 @@ func getSizeString(size int64) string {
     return fmt.Sprintf("%s%s", prefix, strings.Join(strList, ","))
 }
 
+func getCPUNum() int {
+    return runtime.NumCPU()
+}

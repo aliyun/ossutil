@@ -99,9 +99,9 @@ const (
 	MaxRetryTimes                   int64  = 500
 	MinRetryTimes                   int64  = 1
 	Routines                        int    = 5
-	MaxRoutines                     int64  = 100
+	MaxRoutines                     int64  = 1000
 	MinRoutines                     int64  = 1
-	MaxParallel                     int64  = 100
+	MaxParallel                     int64  = 1000
 	MinParallel                     int64  = 1
 	DefaultHashType                 string = "crc64"
 	MD5HashType                     string = "md5"
