@@ -155,9 +155,9 @@ func (cmd *Command) assembleOptions(cmder interface{}) {
 					cmd.options[name] = &opval
 					delete(cmd.configOptions, name)
 				} else if name == OptionEndpoint {
-                    delete(cmd.configOptions, BucketCnameSection)
-                    delete(cmd.configOptions, BucketEndpointSection)
-                }
+					delete(cmd.configOptions, BucketCnameSection)
+					delete(cmd.configOptions, BucketEndpointSection)
+				}
 			}
 		}
 	}
@@ -170,8 +170,8 @@ func (cmd *Command) assembleOptions(cmder interface{}) {
 					def, _ := strconv.ParseInt(OptionMap[name].def, 10, 64)
 					cmd.options[name] = &def
 				}
-            case OptionTypeAlternative: 
-                fallthrough
+			case OptionTypeAlternative:
+				fallthrough
 			case OptionTypeString:
 				if val, _ := GetString(name, cmd.options); val == "" {
 					def := OptionMap[name].def
@@ -195,7 +195,7 @@ func (cmd *Command) formatHelpForWhole() string {
 }
 
 func (cmd *Command) getSpecText() SpecText {
-    val, _ := GetString(OptionLanguage, helpCommand.command.options)
+	val, _ := GetString(OptionLanguage, helpCommand.command.options)
 	switch strings.ToLower(val) {
 	case LEnglishLanguage:
 		return cmd.specEnglish
@@ -252,9 +252,9 @@ func (cmd *Command) formatOption(option Option) string {
 		}
 	}
 
-    val, _ := GetString(OptionLanguage, helpCommand.command.options)
-    val = strings.ToLower(val)
-    opHelp := option.getHelp(val)
+	val, _ := GetString(OptionLanguage, helpCommand.command.options)
+	val = strings.ToLower(val)
+	opHelp := option.getHelp(val)
 	if opHelp != "" {
 		text += fmt.Sprintf("\n%s%s%s\n\n", FormatTAB, FormatTAB, opHelp)
 	}
@@ -311,8 +311,24 @@ func (cmd *Command) ossListObjectsRetry(bucket *oss.Bucket, options ...oss.Optio
 	retryTimes, _ := GetInt(OptionRetryTimes, cmd.options)
 	for i := 1; ; i++ {
 		lor, err := bucket.ListObjects(options...)
-		if err == nil || int64(i) >= retryTimes {
+		if err == nil {
 			return lor, err
+		}
+		if int64(i) >= retryTimes {
+			return lor, BucketError{err, bucket.BucketName}
+		}
+	}
+}
+
+func (cmd *Command) ossListMultipartUploadsRetry(bucket *oss.Bucket, options ...oss.Option) (oss.ListMultipartUploadResult, error) {
+	retryTimes, _ := GetInt(OptionRetryTimes, cmd.options)
+	for i := 1; ; i++ {
+		lmr, err := bucket.ListMultipartUploads(options...)
+		if err == nil {
+			return lmr, err
+		}
+		if int64(i) >= retryTimes {
+			return lmr, BucketError{err, bucket.BucketName}
 		}
 	}
 }
@@ -325,29 +341,53 @@ func (cmd *Command) ossGetObjectStatRetry(bucket *oss.Bucket, object string) (ht
 			return props, err
 		}
 		if int64(i) >= retryTimes {
-			return props, ObjectError{err, object}
+			return props, ObjectError{err, bucket.BucketName, object}
 		}
 	}
 }
 
-func (cmd *Command) ossDownloadFileRetry(bucket *oss.Bucket, objectName, fileName string) error {
+func (cmd *Command) ossGetObjectMetaRetry(bucket *oss.Bucket, object string) (http.Header, error) {
 	retryTimes, _ := GetInt(OptionRetryTimes, cmd.options)
 	for i := 1; ; i++ {
-		err := bucket.GetObjectToFile(objectName, fileName)
+		props, err := bucket.GetObjectMeta(object)
 		if err == nil {
-			return err
+			return props, err
 		}
 		if int64(i) >= retryTimes {
-			return ObjectError{err, objectName}
+			return props, ObjectError{err, bucket.BucketName, object}
 		}
 	}
 }
 
+func (cmd *Command) objectStatistic(bucket *oss.Bucket, cloudURL CloudURL, monitor Monitorer) {
+	if monitor == nil {
+		return
+	}
+
+	pre := oss.Prefix(cloudURL.object)
+	marker := oss.Marker("")
+	for {
+		lor, err := cmd.ossListObjectsRetry(bucket, marker, pre)
+		if err != nil {
+			monitor.setScanError(err)
+			return
+		}
+
+		monitor.updateScanNum(int64(len(lor.Objects)))
+
+		marker = oss.Marker(lor.NextMarker)
+		if !lor.IsTruncated {
+			break
+		}
+	}
+
+	monitor.setScanEnd()
+}
 
 func (cmd *Command) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, chObjects chan<- string, chError chan<- error) {
 	pre := oss.Prefix(cloudURL.object)
 	marker := oss.Marker("")
-	for i := 0; ; i++ {
+	for {
 		lor, err := cmd.ossListObjectsRetry(bucket, marker, pre)
 		if err != nil {
 			chError <- err
@@ -368,19 +408,31 @@ func (cmd *Command) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, chObje
 	chError <- nil
 }
 
+func (cmd *Command) updateMonitor(err error, monitor *Monitor) {
+	if monitor == nil {
+		return
+	}
+	if err == nil {
+		monitor.updateOKNum(1)
+	} else {
+		monitor.updateErrNum(1)
+	}
+	fmt.Printf(monitor.progressBar(false))
+}
+
 // GetAllCommands returns all commands list
 func GetAllCommands() []interface{} {
 	return []interface{}{
 		&helpCommand,
 		&configCommand,
-        &makeBucketCommand,
+		&makeBucketCommand,
 		&listCommand,
 		&removeCommand,
 		&statCommand,
 		&setACLCommand,
 		&setMetaCommand,
 		&copyCommand,
-        &hashCommand,
-        &updateCommand,
+		&hashCommand,
+		&updateCommand,
 	}
 }

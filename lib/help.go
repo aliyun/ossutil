@@ -3,13 +3,15 @@ package lib
 import (
 	"fmt"
 	"reflect"
+	"strings"
 )
 
 // global public variable for formating help text
 const (
 	FormatTAB         = "    "
 	MaxCommandNameLen = 15
-	UsageText        = "Usage: ossutil [command] [args...] [options...]"
+	UsageTextChinese  = "用法: ossutil [command] [args...] [options...]\n请使用ossutil help command来显示command命令的帮助"
+	UsageTextEnglish  = "Usage: ossutil [command] [args...] [options...]\nPlease use 'ossutil help command' to show help of command"
 )
 
 var specChineseHelp = SpecText{
@@ -84,26 +86,26 @@ type HelpCommand struct {
 
 var helpCommand = HelpCommand{
 	command: Command{
-		name:             "help",
-		nameAlias:        []string{},
-		minArgc:          0,
-		maxArgc:          1,
-		specChinese:      specChineseHelp,
-		specEnglish:      specEnglishHelp,
-		group:            GroupTypeAdditionalCommand,
+		name:        "help",
+		nameAlias:   []string{},
+		minArgc:     0,
+		maxArgc:     1,
+		specChinese: specChineseHelp,
+		specEnglish: specEnglishHelp,
+		group:       GroupTypeAdditionalCommand,
 		validOptionNames: []string{
-            OptionLanguage,
-        },
+			OptionLanguage,
+		},
 	},
 }
 
 // function for RewriteLoadConfiger interface
 func (hc *HelpCommand) rewriteLoadConfig(configFile string) error {
-    // read config file, if error exist, do not print error
-    var err error
-    if hc.command.configOptions, err = LoadConfig(configFile); err != nil {
-        hc.command.configOptions = OptionMapType{}
-    }
+	// read config file, if error exist, do not print error
+	var err error
+	if hc.command.configOptions, err = LoadConfig(configFile); err != nil {
+		hc.command.configOptions = OptionMapType{}
+	}
 	return nil
 }
 
@@ -116,7 +118,7 @@ func (hc *HelpCommand) formatIndependHelp() string {
 	return hc.command.formatIndependHelp()
 }
 
-// Init simulate inheritance, and polymorphism 
+// Init simulate inheritance, and polymorphism
 func (hc *HelpCommand) Init(args []string, options OptionMapType) error {
 	return hc.command.Init(args, options, hc)
 }
@@ -169,7 +171,18 @@ func (hc *HelpCommand) formatWholeHelp(groupCommandMap map[string][]interface{})
 			commandsText += cmd.(FormatHelper).formatHelpForWhole()
 		}
 	}
-	return fmt.Sprintf("%s\n%s", UsageText, commandsText)
+	return fmt.Sprintf("%s\n%s", hc.getUsageText(), commandsText)
+}
+
+func (hc *HelpCommand) getUsageText() string {
+	val, _ := GetString(OptionLanguage, helpCommand.command.options)
+	switch strings.ToLower(val) {
+	case LEnglishLanguage:
+		return UsageTextEnglish
+	default:
+		return UsageTextChinese
+	}
+
 }
 
 func (hc *HelpCommand) formatCommandHelp(subCommandMap map[string]interface{}) (string, error) {

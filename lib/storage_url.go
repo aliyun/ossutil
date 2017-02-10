@@ -2,7 +2,7 @@ package lib
 
 import (
 	"fmt"
-    "os"
+	"os"
 	"os/user"
 	"strings"
 )
@@ -57,31 +57,36 @@ func (cu *CloudURL) checkBucketObject() error {
 	if cu.bucket == "" && cu.object != "" {
 		return fmt.Errorf("invalid cloud url: %s, miss bucket", cu.url)
 	}
-	if cu.object != "" && (strings.HasPrefix(cu.object, "/") || strings.HasPrefix(cu.object, "\\")) {
-		return fmt.Errorf("invalid cloud url: %s, object name should not begin with \"%s\"", cu.url, cu.object[0])
+	return nil
+}
+
+func (cu *CloudURL) checkObjectPrefix() error {
+	if strings.HasPrefix(cu.object, "/") {
+		return fmt.Errorf("invalid cloud url: %s, object name should not begin with \"/\"", cu.url)
+	}
+	if strings.HasPrefix(cu.object, "\\") {
+		return fmt.Errorf("invalid cloud url: %s, object name should not begin with \"\\\"", cu.url)
 	}
 	return nil
 }
 
-// IsCloudURL shows if the url is a cloud url 
+// IsCloudURL shows if the url is a cloud url
 func (cu CloudURL) IsCloudURL() bool {
 	return true
 }
 
-
-// IsFileURL shows if the url is a file url 
+// IsFileURL shows if the url is a file url
 func (cu CloudURL) IsFileURL() bool {
 	return false
 }
 
-// ToString reconstruct url 
+// ToString reconstruct url
 func (cu CloudURL) ToString() string {
 	if cu.object == "" {
 		return fmt.Sprintf("%s%s", SchemePrefix, cu.bucket)
 	}
 	return fmt.Sprintf("%s%s/%s", SchemePrefix, cu.bucket, cu.object)
 }
-
 
 // FileURL describes file url
 type FileURL struct {
@@ -92,7 +97,7 @@ type FileURL struct {
 func (fu *FileURL) Init(url string) {
 	usr, _ := user.Current()
 	dir := usr.HomeDir
-	if len(url) >= 2 && url[:2] == "~" + string(os.PathSeparator) {
+	if len(url) >= 2 && url[:2] == "~"+string(os.PathSeparator) {
 		url = strings.Replace(url, "~", dir, 1)
 	}
 	fu.url = url
@@ -113,7 +118,7 @@ func (fu FileURL) ToString() string {
 	return fu.url
 }
 
-// StorageURLFromString analysis input url type and build a storage url from the url  
+// StorageURLFromString analysis input url type and build a storage url from the url
 func StorageURLFromString(url string) (StorageURLer, error) {
 	if strings.HasPrefix(strings.ToLower(url), SchemePrefix) {
 		var cloudURL CloudURL
@@ -134,12 +139,12 @@ func CloudURLFromString(url string) (CloudURL, error) {
 		return CloudURL{}, err
 	}
 	if !storageURL.IsCloudURL() {
-		return CloudURL{}, fmt.Errorf("invalid cloud url: %s, please make sure the url starts with: %s", url, SchemePrefix)
+		return CloudURL{}, fmt.Errorf("invalid cloud url: \"%s\", please make sure the url starts with: \"%s\"", url, SchemePrefix)
 	}
 	return storageURL.(CloudURL), nil
 }
 
-// CloudURLToString format url string from input 
+// CloudURLToString format url string from input
 func CloudURLToString(bucket string, object string) string {
 	cloudURL := CloudURL{
 		bucket: bucket,

@@ -2,9 +2,9 @@ package lib
 
 import (
 	"fmt"
-    "os"
-	"strings"
 	configparser "github.com/alyu/configparser"
+	"os"
+	"strings"
 )
 
 var specChineseConfig = SpecText{
@@ -14,7 +14,7 @@ var specChineseConfig = SpecText{
 	paramText: "[options]",
 
 	syntaxText: ` 
-    ossutil config [-e endpoint] [-I id] [-K key] [-T token] [-L language] [-c file] 
+    ossutil config [-e endpoint] [-I id] [-K key] [-T token] [-L language] [--output-dir outdir] [-c file] 
 `,
 
 	detailHelpText: ` 
@@ -37,54 +37,85 @@ var specChineseConfig = SpecText{
         (1) config file
             配置文件路径，如果用户键入回车，ossutil会使用默认的配置文件：
         ` + DecideConfigFile("") + `。
+            如果用户自己指定了配置文件，在使用命令时需要将--config-file选项
+        设置为用户设置的配置文件路径。哪些命令支持--config-file选项可由查看
+        每个命令的帮助。
         (2) language
-            当首次配置（配置文件不存在）时，ossutil会向用户询问语言设置，可选
-        为中文或者英文，如果不配置ossutil将根据用户输入的language选项配置，如
-        果此时用户也未输入language选项，将配置成默认语言中文。
+            当首次配置（配置文件不存在）时，ossutil会向用户询问语言设置，可
+        选值为中文或者英文（` + OptionMap[OptionLanguage].minVal + `），如果键入回车，ossutil将根据用户输入的
+        --language选项配置，如果此时用户也未输入--language选项，将配置成默认
+        语言中文。
             如果配置文件已存在，ossutil会综合用户输入的language选项和配置文件
         中的语言信息，配置该项，而不会询问。
             ossutil在运行时会从配置文件中读取该language选项，如果该选项不存在
         或者非法，将采用默认语言：` + DefaultLanguage + `。
-            注意：该配置项在此次config成功结束后才会生效，在执行config命令过程
-        中语言显示不会受用户的选择影响。
+            注意：该配置项在此次config成功结束后才会生效，在执行config命令过
+        程中语言显示不会受用户的选择影响。
         (3) endpoint, accessKeyID, accessKeySecret
             回车代表着跳过相应配置项的设置。注意：endpoint应该为一个二级域
-        名(SLD)，例如：oss.aliyuncs.com。  
-        (4) bucket-endpoint
-            ossutil询问用户是否有bucket-endpoint配对，请输入'y'或者'n'来进行
-        配置或者跳过配置。如果用户在输入bucket信息时键入回车，则代表着结束
-        bucket-endpoint的配置。注意：此处的endpoint应该为一个二级域名。
-            如果配置了bucket-endpoint选项，当对某bucket进行操作时，ossutil会
-        在该选项中寻找该bucket对应的endpoint，如果找到，该endpoint会覆盖基本
-        配置中endpoint。
-        (5) bucket-cname
-            与bucket-endpoint配置类似。
-            如果配置了bucket-endpoint选项，当对某bucket进行操作时，ossutil会
-        在该选项中寻找该bucket对应的endpoint，如果找到，则找到的endpoint会覆
-        盖bucket-endpoint选项和基本配置中的endpoint。
+        名(SLD)，例如：` + DefaultEndpoint + `。
+            以上选项一般为必选项。
+        (4) stsToken
+            如果用户需要使用临时token来访问oss，用户需要填入该项，否则请输入
+        回车跳过该项配置。
+            关于stsToken的更多信息，请参考：https://help.aliyun.com/document_detail/31931.html?spm=5176.doc31867.6.632.hZFNSv
+        (5) outputDir
+            输出文件所在目录的路径。如果用户键入回车，将使用默认目录：当前目
+        录下的：` + DefaultOutputDir + `，ossutil会在运行过程中将输出文件都生成到该文件
+        夹下。输出文件目前包含：在cp命令中批量操作出错时，记录每个文件操作的
+        错误信息的report文件。
+            关于report文件，更详细的信息请参见cp命令的帮助。
+            注意：outputDir如果不存在，ossutil在产生输出文件时会自动创建该目录，
+        如果outputDir存在且并非目录，将会报错。
+
+        下述交互式bucket-endpoint和bucket-cname配置被取消，但配置文件中该两项
+        配置仍然起效。
+        (6) bucket-endpoint
+            bucket-endpoint对每个指定的bucket单独配置endpoint，此配置会优先于
+        配置文件中关于默认endpoint的配置。
+            在该版本中，ossutil取消了交互式配置中，关于bucket-endpoint配对的配
+        置，但配置文件中该项配置仍然起效，所以如果用户想对每个bucket单独指定
+        endpoint，仍然可以在配置文件中进行配置。注意：此处的endpoint应该为一个
+        二级域名(SLD)，例如：` + DefaultEndpoint + `。
+            如果配置了bucket-endpoint选项，当对某bucket进行操作时，ossutil会在
+        该选项中寻找该bucket对应的endpoint，如果找到，该endpoint会覆盖基本配置
+        中endpoint。但是运行命令时如果指定了--endpoint选项，--endpoint选项为最
+        高优先级。
+        (7) bucket-cname
+            bucket-cname为每个指定的bucket单独配置CNAME域名（CDN加速域名），此
+        配置会优先于配置文件中bucket-endpoint及endpoint的配置。
+            关于CNAME域名的更多信息见：https://help.aliyun.com/document_detail/27112.html?spm=5176.product27099.4.6.Lf06oS#1.
+            在该版本中，ossutil取消了交互式配置中，关于bucket-cname配对的配置，
+        但配置文件中该项配置仍然起效，所以如果用户想对每个bucket单独指定CNAME
+        域名，仍然可以在配置文件中进行配置。
+            如果配置了bucket-cname选项，当对某bucket进行操作时，ossutil会在该
+        选项中寻找该bucket对应的CNAME域名，如果找到，则找到的CNAME域名会覆盖
+        bucket-endpoint选项和基本配置中的endpoint。运行命令时如果指定了--endpoint
+        选项，--endpoint选项为最高优先级。
         
-        即优先级：bucket-cname > bucket-endpoint > endpoint > 默认endpoint
+        优先级：--endpoint > bucket-cname > bucket-endpoint > endpoint > 默认endpoint
 
     2) ossutil config options
-        如果用户使用命令时输入了除--config-file之外的任何选项，则该命令进入非
-    交互式模式。所有的配置项应当使用选项指定。
+        如果用户使用命令时输入了除--language和--config-file之外的任何选项，则
+    该命令进入非交互式模式。所有的配置项应当使用选项指定。
 
 
 配置文件格式：
 
     [Credentials]
+        language = CH 
         endpoint = ` + DefaultEndpoint + `
         accessKeyID = your_key_id
         accessKeySecret = your_key_secret
         stsToken = your_sts_token
-        language = CH 
+        outputDir = your_output_dir
     [Bucket-Endpoint]
         bucket1 = endpoint1
         bucket2 = endpoint2
         ...
     [Bucket-Cname]
-        bucket3 = cname1
-        bucket4 = cname2
+        bucket1 = cname1
+        bucket2 = cname2
         ...
 `,
 
@@ -101,7 +132,7 @@ var specEnglishConfig = SpecText{
 	paramText: "[options]",
 
 	syntaxText: ` 
-    ossutil config [-e endpoint] [-I id] [-K key] [-T token] [-L language] [-c file] 
+    ossutil config [-e endpoint] [-I id] [-K key] [-T token] [-L language] [--output-dir outdir] [-c file] 
 `,
 
 	detailHelpText: ` 
@@ -127,6 +158,10 @@ Usage:
         (1) config file
             If user enter carriage return, ossutil use the default file: 
         ` + DecideConfigFile("") + `.
+            If you specified the config file, please specify --config-file 
+        option to the path when use other command that needs configuration. 
+        To see the commands who support --config-file option please see the 
+        help of each command.
         (2) language
             When configure for the first time(config file not exit), ossutil 
         will ask user to set the language(support Chinese or English at this 
@@ -143,44 +178,70 @@ Usage:
         command successfully executed, it's dimmed while execute the command.
         (3) endpoint, accessKeyID, accessKeySecret
             Carriage return means skip the configuration of these options.
-        Notice that endpoint means a second-level domain(SLD), eg: oss.aliyuncs.com.
-        (4) bucket-endpoint
-            ossutil ask you if there are any bucket-endpoint pairs, please
-        enter 'y' or 'n' to configure the pairs or skip. If you enter carriage
-        return when configure bucket, it means the pairs' configuration is
-        ended. Notice that endpoint means a second-level domain(SLD).
+        Note: Endpoint means a second-level domain(SLD), eg: ` + DefaultEndpoint + `.
+            The three options are necessary in normal condition.
+        (4) stsToken
+            If you use stsToken to access oss, please enter your stsToken. If not, 
+        please enter carriage return to skip the configuration.
+            For more information about stsToken, see: https://help.aliyun.com/document_detail/31931.html?spm=5176.doc31867.6.632.hZFNSv
+        (5) outputDir
+            The directory to place output file in. If user enter carriage return, 
+        ossutil will use the default directory: ` + DefaultOutputDir + ` in current directory. 
+        ossutil will place all output files generated during running in this 
+        directory. Output files include: report file(generated when error occurs 
+        in cp command while batch upload/downlaod/copy files). 
+            More information about report file, see help of cp command.
+            Note: if outputDir is not exist, ossutil will create the directory 
+        automatically, if outputDir you specified exists and is not a directory, 
+        ossutil will return an error. 
+
+        In interactive config, bucket-endpoint and bucket-cname is removed, but 
+        the two sections in config file are still effective. 
+        (6) bucket-endpoint
+            bucket-endpoint specify endpoint for every individual bucket, the 
+        section is prior to endpoint in base section.  
+            In current version, bucket-endpoint interactive configuration is 
+        removed, but the option in config file is still effective. Note, the 
+        endpoint should be a second-level domain(SLD), eg: ` + DefaultEndpoint + `. 
             When access a bucket, ossutil will search for endpoint corresponding 
-        to the bucket in this section, if found, the endpoint has priority over 
-        the endpoint in the base section.
-        (5) bucket-cname
-            Similar to bucket-endpoint configuration.
+        to the bucket in this section, if found, the endpoint is prior to the 
+        endpoint in the base section. If --endpoint option is specified, --endpoint 
+        option has the highest priority.
+        (7) bucket-cname
+            bucket-cname specify CNAME host for every individual bucket, the section 
+        is prior to bucket-endpoint and endpoint in the base section.
+            More information about CNAME host see: https://help.aliyun.com/document_detail/27112.html?spm=5176.product27099.4.6.Lf06oS#1. 
+            In current version, bucket-cname interactive configuration is removed, 
+        but the option in config file is still effective.
             When access a bucket, ossutil will search for endpoint corresponding 
         tothe bucket in this section, if found, the endpoint has priority over 
-        the endpoint in bucket-endpoint and the endpoint in the base section.
+        the endpoint in bucket-endpoint and the endpoint in the base section. If 
+        --endpoint option is specified, --endpoint option has the highest priority.
 
-        PRI: bucket-cname > bucket-endpoint > endpoint > default endpoint
+        PRI: --endpoint option > bucket-cname > bucket-endpoint > endpoint > default endpoint
 
     2) ossutil config options
-        If any options except --config-file is specified, the command enter
-    the non interactive mode. All the configurations should be specified by
-    options.
+        If any options except --language and --config-file is specified, the 
+    command enter the non interactive mode. All the configurations should be 
+    specified by options.
 
 
 Credential File Format:
 
     [Credentials]
+        language = EN 
         endpoint = ` + DefaultEndpoint + ` 
         accessKeyID = your_key_id
         accessKeySecret = your_key_secret
         stsToken = your_sts_token
-        language = EN 
+        outputDir = your_output_dir
     [Bucket-Endpoint]
         bucket1 = endpoint1
         bucket2 = endpoint2
         ...
     [Bucket-Cname]
-        bucket3 = cname1
-        bucket4 = cname2
+        bucket1 = cname1
+        bucket2 = cname2
         ...
 `,
 
@@ -210,38 +271,38 @@ var configCommand = ConfigCommand{
 			OptionAccessKeyID,
 			OptionAccessKeySecret,
 			OptionSTSToken,
-            OptionLanguage,
+			OptionOutputDir,
+			OptionLanguage,
 		},
 	},
 }
 
 // function for RewriteLoadConfiger interface
 func (cc *ConfigCommand) rewriteLoadConfig(configFile string) error {
-    // read config file, if error exist, do not print error
-    var err error
-    if cc.command.configOptions, err = LoadConfig(configFile); err != nil {
-        cc.command.configOptions = OptionMapType{}
-    }
+	// read config file, if error exist, do not print error
+	var err error
+	if cc.command.configOptions, err = LoadConfig(configFile); err != nil {
+		cc.command.configOptions = OptionMapType{}
+	}
 	return nil
 }
 
 // function for AssembleOptioner interface
 func (cc *ConfigCommand) rewriteAssembleOptions() {
-    // only assemble language option
+	// only assemble language option
 	if val, _ := GetString(OptionLanguage, cc.command.options); val == "" {
-        if val, ok := cc.command.configOptions[OptionLanguage]; ok {
-            opval := val.(string)
-            cc.command.options[OptionLanguage] = &opval
-            delete(cc.command.configOptions, OptionLanguage)
-        }
-    }
+		if val, ok := cc.command.configOptions[OptionLanguage]; ok {
+			opval := val.(string)
+			cc.command.options[OptionLanguage] = &opval
+			delete(cc.command.configOptions, OptionLanguage)
+		}
+	}
 
-    if val, _ := GetString(OptionLanguage, cc.command.options); val == "" {
-        def := OptionMap[OptionLanguage].def
-        cc.command.options[OptionLanguage] = &def
-    }
+	if val, _ := GetString(OptionLanguage, cc.command.options); val == "" {
+		def := OptionMap[OptionLanguage].def
+		cc.command.options[OptionLanguage] = &def
+	}
 }
-
 
 // function for FormatHelper interface
 func (cc *ConfigCommand) formatHelpForWhole() string {
@@ -252,18 +313,17 @@ func (cc *ConfigCommand) formatIndependHelp() string {
 	return cc.command.formatIndependHelp()
 }
 
-// Init simulate inheritance, and polymorphism 
+// Init simulate inheritance, and polymorphism
 func (cc *ConfigCommand) Init(args []string, options OptionMapType) error {
 	return cc.command.Init(args, options, cc)
 }
 
-
-// RunCommand simulate inheritance, and polymorphism 
+// RunCommand simulate inheritance, and polymorphism
 func (cc *ConfigCommand) RunCommand() error {
 	configFile, _ := GetString(OptionConfigFile, cc.command.options)
 	delete(cc.command.options, OptionConfigFile)
-    language, _ := GetString(OptionLanguage, cc.command.options)
-    delete(cc.command.options, OptionLanguage)
+	language, _ := GetString(OptionLanguage, cc.command.options)
+	delete(cc.command.options, OptionLanguage)
 
 	// filter user input options
 	cc.filterNonInputOptions()
@@ -286,35 +346,35 @@ func (cc *ConfigCommand) filterNonInputOptions() {
 }
 
 func (cc *ConfigCommand) runCommandInteractive(configFile, language string) error {
-    llanguage := strings.ToLower(language)
-    if llanguage == LEnglishLanguage {
-	    fmt.Println("The command creates a configuration file and stores credentials.")
-    } else {
-        fmt.Println("该命令创建将一个配置文件，在其中存储配置信息。")
-    }
+	llanguage := strings.ToLower(language)
+	if llanguage == LEnglishLanguage {
+		fmt.Println("The command creates a configuration file and stores credentials.")
+	} else {
+		fmt.Println("该命令创建将一个配置文件，在其中存储配置信息。")
+	}
 
 	if configFile == "" {
-        if llanguage == LEnglishLanguage {
-		    fmt.Printf("\nPlease enter the config file path(default " + DecideConfigFile("") + ", carriage return will use the default path):")
-        } else {
-		    fmt.Printf("\n请输入配置文件路径（默认为：" + DecideConfigFile("") + "，回车将使用默认路径）：")
-        }
+		if llanguage == LEnglishLanguage {
+			fmt.Printf("\nPlease enter the config file path(default " + DecideConfigFile("") + ", carriage return will use the default path. If you specified this option, you should specify --config-file option to the path when you use other commands):")
+		} else {
+			fmt.Printf("\n请输入配置文件路径（默认为：" + DecideConfigFile("") + "，回车将使用默认路径。如果用户设置了该选项，在使用命令时需要将--config-file选项设置为该路径）：")
+		}
 
 		if _, err := fmt.Scanln(&configFile); err != nil {
-            if llanguage == LEnglishLanguage {
-			    fmt.Println("No config file entered, will use the default config file " + DecideConfigFile("") + "\n")
-            } else {
-		        fmt.Println("未输入配置文件路径，将使用默认配置文件：" + DecideConfigFile("") + "。\n")
-            }
+			if llanguage == LEnglishLanguage {
+				fmt.Println("No config file entered, will use the default config file " + DecideConfigFile("") + "\n")
+			} else {
+				fmt.Println("未输入配置文件路径，将使用默认配置文件：" + DecideConfigFile("") + "。\n")
+			}
 		}
 	}
 
 	configFile = DecideConfigFile(configFile)
-    if llanguage == LEnglishLanguage {
-	    fmt.Println("For the following settings, carriage return means skip the configuration. Please try \"help config\" to see the meaning of the settings.\n")
-    } else {
-        fmt.Println("对于下述配置，回车将跳过相关配置项的设置，配置项的具体含义，请使用\"help config\"命令查看。\n")
-    }
+	if llanguage == LEnglishLanguage {
+		fmt.Println("For the following settings, carriage return means skip the configuration. Please try \"help config\" to see the meaning of the settings.\n")
+	} else {
+		fmt.Println("对于下述配置，回车将跳过相关配置项的设置，配置项的具体含义，请使用\"help config\"命令查看。\n")
+	}
 
 	if err := cc.configInteractive(configFile, language); err != nil {
 		return err
@@ -327,65 +387,44 @@ func (cc *ConfigCommand) configInteractive(configFile, language string) error {
 	config := configparser.NewConfiguration()
 	section := config.NewSection(CREDSection)
 
-    // if config file not exist, config Language
-    llanguage := strings.ToLower(language)
+	// if config file not exist, config Language
+	llanguage := strings.ToLower(language)
 	section.Add(OptionLanguage, language)
-    if _, err := os.Stat(configFile); err != nil {
-        if llanguage == LEnglishLanguage {
-		    fmt.Printf("Please enter language(%s, default is:%s, the configuration will go into effect after the command successfully executed):", OptionMap[OptionLanguage].minVal, DefaultLanguage)
-        } else {
-            fmt.Printf("请输入语言(%s，默认为：%s，该配置项将在此次config命令成功结束后生效)：", OptionMap[OptionLanguage].minVal, DefaultLanguage)
-        }
-		if _, err := fmt.Scanln(&val); err == nil {
-            vals := strings.Split(OptionMap[OptionLanguage].minVal, "/")
-            if FindPosCaseInsen(val, vals) == -1 {
-                return fmt.Errorf("invalid option value of %s, the value: %s is not anyone of %s", OptionLanguage, val, OptionMap[OptionLanguage].minVal)
-            }
-			section.Add(OptionLanguage, val)
+	if _, err := os.Stat(configFile); err != nil {
+		if llanguage == LEnglishLanguage {
+			fmt.Printf("Please enter language(%s, default is:%s, the configuration will go into effect after the command successfully executed):", OptionMap[OptionLanguage].minVal, DefaultLanguage)
+		} else {
+			fmt.Printf("请输入语言(%s，默认为：%s，该配置项将在此次config命令成功结束后生效)：", OptionMap[OptionLanguage].minVal, DefaultLanguage)
 		}
-    }
-
-    credOptionList := CredOptionList[1:]
-	for _, name := range credOptionList {
-        if llanguage == LEnglishLanguage {
-		    fmt.Printf("Please enter %s:", name)
-        } else {
-            fmt.Printf("请输入%s：", name)
-        }
 		if _, err := fmt.Scanln(&val); err == nil {
-			section.Add(name, val)
+			vals := strings.Split(OptionMap[OptionLanguage].minVal, "/")
+			if FindPosCaseInsen(val, vals) == -1 {
+				return fmt.Errorf("invalid option value of %s, the value: %s is not anyone of %s", OptionLanguage, val, OptionMap[OptionLanguage].minVal)
+			}
+			section.Add(OptionLanguage, val)
 		}
 	}
 
-	for _, sec := range []string{BucketEndpointSection, BucketCnameSection} {
-        if llanguage == LEnglishLanguage {
-		    fmt.Printf("\nIs there any %s configurations(y or N)?", sec)
-        } else {
-		    fmt.Printf("\n是否需要配置：%s(y or N)?", sec)
-        }
-		if _, err := fmt.Scanln(&val); err == nil && (strings.ToLower(val) == "yes" || strings.ToLower(val) == "y") {
-			section = config.NewSection(sec)
-			nameList := strings.SplitN(sec, "-", 2)
-			for {
-				bucket := ""
-				host := ""
-                if llanguage == LEnglishLanguage {
-				    fmt.Printf("Please enter the %s:", nameList[0])
-                } else {
-				    fmt.Printf("请输入%s：", nameList[0])
-                }
-				if _, err := fmt.Scanln(&bucket); err != nil || "" == strings.TrimSpace(bucket) {
-                    if llanguage == LEnglishLanguage {
-					    fmt.Printf("No %s entered, the configuration of %s ended.\n", nameList[0], sec)
-                    } else {
-                        fmt.Printf("未输入%s，%s项的配置结束。\n", nameList[0], sec)
-                    }
-					break
-				}
-				fmt.Printf("Please enter the %s:", nameList[1])
-				_, _ = fmt.Scanln(&host)
-				section.Add(bucket, host)
+	for name, option := range CredOptionMap {
+		if !option.cfInteractive {
+			continue
+		}
+		str := ""
+		if llanguage == LEnglishLanguage {
+			if OptionMap[name].def != "" {
+				str = fmt.Sprintf("(%sdefault is:%s, carriage return will use the default value)", option.helpEnglish, OptionMap[name].def)
 			}
+			fmt.Printf("Please enter %s%s:", name, str)
+		} else {
+			if OptionMap[name].def != "" {
+				str = fmt.Sprintf("（%s默认为：%s，回车将使用默认值）", option.helpChinese, OptionMap[name].def)
+			}
+			fmt.Printf("请输入%s%s：", name, str)
+		}
+		if _, err := fmt.Scanln(&val); err == nil {
+			section.Add(name, val)
+		} else if OptionMap[name].def != "" {
+			section.Add(name, OptionMap[name].def)
 		}
 	}
 

@@ -23,11 +23,11 @@ var headerOptionMap = map[string]interface{}{
 func formatHeaderString(sep string) string {
 	str := ""
 	for header := range headerOptionMap {
-        if header == oss.HTTPHeaderExpires {
-            str += header + fmt.Sprintf("(time.RFC3339: %s)", time.RFC3339) + sep
-        } else {
-		    str += header + sep
-        }
+		if header == oss.HTTPHeaderExpires {
+			str += header + fmt.Sprintf("(time.RFC3339: %s)", time.RFC3339) + sep
+		} else {
+			str += header + sep
+		}
 	}
 	if len(str) >= len(sep) {
 		str = str[:len(str)-len(sep)]
@@ -52,17 +52,17 @@ func getOSSOption(name string, param string) (oss.Option, error) {
 		case func(oss.ACLType) oss.Option:
 			return f.(func(oss.ACLType) oss.Option)(oss.ACLType(param)), nil
 		case func(t time.Time) oss.Option:
-            val, err := time.Parse(http.TimeFormat, param)
-            if err != nil {
-                val, err = time.Parse(time.RFC3339, param)
-                if err != nil {
-                    return nil, err
-                }
-            }
+			val, err := time.Parse(http.TimeFormat, param)
+			if err != nil {
+				val, err = time.Parse(time.RFC3339, param)
+				if err != nil {
+					return nil, err
+				}
+			}
 			return f.(func(time.Time) oss.Option)(val), nil
-        default:
-            return nil, fmt.Errorf("error option type, internal error")
-        }
+		default:
+			return nil, fmt.Errorf("error option type, internal error")
+		}
 	}
 	return nil, fmt.Errorf("unsupported header: %s, please check", name)
 }
@@ -220,6 +220,7 @@ Usage:
 // SetMetaCommand is the command set meta for object
 type SetMetaCommand struct {
 	command Command
+	monitor Monitor
 }
 
 var setMetaCommand = SetMetaCommand{
@@ -237,13 +238,13 @@ var setMetaCommand = SetMetaCommand{
 			OptionDelete,
 			OptionForce,
 			OptionConfigFile,
-            OptionEndpoint,
-            OptionAccessKeyID,
-            OptionAccessKeySecret,
-            OptionSTSToken,
+			OptionEndpoint,
+			OptionAccessKeyID,
+			OptionAccessKeySecret,
+			OptionSTSToken,
 			OptionRetryTimes,
 			OptionRoutines,
-            OptionLanguage,
+			OptionLanguage,
 		},
 	},
 }
@@ -264,17 +265,19 @@ func (sc *SetMetaCommand) Init(args []string, options OptionMapType) error {
 
 // RunCommand simulate inheritance, and polymorphism
 func (sc *SetMetaCommand) RunCommand() error {
+	sc.monitor.init("Setted meta on")
+
 	isUpdate, _ := GetBool(OptionUpdate, sc.command.options)
 	isDelete, _ := GetBool(OptionDelete, sc.command.options)
 	recursive, _ := GetBool(OptionRecursion, sc.command.options)
 	force, _ := GetBool(OptionForce, sc.command.options)
 	routines, _ := GetInt(OptionRoutines, sc.command.options)
-    language, _ := GetString(OptionLanguage, sc.command.options)
-    language = strings.ToLower(language)
+	language, _ := GetString(OptionLanguage, sc.command.options)
+	language = strings.ToLower(language)
 
-    if err := sc.checkOption(isUpdate, isDelete, force, language); err != nil {
-        return err
-    }
+	if err := sc.checkOption(isUpdate, isDelete, force, language); err != nil {
+		return err
+	}
 
 	cloudURL, err := CloudURLFromString(sc.command.args[0])
 	if err != nil {
@@ -306,23 +309,23 @@ func (sc *SetMetaCommand) RunCommand() error {
 	return sc.batchSetObjectMeta(bucket, cloudURL, headers, isUpdate, isDelete, force, routines)
 }
 
-func (sc *SetMetaCommand) checkOption(isUpdate, isDelete, force bool, language string) (error) {
+func (sc *SetMetaCommand) checkOption(isUpdate, isDelete, force bool, language string) error {
 	if isUpdate && isDelete {
 		return fmt.Errorf("--update option and --delete option are not supported for %s at the same time, please check", sc.command.args[0])
 	}
-    if !isUpdate && !isDelete && !force {
-        if language == LEnglishLanguage {
-            fmt.Printf("Warning: --update option means update the specified header, --delete option means delete the specified header, miss both options means update the whole meta info, continue to update the whole meta info(y or N)? ")
-        } else {
-            fmt.Printf("警告：--update选项更新指定的header，--delete选项删除指定的header，两者同时缺失会更改object的全量meta信息，请确认是否要更改全量meta信息(y or N)? ")
-        }
-        var str string
-        if _, err := fmt.Scanln(&str); err != nil || (strings.ToLower(str) != "yes" && strings.ToLower(str) != "y") {
-            return fmt.Errorf("operation is canceled")
-        }
-        fmt.Println("")
-    }
-    return nil
+	if !isUpdate && !isDelete && !force {
+		if language == LEnglishLanguage {
+			fmt.Printf("Warning: --update option means update the specified header, --delete option means delete the specified header, miss both options means update the whole meta info, continue to update the whole meta info(y or N)? ")
+		} else {
+			fmt.Printf("警告：--update选项更新指定的header，--delete选项删除指定的header，两者同时缺失会更改object的全量meta信息，请确认是否要更改全量meta信息(y or N)? ")
+		}
+		var str string
+		if _, err := fmt.Scanln(&str); err != nil || (strings.ToLower(str) != "yes" && strings.ToLower(str) != "y") {
+			return fmt.Errorf("operation is canceled")
+		}
+		fmt.Println("")
+	}
+	return nil
 }
 
 func (sc *SetMetaCommand) getMetaData(force bool, language string) (string, error) {
@@ -334,11 +337,11 @@ func (sc *SetMetaCommand) getMetaData(force bool, language string) (string, erro
 		return "", nil
 	}
 
-    if language == LEnglishLanguage {
-	    fmt.Printf("Do you really mean the empty meta(or forget to input header:value pair)? \nEnter yes(y) to continue with empty meta, enter no(n) to show supported headers, other inputs will cancel operation: ")
-    } else {
-	    fmt.Printf("你是否确定你想设置的meta信息为空（或者忘记了输入header:value对）? \n输入yes(y)使用空meta继续设置，输入no(n)来展示支持的headers，其他输入将取消操作：")
-    }
+	if language == LEnglishLanguage {
+		fmt.Printf("Do you really mean the empty meta(or forget to input header:value pair)? \nEnter yes(y) to continue with empty meta, enter no(n) to show supported headers, other inputs will cancel operation: ")
+	} else {
+		fmt.Printf("你是否确定你想设置的meta信息为空（或者忘记了输入header:value对）? \n输入yes(y)使用空meta继续设置，输入no(n)来展示支持的headers，其他输入将取消操作：")
+	}
 	var str string
 	if _, err := fmt.Scanln(&str); err != nil || (strings.ToLower(str) != "yes" && strings.ToLower(str) != "y" && strings.ToLower(str) != "no" && strings.ToLower(str) != "n") {
 		return "", fmt.Errorf("unknown input, operation is canceled")
@@ -347,11 +350,11 @@ func (sc *SetMetaCommand) getMetaData(force bool, language string) (string, erro
 		return "", nil
 	}
 
-    if language == LEnglishLanguage {
-	    fmt.Printf("\nSupported headers:\n    %s\n    And the headers start with: \"%s\"\n\nPlease enter the header:value#header:value... pair you want to set: ", formatHeaderString("\n    "), oss.HTTPHeaderOssMetaPrefix)
-    } else {
-        fmt.Printf("\n支持的headers:\n    %s\n    以及以\"%s\"开头的headers\n\n请输入你想设置的header:value#header:value...：", formatHeaderString("\n    "), oss.HTTPHeaderOssMetaPrefix)
-    }
+	if language == LEnglishLanguage {
+		fmt.Printf("\nSupported headers:\n    %s\n    And the headers start with: \"%s\"\n\nPlease enter the header:value#header:value... pair you want to set: ", formatHeaderString("\n    "), oss.HTTPHeaderOssMetaPrefix)
+	} else {
+		fmt.Printf("\n支持的headers:\n    %s\n    以及以\"%s\"开头的headers\n\n请输入你想设置的header:value#header:value...：", formatHeaderString("\n    "), oss.HTTPHeaderOssMetaPrefix)
+	}
 	if _, err := fmt.Scanln(&str); err != nil {
 		return "", fmt.Errorf("meta empty, please check, operation is canceled")
 	}
@@ -435,7 +438,7 @@ func (sc *SetMetaCommand) getOSSOptions(headers map[string]string) ([]oss.Option
 			options = append(options, oss.Meta(name[len(oss.HTTPHeaderOssMetaPrefix):], value))
 		} else {
 			option, err := getOSSOption(name, value)
-            if err != nil {
+			if err != nil {
 				return nil, err
 			}
 			options = append(options, option)
@@ -452,7 +455,7 @@ func (sc *SetMetaCommand) ossSetObjectMetaRetry(bucket *oss.Bucket, object strin
 			return err
 		}
 		if int64(i) >= retryTimes {
-			return ObjectError{err, object}
+			return ObjectError{err, bucket.BucketName, object}
 		}
 	}
 }
@@ -470,40 +473,42 @@ func (sc *SetMetaCommand) batchSetObjectMeta(bucket *oss.Bucket, cloudURL CloudU
 	// producer list objects
 	// consumer set meta
 	chObjects := make(chan string, ChannelBuf)
-	chFinishObjects := make(chan string, ChannelBuf)
 	chError := make(chan error, routines+1)
-	go sc.command.objectProducer(bucket, cloudURL, chObjects, chError)
+	chListError := make(chan error, 1)
+	go sc.command.objectStatistic(bucket, cloudURL, &sc.monitor)
+	go sc.command.objectProducer(bucket, cloudURL, chObjects, chListError)
 	for i := 0; int64(i) < routines; i++ {
-		go sc.setObjectMetaConsumer(bucket, headers, isUpdate, isDelete, chObjects, chFinishObjects, chError)
+		go sc.setObjectMetaConsumer(bucket, headers, isUpdate, isDelete, chObjects, chError)
 	}
 
 	completed := 0
-	num := 0
 	for int64(completed) <= routines {
 		select {
-		case <-chFinishObjects:
-			num++
-			fmt.Printf("\rsetted object meta on %d objects, when error happens...", num)
+		case err := <-chListError:
+			if err != nil {
+				return err
+			}
+			completed++
 		case err := <-chError:
 			if err != nil {
-				fmt.Printf("\rsetted object meta on %d objects, when error happens.\n", num)
+				fmt.Printf(sc.monitor.progressBar(true))
 				return err
 			}
 			completed++
 		}
 	}
-	fmt.Printf("\rSucceed:scanned %d objects, setted object meta on %d objects.\n", num, num)
+	fmt.Printf(sc.monitor.progressBar(true))
 	return nil
 }
 
-func (sc *SetMetaCommand) setObjectMetaConsumer(bucket *oss.Bucket, headers map[string]string, isUpdate, isDelete bool, chObjects <-chan string, chFinishObjects chan<- string, chError chan<- error) {
+func (sc *SetMetaCommand) setObjectMetaConsumer(bucket *oss.Bucket, headers map[string]string, isUpdate, isDelete bool, chObjects <-chan string, chError chan<- error) {
 	for object := range chObjects {
 		err := sc.setObjectMeta(bucket, object, headers, isUpdate, isDelete)
+		sc.command.updateMonitor(err, &sc.monitor)
 		if err != nil {
 			chError <- err
 			return
 		}
-		chFinishObjects <- object
 	}
 
 	chError <- nil

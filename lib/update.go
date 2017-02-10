@@ -2,19 +2,19 @@ package lib
 
 import (
 	"fmt"
+	"io"
+	"io/ioutil"
+	"net/http"
+	"os"
+	"runtime"
+	"sort"
 	"strings"
-    "sort"
-    "os"
-    "io"
-    "io/ioutil"
-    "net/http"
-    "runtime"
 )
 
 var (
-    vUpdateEndpoint = updateEndpoint
-    vUpdateBucket = updateBucket
-    vVersion = Version
+	vUpdateEndpoint = updateEndpoint
+	vUpdateBucket   = updateBucket
+	vVersion        = Version
 )
 
 var specChineseUpdate = SpecText{
@@ -61,7 +61,7 @@ var specEnglishUpdate = SpecText{
 `,
 }
 
-// UpdateCommand is the command update ossutil 
+// UpdateCommand is the command update ossutil
 type UpdateCommand struct {
 	command Command
 }
@@ -77,19 +77,19 @@ var updateCommand = UpdateCommand{
 		group:       GroupTypeAdditionalCommand,
 		validOptionNames: []string{
 			OptionForce,
-            OptionRetryTimes,
-            OptionLanguage,
+			OptionRetryTimes,
+			OptionLanguage,
 		},
 	},
 }
 
 // function for RewriteLoadConfiger interface
 func (uc *UpdateCommand) rewriteLoadConfig(configFile string) error {
-    // read config file, if error exist, do not print error
-    var err error
-    if uc.command.configOptions, err = LoadConfig(configFile); err != nil {
-        uc.command.configOptions = OptionMapType{}
-    }
+	// read config file, if error exist, do not print error
+	var err error
+	if uc.command.configOptions, err = LoadConfig(configFile); err != nil {
+		uc.command.configOptions = OptionMapType{}
+	}
 	return nil
 }
 
@@ -109,193 +109,191 @@ func (uc *UpdateCommand) Init(args []string, options OptionMapType) error {
 
 // RunCommand simulate inheritance, and polymorphism
 func (uc *UpdateCommand) RunCommand() error {
-    force, _ := GetBool(OptionForce, uc.command.options)
-    language, _ := GetString(OptionLanguage, uc.command.options)
-    language = strings.ToLower(language)
+	force, _ := GetBool(OptionForce, uc.command.options)
+	language, _ := GetString(OptionLanguage, uc.command.options)
+	language = strings.ToLower(language)
 
-    // get lastest version
-    version, err := uc.getLastestVersion()
-    if err != nil {
-        return fmt.Errorf("get lastest vsersion error, %s", err.Error())
-    }
+	// get lastest version
+	version, err := uc.getLastestVersion()
+	if err != nil {
+		return fmt.Errorf("get lastest vsersion error, %s", err.Error())
+	}
 
-    if language == LEnglishLanguage {
-        fmt.Printf("current version is: %s, the lastest version is: %s", vVersion, version)
-    } else {
-        fmt.Printf("当前版本为：%s，最新版本为：%s", vVersion, version)
-    }
-    if version == vVersion {
-        if language == LEnglishLanguage {
-            fmt.Println(", current version is the lastest version, no need to update.")
-        } else {
-            fmt.Println("，当前版本即为最新版本，无需更新。") 
-        }
-        return nil
-    }
-    fmt.Println("")
+	if language == LEnglishLanguage {
+		fmt.Printf("current version is: %s, the lastest version is: %s", vVersion, version)
+	} else {
+		fmt.Printf("当前版本为：%s，最新版本为：%s", vVersion, version)
+	}
+	if version == vVersion {
+		if language == LEnglishLanguage {
+			fmt.Println(", current version is the lastest version, no need to update.")
+		} else {
+			fmt.Println("，当前版本即为最新版本，无需更新。")
+		}
+		return nil
+	}
+	fmt.Println("")
 
-    if !force {
-        if language == LEnglishLanguage {
-            fmt.Printf("sure to update ossutil(y or n)? ")
-        } else {
-            fmt.Printf("确定更新版本(y or n)? ")
-        }
+	if !force {
+		if language == LEnglishLanguage {
+			fmt.Printf("sure to update ossutil(y or N)? ")
+		} else {
+			fmt.Printf("确定更新版本(y or N)? ")
+		}
 
-        var val string
-        if _, err := fmt.Scanln(&val); err == nil && (val == "yes" || val == "y") {
-            return uc.updateVersion(version, language)
-        }
+		var val string
+		if _, err := fmt.Scanln(&val); err == nil && (strings.EqualFold(val, "yes") || strings.EqualFold(val, "y")) {
+			return uc.updateVersion(version, language)
+		}
 
-        if language == LEnglishLanguage {
-            fmt.Printf("operation is canceled.")
-        } else {
-            fmt.Println("操作取消。")
-        }
-    } else {
-        return uc.updateVersion(version, language)
-    }
-    return nil
+		if language == LEnglishLanguage {
+			fmt.Printf("operation is canceled.")
+		} else {
+			fmt.Println("操作取消。")
+		}
+	} else {
+		return uc.updateVersion(version, language)
+	}
+	return nil
 }
 
 func (uc *UpdateCommand) getLastestVersion() (string, error) {
-    if err := uc.anonymousGetToFileRetry(vUpdateBucket, updateVersionObject, updateTmpVersionFile); err != nil {
-        return "", err
-    }
+	if err := uc.anonymousGetToFileRetry(vUpdateBucket, updateVersionObject, updateTmpVersionFile); err != nil {
+		return "", err
+	}
 
-    v, err := ioutil.ReadFile(updateTmpVersionFile)
-    if err != nil {
-        return "", err
-    }
-    versionStr := strings.TrimSpace(strings.Trim(string(v), "\n"))
+	v, err := ioutil.ReadFile(updateTmpVersionFile)
+	if err != nil {
+		return "", err
+	}
+	versionStr := strings.TrimSpace(strings.Trim(string(v), "\n"))
 
-    // get version list and sort
-    sli := strings.Split(versionStr, "\n")
-    vl := []string{}
-    for _, vstr := range sli {
-        vl = append(vl, strings.TrimSpace(strings.Trim(string(vstr), "\n")))
-    }
-    sort.Strings(vl)
-    version := vl[len(vl) - 1] 
+	// get version list and sort
+	sli := strings.Split(versionStr, "\n")
+	vl := []string{}
+	for _, vstr := range sli {
+		vl = append(vl, strings.TrimSpace(strings.Trim(string(vstr), "\n")))
+	}
+	sort.Strings(vl)
+	version := vl[len(vl)-1]
 
-    os.Remove(updateTmpVersionFile)
+	os.Remove(updateTmpVersionFile)
 
-    return version, nil
+	return version, nil
 }
 
 func (uc *UpdateCommand) anonymousGetToFileRetry(bucketName, objectName, filePath string) error {
-    host := fmt.Sprintf("http://%s.%s/%s", bucketName, vUpdateEndpoint, objectName)
+	host := fmt.Sprintf("http://%s.%s/%s", bucketName, vUpdateEndpoint, objectName)
 	retryTimes, _ := GetInt(OptionRetryTimes, uc.command.options)
 	for i := 1; ; i++ {
-        err := uc.ossAnonymousGetToFile(host, filePath)
+		err := uc.ossAnonymousGetToFile(host, filePath)
 		if err == nil {
 			return err
 		}
 		if int64(i) >= retryTimes {
-			return ObjectError{err, objectName}
+			return ObjectError{err, bucketName, objectName}
 		}
 	}
 }
 
 func (uc *UpdateCommand) ossAnonymousGetToFile(host, filePath string) error {
-    response, err := http.Get(host)
-    if err != nil {
-        return err
-    }
-    defer response.Body.Close()
-    statusCode := response.StatusCode
-    body, _ := ioutil.ReadAll(response.Body)
-    if statusCode >= 300 { 
-        return fmt.Errorf(string(body))
-    }
+	response, err := http.Get(host)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+	statusCode := response.StatusCode
+	body, _ := ioutil.ReadAll(response.Body)
+	if statusCode >= 300 {
+		return fmt.Errorf(string(body))
+	}
 
-    fd, err := os.OpenFile(filePath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0640)
-    defer fd.Close()
-    if err != nil {
-        return err
-    }
+	fd, err := os.OpenFile(filePath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0640)
+	defer fd.Close()
+	if err != nil {
+		return err
+	}
 
-    _, err = io.WriteString(fd, string(body))
-    if err != nil {
-        return err
-    }
-    return nil
+	_, err = io.WriteString(fd, string(body))
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (uc *UpdateCommand) updateVersion(version, language string) error {
-    // get binary path 
-    filePath, renameFilePath := getBinaryPath()
+	// get binary path
+	filePath, renameFilePath := getBinaryPath()
 
-    // get binary mode 
-    f, err := os.Stat(filePath)
-    if err != nil {
-        return err
-    }
-    mode := f.Mode() 
+	// get binary mode
+	f, err := os.Stat(filePath)
+	if err != nil {
+		return err
+	}
+	mode := f.Mode()
 
-    // rename the current binary to another one
-    if err := os.Rename(filePath, renameFilePath); err != nil {
-        return fmt.Errorf("update binary error, %s", err.Error())
-    }
+	// rename the current binary to another one
+	if err := os.Rename(filePath, renameFilePath); err != nil {
+		return fmt.Errorf("update binary error, %s", err.Error())
+	}
 
-    // download the binary of the specified version
-    if err := uc.getBinary(filePath, version); err != nil {
-        uc.revertRename(filePath, renameFilePath)
-        return fmt.Errorf("download binary of version: %s error, %s", version, err.Error())
-    }
+	// download the binary of the specified version
+	if err := uc.getBinary(filePath, version); err != nil {
+		uc.revertRename(filePath, renameFilePath)
+		return fmt.Errorf("download binary of version: %s error, %s", version, err.Error())
+	}
 
-    if err := os.Chmod(filePath, mode); err != nil {
-        uc.revertRename(filePath, renameFilePath)
-        return fmt.Errorf("chmod binary error, %s", err.Error()) 
-    }
+	if err := os.Chmod(filePath, mode); err != nil {
+		uc.revertRename(filePath, renameFilePath)
+		return fmt.Errorf("chmod binary error, %s", err.Error())
+	}
 
-    // remove the current one
-    if runtime.GOOS != "windows" { 
-        if err := os.Remove(renameFilePath); err != nil {
-            uc.revertRename(filePath, renameFilePath)
-            return fmt.Errorf("remove old binary error, %s", err.Error())
-        }
-    }
+	// remove the current one
+	if runtime.GOOS != "windows" {
+		if err := os.Remove(renameFilePath); err != nil {
+			uc.revertRename(filePath, renameFilePath)
+			return fmt.Errorf("remove old binary error, %s", err.Error())
+		}
+	}
 
-    if language == LEnglishLanguage {
-        fmt.Println("Update Success!")
-    } else {
-        fmt.Println("更新成功!")
-    }
-    return nil
+	if language == LEnglishLanguage {
+		fmt.Println("Update Success!")
+	} else {
+		fmt.Println("更新成功!")
+	}
+	return nil
 }
 
 func (uc *UpdateCommand) revertRename(filePath, renameFilePath string) error {
-    if err := os.Remove(filePath); err != nil {
-        return err
-    }
-    if err := os.Rename(renameFilePath, filePath); err != nil {
-        return err
-    }
-    return nil
+	if err := os.Remove(filePath); err != nil {
+		return err
+	}
+	if err := os.Rename(renameFilePath, filePath); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (uc *UpdateCommand) getBinary(filePath, version string) error {
-    // get os type
-    var object string
-    switch runtime.GOOS {
-    case "darwin":
-        object = updateBinaryMac64 
-    case "windows":
-        object = updateBinaryWindow64 
-        if runtime.GOARCH == "386" {
-            object = updateBinaryWindow32
-        }
-    default:
-        object = updateBinaryLinux
-    }
+	// get os type
+	var object string
+	switch runtime.GOOS {
+	case "darwin":
+		object = updateBinaryMac64
+	case "windows":
+		object = updateBinaryWindow64
+		if runtime.GOARCH == "386" {
+			object = updateBinaryWindow32
+		}
+	default:
+		object = updateBinaryLinux
+	}
 
-    object = version + "/" + object
+	object = version + "/" + object
 
-    if err := uc.anonymousGetToFileRetry(vUpdateBucket, object, filePath); err != nil {
-        return err
-    }
+	if err := uc.anonymousGetToFileRetry(vUpdateBucket, object, filePath); err != nil {
+		return err
+	}
 
-    return nil
+	return nil
 }
-
-

@@ -2,11 +2,11 @@ package lib
 
 import (
 	"fmt"
+	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
+	"net/http"
 	"sort"
 	"strings"
-    "time"
-    "net/http"
-	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
+	"time"
 )
 
 var specChineseStat = SpecText{
@@ -79,7 +79,7 @@ Usage：
 `,
 }
 
-// StatCommand is the command get bucket's or objects' meta information 
+// StatCommand is the command get bucket's or objects' meta information
 type StatCommand struct {
 	command Command
 }
@@ -95,10 +95,10 @@ var statCommand = StatCommand{
 		group:       GroupTypeNormalCommand,
 		validOptionNames: []string{
 			OptionConfigFile,
-            OptionEndpoint,
-            OptionAccessKeyID,
-            OptionAccessKeySecret,
-            OptionSTSToken,
+			OptionEndpoint,
+			OptionAccessKeyID,
+			OptionAccessKeySecret,
+			OptionSTSToken,
 			OptionRetryTimes,
 		},
 	},
@@ -142,13 +142,13 @@ func (sc *StatCommand) RunCommand() error {
 
 func (sc *StatCommand) bucketStat(bucket *oss.Bucket, cloudURL CloudURL) error {
 	// TODO: go sdk should implement GetBucketInfo
-    gbar, err := sc.ossGetBucketStatRetry(bucket)
-    if err != nil {
-        return err
-    }
+	gbar, err := sc.ossGetBucketStatRetry(bucket)
+	if err != nil {
+		return err
+	}
 
-    attrMap := map[string]string{}
-    attrMap["Location"] = gbar.BucketInfo.Location
+	attrMap := map[string]string{}
+	attrMap["Location"] = gbar.BucketInfo.Location
 	fmt.Printf("%-18s: %s\n", StatName, gbar.BucketInfo.Name)
 	fmt.Printf("%-18s: %s\n", StatLocation, gbar.BucketInfo.Location)
 	fmt.Printf("%-18s: %s\n", StatCreationDate, utcToLocalTime(gbar.BucketInfo.CreationDate))
@@ -162,7 +162,7 @@ func (sc *StatCommand) bucketStat(bucket *oss.Bucket, cloudURL CloudURL) error {
 func (sc *StatCommand) ossGetBucketStatRetry(bucket *oss.Bucket) (oss.GetBucketInfoResult, error) {
 	retryTimes, _ := GetInt(OptionRetryTimes, sc.command.options)
 	for i := 1; ; i++ {
-        gbar, err := bucket.Client.GetBucketInfo(bucket.BucketName)
+		gbar, err := bucket.Client.GetBucketInfo(bucket.BucketName)
 		if err == nil {
 			return gbar, err
 		}
@@ -203,9 +203,9 @@ func (sc *StatCommand) objectStat(bucket *oss.Bucket, cloudURL CloudURL) error {
 	sortNames = append(sortNames, "ACL")
 	attrMap[StatOwner] = goar.Owner.ID
 	attrMap[StatACL] = goar.ACL
-    if lm, err := time.Parse(http.TimeFormat, attrMap[StatLastModified]); err == nil {
-        attrMap[StatLastModified] = fmt.Sprintf("%s", utcToLocalTime(lm.UTC())) 
-    }
+	if lm, err := time.Parse(http.TimeFormat, attrMap[StatLastModified]); err == nil {
+		attrMap[StatLastModified] = fmt.Sprintf("%s", utcToLocalTime(lm.UTC()))
+	}
 
 	sort.Strings(sortNames)
 
@@ -227,7 +227,7 @@ func (sc *StatCommand) ossGetObjectACLRetry(bucket *oss.Bucket, object string) (
 			return goar, err
 		}
 		if int64(i) >= retryTimes {
-			return goar, ObjectError{err, object}
+			return goar, ObjectError{err, bucket.BucketName, object}
 		}
 	}
 }
