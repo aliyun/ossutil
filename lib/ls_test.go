@@ -72,7 +72,7 @@ func (s *OssutilCommandSuite) TestListErrConfigFile(c *C) {
 	c.Assert(err, NotNil)
 	c.Assert(showElapse, Equals, false)
 
-	_ = os.Remove(cfile)
+	os.Remove(cfile)
 }
 
 func (s *OssutilCommandSuite) TestListConfigFile(c *C) {
@@ -94,7 +94,7 @@ func (s *OssutilCommandSuite) TestListConfigFile(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
 
-	_ = os.Remove(cfile)
+	os.Remove(cfile)
 }
 
 func (s *OssutilCommandSuite) TestListWithBucketEndpoint(c *C) {
@@ -118,7 +118,7 @@ func (s *OssutilCommandSuite) TestListWithBucketEndpoint(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
 
-	_ = os.Remove(cfile)
+	os.Remove(cfile)
 }
 
 func (s *OssutilCommandSuite) TestListWithBucketCname(c *C) {
@@ -143,7 +143,7 @@ func (s *OssutilCommandSuite) TestListWithBucketCname(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
 
-	_ = os.Remove(cfile)
+	os.Remove(cfile)
 	s.removeBucket(bucketName, true, c)
 }
 
@@ -267,7 +267,7 @@ func (s *OssutilCommandSuite) TestListIDKey(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
 
-	_ = os.Remove(cfile)
+	os.Remove(cfile)
 
     s.removeBucket(bucketName, true, c)
 }
@@ -303,7 +303,7 @@ func (s *OssutilCommandSuite) TestListBucketIDKey(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
 
-	_ = os.Remove(cfile)
+	os.Remove(cfile)
 }
 
 // list multipart

@@ -124,7 +124,7 @@ func (s *OssutilCommandSuite) TestRemoveObjects(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
 
-	_ = os.Remove(cfile)
+	os.Remove(cfile)
     time.Sleep(7*time.Second)
 
 	// list buckets

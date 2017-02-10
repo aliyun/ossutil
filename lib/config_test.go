@@ -34,13 +34,13 @@ func (s *OssutilConfigSuite) SetUpTest(c *C) {
     if stsToken == "" {
         stsToken = "ststoken"
     }
-    _ = os.Remove(configFile)
+    os.Remove(configFile)
 }
 
 // Run once after all tests or benchmarks have finished running
 func (s *OssutilConfigSuite) TearDownTest(c *C) {
     stsToken = token
-    _ = os.Remove(configFile)
+    os.Remove(configFile)
 }
 
 // test "config"

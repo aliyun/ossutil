@@ -71,8 +71,8 @@ func (s *OssutilCommandSuite) TestRevertRename(c *C) {
     str := s.readFile(filePath, c) 
     c.Assert(str, Equals, renameFilePath + "i")
 
-    _ = os.Remove(filePath)
-    _ = os.Remove(renameFilePath)
+    os.Remove(filePath)
+    os.Remove(renameFilePath)
 
     renameFilePath = ".ossutil_notexist"
     err = updateCommand.revertRename(filePath, renameFilePath)
@@ -84,7 +84,7 @@ func (s *OssutilCommandSuite) TestDownloadLastestBinary(c *C) {
     err := updateCommand.getBinary(tempBinaryFile, "1.0.0.Beta") 
     c.Assert(err, IsNil)
 
-    _ = os.Remove(tempBinaryFile)
+    os.Remove(tempBinaryFile)
 }
 
 func (s *OssutilCommandSuite) TestAnonymousGetToFileError(c *C) {

@@ -44,9 +44,9 @@ var specChineseRemove = SpecText{
         结果：显示命令耗时前未报错，则表示成功删除。
 
     默认情况下，删除object时，不包括以指定object名称进行的未complete的Multipart Upload
-    事件。如果您需要删除指定object名称下的所有未complete的Multipart Upload事件，需要指
-    定--multipart选项（ossutil会删除所有匹配的Multipart Upload事件，但不支持删除特定的
-    某个Multipart Upload事件）。
+    事件。如果用户需要删除指定object名称下的所有未complete的Multipart Upload事件，需要
+    指定--multipart选项（ossutil会删除所有匹配的Multipart Upload事件，但不支持删除特定
+    的某个Multipart Upload事件）。
 
     如果要同时删除object和相应的Multipart Upload事件，需要指定--all-type选项。
 

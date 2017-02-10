@@ -52,7 +52,7 @@ func (s *OssutilCommandSuite) TestCrc64(c *C) {
     hashStat := s.getHashResults(c)
     c.Assert(hashStat[HashCRC64], Equals, "2863152195715871371") 
 
-    _ = os.Remove(inputFileName)
+    os.Remove(inputFileName)
 }
 
 func (s *OssutilCommandSuite) TestMd5(c *C) {
@@ -77,5 +77,5 @@ func (s *OssutilCommandSuite) TestMd5(c *C) {
     c.Assert(hashStat[HashMD5], Equals, "B7FCEF7FE745F2A95560FF5F550E3B8F")
     c.Assert(hashStat[HashContentMD5], Equals, "t/zvf+dF8qlVYP9fVQ47jw==")
 
-    _ = os.Remove(inputFileName)
+    os.Remove(inputFileName)
 }

@@ -16,7 +16,7 @@ func (s *OssutilCommandSuite) TestUploadProgressBar(c *C) {
 
     // single file
     udir := randStr(11) 
-    _ = os.RemoveAll(udir)
+    os.RemoveAll(udir)
     err := os.MkdirAll(udir, 0755)
     c.Assert(err, IsNil)
     object := randStr(11) 
@@ -87,8 +87,8 @@ func (s *OssutilCommandSuite) TestUploadProgressBar(c *C) {
     // mkdir a subdir in dir
     subdir := udir + string(os.PathSeparator) + "subdir" 
     subdir1 := udir + string(os.PathSeparator) + "subdir1" 
-    _ = os.RemoveAll(subdir)
-    _ = os.RemoveAll(subdir1)
+    os.RemoveAll(subdir)
+    os.RemoveAll(subdir1)
     err = os.MkdirAll(subdir, 0755)
     c.Assert(err, IsNil)
     err = os.MkdirAll(subdir1, 0755)
@@ -147,7 +147,7 @@ func (s *OssutilCommandSuite) TestUploadProgressBar(c *C) {
     c.Assert(strings.Contains(str, "directories"), Equals, true)
     c.Assert(strings.Contains(strings.TrimSpace(pstr), strings.TrimSpace(str)), Equals, true)
 
-    _ = os.RemoveAll(udir)
+    os.RemoveAll(udir)
 
     s.removeBucket(bucketName, true, c)
 }
@@ -296,7 +296,7 @@ func (s *OssutilCommandSuite) TestProgressBarStatisticErr(c *C) {
     pstr := strings.ToLower(s.readFile(resultPath, c))
     c.Assert(strings.Contains(pstr, "succeed"), Equals, false)
 
-    _ = os.Remove(configFile)
+    os.Remove(configFile)
     configFile = cfile
 
     snap := copyCommand.monitor.getSnapshot()
@@ -336,7 +336,7 @@ func (s *OssutilCommandSuite) TestProgressBarContinueErr(c *C) {
     bucketName := bucketNamePrefix + randLowStr(10)
     s.putBucket(bucketName, c)
     udir := randStr(11) 
-    _ = os.RemoveAll(udir)
+    os.RemoveAll(udir)
     err := os.MkdirAll(udir, 0755)
     c.Assert(err, IsNil)
 
@@ -356,7 +356,7 @@ func (s *OssutilCommandSuite) TestProgressBarContinueErr(c *C) {
     err = s.initCopyCommand(udir, CloudURLToString(bucketName, ""), true, true, false, DefaultBigFileThreshold, CheckpointDir, DefaultOutputDir)
     c.Assert(err, IsNil)
 
-    _ = os.Remove(configFile)
+    os.Remove(configFile)
     configFile = cfile
 
     // check output
@@ -392,7 +392,7 @@ func (s *OssutilCommandSuite) TestProgressBarContinueErr(c *C) {
     c.Assert(strings.Contains(str, "succeed"), Equals, false)
     c.Assert(strings.Contains(str, fmt.Sprintf("error num: %d", snap.errNum)), Equals, true)
 
-    _ = os.RemoveAll(udir)
+    os.RemoveAll(udir)
 
     s.removeBucket(bucketName, true, c)
 }
@@ -649,7 +649,7 @@ func (s *OssutilCommandSuite) TestSetACLProgress(c *C) {
     err = s.initSetACL(bucketName, "TestSetACLProgress", "private", true, false, true)
     c.Assert(err, IsNil)
 
-    _ = os.Remove(configFile)
+    os.Remove(configFile)
     configFile = cfile
 
     testResultFile, _ = os.OpenFile(resultPath, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
@@ -763,7 +763,7 @@ func (s *OssutilCommandSuite) TestSetMetaProgress(c *C) {
     err = s.initSetMeta(bucketName, "TestSetMetaProgress", "x-oss-object-acl:default#X-Oss-Meta-A:A", true, false, true, true, DefaultLanguage)
     c.Assert(err, IsNil)
 
-    _ = os.Remove(configFile)
+    os.Remove(configFile)
     configFile = cfile
 
     testResultFile, _ = os.OpenFile(resultPath, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)

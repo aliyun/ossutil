@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-    "github.com/syndtr/goleveldb/leveldb"
+    leveldb "github.com/syndtr/goleveldb/leveldb"
 	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
 
@@ -54,7 +54,7 @@ type objectInfoType struct {
 }
 
 var (
-    mu                  sync.RWMutex
+    mu                  sync.RWMutex    // mu is the mutex for interacting with user 
     snapmu              sync.RWMutex
     chProgressSignal    chan chProgressSignalType
     signalNum           = 0
@@ -143,8 +143,8 @@ var specChineseCopy = SpecText{
     被放置在ossutil的输出目录下，该目录的路径可以用配置文件中的outputDir选项或命令行
     --output-dir选项指定，如果未指定，会使用默认的输出目录：当前目录下的` + DefaultOutputDir + `目录。
 
-    注意：ossutil不做report文件的维护工作，请自行查看及清理您的report文件，避免产生过多的
-    report文件。
+    注意：ossutil不做report文件的维护工作，请自行查看及清理用户的report文件，避免产生
+    过多的report文件。
 
 
 增量上传：
@@ -172,8 +172,8 @@ var specChineseCopy = SpecText{
     比较lastModifiedTime来决定是否跳过相同文件的上传，所以在使用该选项时，请确保两次上传期
     间没有其他用户更改了oss上的对应object。当不满足该场景时，如果想要增量上传批量文件，请使
     用--update选项。
-    （2）ossutil不会主动删除snapshot-path下的快照信息，为了避免快照信息过多，当您确定快照信
-    息无用时，请您自行清理snapshot-path。
+    （2）ossutil不会主动删除snapshot-path下的快照信息，为了避免快照信息过多，当用户确定快照信
+    息无用时，请用户自行清理snapshot-path。
     （3）由于读写snapshot信息需要额外开销，当要批量上传的文件数比较少或网络状况比较好或有其
     他用户操作相同object时，并不建议使用该选项。可以使用--update选项来增量上传。
 
@@ -192,7 +192,7 @@ var specChineseCopy = SpecText{
 --output-dir选项
     
     该选项指定ossutil输出文件存放的目录，默认为：当前目录下的` + DefaultOutputDir + `目录。如果指定
-    的目录不存在，ossutil会自动创建该目录，如果您指定的路径已存在并且不是目录，会报错。
+    的目录不存在，ossutil会自动创建该目录，如果用户指定的路径已存在并且不是目录，会报错。
     输出文件表示ossutil在运行过程中产生的输出文件，目前包含：在cp命令中ossutil运行出错时
     产生的report文件。
 
@@ -238,7 +238,7 @@ var specChineseCopy = SpecText{
     （2）批量下载：
         ossutil cp oss://your_bucket your_dir -r -f -u
     （3）同region的Bucket间迁移：
-        ossutil cp oss://your_srcbucket oss://your_destbucket -r -f -u
+        ossutil cp oss://your_src_bucket oss://your_dest_bucket -r -f -u
 
     具体每个选项的意义，请见上文帮助。
     在运行完一轮文件迁移后，请根据屏幕提示查看report文件，处理出错文件。
@@ -252,7 +252,7 @@ var specChineseCopy = SpecText{
 
     该命令有三种用法：
 
-    1) ossutil cp file_url oss://bucket[/prefix] [-r] [-f] [--update] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] [--snapshot-path=sdir]
+    1) ossutil cp file_url oss://bucket[/prefix] [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] [--snapshot-path=sdir]
         该用法上传本地文件系统中文件或目录到oss。file_url可以为文件或目录。当file_url为文件
     时，无论是否指定--recursive选项都不会影响结果。当file_url为目录时，即使目录为空或者只含
     有一个文件，也必须使用--recursive选项，注意，此时ossutil会将file_url下的文件或子目录上传
@@ -264,7 +264,7 @@ var specChineseCopy = SpecText{
                             file_url的路径。
                             否则，object名为：dest_url+/+文件或子目录相对file_url的路径。
 
-    2) ossutil cp oss://bucket[/prefix] file_url [-r] [-f] [--update] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] [--snapshot-path=sdir]
+    2) ossutil cp oss://bucket[/prefix] file_url [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] [--snapshot-path=sdir]
         该用法下载oss上的单个或多个Object到本地文件系统。如果未指定--recursive选项，则ossutil
     认为src_url精确指定了待拷贝的单个object，此时不支持prefix匹配，如果object不存在则报错。如
     果指定了--recursive选项，ossutil会搜索prefix匹配的objects，批量拷贝这些objects，此时file_url
@@ -275,7 +275,7 @@ var specChineseCopy = SpecText{
     注意：对于以/结尾且大小为0的object，会在本地文件系统创建一个目录，而不是尝试创建一个文件。
     对于其他object会尝试创建文件。
 
-    3) ossutil cp oss://src_bucket[/src_prefix] oss://dest_bucket[/dest_prefix] [-r] [-f] [--update] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] [--snapshot-path=sdir]
+    3) ossutil cp oss://src_bucket[/src_prefix] oss://dest_bucket[/dest_prefix] [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] [--snapshot-path=sdir]
         该用法在oss间进行object的拷贝。其中src_bucket与dest_bucket可以相同，注意，当src_url与
     dest_url完全相同时，ossutil不会做任何事情，直接提示退出。设置meta请使用set-meta命令。如果未
     指定--recursive选项，则认为src_url精确指定了待拷贝的单个object，此时不支持prefix匹配，如果
@@ -472,7 +472,8 @@ var specEnglishCopy = SpecText{
     if the url starts with oss://, ossutil considers it as object, else, ossutil considers it 
     as file in local system. 
 
-    Note: when copy between oss, ossutil only support copy objects, the Multipart Uploads uncompleted is not supported.
+    Note: when copy between oss, ossutil only support copy objects, the uncompleted Multipart 
+    Uploads are not supported.
 
 
 --recursive option:
@@ -618,7 +619,7 @@ Batch file migration:
     (2) Batch file download:
         ossutil cp oss://your_bucket your_dir -r -f -u
     (3) File copy between buckets in the same region：
-        ossutil cp oss://your_srcbucket oss://your_destbucket -r -f -u
+        ossutil cp oss://your_src_bucket oss://your_dest_bucket -r -f -u
 
     The meaning of every option, see help above.
     After each migration, please check your report file.
@@ -634,7 +635,7 @@ Usage:
 
     There are three usages:
 
-    1) ossutil cp file_url oss://bucket[/prefix] [-r] [-f] [--update] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] [--snapshot-path=sdir]
+    1) ossutil cp file_url oss://bucket[/prefix] [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] [--snapshot-path=sdir]
         The usage upload file in local system to oss. file_url can be file or directory. If file_url 
     is file, no matter --recursive option is specified or not will not affect the result. If file_url 
     is directory, even if the directory is empty or only contains one file, we must specify --recursive 
@@ -646,7 +647,7 @@ Usage:
                              else, object name is: dest_url.
         If file_url is directory: if prefix is empty or end with "/", object name is: dest_url + file path relative to file_url.
         
-    2) ossutil cp oss://bucket[/prefix] file_url [-r] [-f] [--update] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] [--snapshot-path=sdir]
+    2) ossutil cp oss://bucket[/prefix] file_url [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] [--snapshot-path=sdir]
         The usage download one or many objects to local system. If --recursive option is not specified, 
     ossutil considers src_url exactly specified the single object you want to download, prefix-matching 
     is not supported now, if the object not exists, error occurs. If --recursive option is specified, 
@@ -658,7 +659,7 @@ Usage:
     Warning: If the object name is end with / and size is zero, ossutil will create a directory in local 
     system, instead of creating a file.
 
-    3) ossutil cp oss://src_bucket[/src_prefix] oss://dest_bucket[/dest_prefix] [-r] [-f] [--update] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] [--snapshot-path=sdir]
+    3) ossutil cp oss://src_bucket[/src_prefix] oss://dest_bucket[/dest_prefix] [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] [--snapshot-path=sdir]
         The usage copy objects between oss. The src_bucket can be same with dest_bucket. Pay attention 
     please, if src_url is the same with dest_url, ossutil will do nothing but exit after prompt. Set meta 
     please use "set-meta" command. If --recursive option is not specified, ossutil considers src_url exactly 
@@ -947,7 +948,7 @@ func (cc *CopyCommand) RunCommand() error {
     cc.cpOption.reporter.Clear()
     
 	if err == nil {
-		_ = os.RemoveAll(cc.cpOption.cpDir)
+		os.RemoveAll(cc.cpOption.cpDir)
 	}
 	return err
 }
@@ -1434,7 +1435,7 @@ func (cc *CopyCommand) preparePartOption(fileSize int64) (int64, int) {
         rt = 4
 	} else if partNum <= 300 {
         rt = 12
-	} else if partNum <= 400 {
+	} else if partNum <= 500 {
         rt = 16 
     } else {
         rt = 20 
@@ -1498,7 +1499,7 @@ func (cc *CopyCommand) filterError(err error) bool {
     switch err.(type) {
     case oss.ServiceError:
         code := err.(oss.ServiceError).Code 
-        if code == "NoSuchBucket" || code == "InvalidAccessKeyId" || code == "SignatureDoesNotMatch" || code == "AccessDenied" {
+        if code == "NoSuchBucket" || code == "InvalidAccessKeyId" || code == "SignatureDoesNotMatch" || code == "AccessDenied" || code == "RequestTimeTooSkewed" || code == "InvalidBucketName" {
             cc.cpOption.ctnu = false
             return false
         }

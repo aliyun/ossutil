@@ -308,7 +308,7 @@ func (s *OssutilCommandSuite) TestSetMetaIDKey(c *C) {
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true)
 
-    _ = os.Remove(cfile)
+    os.Remove(cfile)
 
     s.removeBucket(bucketName, true, c)
 }

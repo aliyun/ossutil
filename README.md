@@ -19,7 +19,7 @@
 ## 依赖的库 
 > - goopt (github.com/droundy/goopt) 
 > - configparser (github.com/alyu/configparser)
-> - github.com/syndtr/goleveldb/leveldb
+> - leveldb (github.com/syndtr/goleveldb/leveldb)
 > - oss (github.com/aliyun/aliyun-oss-go-sdk/oss)
 > - gopkg.in/check.v1 (gopkg.in/check.v1)
 

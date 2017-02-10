@@ -38,8 +38,8 @@ var specChineseConfig = SpecText{
             配置文件路径，如果用户键入回车，ossutil会使用默认的配置文件：
         ` + DecideConfigFile("") + `。
             如果用户自己指定了配置文件，在使用命令时需要将--config-file选项
-        设置为您设置的配置文件路径。哪些命令支持--config-file选项可由查看每
-        个命令的帮助。
+        设置为用户设置的配置文件路径。哪些命令支持--config-file选项可由查看
+        每个命令的帮助。
         (2) language
             当首次配置（配置文件不存在）时，ossutil会向用户询问语言设置，可
         选值为中文或者英文（` + OptionMap[OptionLanguage].minVal + `），如果键入回车，ossutil将根据用户输入的
@@ -56,8 +56,8 @@ var specChineseConfig = SpecText{
         名(SLD)，例如：` + DefaultEndpoint + `。
             以上选项一般为必选项。
         (4) stsToken
-            如果您需要使用临时token来访问oss，您需要填入该项，否则请输入回车
-        跳过该项配置。
+            如果用户需要使用临时token来访问oss，用户需要填入该项，否则请输入
+        回车跳过该项配置。
             关于stsToken的更多信息，请参考：https://help.aliyun.com/document_detail/31931.html?spm=5176.doc31867.6.632.hZFNSv
         (5) outputDir
             输出文件所在目录的路径。如果用户键入回车，将使用默认目录：当前目
@@ -114,8 +114,8 @@ var specChineseConfig = SpecText{
         bucket2 = endpoint2
         ...
     [Bucket-Cname]
-        bucket3 = cname1
-        bucket4 = cname2
+        bucket1 = cname1
+        bucket2 = cname2
         ...
 `,
 
@@ -240,8 +240,8 @@ Credential File Format:
         bucket2 = endpoint2
         ...
     [Bucket-Cname]
-        bucket3 = cname1
-        bucket4 = cname2
+        bucket1 = cname1
+        bucket2 = cname2
         ...
 `,
 
@@ -359,7 +359,7 @@ func (cc *ConfigCommand) runCommandInteractive(configFile, language string) erro
         if llanguage == LEnglishLanguage {
 		    fmt.Printf("\nPlease enter the config file path(default " + DecideConfigFile("") + ", carriage return will use the default path. If you specified this option, you should specify --config-file option to the path when you use other commands):")
         } else {
-		    fmt.Printf("\n请输入配置文件路径（默认为：" + DecideConfigFile("") + "，回车将使用默认路径。如果您设置了该选项，在使用命令时需要将--config-file选项设置为该路径）：")
+		    fmt.Printf("\n请输入配置文件路径（默认为：" + DecideConfigFile("") + "，回车将使用默认路径。如果用户设置了该选项，在使用命令时需要将--config-file选项设置为该路径）：")
         }
 
 		if _, err := fmt.Scanln(&configFile); err != nil {

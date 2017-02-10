@@ -23,7 +23,7 @@ func (s *OssutilHelpSuite) SetUpSuite(c *C) {
 // Run before each test or benchmark starts running
 func (s *OssutilHelpSuite) TearDownSuite(c *C) {
     testLogger.Println("test help completed")
-    _ = os.Remove(configFile)
+    os.Remove(configFile)
     os.Stdout = out
     os.Stderr = errout
 }

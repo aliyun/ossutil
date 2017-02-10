@@ -375,7 +375,6 @@ func (cmd *Command) objectStatistic(bucket *oss.Bucket, cloudURL CloudURL, monit
 
         monitor.updateScanNum(int64(len(lor.Objects)))
 
-        pre = oss.Prefix(lor.Prefix)
         marker = oss.Marker(lor.NextMarker)
         if !lor.IsTruncated {
             break

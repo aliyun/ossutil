@@ -114,13 +114,13 @@ func (s *OssutilCommandSuite) TearDownSuite(c *C) {
     s.removeBucket(bucketNameExist, true, c)
     s.removeBucket(bucketNameDest, true, c)
     testLogger.Println("test command completed")
-    _ = os.Remove(configFile)
-    _ = os.Remove(configFile+".bak")
-    _ = os.Remove(resultPath)
-    _ = os.Remove(uploadFileName)
-    _ = os.Remove(downloadFileName)
-    _ = os.RemoveAll(downloadDir)
-    _ = os.RemoveAll(DefaultOutputDir)
+    os.Remove(configFile)
+    os.Remove(configFile+".bak")
+    os.Remove(resultPath)
+    os.Remove(uploadFileName)
+    os.Remove(downloadFileName)
+    os.RemoveAll(downloadDir)
+    os.RemoveAll(DefaultOutputDir)
     os.Stdout = out
     os.Stderr = errout
 }
@@ -239,7 +239,7 @@ func (s *OssutilCommandSuite) listBuckets(shortFormat bool, c *C) []string {
 
     // get result
     buckets := s.getBucketResults(c)
-    _ = os.Remove(resultPath)
+    os.Remove(resultPath)
     return buckets
 }
 
@@ -416,7 +416,7 @@ func (s *OssutilCommandSuite) listObjects(bucket, prefix string, cmdline string,
 
     // get result
     objects := s.getObjectResults(c)
-    _ = os.Remove(resultPath)
+    os.Remove(resultPath)
     return objects
 }
 
@@ -645,7 +645,7 @@ func (s *OssutilCommandSuite) getStat(bucket, object string, c *C) (map[string]s
 
     // get result
     stat := s.getStatResults(c)
-    _ = os.Remove(resultPath)
+    os.Remove(resultPath)
     return stat 
 }
 

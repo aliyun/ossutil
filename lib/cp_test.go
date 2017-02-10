@@ -44,7 +44,7 @@ func (s *OssutilCommandSuite) TestCPObject(c *C) {
     s.getObject(bucketName, object, ".", c)
     str = s.readFile(object, c) 
     c.Assert(str, Equals, data)
-    _ = os.Remove(object)
+    os.Remove(object)
 
     // put without specify dest object 
     data1 := "put without specify dest object"
@@ -59,7 +59,7 @@ func (s *OssutilCommandSuite) TestCPObject(c *C) {
     s.getObject(bucketName, object, notexistdir + string(os.PathSeparator) + downloadFileName, c)
     str = s.readFile(notexistdir + string(os.PathSeparator) + downloadFileName, c) 
     c.Assert(str, Equals, data)
-    _ = os.RemoveAll(notexistdir)
+    os.RemoveAll(notexistdir)
 
     // copy file
     destObject := "TestCPObject_destObject"
@@ -73,7 +73,7 @@ func (s *OssutilCommandSuite) TestCPObject(c *C) {
     s.getObject(bucketName, destObject, filePath, c)
     str = s.readFile(filePath, c) 
     c.Assert(str, Equals, data)
-    _ = os.Remove(filePath)
+    os.Remove(filePath)
 
     // put to not exist bucket
     showElapse, err := s.rawCP(uploadFileName, CloudURLToString(destBucket, object), false, true, false, DefaultBigFileThreshold, CheckpointDir)
@@ -103,7 +103,7 @@ func (s *OssutilCommandSuite) TestCPObject(c *C) {
     s.getObject(destBucket, destObject, filePath, c)
     str = s.readFile(filePath, c) 
     c.Assert(str, Equals, data)
-    _ = os.Remove(filePath)
+    os.Remove(filePath)
 
     // copy single object in directory, test the name of dest object 
     srcObject := "a/b/c/d/e"
@@ -115,28 +115,28 @@ func (s *OssutilCommandSuite) TestCPObject(c *C) {
     s.getObject(destBucket, "e", filePath, c)
     str = s.readFile(filePath, c)
     c.Assert(str, Equals, data1)
-    _ = os.Remove(filePath)
+    os.Remove(filePath)
 
     s.copyObject(bucketName, srcObject, destBucket, "a/", c)
 
     s.getObject(destBucket, "a/e", filePath, c)
     str = s.readFile(filePath, c)
     c.Assert(str, Equals, data1)
-    _ = os.Remove(filePath)
+    os.Remove(filePath)
 
     s.copyObject(bucketName, srcObject, destBucket, "a", c)
 
     s.getObject(destBucket, "a", filePath, c)
     str = s.readFile(filePath, c)
     c.Assert(str, Equals, data1)
-    _ = os.Remove(filePath)
+    os.Remove(filePath)
 
     // copy without specify dest object
     s.copyObject(bucketName, uploadFileName, destBucket, "", c)
     s.getObject(destBucket, uploadFileName, filePath, c)
     str = s.readFile(filePath, c) 
     c.Assert(str, Equals, data1)
-    _ = os.Remove(filePath)
+    os.Remove(filePath)
 
     s.removeBucket(bucketName, true, c)
     s.removeBucket(destBucket, true, c)
@@ -255,7 +255,7 @@ func (s *OssutilCommandSuite) TestBatchCPObject(c *C) {
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
 
-    _ = os.RemoveAll(dir)
+    os.RemoveAll(dir)
 
     // create dir in dir 
     dir = randStr(10) 
@@ -335,8 +335,8 @@ func (s *OssutilCommandSuite) TestBatchCPObject(c *C) {
     }
 
     // remove dir
-    _ = os.RemoveAll(dir)
-    _ = os.RemoveAll(downDir)
+    os.RemoveAll(dir)
+    os.RemoveAll(downDir)
 
     s.removeBucket(bucketName, true, c)
     s.removeBucket(destBucket, true, c)
@@ -450,9 +450,9 @@ func (s *OssutilCommandSuite) TestCPObjectUpdate(c *C) {
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true)
 
-    _ = os.Remove(oldFile)
-    _ = os.Remove(newFile)
-    _ = os.Remove(destFile)
+    os.Remove(oldFile)
+    os.Remove(newFile)
+    os.Remove(destFile)
 
     s.removeBucket(bucketName, true, c)
     s.removeBucket(destBucket, true, c)
@@ -519,8 +519,8 @@ func (s *OssutilCommandSuite) TestCPMulitSrc(c *C) {
     showElapse, err := s.rawCPWithArgs([]string{file1, file2, CloudURLToString(bucketName, "")}, false, true, false, DefaultBigFileThreshold, CheckpointDir)
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
-    _ = os.Remove(file1)
-    _ = os.Remove(file2)
+    os.Remove(file1)
+    os.Remove(file2)
 
     // download multi objects
     object1 := "object1"
@@ -577,8 +577,8 @@ func (s *OssutilCommandSuite) TestErrUpload(c *C) {
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
 
-    _ = os.RemoveAll(dir)
-    _ = os.RemoveAll(subdir)
+    os.RemoveAll(dir)
+    os.RemoveAll(subdir)
 
     s.removeBucket(bucketName, true, c)
 }
@@ -749,15 +749,15 @@ func (s *OssutilCommandSuite) TestCPIDKey(c *C) {
     c.Assert(err, IsNil)
     c.Assert(showElapse, Equals, true)
 
-    _ = os.Remove(ufile)
-    _ = os.Remove(cfile)
+    os.Remove(ufile)
+    os.Remove(cfile)
 
     s.removeBucket(bucketName, true, c)
 }
 
 func (s *OssutilCommandSuite) TestUploadOutputDir(c *C) {
     dir := randStr(10) 
-    _ = os.RemoveAll(dir)
+    os.RemoveAll(dir)
 
     bucketName := bucketNamePrefix + randLowStr(10)
     s.putBucket(bucketName, c)
@@ -820,7 +820,7 @@ func (s *OssutilCommandSuite) TestUploadOutputDir(c *C) {
     _, err = os.Stat(dir)
     c.Assert(err, IsNil) 
 
-    _ = os.Remove(configFile)
+    os.Remove(configFile)
     configFile = cfile
 
     // get file list of outputdir
@@ -832,8 +832,8 @@ func (s *OssutilCommandSuite) TestUploadOutputDir(c *C) {
     result := s.getReportResult(fmt.Sprintf("%s%s%s", dir, string(os.PathSeparator), fileList[0]), c)
     c.Assert(len(result), Equals, 1)
     
-    _ = os.Remove(ufile)
-    _ = os.RemoveAll(dir)
+    os.Remove(ufile)
+    os.RemoveAll(dir)
 
     // err list with -C -> no outputdir
     udir := randStr(10) 
@@ -846,14 +846,14 @@ func (s *OssutilCommandSuite) TestUploadOutputDir(c *C) {
     c.Assert(err, NotNil) 
     c.Assert(os.IsNotExist(err), Equals, true)
 
-    _ = os.RemoveAll(udir)
+    os.RemoveAll(udir)
 
     s.removeBucket(bucketName, true, c)
 }
 
 func (s *OssutilCommandSuite) TestBatchUploadOutputDir(c *C) {
     udir := randStr(10) 
-    _ = os.RemoveAll(udir)
+    os.RemoveAll(udir)
     err := os.MkdirAll(udir, 0755)
     c.Assert(err, IsNil)
 
@@ -866,7 +866,7 @@ func (s *OssutilCommandSuite) TestBatchUploadOutputDir(c *C) {
     }
 
     dir := randStr(10) 
-    _ = os.RemoveAll(dir)
+    os.RemoveAll(dir)
     bucketName := bucketNamePrefix + randLowStr(10)
     s.putBucket(bucketName, c)
 
@@ -913,9 +913,9 @@ func (s *OssutilCommandSuite) TestBatchUploadOutputDir(c *C) {
     result := s.getReportResult(fmt.Sprintf("%s%s%s", dir, string(os.PathSeparator), fileList[0]), c)
     c.Assert(len(result), Equals, num)
  
-    _ = os.Remove(configFile)
+    os.Remove(configFile)
     configFile = cfile
-    _ = os.RemoveAll(dir)
+    os.RemoveAll(dir)
 
     // NoSuchBucket err copy -> no outputdir
     showElapse, err = s.rawCPWithOutputDir(udir, CloudURLToString(bucketNameNotExist, udir + "/"), true, true, false, 1, dir) 
@@ -925,14 +925,14 @@ func (s *OssutilCommandSuite) TestBatchUploadOutputDir(c *C) {
     c.Assert(err, NotNil) 
     c.Assert(os.IsNotExist(err), Equals, true)
 
-    _ = os.RemoveAll(udir)
+    os.RemoveAll(udir)
 
     s.removeBucket(bucketName, true, c)
 }
 
 func (s *OssutilCommandSuite) TestDownloadOutputDir(c *C) {
     dir := randStr(10) 
-    _ = os.RemoveAll(dir)
+    os.RemoveAll(dir)
 
     bucketName := bucketNamePrefix + randLowStr(10)
     s.putBucket(bucketName, c)
@@ -984,8 +984,8 @@ func (s *OssutilCommandSuite) TestDownloadOutputDir(c *C) {
     c.Assert(err, NotNil) 
     c.Assert(os.IsNotExist(err), Equals, true)
 
-    _ = os.RemoveAll(dir)
-    _ = os.Remove(configFile)
+    os.RemoveAll(dir)
+    os.Remove(configFile)
     configFile = cfile
 
     s.removeBucket(bucketName, true, c)
@@ -993,7 +993,7 @@ func (s *OssutilCommandSuite) TestDownloadOutputDir(c *C) {
 
 func (s *OssutilCommandSuite) TestCopyOutputDir(c *C) { 
     dir := randStr(10) 
-    _ = os.RemoveAll(dir)
+    os.RemoveAll(dir)
 
     srcBucket := bucketNamePrefix + randLowStr(10)
     s.putBucket(srcBucket, c)
@@ -1045,9 +1045,9 @@ func (s *OssutilCommandSuite) TestCopyOutputDir(c *C) {
     c.Assert(err, NotNil) 
     c.Assert(os.IsNotExist(err), Equals, true)
 
-    _ = os.Remove(configFile)
+    os.Remove(configFile)
     configFile = cfile
-    _ = os.RemoveAll(dir)
+    os.RemoveAll(dir)
 
     s.removeBucket(srcBucket, true, c)
     s.removeBucket(destBucket, true, c)
@@ -1055,7 +1055,7 @@ func (s *OssutilCommandSuite) TestCopyOutputDir(c *C) {
 
 func (s *OssutilCommandSuite) TestBatchCopyOutputDir(c *C) {
     dir := randStr(10) 
-    _ = os.RemoveAll(dir)
+    os.RemoveAll(dir)
 
     srcBucket := bucketNamePrefix + randLowStr(10)
     s.putBucket(srcBucket, c)
@@ -1074,7 +1074,7 @@ func (s *OssutilCommandSuite) TestBatchCopyOutputDir(c *C) {
     c.Assert(err, NotNil)
     c.Assert(showElapse, Equals, false)
 
-    _ = os.RemoveAll(dir)
+    os.RemoveAll(dir)
 
     // normal copy -> no outputdir 
     showElapse, err = s.rawCPWithOutputDir(CloudURLToString(srcBucket, ""), CloudURLToString(destBucket, ""), true, true, false, 1, dir) 
@@ -1105,9 +1105,9 @@ func (s *OssutilCommandSuite) TestBatchCopyOutputDir(c *C) {
     c.Assert(err, NotNil) 
     c.Assert(os.IsNotExist(err), Equals, true)
 
-    _ = os.Remove(configFile)
+    os.Remove(configFile)
     configFile = cfile
-    _ = os.RemoveAll(dir)
+    os.RemoveAll(dir)
 
     s.removeBucket(srcBucket, true, c)
     s.removeBucket(destBucket, true, c)
@@ -1118,9 +1118,9 @@ func (s *OssutilCommandSuite) TestConfigOutputDir(c *C) {
     edir := "" 
     dir := randStr(10) 
     dir1 := randStr(10) 
-    _ = os.RemoveAll(DefaultOutputDir)
-    _ = os.RemoveAll(dir)
-    _ = os.RemoveAll(dir1)
+    os.RemoveAll(DefaultOutputDir)
+    os.RemoveAll(dir)
+    os.RemoveAll(dir1)
 
     bucketName := bucketNamePrefix + randLowStr(10)
     s.putBucket(bucketName, c)
@@ -1146,7 +1146,7 @@ func (s *OssutilCommandSuite) TestConfigOutputDir(c *C) {
     c.Assert(err, IsNil)
     c.Assert(len(fileList), Equals, 1)
 
-    _ = os.RemoveAll(DefaultOutputDir) 
+    os.RemoveAll(DefaultOutputDir) 
 
     // config outputdir
     data = fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\noutputDir=%s\n[Bucket-Endpoint]\n%s=%s[Bucket-Cname]\n%s=%s", endpoint, accessKeyID, accessKeySecret, dir, bucketName, endpoint, bucketName, "abc") 
@@ -1166,8 +1166,8 @@ func (s *OssutilCommandSuite) TestConfigOutputDir(c *C) {
     c.Assert(err, IsNil)
     c.Assert(len(fileList), Equals, 1)
 
-    _ = os.RemoveAll(dir)
-    _ = os.RemoveAll(DefaultOutputDir)
+    os.RemoveAll(dir)
+    os.RemoveAll(DefaultOutputDir)
 
     // option and config
     showElapse, err = s.rawCPWithOutputDir(ufile, CloudURLToString(bucketName, object), true, true, false, 1, dir1) 
@@ -1187,11 +1187,11 @@ func (s *OssutilCommandSuite) TestConfigOutputDir(c *C) {
     c.Assert(err, IsNil)
     c.Assert(len(fileList), Equals, 1)
 
-    _ = os.Remove(configFile)
+    os.Remove(configFile)
     configFile = cfile
-    _ = os.RemoveAll(dir1)
-    _ = os.RemoveAll(dir)
-    _ = os.RemoveAll(DefaultOutputDir)
+    os.RemoveAll(dir1)
+    os.RemoveAll(dir)
+    os.RemoveAll(DefaultOutputDir)
 
     s.createFile(uploadFileName, content, c)
     showElapse, err = s.rawCPWithOutputDir(ufile, CloudURLToString(bucketName, object), true, true, false, 1, uploadFileName) 
@@ -1272,7 +1272,7 @@ func (s *OssutilCommandSuite) TestSnapshot(c *C) {
     s.createFile(uploadFileName, data, c)
     object := randStr(10)
     spath := "ossutil.snapshot-dir" + randStr(6)
-    _ = os.RemoveAll(spath)
+    os.RemoveAll(spath)
 
     err := s.initCopyWithSnapshot(uploadFileName, CloudURLToString(bucketName, object), false, false, false, DefaultBigFileThreshold, spath)
     c.Assert(err, IsNil)
@@ -1351,7 +1351,7 @@ func (s *OssutilCommandSuite) TestSnapshot(c *C) {
     err = copyCommand.RunCommand()
     c.Assert(err, NotNil)
 
-    _ = os.RemoveAll(spath)
+    os.RemoveAll(spath)
 
     // snapshot path exist and invalid 
     err = s.initCopyWithSnapshot(uploadFileName, CloudURLToString(bucketName, object), false, false, false, DefaultBigFileThreshold, uploadFileName)

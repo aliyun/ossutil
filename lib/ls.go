@@ -80,14 +80,14 @@ var specChineseList = SpecText{
         Object and Directory Number is: 3
 
     6) ossutil ls oss://bucket1 -m 
-        InitiatedTime                  UploadID                          MultipartName
+        InitiatedTime                  UploadID                          ObjectName
         2017-01-13 03:45:26 +0000 CST  15754AF7980C4DFB8193F190837520BB  oss://bucket1/obj1
         2017-01-13 03:45:25 +0000 CST  3998971ACAF94AD9AC48EAC1988BE863  oss://bucket1/obj2
         2017-01-20 11:16:21 +0800 CST  A20157A7B2FEC4670626DAE0F4C0073C  oss://bucket1/tobj
         UploadId Number is: 3
     
     7) ossutil ls oss://bucket1/obj -m 
-        InitiatedTime                  UploadID                          MultipartName
+        InitiatedTime                  UploadID                          ObjectName
         2017-01-13 03:45:26 +0000 CST  15754AF7980C4DFB8193F190837520BB  oss://bucket1/obj1
         2017-01-13 03:45:25 +0000 CST  3998971ACAF94AD9AC48EAC1988BE863  oss://bucket1/obj2
         UploadId Number is: 2
@@ -98,7 +98,7 @@ var specChineseList = SpecText{
         2015-06-05 14:36:21 +0000 CST  201933  6185CA2E8EB8510A61B3A845EAFE4174  oss://bucket1/obj1
         2016-04-08 14:50:47 +0000 CST 6476984  4F16FDAE7AC404CEC8B727FCC67779D6  oss://bucket1/sample.txt
         Object Number is: 3
-        InitiatedTime                  UploadID                          MultipartName
+        InitiatedTime                  UploadID                          ObjectName
         2017-01-13 03:45:26 +0000 CST  15754AF7980C4DFB8193F190837520BB  oss://bucket1/obj1
         2017-01-13 03:43:13 +0000 CST  2A1F9B4A95E341BD9285CC42BB950EE0  oss://bucket1/obj1
         2017-01-13 03:45:25 +0000 CST  3998971ACAF94AD9AC48EAC1988BE863  oss://bucket1/obj2
@@ -108,8 +108,8 @@ var specChineseList = SpecText{
     9) ossutil ls oss://bucket1/obj -a 
         LastModifiedTime              Size(B)  ETAG                              ObjectName
         2015-06-05 14:36:21 +0000 CST  201933  6185CA2E8EB8510A61B3A845EAFE4174  oss://bucket1/obj1
-        Object Number is: 2
-        InitiatedTime                  UploadID                          MultipartName
+        Object Number is: 1
+        InitiatedTime                  UploadID                          ObjectName
         2017-01-13 03:45:26 +0000 CST  15754AF7980C4DFB8193F190837520BB  oss://bucket1/obj1
         2017-01-13 03:43:13 +0000 CST  2A1F9B4A95E341BD9285CC42BB950EE0  oss://bucket1/obj1
         2017-01-13 03:45:25 +0000 CST  3998971ACAF94AD9AC48EAC1988BE863  oss://bucket1/obj2
@@ -117,8 +117,8 @@ var specChineseList = SpecText{
 
     10) ossutil ls oss://bucket1/obj -a -s 
         oss://bucket1/obj1
-        Object Number is: 2
-        UploadID                          MultipartName
+        Object Number is: 1
+        UploadID                          ObjectName
         15754AF7980C4DFB8193F190837520BB  oss://bucket1/obj1
         2A1F9B4A95E341BD9285CC42BB950EE0  oss://bucket1/obj1
         3998971ACAF94AD9AC48EAC1988BE863  oss://bucket1/obj2
@@ -202,14 +202,14 @@ Usage:
         Object and Directory Number is: 3
 
     6) ossutil ls oss://bucket1 -m 
-        InitiatedTime                  UploadID                          MultipartName
+        InitiatedTime                  UploadID                          ObjectName
         2017-01-13 03:45:26 +0000 CST  15754AF7980C4DFB8193F190837520BB  oss://bucket1/obj1
         2017-01-13 03:45:25 +0000 CST  3998971ACAF94AD9AC48EAC1988BE863  oss://bucket1/obj2
         2017-01-20 11:16:21 +0800 CST  A20157A7B2FEC4670626DAE0F4C0073C  oss://bucket1/tobj
         UploadId Number is: 3
     
     7) ossutil ls oss://bucket1/obj -m 
-        InitiatedTime                  UploadID                          MultipartName
+        InitiatedTime                  UploadID                          ObjectName
         2017-01-13 03:45:26 +0000 CST  15754AF7980C4DFB8193F190837520BB  oss://bucket1/obj1
         2017-01-13 03:45:25 +0000 CST  3998971ACAF94AD9AC48EAC1988BE863  oss://bucket1/obj2
         UploadId Number is: 2
@@ -220,7 +220,7 @@ Usage:
         2015-06-05 14:36:21 +0000 CST  201933  6185CA2E8EB8510A61B3A845EAFE4174  oss://bucket1/obj1
         2016-04-08 14:50:47 +0000 CST 6476984  4F16FDAE7AC404CEC8B727FCC67779D6  oss://bucket1/sample.txt
         Object Number is: 3
-        InitiatedTime                  UploadID                          MultipartName
+        InitiatedTime                  UploadID                          ObjectName
         2017-01-13 03:45:26 +0000 CST  15754AF7980C4DFB8193F190837520BB  oss://bucket1/obj1
         2017-01-13 03:43:13 +0000 CST  2A1F9B4A95E341BD9285CC42BB950EE0  oss://bucket1/obj1
         2017-01-13 03:45:25 +0000 CST  3998971ACAF94AD9AC48EAC1988BE863  oss://bucket1/obj2
@@ -230,8 +230,8 @@ Usage:
     9) ossutil ls oss://bucket1/obj -a 
         LastModifiedTime              Size(B)  ETAG                              ObjectName
         2015-06-05 14:36:21 +0000 CST  201933  6185CA2E8EB8510A61B3A845EAFE4174  oss://bucket1/obj1
-        Object Number is: 2
-        InitiatedTime                  UploadID                          MultipartName
+        Object Number is: 1
+        InitiatedTime                  UploadID                          ObjectName
         2017-01-13 03:45:26 +0000 CST  15754AF7980C4DFB8193F190837520BB  oss://bucket1/obj1
         2017-01-13 03:43:13 +0000 CST  2A1F9B4A95E341BD9285CC42BB950EE0  oss://bucket1/obj1
         2017-01-13 03:45:25 +0000 CST  3998971ACAF94AD9AC48EAC1988BE863  oss://bucket1/obj2
@@ -239,8 +239,8 @@ Usage:
 
     10) ossutil ls oss://bucket1/obj -a -s 
         oss://bucket1/obj1
-        Object Number is: 2
-        UploadID                          MultipartName
+        Object Number is: 1
+        UploadID                          ObjectName
         15754AF7980C4DFB8193F190837520BB  oss://bucket1/obj1
         2A1F9B4A95E341BD9285CC42BB950EE0  oss://bucket1/obj1
         3998971ACAF94AD9AC48EAC1988BE863  oss://bucket1/obj2
@@ -478,7 +478,8 @@ func (lc *ListCommand) listMultipartUploads(bucket *oss.Bucket, cloudURL CloudUR
     var multipartNum int64
 	multipartNum = 0
 	pre := oss.Prefix(cloudURL.object)
-	marker := oss.Marker("")
+    keyMarker := oss.KeyMarker("")
+    uploadIdMarker := oss.UploadIDMarker("")
 	del := oss.Delimiter("")
 	if directory {
 		del = oss.Delimiter("/")
@@ -486,12 +487,13 @@ func (lc *ListCommand) listMultipartUploads(bucket *oss.Bucket, cloudURL CloudUR
 
     var i int64
     for i = 0; ; i++ {
-        lmr, err := lc.command.ossListMultipartUploadsRetry(bucket, marker, pre, del)
+        lmr, err := lc.command.ossListMultipartUploadsRetry(bucket, keyMarker, uploadIdMarker, pre, del)
         if err != nil {
             return err
         }
         pre = oss.Prefix(lmr.Prefix)
-        marker = oss.Marker(lmr.NextKeyMarker)
+        keyMarker = oss.Marker(lmr.NextKeyMarker)
+        uploadIdMarker = oss.UploadIDMarker(lmr.NextUploadIDMarker)
         multipartNum += lc.displayMultipartUploadsResult(lmr, cloudURL.bucket, shortFormat, directory, i)
         if !lmr.IsTruncated {
             break
@@ -508,9 +510,9 @@ func (lc *ListCommand) displayMultipartUploadsResult(lmr oss.ListMultipartUpload
 
 	if i == 0 && len(lmr.Uploads) > 0 {
         if shortFormat {
-		    fmt.Printf("%-32s%s%s\n", "UploadID", FormatTAB, "MultipartName")
+		    fmt.Printf("%-32s%s%s\n", "UploadID", FormatTAB, "ObjectName")
         } else {
-		    fmt.Printf("%-30s%s%-32s%s%s\n", "InitiatedTime", FormatTAB, "UploadID", FormatTAB, "MultipartName")
+		    fmt.Printf("%-30s%s%-32s%s%s\n", "InitiatedTime", FormatTAB, "UploadID", FormatTAB, "ObjectName")
         }
 	}
 
