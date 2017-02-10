@@ -1,14 +1,14 @@
 package lib
 
 import (
+	"crypto/md5"
+	"encoding/base64"
 	"fmt"
 	"hash"
 	"hash/crc64"
-	"crypto/md5"
-	"encoding/base64"
-	"strings"
 	"io"
 	"os"
+	"strings"
 )
 
 var specChineseHash = SpecText{
@@ -23,7 +23,7 @@ var specChineseHash = SpecText{
 
 	detailHelpText: ` 
     该命令计算本地文件的crc64值或md5/content-md5值, 可以通过--type选项来控制计算的类型，
-    可选类型值为crc64或md5, 默认为` + DefaultHashType +`。
+    可选类型值为crc64或md5, 默认为` + DefaultHashType + `。
 
     注意：oss文件的crc64和content-md5值一般可通过stat命令查看到，参考` + StatCRC64 + `
     字段和` + StatContentMD5 + `字段。若文件在oss支持crc64功能之前上传，则stat命令不支持查看crc64值；
@@ -40,7 +40,7 @@ var specChineseHash = SpecText{
     ossutil hash file_url [--type=hashtype] 
 `,
 
-    sampleText: ` 
+	sampleText: ` 
     1) 计算本地文件的crc64: 
         ossutil hash test.txt 或 
         ossutil hash test.txt --type=crc64
@@ -69,7 +69,7 @@ var specEnglishHash = SpecText{
 
 	detailHelpText: ` 
     The command calculate crc64 or md5/content-md5 value of the specified local file, 
-    specify the hashtype by --type, default hashtype is ` + DefaultHashType +`. 
+    specify the hashtype by --type, default hashtype is ` + DefaultHashType + `. 
 
     Warning: user can use stat command to check the crc64 or md5/content-md5 value of 
     normal oss object, see the ` + StatCRC64 + ` and ` + StatContentMD5 + ` field. If the object 
@@ -105,33 +105,33 @@ Usage:
 `,
 }
 
-// HashCommand is the command to get crc64/md5 of local file 
+// HashCommand is the command to get crc64/md5 of local file
 type HashCommand struct {
 	command Command
 }
 
 var hashCommand = HashCommand{
 	command: Command{
-		name:             "hash",
-		nameAlias:        []string{""},
-		minArgc:          1,
-		maxArgc:          1,
-		specChinese:      specChineseHash,
-		specEnglish:      specEnglishHash,
-		group:            GroupTypeAdditionalCommand,
+		name:        "hash",
+		nameAlias:   []string{""},
+		minArgc:     1,
+		maxArgc:     1,
+		specChinese: specChineseHash,
+		specEnglish: specEnglishHash,
+		group:       GroupTypeAdditionalCommand,
 		validOptionNames: []string{
-            OptionHashType,
-        },
+			OptionHashType,
+		},
 	},
 }
 
 // function for RewriteLoadConfiger interface
 func (hc *HashCommand) rewriteLoadConfig(configFile string) error {
-    // read config file, if error exist, do not print error
-    var err error
-    if hc.command.configOptions, err = LoadConfig(configFile); err != nil {
-        hc.command.configOptions = OptionMapType{}
-    }
+	// read config file, if error exist, do not print error
+	var err error
+	if hc.command.configOptions, err = LoadConfig(configFile); err != nil {
+		hc.command.configOptions = OptionMapType{}
+	}
 	return nil
 }
 
@@ -144,54 +144,54 @@ func (hc *HashCommand) formatIndependHelp() string {
 	return hc.command.formatIndependHelp()
 }
 
-// Init simulate inheritance, and polymorphism 
+// Init simulate inheritance, and polymorphism
 func (hc *HashCommand) Init(args []string, options OptionMapType) error {
 	return hc.command.Init(args, options, hc)
 }
 
 // RunCommand simulate inheritance, and polymorphism
 func (hc *HashCommand) RunCommand() error {
-    hashType, _ := GetString(OptionHashType, hc.command.options)
-    path := hc.command.args[0]
+	hashType, _ := GetString(OptionHashType, hc.command.options)
+	path := hc.command.args[0]
 
-    f, err := os.Open(path)
-    if err != nil {
-        return err
-    }
-    defer f.Close()
-    f.Seek(0, os.SEEK_SET)
-     
-    switch strings.ToLower(hashType) {
-    case MD5HashType:
-        return hashMD5(f)
-    default:
-        return hashCRC64(f)
-    }
+	f, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	f.Seek(0, os.SEEK_SET)
+
+	switch strings.ToLower(hashType) {
+	case MD5HashType:
+		return hashMD5(f)
+	default:
+		return hashCRC64(f)
+	}
 }
 
 func hashMD5(f io.Reader) error {
-    md5Ins := md5.New()
-    w, _ := md5Ins.(hash.Hash)
-    if _, err := io.Copy(w, f); err != nil {
-        return err
-    }
-          
-    result := md5Ins.Sum(nil)
-    fmt.Printf("%-28s: %X\n", HashMD5, result)
-    
-    encoded := base64.StdEncoding.EncodeToString(result)
-    fmt.Printf("%-28s: %s\n", HashContentMD5, encoded)
-    return nil
+	md5Ins := md5.New()
+	w, _ := md5Ins.(hash.Hash)
+	if _, err := io.Copy(w, f); err != nil {
+		return err
+	}
+
+	result := md5Ins.Sum(nil)
+	fmt.Printf("%-28s: %X\n", HashMD5, result)
+
+	encoded := base64.StdEncoding.EncodeToString(result)
+	fmt.Printf("%-28s: %s\n", HashContentMD5, encoded)
+	return nil
 }
 
 func hashCRC64(f io.Reader) error {
-    crc64Ins := crc64.New(crc64.MakeTable(crc64.ECMA))
-    w, _ := crc64Ins.(hash.Hash)
-    if _, err := io.Copy(w, f); err != nil {
-        return err
-    }
+	crc64Ins := crc64.New(crc64.MakeTable(crc64.ECMA))
+	w, _ := crc64Ins.(hash.Hash)
+	if _, err := io.Copy(w, f); err != nil {
+		return err
+	}
 
-    result := crc64Ins.Sum64()
-    fmt.Printf("%-28s: %d\n", HashCRC64, result)
-    return nil
+	result := crc64Ins.Sum64()
+	fmt.Printf("%-28s: %d\n", HashCRC64, result)
+	return nil
 }

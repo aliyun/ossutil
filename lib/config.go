@@ -2,9 +2,9 @@ package lib
 
 import (
 	"fmt"
-    "os"
-	"strings"
 	configparser "github.com/alyu/configparser"
+	"os"
+	"strings"
 )
 
 var specChineseConfig = SpecText{
@@ -271,39 +271,38 @@ var configCommand = ConfigCommand{
 			OptionAccessKeyID,
 			OptionAccessKeySecret,
 			OptionSTSToken,
-            OptionOutputDir,
-            OptionLanguage,
+			OptionOutputDir,
+			OptionLanguage,
 		},
 	},
 }
 
 // function for RewriteLoadConfiger interface
 func (cc *ConfigCommand) rewriteLoadConfig(configFile string) error {
-    // read config file, if error exist, do not print error
-    var err error
-    if cc.command.configOptions, err = LoadConfig(configFile); err != nil {
-        cc.command.configOptions = OptionMapType{}
-    }
+	// read config file, if error exist, do not print error
+	var err error
+	if cc.command.configOptions, err = LoadConfig(configFile); err != nil {
+		cc.command.configOptions = OptionMapType{}
+	}
 	return nil
 }
 
 // function for AssembleOptioner interface
 func (cc *ConfigCommand) rewriteAssembleOptions() {
-    // only assemble language option
+	// only assemble language option
 	if val, _ := GetString(OptionLanguage, cc.command.options); val == "" {
-        if val, ok := cc.command.configOptions[OptionLanguage]; ok {
-            opval := val.(string)
-            cc.command.options[OptionLanguage] = &opval
-            delete(cc.command.configOptions, OptionLanguage)
-        }
-    }
+		if val, ok := cc.command.configOptions[OptionLanguage]; ok {
+			opval := val.(string)
+			cc.command.options[OptionLanguage] = &opval
+			delete(cc.command.configOptions, OptionLanguage)
+		}
+	}
 
-    if val, _ := GetString(OptionLanguage, cc.command.options); val == "" {
-        def := OptionMap[OptionLanguage].def
-        cc.command.options[OptionLanguage] = &def
-    }
+	if val, _ := GetString(OptionLanguage, cc.command.options); val == "" {
+		def := OptionMap[OptionLanguage].def
+		cc.command.options[OptionLanguage] = &def
+	}
 }
-
 
 // function for FormatHelper interface
 func (cc *ConfigCommand) formatHelpForWhole() string {
@@ -314,18 +313,17 @@ func (cc *ConfigCommand) formatIndependHelp() string {
 	return cc.command.formatIndependHelp()
 }
 
-// Init simulate inheritance, and polymorphism 
+// Init simulate inheritance, and polymorphism
 func (cc *ConfigCommand) Init(args []string, options OptionMapType) error {
 	return cc.command.Init(args, options, cc)
 }
 
-
-// RunCommand simulate inheritance, and polymorphism 
+// RunCommand simulate inheritance, and polymorphism
 func (cc *ConfigCommand) RunCommand() error {
 	configFile, _ := GetString(OptionConfigFile, cc.command.options)
 	delete(cc.command.options, OptionConfigFile)
-    language, _ := GetString(OptionLanguage, cc.command.options)
-    delete(cc.command.options, OptionLanguage)
+	language, _ := GetString(OptionLanguage, cc.command.options)
+	delete(cc.command.options, OptionLanguage)
 
 	// filter user input options
 	cc.filterNonInputOptions()
@@ -348,35 +346,35 @@ func (cc *ConfigCommand) filterNonInputOptions() {
 }
 
 func (cc *ConfigCommand) runCommandInteractive(configFile, language string) error {
-    llanguage := strings.ToLower(language)
-    if llanguage == LEnglishLanguage {
-	    fmt.Println("The command creates a configuration file and stores credentials.")
-    } else {
-        fmt.Println("该命令创建将一个配置文件，在其中存储配置信息。")
-    }
+	llanguage := strings.ToLower(language)
+	if llanguage == LEnglishLanguage {
+		fmt.Println("The command creates a configuration file and stores credentials.")
+	} else {
+		fmt.Println("该命令创建将一个配置文件，在其中存储配置信息。")
+	}
 
 	if configFile == "" {
-        if llanguage == LEnglishLanguage {
-		    fmt.Printf("\nPlease enter the config file path(default " + DecideConfigFile("") + ", carriage return will use the default path. If you specified this option, you should specify --config-file option to the path when you use other commands):")
-        } else {
-		    fmt.Printf("\n请输入配置文件路径（默认为：" + DecideConfigFile("") + "，回车将使用默认路径。如果用户设置了该选项，在使用命令时需要将--config-file选项设置为该路径）：")
-        }
+		if llanguage == LEnglishLanguage {
+			fmt.Printf("\nPlease enter the config file path(default " + DecideConfigFile("") + ", carriage return will use the default path. If you specified this option, you should specify --config-file option to the path when you use other commands):")
+		} else {
+			fmt.Printf("\n请输入配置文件路径（默认为：" + DecideConfigFile("") + "，回车将使用默认路径。如果用户设置了该选项，在使用命令时需要将--config-file选项设置为该路径）：")
+		}
 
 		if _, err := fmt.Scanln(&configFile); err != nil {
-            if llanguage == LEnglishLanguage {
-			    fmt.Println("No config file entered, will use the default config file " + DecideConfigFile("") + "\n")
-            } else {
-		        fmt.Println("未输入配置文件路径，将使用默认配置文件：" + DecideConfigFile("") + "。\n")
-            }
+			if llanguage == LEnglishLanguage {
+				fmt.Println("No config file entered, will use the default config file " + DecideConfigFile("") + "\n")
+			} else {
+				fmt.Println("未输入配置文件路径，将使用默认配置文件：" + DecideConfigFile("") + "。\n")
+			}
 		}
 	}
 
 	configFile = DecideConfigFile(configFile)
-    if llanguage == LEnglishLanguage {
-	    fmt.Println("For the following settings, carriage return means skip the configuration. Please try \"help config\" to see the meaning of the settings.\n")
-    } else {
-        fmt.Println("对于下述配置，回车将跳过相关配置项的设置，配置项的具体含义，请使用\"help config\"命令查看。\n")
-    }
+	if llanguage == LEnglishLanguage {
+		fmt.Println("For the following settings, carriage return means skip the configuration. Please try \"help config\" to see the meaning of the settings.\n")
+	} else {
+		fmt.Println("对于下述配置，回车将跳过相关配置项的设置，配置项的具体含义，请使用\"help config\"命令查看。\n")
+	}
 
 	if err := cc.configInteractive(configFile, language); err != nil {
 		return err
@@ -389,45 +387,45 @@ func (cc *ConfigCommand) configInteractive(configFile, language string) error {
 	config := configparser.NewConfiguration()
 	section := config.NewSection(CREDSection)
 
-    // if config file not exist, config Language
-    llanguage := strings.ToLower(language)
+	// if config file not exist, config Language
+	llanguage := strings.ToLower(language)
 	section.Add(OptionLanguage, language)
-    if _, err := os.Stat(configFile); err != nil {
-        if llanguage == LEnglishLanguage {
-		    fmt.Printf("Please enter language(%s, default is:%s, the configuration will go into effect after the command successfully executed):", OptionMap[OptionLanguage].minVal, DefaultLanguage)
-        } else {
-            fmt.Printf("请输入语言(%s，默认为：%s，该配置项将在此次config命令成功结束后生效)：", OptionMap[OptionLanguage].minVal, DefaultLanguage)
-        }
+	if _, err := os.Stat(configFile); err != nil {
+		if llanguage == LEnglishLanguage {
+			fmt.Printf("Please enter language(%s, default is:%s, the configuration will go into effect after the command successfully executed):", OptionMap[OptionLanguage].minVal, DefaultLanguage)
+		} else {
+			fmt.Printf("请输入语言(%s，默认为：%s，该配置项将在此次config命令成功结束后生效)：", OptionMap[OptionLanguage].minVal, DefaultLanguage)
+		}
 		if _, err := fmt.Scanln(&val); err == nil {
-            vals := strings.Split(OptionMap[OptionLanguage].minVal, "/")
-            if FindPosCaseInsen(val, vals) == -1 {
-                return fmt.Errorf("invalid option value of %s, the value: %s is not anyone of %s", OptionLanguage, val, OptionMap[OptionLanguage].minVal)
-            }
+			vals := strings.Split(OptionMap[OptionLanguage].minVal, "/")
+			if FindPosCaseInsen(val, vals) == -1 {
+				return fmt.Errorf("invalid option value of %s, the value: %s is not anyone of %s", OptionLanguage, val, OptionMap[OptionLanguage].minVal)
+			}
 			section.Add(OptionLanguage, val)
 		}
-    }
+	}
 
 	for name, option := range CredOptionMap {
-        if !option.cfInteractive {
-            continue
-        }
-        str := ""
-        if llanguage == LEnglishLanguage {
-            if OptionMap[name].def != "" {
-                str = fmt.Sprintf("(%sdefault is:%s, carriage return will use the default value)", option.helpEnglish, OptionMap[name].def) 
-            }
-		    fmt.Printf("Please enter %s%s:", name, str)
-        } else {
-            if OptionMap[name].def != "" {
-                str = fmt.Sprintf("（%s默认为：%s，回车将使用默认值）", option.helpChinese, OptionMap[name].def)
-            }
-            fmt.Printf("请输入%s%s：", name, str)
-        }
+		if !option.cfInteractive {
+			continue
+		}
+		str := ""
+		if llanguage == LEnglishLanguage {
+			if OptionMap[name].def != "" {
+				str = fmt.Sprintf("(%sdefault is:%s, carriage return will use the default value)", option.helpEnglish, OptionMap[name].def)
+			}
+			fmt.Printf("Please enter %s%s:", name, str)
+		} else {
+			if OptionMap[name].def != "" {
+				str = fmt.Sprintf("（%s默认为：%s，回车将使用默认值）", option.helpChinese, OptionMap[name].def)
+			}
+			fmt.Printf("请输入%s%s：", name, str)
+		}
 		if _, err := fmt.Scanln(&val); err == nil {
 			section.Add(name, val)
 		} else if OptionMap[name].def != "" {
-            section.Add(name, OptionMap[name].def)
-        }
+			section.Add(name, OptionMap[name].def)
+		}
 	}
 
 	if err := configparser.Save(config, configFile); err != nil {

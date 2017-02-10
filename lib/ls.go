@@ -377,83 +377,83 @@ func (lc *ListCommand) listFiles(cloudURL CloudURL) error {
 	shortFormat, _ := GetBool(OptionShortFormat, lc.command.options)
 	directory, _ := GetBool(OptionDirectory, lc.command.options)
 
-    typeSet := lc.getSubjectType()
-    if typeSet & objectType != 0 {
-	    if err := lc.listObjects(bucket, cloudURL, shortFormat, directory); err != nil {
-            return err
-        }
-    }
-    if typeSet & multipartType != 0 {
-	    if err := lc.listMultipartUploads(bucket, cloudURL, shortFormat, directory); err != nil {
-            return err
-        }
-    }
-    return nil
+	typeSet := lc.getSubjectType()
+	if typeSet&objectType != 0 {
+		if err := lc.listObjects(bucket, cloudURL, shortFormat, directory); err != nil {
+			return err
+		}
+	}
+	if typeSet&multipartType != 0 {
+		if err := lc.listMultipartUploads(bucket, cloudURL, shortFormat, directory); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (lc *ListCommand) getSubjectType() int64 {
-    var typeSet int64
-    typeSet = 0 
-    if isMultipart, _ := GetBool(OptionMultipart, lc.command.options); isMultipart {
-        typeSet |= multipartType 
-    }
+	var typeSet int64
+	typeSet = 0
+	if isMultipart, _ := GetBool(OptionMultipart, lc.command.options); isMultipart {
+		typeSet |= multipartType
+	}
 	if isAllType, _ := GetBool(OptionAllType, lc.command.options); isAllType {
-        typeSet |= allType
-    }
-    if typeSet & allType == 0 {
-        typeSet = objectType 
-    }
-    return typeSet
+		typeSet |= allType
+	}
+	if typeSet&allType == 0 {
+		typeSet = objectType
+	}
+	return typeSet
 }
 
 func (lc *ListCommand) listObjects(bucket *oss.Bucket, cloudURL CloudURL, shortFormat bool, directory bool) error {
-    //list all objects or directories
-    var num int64
-    num = 0
-    pre := oss.Prefix(cloudURL.object)
-    marker := oss.Marker("")
-    del := oss.Delimiter("")
-    if directory {
-        del = oss.Delimiter("/")
-    }
+	//list all objects or directories
+	var num int64
+	num = 0
+	pre := oss.Prefix(cloudURL.object)
+	marker := oss.Marker("")
+	del := oss.Delimiter("")
+	if directory {
+		del = oss.Delimiter("/")
+	}
 
-    var i int64
-    for i = 0; ; i++ {
-        lor, err := lc.command.ossListObjectsRetry(bucket, marker, pre, del)
-        if err != nil {
-            return err
-        }
-        pre = oss.Prefix(lor.Prefix)
-        marker = oss.Marker(lor.NextMarker)
-        num += lc.displayObjectsResult(lor, cloudURL.bucket, shortFormat, directory, i)
-        if !lor.IsTruncated {
-            break
-        }
-    }
+	var i int64
+	for i = 0; ; i++ {
+		lor, err := lc.command.ossListObjectsRetry(bucket, marker, pre, del)
+		if err != nil {
+			return err
+		}
+		pre = oss.Prefix(lor.Prefix)
+		marker = oss.Marker(lor.NextMarker)
+		num += lc.displayObjectsResult(lor, cloudURL.bucket, shortFormat, directory, i)
+		if !lor.IsTruncated {
+			break
+		}
+	}
 
-    if !directory {
-        fmt.Printf("Object Number is: %d\n", num)
-    } else {
-        fmt.Printf("Object and Directory Number is: %d\n", num)
-    }
+	if !directory {
+		fmt.Printf("Object Number is: %d\n", num)
+	} else {
+		fmt.Printf("Object and Directory Number is: %d\n", num)
+	}
 
-    return nil
+	return nil
 }
 
 func (lc *ListCommand) displayObjectsResult(lor oss.ListObjectsResult, bucket string, shortFormat bool, directory bool, i int64) int64 {
-    if i == 0 && !shortFormat && !directory && len(lor.Objects) > 0 {
-        fmt.Printf("%-30s%12s%s%-38s%s%s\n", "LastModifiedTime", "Size(B)", "   ", "ETAG", "  ", "ObjectName")
-    }
+	if i == 0 && !shortFormat && !directory && len(lor.Objects) > 0 {
+		fmt.Printf("%-30s%12s%s%-38s%s%s\n", "LastModifiedTime", "Size(B)", "   ", "ETAG", "  ", "ObjectName")
+	}
 
-    var num int64
-    if !directory {
-        num = lc.showObjects(lor, bucket, shortFormat)
-    } else {
-        num = lc.showObjects(lor, bucket, true)
-        num1 := lc.showDirectories(lor, bucket)
-        num += num1
-    }
-    return num
+	var num int64
+	if !directory {
+		num = lc.showObjects(lor, bucket, shortFormat)
+	} else {
+		num = lc.showObjects(lor, bucket, true)
+		num1 := lc.showDirectories(lor, bucket)
+		num += num1
+	}
+	return num
 }
 
 func (lc *ListCommand) showObjects(lor oss.ListObjectsResult, bucket string, shortFormat bool) int64 {
@@ -461,7 +461,7 @@ func (lc *ListCommand) showObjects(lor oss.ListObjectsResult, bucket string, sho
 		if !shortFormat {
 			fmt.Printf("%-30s%12d%s%-38s%s%s\n", utcToLocalTime(object.LastModified), object.Size, "   ", strings.Trim(object.ETag, "\""), "  ", CloudURLToString(bucket, object.Key))
 		} else {
-            fmt.Printf("%s\n", CloudURLToString(bucket, object.Key))
+			fmt.Printf("%s\n", CloudURLToString(bucket, object.Key))
 		}
 	}
 	return int64(len(lor.Objects))
@@ -469,64 +469,64 @@ func (lc *ListCommand) showObjects(lor oss.ListObjectsResult, bucket string, sho
 
 func (lc *ListCommand) showDirectories(lor oss.ListObjectsResult, bucket string) int64 {
 	for _, prefix := range lor.CommonPrefixes {
-        fmt.Printf("%s\n", CloudURLToString(bucket, prefix))
+		fmt.Printf("%s\n", CloudURLToString(bucket, prefix))
 	}
 	return int64(len(lor.CommonPrefixes))
 }
 
 func (lc *ListCommand) listMultipartUploads(bucket *oss.Bucket, cloudURL CloudURL, shortFormat bool, directory bool) error {
-    var multipartNum int64
+	var multipartNum int64
 	multipartNum = 0
 	pre := oss.Prefix(cloudURL.object)
-    keyMarker := oss.KeyMarker("")
-    uploadIdMarker := oss.UploadIDMarker("")
+	keyMarker := oss.KeyMarker("")
+	uploadIdMarker := oss.UploadIDMarker("")
 	del := oss.Delimiter("")
 	if directory {
 		del = oss.Delimiter("/")
 	}
 
-    var i int64
-    for i = 0; ; i++ {
-        lmr, err := lc.command.ossListMultipartUploadsRetry(bucket, keyMarker, uploadIdMarker, pre, del)
-        if err != nil {
-            return err
-        }
-        pre = oss.Prefix(lmr.Prefix)
-        keyMarker = oss.Marker(lmr.NextKeyMarker)
-        uploadIdMarker = oss.UploadIDMarker(lmr.NextUploadIDMarker)
-        multipartNum += lc.displayMultipartUploadsResult(lmr, cloudURL.bucket, shortFormat, directory, i)
-        if !lmr.IsTruncated {
-            break
-        }
-    }
-    fmt.Printf("Multipart Number is: %d\n", multipartNum)
+	var i int64
+	for i = 0; ; i++ {
+		lmr, err := lc.command.ossListMultipartUploadsRetry(bucket, keyMarker, uploadIdMarker, pre, del)
+		if err != nil {
+			return err
+		}
+		pre = oss.Prefix(lmr.Prefix)
+		keyMarker = oss.Marker(lmr.NextKeyMarker)
+		uploadIdMarker = oss.UploadIDMarker(lmr.NextUploadIDMarker)
+		multipartNum += lc.displayMultipartUploadsResult(lmr, cloudURL.bucket, shortFormat, directory, i)
+		if !lmr.IsTruncated {
+			break
+		}
+	}
+	fmt.Printf("Multipart Number is: %d\n", multipartNum)
 	return nil
 }
 
 func (lc *ListCommand) displayMultipartUploadsResult(lmr oss.ListMultipartUploadResult, bucket string, shortFormat bool, directory bool, i int64) int64 {
-    if directory {
-        shortFormat = true
-    }
-
-	if i == 0 && len(lmr.Uploads) > 0 {
-        if shortFormat {
-		    fmt.Printf("%-32s%s%s\n", "UploadID", FormatTAB, "ObjectName")
-        } else {
-		    fmt.Printf("%-30s%s%-32s%s%s\n", "InitiatedTime", FormatTAB, "UploadID", FormatTAB, "ObjectName")
-        }
+	if directory {
+		shortFormat = true
 	}
 
-    num := lc.showMultipartUploads(lmr, bucket, shortFormat)
-    return num
+	if i == 0 && len(lmr.Uploads) > 0 {
+		if shortFormat {
+			fmt.Printf("%-32s%s%s\n", "UploadID", FormatTAB, "ObjectName")
+		} else {
+			fmt.Printf("%-30s%s%-32s%s%s\n", "InitiatedTime", FormatTAB, "UploadID", FormatTAB, "ObjectName")
+		}
+	}
+
+	num := lc.showMultipartUploads(lmr, bucket, shortFormat)
+	return num
 }
 
 func (lc *ListCommand) showMultipartUploads(lmr oss.ListMultipartUploadResult, bucket string, shortFormat bool) int64 {
 	for _, upload := range lmr.Uploads {
 		if shortFormat {
-            fmt.Printf("%-32s%s%s\n", upload.UploadID, FormatTAB, CloudURLToString(bucket, upload.Key))
+			fmt.Printf("%-32s%s%s\n", upload.UploadID, FormatTAB, CloudURLToString(bucket, upload.Key))
 		} else {
 			fmt.Printf("%-30s%s%-32s%s%s\n", utcToLocalTime(upload.Initiated), FormatTAB, upload.UploadID, FormatTAB, CloudURLToString(bucket, upload.Key))
 		}
 	}
-	return int64(len(lmr.Uploads)) 
+	return int64(len(lmr.Uploads))
 }

@@ -1,16 +1,16 @@
 package lib
 
 import (
+	"bytes"
 	"fmt"
-    "os"
-    "os/exec"
-    "path/filepath"
-    "strings"
-    "bytes"
-    "runtime"
-    "time"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
+	"strings"
+	"time"
 
-    oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
+	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
 
 // Output print input string to stdout and add '\n'
@@ -39,14 +39,14 @@ func FindPosCaseInsen(elem string, elemArray []string) int {
 }
 
 func getBinaryPath() (string, string) {
-    filePath, _ := exec.LookPath(os.Args[0])
-    if path, err := os.Readlink(filePath); err == nil {
-        filePath = path
-    }
+	filePath, _ := exec.LookPath(os.Args[0])
+	if path, err := os.Readlink(filePath); err == nil {
+		filePath = path
+	}
 
-    fileName := filepath.Base(filePath)
-    renameFilePath := ".temp_" + fileName
-    return filePath, renameFilePath
+	fileName := filepath.Base(filePath)
+	renameFilePath := ".temp_" + fileName
+	return filePath, renameFilePath
 }
 
 type sysInfo struct {
@@ -74,37 +74,36 @@ func getSysInfo() sysInfo {
 }
 
 func getUserAgent() string {
-    sys := getSysInfo()
-    return fmt.Sprintf("aliyun-sdk-go/%s (%s/%s/%s;%s)/%s-%s", oss.Version, sys.name, sys.release, sys.machine, runtime.Version(), Package, Version)
+	sys := getSysInfo()
+	return fmt.Sprintf("aliyun-sdk-go/%s (%s/%s/%s;%s)/%s-%s", oss.Version, sys.name, sys.release, sys.machine, runtime.Version(), Package, Version)
 }
 
 func utcToLocalTime(utc time.Time) time.Time {
-    return utc.In(time.Local)
+	return utc.In(time.Local)
 }
 
 func max(a, b int64) int64 {
-    if a >= b {
-        return a
-    }
-    return b
+	if a >= b {
+		return a
+	}
+	return b
 }
 
 func getSizeString(size int64) string {
-    prefix := ""
-    str := fmt.Sprintf("%d", size)
-    if size < 0 {
-        prefix = "-"
-        str = str[1:]
-    }
-    len := len(str)
-    strList := []string{}
-    i := len % 3
-    if i != 0 {
-        strList = append(strList, str[0:i])
-    }
-    for ; i < len; i+=3 {
-        strList = append(strList, str[i:i+3])
-    }
-    return fmt.Sprintf("%s%s", prefix, strings.Join(strList, ","))
+	prefix := ""
+	str := fmt.Sprintf("%d", size)
+	if size < 0 {
+		prefix = "-"
+		str = str[1:]
+	}
+	len := len(str)
+	strList := []string{}
+	i := len % 3
+	if i != 0 {
+		strList = append(strList, str[0:i])
+	}
+	for ; i < len; i += 3 {
+		strList = append(strList, str[i:i+3])
+	}
+	return fmt.Sprintf("%s%s", prefix, strings.Join(strList, ","))
 }
-

@@ -2,8 +2,8 @@ package lib
 
 import (
 	"fmt"
-	"strings"
 	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
+	"strings"
 )
 
 var aclMap = map[oss.ACLType][]string{
@@ -188,10 +188,10 @@ Usage：
 `,
 }
 
-// SetACLCommand is the command set acl 
+// SetACLCommand is the command set acl
 type SetACLCommand struct {
-	command     Command
-    monitor     Monitor 
+	command Command
+	monitor Monitor
 }
 
 var setACLCommand = SetACLCommand{
@@ -208,10 +208,10 @@ var setACLCommand = SetACLCommand{
 			OptionBucket,
 			OptionForce,
 			OptionConfigFile,
-            OptionEndpoint,
-            OptionAccessKeyID,
-            OptionAccessKeySecret,
-            OptionSTSToken,
+			OptionEndpoint,
+			OptionAccessKeyID,
+			OptionAccessKeySecret,
+			OptionSTSToken,
 			OptionRetryTimes,
 			OptionRoutines,
 		},
@@ -234,7 +234,7 @@ func (sc *SetACLCommand) Init(args []string, options OptionMapType) error {
 
 // RunCommand simulate inheritance, and polymorphism
 func (sc *SetACLCommand) RunCommand() error {
-    sc.monitor.init("Setted acl on")
+	sc.monitor.init("Setted acl on")
 
 	recursive, _ := GetBool(OptionRecursion, sc.command.options)
 	toBucket, _ := GetBool(OptionBucket, sc.command.options)
@@ -286,13 +286,13 @@ func (sc *SetACLCommand) getACL(aclType setACLType, recursive bool) (oss.ACLType
 	if len(sc.command.args) == 2 {
 		acl = sc.command.args[1]
 	} else {
-        str := "bucket"
-        if aclType == objectACL {
-            str = "object"
-            if recursive {
-                str = "objects"
-            }
-        }
+		str := "bucket"
+		if aclType == objectACL {
+			str = "object"
+			if recursive {
+				str = "objects"
+			}
+		}
 		fmt.Printf("Please enter the acl you want to set on the %s(%s):", str, formatACLString(aclType, ", "))
 		if _, err := fmt.Scanln(&acl); err != nil {
 			return "", fmt.Errorf("invalid acl: %s, please check", acl)
@@ -381,8 +381,8 @@ func (sc *SetACLCommand) batchSetObjectACL(bucket *oss.Bucket, cloudURL CloudURL
 	// consumer set acl
 	chObjects := make(chan string, ChannelBuf)
 	chError := make(chan error, routines+1)
-    chListError := make(chan error, 1)
-    go sc.command.objectStatistic(bucket, cloudURL, &sc.monitor)
+	chListError := make(chan error, 1)
+	go sc.command.objectStatistic(bucket, cloudURL, &sc.monitor)
 	go sc.command.objectProducer(bucket, cloudURL, chObjects, chListError)
 	for i := 0; int64(i) < routines; i++ {
 		go sc.setObjectACLConsumer(bucket, acl, chObjects, chError)
@@ -391,27 +391,27 @@ func (sc *SetACLCommand) batchSetObjectACL(bucket *oss.Bucket, cloudURL CloudURL
 	completed := 0
 	for int64(completed) <= routines {
 		select {
-        case err := <-chListError:
-            if err != nil {
-                return err
-            }
-            completed++
+		case err := <-chListError:
+			if err != nil {
+				return err
+			}
+			completed++
 		case err := <-chError:
 			if err != nil {
-                fmt.Printf(sc.monitor.progressBar(true)) 
+				fmt.Printf(sc.monitor.progressBar(true))
 				return err
 			}
 			completed++
 		}
 	}
-    fmt.Printf(sc.monitor.progressBar(true)) 
+	fmt.Printf(sc.monitor.progressBar(true))
 	return nil
 }
 
 func (sc *SetACLCommand) setObjectACLConsumer(bucket *oss.Bucket, acl oss.ACLType, chObjects <-chan string, chError chan<- error) {
 	for object := range chObjects {
 		err := sc.ossSetObjectACLRetry(bucket, object, acl)
-        sc.command.updateMonitor(err, &sc.monitor)
+		sc.command.updateMonitor(err, &sc.monitor)
 		if err != nil {
 			chError <- err
 			return

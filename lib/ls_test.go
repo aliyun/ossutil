@@ -55,7 +55,7 @@ func (s *OssutilCommandSuite) TestListNotExistConfigFile(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestListErrConfigFile(c *C) {
-	cfile := randStr(10) 
+	cfile := randStr(10)
 	s.createFile(cfile, content, c)
 
 	command := "ls"
@@ -76,7 +76,7 @@ func (s *OssutilCommandSuite) TestListErrConfigFile(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestListConfigFile(c *C) {
-	cfile := randStr(10) 
+	cfile := randStr(10)
 	data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\nretryTimes=%s", endpoint, accessKeyID, accessKeySecret, "errretry")
 	s.createFile(cfile, data, c)
 
@@ -100,7 +100,7 @@ func (s *OssutilCommandSuite) TestListConfigFile(c *C) {
 func (s *OssutilCommandSuite) TestListWithBucketEndpoint(c *C) {
 	bucketName := bucketNameExist
 
-	cfile := randStr(10) 
+	cfile := randStr(10)
 	data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Endpoint]\n%s=%s", "abc", accessKeyID, accessKeySecret, bucketName, endpoint)
 	s.createFile(cfile, data, c)
 
@@ -122,10 +122,10 @@ func (s *OssutilCommandSuite) TestListWithBucketEndpoint(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestListWithBucketCname(c *C) {
-    bucketName := bucketNamePrefix + randLowStr(10)
+	bucketName := bucketNamePrefix + randLowStr(10)
 	s.putBucket(bucketName, c)
 
-	cfile := randStr(10) 
+	cfile := randStr(10)
 	data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Endpoint]\n%s=%s\n[Bucket-Cname]\n%s=%s", "abc", accessKeyID, accessKeySecret, bucketName, "abc", bucketName, bucketName+"."+endpoint)
 	s.createFile(cfile, data, c)
 
@@ -149,7 +149,7 @@ func (s *OssutilCommandSuite) TestListWithBucketCname(c *C) {
 
 // list objects with not exist bucket
 func (s *OssutilCommandSuite) TestListObjectsBucketNotExist(c *C) {
-    bucketName := bucketNamePrefix + randLowStr(10)
+	bucketName := bucketNamePrefix + randLowStr(10)
 	command := "ls"
 	args := []string{CloudURLToString(bucketName, "")}
 	str := ""
@@ -167,8 +167,8 @@ func (s *OssutilCommandSuite) TestListObjectsBucketNotExist(c *C) {
 
 // list objects
 func (s *OssutilCommandSuite) TestListObjects(c *C) {
-    bucketName := bucketNamePrefix + randLowStr(10)
-    s.putBucket(bucketName, c)
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
 
 	// put objects
 	num := 3
@@ -215,7 +215,7 @@ func (s *OssutilCommandSuite) TestListObjects(c *C) {
 	objects = s.listObjects(bucketName, "lstest:#1/", "ls -d", c)
 	c.Assert(len(objects), Equals, 2)
 
-    s.removeBucket(bucketName, true, c)
+	s.removeBucket(bucketName, true, c)
 }
 
 func (s *OssutilCommandSuite) TestErrList(c *C) {
@@ -223,8 +223,8 @@ func (s *OssutilCommandSuite) TestErrList(c *C) {
 	c.Assert(err, NotNil)
 	c.Assert(showElapse, Equals, false)
 
-    // not exist bucket
-    bucketName := bucketNamePrefix + randLowStr(10)
+	// not exist bucket
+	bucketName := bucketNamePrefix + randLowStr(10)
 	showElapse, err = s.rawList([]string{CloudURLToString(bucketName, "")}, "ls -d")
 	c.Assert(err, NotNil)
 	c.Assert(showElapse, Equals, false)
@@ -236,10 +236,10 @@ func (s *OssutilCommandSuite) TestErrList(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestListIDKey(c *C) {
-    bucketName := bucketNamePrefix + randLowStr(10)
-    s.putBucket(bucketName, c)
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
 
-	cfile := randStr(10) 
+	cfile := randStr(10)
 	data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Endpoint]\n%s=%s[Bucket-Cname]\n%s=%s", "abc", "def", "ghi", bucketName, "abc", bucketName, "abc")
 	s.createFile(cfile, data, c)
 
@@ -269,13 +269,13 @@ func (s *OssutilCommandSuite) TestListIDKey(c *C) {
 
 	os.Remove(cfile)
 
-    s.removeBucket(bucketName, true, c)
+	s.removeBucket(bucketName, true, c)
 }
 
 func (s *OssutilCommandSuite) TestListBucketIDKey(c *C) {
 	bucketName := bucketNameExist
 
-	cfile := randStr(10) 
+	cfile := randStr(10)
 	data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Endpoint]\n%s=%s[Bucket-Cname]\n%s=%s", "abc", "def", "ghi", bucketName, "abc", bucketName, "abc")
 	s.createFile(cfile, data, c)
 
@@ -308,8 +308,8 @@ func (s *OssutilCommandSuite) TestListBucketIDKey(c *C) {
 
 // list multipart
 func (s *OssutilCommandSuite) TestListMultipartUploads(c *C) {
-    bucketName := bucketNamePrefix + randLowStr(10)
-    s.putBucket(bucketName, c)
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
 	// "rm -arf oss://bucket/"
 	command := "rm"
 	args := []string{CloudURLToString(bucketName, "")}
@@ -378,5 +378,5 @@ func (s *OssutilCommandSuite) TestListMultipartUploads(c *C) {
 	c.Assert(e, IsNil)
 	c.Assert(len(lmr.Uploads), Equals, 20+len(lmr_origin.Uploads))
 
-    s.removeBucket(bucketName, true, c)
+	s.removeBucket(bucketName, true, c)
 }

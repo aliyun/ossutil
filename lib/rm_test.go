@@ -3,15 +3,15 @@ package lib
 import (
 	"fmt"
 	"os"
-    "time"
+	"time"
 
 	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 	. "gopkg.in/check.v1"
 )
 
 func (s *OssutilCommandSuite) TestRemoveObject(c *C) {
-	bucketName := bucketNamePrefix + randLowStr(10) 
-    s.putBucket(bucketName, c)
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
 
 	// put object
 	object := "TestRemoveObject"
@@ -29,11 +29,11 @@ func (s *OssutilCommandSuite) TestRemoveObject(c *C) {
 	objects = s.listObjects(bucketName, object, "ls - ", c)
 	c.Assert(len(objects), Equals, 0)
 
-    s.removeBucket(bucketName, true, c)
+	s.removeBucket(bucketName, true, c)
 }
 
 func (s *OssutilCommandSuite) TestRemoveObjects(c *C) {
-    bucketName := bucketNamePrefix + randLowStr(10)
+	bucketName := bucketNamePrefix + randLowStr(10)
 	s.putBucket(bucketName, c)
 
 	// put object
@@ -91,7 +91,7 @@ func (s *OssutilCommandSuite) TestRemoveObjects(c *C) {
 	c.Assert(FindPos(bucketName, bucketNames) != -1, Equals, true)
 
 	// error remove bucket with config
-	cfile := randStr(10) 
+	cfile := randStr(10)
 	data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Endpoint]\n%s=%s[Bucket-Cname]\n%s=%s", "abc", "def", "ghi", bucketName, "abc", bucketName, "abc")
 	s.createFile(cfile, data, c)
 
@@ -103,7 +103,7 @@ func (s *OssutilCommandSuite) TestRemoveObjects(c *C) {
 		"configFile":      &cfile,
 		"recursive":       &ok,
 		"bucket":          &ok,
-        "allType":         &ok,
+		"allType":         &ok,
 		"force":           &ok,
 	}
 	showElapse, err := cm.RunCommand(command, args, options)
@@ -117,7 +117,7 @@ func (s *OssutilCommandSuite) TestRemoveObjects(c *C) {
 		"configFile":      &cfile,
 		"recursive":       &ok,
 		"bucket":          &ok,
-        "allType":         &ok,
+		"allType":         &ok,
 		"force":           &ok,
 	}
 	showElapse, err = cm.RunCommand(command, args, options)
@@ -125,18 +125,18 @@ func (s *OssutilCommandSuite) TestRemoveObjects(c *C) {
 	c.Assert(showElapse, Equals, true)
 
 	os.Remove(cfile)
-    time.Sleep(7*time.Second)
+	time.Sleep(7 * time.Second)
 
 	// list buckets
 	bucketNames = s.listBuckets(false, c)
 	c.Assert(FindPos(bucketName, bucketNames) == -1, Equals, true)
 
-    s.removeBucket(bucketName, true, c)
+	s.removeBucket(bucketName, true, c)
 }
 
 func (s *OssutilCommandSuite) TestRemoveObjectBucketOption(c *C) {
-    bucketName := bucketNamePrefix + randLowStr(10)
-    s.putBucket(bucketName, c)
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
 
 	object := "test_object"
 	command := "rm"
@@ -159,12 +159,12 @@ func (s *OssutilCommandSuite) TestRemoveObjectBucketOption(c *C) {
 	bucketNames := s.listBuckets(false, c)
 	c.Assert(FindPos(bucketName, bucketNames) != -1, Equals, true)
 
-    s.removeBucket(bucketName, true, c)
+	s.removeBucket(bucketName, true, c)
 }
 
 func (s *OssutilCommandSuite) TestErrRemove(c *C) {
-    bucketName := bucketNamePrefix + randLowStr(10)
-    s.putBucket(bucketName, c)
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
 
 	showElapse, err := s.rawRemove([]string{"oss://"}, false, true, true)
 	c.Assert(err, NotNil)
@@ -178,11 +178,11 @@ func (s *OssutilCommandSuite) TestErrRemove(c *C) {
 	c.Assert(err, NotNil)
 	c.Assert(showElapse, Equals, false)
 
-    showElapse, err = s.rawRemove([]string{"oss:///object"}, false, true, false)
-    c.Assert(err, NotNil)
-    c.Assert(showElapse, Equals, false)
+	showElapse, err = s.rawRemove([]string{"oss:///object"}, false, true, false)
+	c.Assert(err, NotNil)
+	c.Assert(showElapse, Equals, false)
 
-    // remove bucket without force
+	// remove bucket without force
 	showElapse, err = s.rawRemove([]string{CloudURLToString(bucketName, "")}, false, false, true)
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
@@ -191,26 +191,26 @@ func (s *OssutilCommandSuite) TestErrRemove(c *C) {
 	c.Assert(bucketStat[StatName], Equals, bucketName)
 
 	// batch delete not exist objects
-    object := "batch_delete_notexst_object"
-    showElapse, err = s.rawRemove([]string{CloudURLToString(bucketName, object)}, true, true, false)
-    c.Assert(err, IsNil)
-    c.Assert(showElapse, Equals, true)
+	object := "batch_delete_notexst_object"
+	showElapse, err = s.rawRemove([]string{CloudURLToString(bucketName, object)}, true, true, false)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
 
-    s.removeBucket(bucketName, true, c)
+	s.removeBucket(bucketName, true, c)
 
-    // clear not exist bucket
-    bucketName = bucketNameNotExist
-    showElapse, err = s.rawRemove([]string{CloudURLToString(bucketName, "")}, true, true, false)
-    c.Assert(err, NotNil)
-    c.Assert(showElapse, Equals, false)
+	// clear not exist bucket
+	bucketName = bucketNameNotExist
+	showElapse, err = s.rawRemove([]string{CloudURLToString(bucketName, "")}, true, true, false)
+	c.Assert(err, NotNil)
+	c.Assert(showElapse, Equals, false)
 
-    // test oss batch delete not exist objects
-    objects := []string{}
-    ossBucket, err := removeCommand.command.ossBucket(bucketName)
-    c.Assert(err, IsNil)
-    num, err := removeCommand.ossBatchDeleteObjectsRetry(ossBucket, objects) 
-    c.Assert(err, IsNil)
-    c.Assert(num, Equals, 0)
+	// test oss batch delete not exist objects
+	objects := []string{}
+	ossBucket, err := removeCommand.command.ossBucket(bucketName)
+	c.Assert(err, IsNil)
+	num, err := removeCommand.ossBatchDeleteObjectsRetry(ossBucket, objects)
+	c.Assert(err, IsNil)
+	c.Assert(num, Equals, 0)
 }
 
 func (s *OssutilCommandSuite) TestErrDeleteObject(c *C) {
@@ -228,17 +228,17 @@ func (s *OssutilCommandSuite) TestErrDeleteObject(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestAllTypeObject(c *C) {
-    bucketName := bucketNamePrefix + randLowStr(10) 
-    s.putBucket(bucketName, c)
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
 
-    err := s.initRemove(bucketName, "", "rm -marf") 
-    c.Assert(err, IsNil)
-    removeCommand.RunCommand()
-    
-	normal_object := randStr(10) 
+	err := s.initRemove(bucketName, "", "rm -marf")
+	c.Assert(err, IsNil)
+	removeCommand.RunCommand()
+
+	normal_object := randStr(10)
 	s.putObject(bucketName, normal_object, uploadFileName, c)
 
-	object := randStr(10) 
+	object := randStr(10)
 	s.putObject(bucketName, object, uploadFileName, c)
 
 	objects := s.listObjects(bucketName, object, "ls - ", c)
@@ -267,14 +267,14 @@ func (s *OssutilCommandSuite) TestAllTypeObject(c *C) {
 	c.Assert(len(objects), Equals, 1)
 	c.Assert(objects[0], Equals, normal_object)
 
-    err = s.initRemove(bucketName, "", "rm -marfb") 
-    c.Assert(err, IsNil)
-    removeCommand.RunCommand()
+	err = s.initRemove(bucketName, "", "rm -marfb")
+	c.Assert(err, IsNil)
+	removeCommand.RunCommand()
 }
 
 func (s *OssutilCommandSuite) TestMultipartUpload(c *C) {
-    bucketName := bucketNamePrefix + randLowStr(10)
-    s.putBucket(bucketName, c)
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
 
 	// put object
 	object := "TestMultipartObject"
@@ -310,12 +310,12 @@ func (s *OssutilCommandSuite) TestMultipartUpload(c *C) {
 		c.Assert(err, IsNil)
 	}
 
-    s.removeBucket(bucketName, true, c)
+	s.removeBucket(bucketName, true, c)
 }
 
 func (s *OssutilCommandSuite) TestMultipartUpload_Prefix(c *C) {
-    bucketName := bucketNamePrefix + randLowStr(10)
-    s.putBucket(bucketName, c)
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
 
 	bucket, err := copyCommand.command.ossBucket(bucketName)
 	c.Assert(err, IsNil)
@@ -361,12 +361,12 @@ func (s *OssutilCommandSuite) TestMultipartUpload_Prefix(c *C) {
 	c.Assert(e, IsNil)
 	c.Assert(len(lmr.Uploads), Equals, 0)
 
-    s.removeBucket(bucketName, true, c)
+	s.removeBucket(bucketName, true, c)
 }
 
 func (s *OssutilCommandSuite) TestAbortNotExistUploadId(c *C) {
-    bucketName := bucketNamePrefix + randLowStr(10)
-    s.putBucket(bucketName, c)
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
 
 	// put object
 	object := "TestMultipartObject"
@@ -375,21 +375,21 @@ func (s *OssutilCommandSuite) TestAbortNotExistUploadId(c *C) {
 	bucket, err := copyCommand.command.ossBucket(bucketName)
 	imur, err := bucket.InitiateMultipartUpload(object)
 	c.Assert(err, IsNil)
-    c.Assert(imur.Bucket, Equals, bucketName)
-    c.Assert(imur.Key, Equals, object)
-    c.Assert(imur.UploadID != "", Equals, true)
+	c.Assert(imur.Bucket, Equals, bucketName)
+	c.Assert(imur.Key, Equals, object)
+	c.Assert(imur.UploadID != "", Equals, true)
 
-    err = removeCommand.ossAbortMultipartUploadRetry(bucket, object, imur.UploadID)
-    c.Assert(err, IsNil)
+	err = removeCommand.ossAbortMultipartUploadRetry(bucket, object, imur.UploadID)
+	c.Assert(err, IsNil)
 
-    err = removeCommand.ossAbortMultipartUploadRetry(bucket, object, imur.UploadID)
-    c.Assert(err, IsNil)
+	err = removeCommand.ossAbortMultipartUploadRetry(bucket, object, imur.UploadID)
+	c.Assert(err, IsNil)
 
-    s.removeBucket(bucketName, true, c)
+	s.removeBucket(bucketName, true, c)
 }
 
 func (s *OssutilCommandSuite) TestMultipartError(c *C) {
-	bucketName := bucketNameExist 
+	bucketName := bucketNameExist
 	object := "TestMultipartError"
 
 	_, e := s.removeWrapper("rm -mb", bucketName, object, c)
@@ -400,7 +400,7 @@ func (s *OssutilCommandSuite) TestMultipartError(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestAllTypeError(c *C) {
-	bucketName := bucketNameExist 
+	bucketName := bucketNameExist
 	object := "random"
 
 	_, e := s.removeWrapper("rm -ab", bucketName, object, c)

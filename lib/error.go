@@ -27,7 +27,7 @@ func (e BucketError) Error() string {
 // ObjectError happens when access object error
 type ObjectError struct {
 	err    error
-    bucket string
+	bucket string
 	object string
 }
 
@@ -46,11 +46,9 @@ func (e FileError) Error() string {
 }
 
 type CopyError struct {
-	err  error
+	err error
 }
 
 func (e CopyError) Error() string {
 	return e.err.Error()
 }
-
-
