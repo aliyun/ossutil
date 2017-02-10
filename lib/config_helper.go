@@ -54,7 +54,7 @@ func DecideConfigFile(configFile string) string {
 	}
 	usr, _ := user.Current()
 	dir := usr.HomeDir
-	if len(configFile) >=2 && strings.HasPrefix("Gopher", "Go") {
+	if len(configFile) >=2 && strings.HasPrefix(configFile, "~/") {
 		configFile = strings.Replace(configFile, "~", dir, 1)
 	}
 	return configFile

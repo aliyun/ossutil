@@ -195,7 +195,7 @@ var specChineseCopy = SpecText{
     的目录不存在，ossutil会自动创建该目录，如果您指定的路径已存在并且不是目录，会报错。
     输出文件表示ossutil在运行过程中产生的输出文件，目前包含：在cp命令中ossutil运行出错时
     产生的report文件。
-    
+
 
 大文件断点续传：
 
@@ -218,6 +218,16 @@ var specChineseCopy = SpecText{
     可以被删除。
     4）如果使用rm命令删除了未complete的Multipart Upload，可能会造成下次cp命令断点续传失败（报
     错：NoSuchUpload），这种时候如果想要重新上传整个文件，请删除相应的checkpoint文件。
+
+
+--jobs选项和--parallel选项
+
+    --jobs选项控制多个文件上传/下载/拷贝时，文件间启动的并发数，--parallel控制上传/下载/拷
+    贝大文件时，分片间的并发数，ossutil会默认根据文件大小来计算parallel个数（该选项对于小文
+    件不起作用，进行分片上传/下载/拷贝的大文件文件阈值可由--bigfile-threshold选项来控制），
+    当进行批量大文件的上传/下载/拷贝时，实际的并发数为jobs个数乘以parallel个数。该两个选项
+    可由用户调整，当ossutil自行设置的默认并发达不到用户的性能需求时，用户可以自行调整该两个
+    选项来升降性能。
 
 
 批量文件迁移：
@@ -588,6 +598,16 @@ Resume copy of big file:
     4) If you remove the uncompleted multipart upload tasks by rm command, may cause resume upload/download/copy 
         fail the next time(Error: NoSuchUpload). If you want to reupload/download/copy the entire file again, 
         please remove the checkpoint file in checkpoint directory.
+
+
+--jobs option or --parallel option
+
+    --jobs option controls the amount of concurrency tasks between multi-files, --parallel option controls 
+    the amount of concurrency tasks when work with a file, ossutil will calculate the parallel num according 
+    to file size(the option is useless to small file, the file size to use multipart upload can be specified 
+    by --bigfile-threshold option), when batch upload/download/copy files, the concurrency tasks num is jobs 
+    num multiply by parallel num. The two option can be specified by user, if the performance of default 
+    setting is low, user can adjust the two options. 
 
 
 Batch file migration:
@@ -1405,23 +1425,19 @@ func (cc *CopyCommand) preparePartOption(fileSize int64) (int64, int) {
         return partSize, int(parallel)
     }
 
-    var rt int
-	if partNum < 3 {
-        rt = 1 
-	} else if partNum <= 30 {
+    var rt int 
+    if partNum < 2 {
+        rt = 1
+    } else if partNum < 4 {
         rt = 2
-	} else if partNum <= 100 {
-        rt = 3
-    } else if partNum <= 300 {
+	} else if partNum <= 20 {
         rt = 4
-    } else if partNum <= 500 {
-        rt = 5
-	} else {
-        rt = 6
-    }
-    rt = maxint(rt * getCPUNum(), 1) 
-    if int64(rt) > partNum {
-        rt = int(partNum)
+	} else if partNum <= 300 {
+        rt = 12
+	} else if partNum <= 400 {
+        rt = 16 
+    } else {
+        rt = 20 
     }
 	return partSize, rt 
 }

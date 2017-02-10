@@ -37,6 +37,9 @@ var specChineseConfig = SpecText{
         (1) config file
             配置文件路径，如果用户键入回车，ossutil会使用默认的配置文件：
         ` + DecideConfigFile("") + `。
+            如果用户自己指定了配置文件，在使用命令时需要将--config-file选项
+        设置为您设置的配置文件路径。哪些命令支持--config-file选项可由查看每
+        个命令的帮助。
         (2) language
             当首次配置（配置文件不存在）时，ossutil会向用户询问语言设置，可
         选值为中文或者英文（` + OptionMap[OptionLanguage].minVal + `），如果键入回车，ossutil将根据用户输入的
@@ -155,6 +158,10 @@ Usage:
         (1) config file
             If user enter carriage return, ossutil use the default file: 
         ` + DecideConfigFile("") + `.
+            If you specified the config file, please specify --config-file 
+        option to the path when use other command that needs configuration. 
+        To see the commands who support --config-file option please see the 
+        help of each command.
         (2) language
             When configure for the first time(config file not exit), ossutil 
         will ask user to set the language(support Chinese or English at this 
@@ -350,9 +357,9 @@ func (cc *ConfigCommand) runCommandInteractive(configFile, language string) erro
 
 	if configFile == "" {
         if llanguage == LEnglishLanguage {
-		    fmt.Printf("\nPlease enter the config file path(default " + DecideConfigFile("") + ", carriage return will use the default path):")
+		    fmt.Printf("\nPlease enter the config file path(default " + DecideConfigFile("") + ", carriage return will use the default path. If you specified this option, you should specify --config-file option to the path when you use other commands):")
         } else {
-		    fmt.Printf("\n请输入配置文件路径（默认为：" + DecideConfigFile("") + "，回车将使用默认路径）：")
+		    fmt.Printf("\n请输入配置文件路径（默认为：" + DecideConfigFile("") + "，回车将使用默认路径。如果您设置了该选项，在使用命令时需要将--config-file选项设置为该路径）：")
         }
 
 		if _, err := fmt.Scanln(&configFile); err != nil {
