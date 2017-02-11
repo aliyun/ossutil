@@ -84,13 +84,13 @@ var specChineseList = SpecText{
         2017-01-13 03:45:26 +0000 CST  15754AF7980C4DFB8193F190837520BB  oss://bucket1/obj1
         2017-01-13 03:45:25 +0000 CST  3998971ACAF94AD9AC48EAC1988BE863  oss://bucket1/obj2
         2017-01-20 11:16:21 +0800 CST  A20157A7B2FEC4670626DAE0F4C0073C  oss://bucket1/tobj
-        UploadId Number is: 3
+        UploadID Number is: 3
     
     7) ossutil ls oss://bucket1/obj -m 
         InitiatedTime                  UploadID                          ObjectName
         2017-01-13 03:45:26 +0000 CST  15754AF7980C4DFB8193F190837520BB  oss://bucket1/obj1
         2017-01-13 03:45:25 +0000 CST  3998971ACAF94AD9AC48EAC1988BE863  oss://bucket1/obj2
-        UploadId Number is: 2
+        UploadID Number is: 2
  
     8) ossutil ls oss://bucket1 -a 
         LastModifiedTime              Size(B)  ETAG                              ObjectName
@@ -103,7 +103,7 @@ var specChineseList = SpecText{
         2017-01-13 03:43:13 +0000 CST  2A1F9B4A95E341BD9285CC42BB950EE0  oss://bucket1/obj1
         2017-01-13 03:45:25 +0000 CST  3998971ACAF94AD9AC48EAC1988BE863  oss://bucket1/obj2
         2017-01-20 11:16:21 +0800 CST  A20157A7B2FEC4670626DAE0F4C0073C  oss://bucket1/tobj
-        UploadId Number is: 4
+        UploadID Number is: 4
          
     9) ossutil ls oss://bucket1/obj -a 
         LastModifiedTime              Size(B)  ETAG                              ObjectName
@@ -113,7 +113,7 @@ var specChineseList = SpecText{
         2017-01-13 03:45:26 +0000 CST  15754AF7980C4DFB8193F190837520BB  oss://bucket1/obj1
         2017-01-13 03:43:13 +0000 CST  2A1F9B4A95E341BD9285CC42BB950EE0  oss://bucket1/obj1
         2017-01-13 03:45:25 +0000 CST  3998971ACAF94AD9AC48EAC1988BE863  oss://bucket1/obj2
-        UploadId Number is: 3
+        UploadID Number is: 3
 
     10) ossutil ls oss://bucket1/obj -a -s 
         oss://bucket1/obj1
@@ -122,7 +122,7 @@ var specChineseList = SpecText{
         15754AF7980C4DFB8193F190837520BB  oss://bucket1/obj1
         2A1F9B4A95E341BD9285CC42BB950EE0  oss://bucket1/obj1
         3998971ACAF94AD9AC48EAC1988BE863  oss://bucket1/obj2
-        UploadId Number is: 3
+        UploadID Number is: 3
 `,
 }
 
@@ -206,13 +206,13 @@ Usage:
         2017-01-13 03:45:26 +0000 CST  15754AF7980C4DFB8193F190837520BB  oss://bucket1/obj1
         2017-01-13 03:45:25 +0000 CST  3998971ACAF94AD9AC48EAC1988BE863  oss://bucket1/obj2
         2017-01-20 11:16:21 +0800 CST  A20157A7B2FEC4670626DAE0F4C0073C  oss://bucket1/tobj
-        UploadId Number is: 3
+        UploadID Number is: 3
     
     7) ossutil ls oss://bucket1/obj -m 
         InitiatedTime                  UploadID                          ObjectName
         2017-01-13 03:45:26 +0000 CST  15754AF7980C4DFB8193F190837520BB  oss://bucket1/obj1
         2017-01-13 03:45:25 +0000 CST  3998971ACAF94AD9AC48EAC1988BE863  oss://bucket1/obj2
-        UploadId Number is: 2
+        UploadID Number is: 2
  
     8) ossutil ls oss://bucket1 -a 
         LastModifiedTime              Size(B)  ETAG                              ObjectName
@@ -225,7 +225,7 @@ Usage:
         2017-01-13 03:43:13 +0000 CST  2A1F9B4A95E341BD9285CC42BB950EE0  oss://bucket1/obj1
         2017-01-13 03:45:25 +0000 CST  3998971ACAF94AD9AC48EAC1988BE863  oss://bucket1/obj2
         2017-01-20 11:16:21 +0800 CST  A20157A7B2FEC4670626DAE0F4C0073C  oss://bucket1/tobj
-        UploadId Number is: 4
+        UploadID Number is: 4
          
     9) ossutil ls oss://bucket1/obj -a 
         LastModifiedTime              Size(B)  ETAG                              ObjectName
@@ -235,7 +235,7 @@ Usage:
         2017-01-13 03:45:26 +0000 CST  15754AF7980C4DFB8193F190837520BB  oss://bucket1/obj1
         2017-01-13 03:43:13 +0000 CST  2A1F9B4A95E341BD9285CC42BB950EE0  oss://bucket1/obj1
         2017-01-13 03:45:25 +0000 CST  3998971ACAF94AD9AC48EAC1988BE863  oss://bucket1/obj2
-        UploadId Number is: 3
+        UploadID Number is: 3
 
     10) ossutil ls oss://bucket1/obj -a -s 
         oss://bucket1/obj1
@@ -244,7 +244,7 @@ Usage:
         15754AF7980C4DFB8193F190837520BB  oss://bucket1/obj1
         2A1F9B4A95E341BD9285CC42BB950EE0  oss://bucket1/obj1
         3998971ACAF94AD9AC48EAC1988BE863  oss://bucket1/obj2
-        UploadId Number is: 3
+        UploadID Number is: 3
 `,
 }
 
