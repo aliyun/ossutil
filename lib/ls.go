@@ -499,7 +499,7 @@ func (lc *ListCommand) listMultipartUploads(bucket *oss.Bucket, cloudURL CloudUR
 			break
 		}
 	}
-	fmt.Printf("Multipart Number is: %d\n", multipartNum)
+	fmt.Printf("UploadID Number is: %d\n", multipartNum)
 	return nil
 }
 
