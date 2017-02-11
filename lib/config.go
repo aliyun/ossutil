@@ -355,9 +355,9 @@ func (cc *ConfigCommand) runCommandInteractive(configFile, language string) erro
 
 	if configFile == "" {
 		if llanguage == LEnglishLanguage {
-			fmt.Printf("\nPlease enter the config file path(default " + DecideConfigFile("") + ", carriage return will use the default path. If you specified this option, you should specify --config-file option to the path when you use other commands):")
+			fmt.Printf("\nPlease enter the config file path(default " + DecideConfigFile("") + ", carriage return will use the default path. If you specified this option to other path, you should specify --config-file option to the path when you use other commands):")
 		} else {
-			fmt.Printf("\n请输入配置文件路径（默认为：" + DecideConfigFile("") + "，回车将使用默认路径。如果用户设置了该选项，在使用命令时需要将--config-file选项设置为该路径）：")
+			fmt.Printf("\n请输入配置文件路径（默认为：" + DecideConfigFile("") + "，回车将使用默认路径。如果用户设置为其它路径，在使用命令时需要将--config-file选项设置为该路径）：")
 		}
 
 		if _, err := fmt.Scanln(&configFile); err != nil {
