@@ -2,6 +2,7 @@ package lib
 
 import (
 	"fmt"
+    "os"
 	"os/user"
 	"strconv"
 	"strings"
@@ -54,7 +55,7 @@ func DecideConfigFile(configFile string) string {
 	}
 	usr, _ := user.Current()
 	dir := usr.HomeDir
-	if len(configFile) >= 2 && strings.HasPrefix(configFile, "~/") {
+	if len(configFile) >= 2 && strings.HasPrefix(configFile, "~" + string(os.PathSeparator)) {
 		configFile = strings.Replace(configFile, "~", dir, 1)
 	}
 	return configFile
