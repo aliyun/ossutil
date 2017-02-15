@@ -115,7 +115,7 @@ func (s *OssutilConfigSuite) TestConfigInteractive(c *C) {
 
 	opts, err := LoadConfig(configFile)
 	c.Assert(err, IsNil)
-	c.Assert(len(opts), Equals, 2)
+	c.Assert(len(opts), Equals, 1)
 	c.Assert(opts[OptionLanguage], Equals, DefaultLanguage)
 }
 
@@ -138,7 +138,7 @@ func (s *OssutilConfigSuite) TestConfigInteractiveLanguage(c *C) {
 
 	opts, err := LoadConfig(configFile)
 	c.Assert(err, IsNil)
-	c.Assert(len(opts), Equals, 2)
+	c.Assert(len(opts), Equals, 1)
 }
 
 func (s *OssutilConfigSuite) TestConfigLanguageEN(c *C) {
@@ -159,7 +159,7 @@ func (s *OssutilConfigSuite) TestConfigLanguageEN(c *C) {
 
 	opts, err := LoadConfig(configFile)
 	c.Assert(err, IsNil)
-	c.Assert(len(opts), Equals, 2)
+	c.Assert(len(opts), Equals, 1)
 	c.Assert(opts[OptionLanguage], Equals, language)
 }
 
@@ -181,7 +181,7 @@ func (s *OssutilConfigSuite) TestConfigLanguageCH(c *C) {
 
 	opts, err := LoadConfig(configFile)
 	c.Assert(err, IsNil)
-	c.Assert(len(opts), Equals, 2)
+	c.Assert(len(opts), Equals, 1)
 	c.Assert(opts[OptionLanguage], Equals, language)
 }
 

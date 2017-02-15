@@ -60,11 +60,12 @@ var specChineseConfig = SpecText{
         回车跳过该项配置。
             关于stsToken的更多信息，请参考：https://help.aliyun.com/document_detail/31931.html?spm=5176.doc31867.6.632.hZFNSv
         (5) outputDir
-            输出文件所在目录的路径。如果用户键入回车，将使用默认目录：当前目
-        录下的：` + DefaultOutputDir + `，ossutil会在运行过程中将输出文件都生成到该文件
-        夹下。输出文件目前包含：在cp命令中批量操作出错时，记录每个文件操作的
-        错误信息的report文件。
-            关于report文件，更详细的信息请参见cp命令的帮助。
+            该选项配置输出文件所在目录的路径。交互式模式时不提供该选项的配置，
+        但配置文件中该项配置起效。
+            outputDir的默认目录为：当前目录下的：` + DefaultOutputDir + `，ossutil会在
+        运行过程中将输出文件都生成到该文件夹下。输出文件目前包含：在cp命令中
+        批量操作出错时，记录每个文件操作的错误信息的report文件。
+            关于outputDir和report文件的更多信息请参见cp命令的帮助。
             注意：outputDir如果不存在，ossutil在产生输出文件时会自动创建该目录，
         如果outputDir存在且并非目录，将会报错。
 
@@ -185,11 +186,13 @@ Usage:
         please enter carriage return to skip the configuration.
             For more information about stsToken, see: https://help.aliyun.com/document_detail/31931.html?spm=5176.doc31867.6.632.hZFNSv
         (5) outputDir
-            The directory to place output file in. If user enter carriage return, 
-        ossutil will use the default directory: ` + DefaultOutputDir + ` in current directory. 
-        ossutil will place all output files generated during running in this 
-        directory. Output files include: report file(generated when error occurs 
-        in cp command while batch upload/downlaod/copy files). 
+            The section config the directory to place output file in. The section 
+        can not be configed through interactive mode, but the section in config 
+        file are still effective. 
+            The default directory of outputDir is: ` + DefaultOutputDir + ` in current 
+        directory. ossutil will place all output files generated during running 
+        in this directory. Output files include: report file(generated when error 
+        occurs in cp command while batch upload/downlaod/copy files). 
             More information about report file, see help of cp command.
             Note: if outputDir is not exist, ossutil will create the directory 
         automatically, if outputDir you specified exists and is not a directory, 
