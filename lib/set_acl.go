@@ -338,7 +338,7 @@ func (sc *SetACLCommand) ossSetBucketACLRetry(client *oss.Client, bucket string,
 
 func (sc *SetACLCommand) setObjectACL(bucket *oss.Bucket, cloudURL CloudURL) error {
 	if cloudURL.object == "" {
-		return fmt.Errorf("set object acl invalid url: %s, object not empty, if you mean set bucket acl, you should use --bucket option", sc.command.args[0])
+		return fmt.Errorf("set object acl invalid url: %s, object empty, if you mean set bucket acl, you should use --bucket option", sc.command.args[0])
 	}
 
 	acl, err := sc.getACL(objectACL, false)
