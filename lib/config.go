@@ -14,7 +14,7 @@ var specChineseConfig = SpecText{
 	paramText: "[options]",
 
 	syntaxText: ` 
-    ossutil config [-e endpoint] [-I id] [-K key] [-T token] [-L language] [--output-dir outdir] [-c file] 
+    ossutil config [-e endpoint] [-i id] [-k key] [-t token] [-L language] [--output-dir outdir] [-c file] 
 `,
 
 	detailHelpText: ` 
@@ -133,7 +133,7 @@ var specEnglishConfig = SpecText{
 	paramText: "[options]",
 
 	syntaxText: ` 
-    ossutil config [-e endpoint] [-I id] [-K key] [-T token] [-L language] [--output-dir outdir] [-c file] 
+    ossutil config [-e endpoint] [-i id] [-k key] [-t token] [-L language] [--output-dir outdir] [-c file] 
 `,
 
 	detailHelpText: ` 
