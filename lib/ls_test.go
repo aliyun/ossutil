@@ -3,6 +3,8 @@ package lib
 import (
 	"fmt"
 	"os"
+    "sort"
+    "strconv"
 
 	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 	. "gopkg.in/check.v1"
@@ -13,12 +15,14 @@ func (s *OssutilCommandSuite) TestListLoadConfig(c *C) {
 	command := "ls"
 	var args []string
 	str := ""
+    limitedNum := strconv.FormatInt(-1, 10)
 	options := OptionMapType{
 		"endpoint":        &str,
 		"accessKeyID":     &str,
 		"accessKeySecret": &str,
 		"stsToken":        &str,
 		"configFile":      &configFile,
+        "limitedNum":      &limitedNum,
 	}
 	showElapse, err := cm.RunCommand(command, args, options)
 	c.Assert(err, IsNil)
@@ -31,6 +35,7 @@ func (s *OssutilCommandSuite) TestListLoadConfig(c *C) {
 		"accessKeySecret": &str,
 		"stsToken":        &str,
 		"configFile":      &configFile,
+        "limitedNum":      &limitedNum,
 	}
 	showElapse, err = cm.RunCommand(command, args, options)
 	c.Assert(err, IsNil)
@@ -42,12 +47,14 @@ func (s *OssutilCommandSuite) TestListNotExistConfigFile(c *C) {
 	var args []string
 	str := ""
 	cfile := "notexistfile"
+    limitedNum := strconv.FormatInt(-1, 10)
 	options := OptionMapType{
 		"endpoint":        &str,
 		"accessKeyID":     &str,
 		"accessKeySecret": &str,
 		"stsToken":        &str,
 		"configFile":      &cfile,
+        "limitedNum":      &limitedNum,
 	}
 	showElapse, err := cm.RunCommand(command, args, options)
 	c.Assert(err, NotNil)
@@ -61,12 +68,14 @@ func (s *OssutilCommandSuite) TestListErrConfigFile(c *C) {
 	command := "ls"
 	var args []string
 	str := ""
+    limitedNum := strconv.FormatInt(-1, 10)
 	options := OptionMapType{
 		"endpoint":        &str,
 		"accessKeyID":     &str,
 		"accessKeySecret": &str,
 		"stsToken":        &str,
 		"configFile":      &cfile,
+        "limitedNum":      &limitedNum,
 	}
 	showElapse, err := cm.RunCommand(command, args, options)
 	c.Assert(err, NotNil)
@@ -83,12 +92,14 @@ func (s *OssutilCommandSuite) TestListConfigFile(c *C) {
 	command := "ls"
 	var args []string
 	str := ""
+    limitedNum := strconv.FormatInt(-1, 10)
 	options := OptionMapType{
 		"endpoint":        &str,
 		"accessKeyID":     &str,
 		"accessKeySecret": &str,
 		"stsToken":        &str,
 		"configFile":      &cfile,
+        "limitedNum":      &limitedNum,
 	}
 	showElapse, err := cm.RunCommand(command, args, options)
 	c.Assert(err, IsNil)
@@ -107,12 +118,14 @@ func (s *OssutilCommandSuite) TestListWithBucketEndpoint(c *C) {
 	command := "ls"
 	args := []string{CloudURLToString(bucketName, "")}
 	str := ""
+    limitedNum := strconv.FormatInt(-1, 10)
 	options := OptionMapType{
 		"endpoint":        &str,
 		"accessKeyID":     &str,
 		"accessKeySecret": &str,
 		"stsToken":        &str,
 		"configFile":      &cfile,
+        "limitedNum":      &limitedNum,
 	}
 	showElapse, err := cm.RunCommand(command, args, options)
 	c.Assert(err, IsNil)
@@ -132,12 +145,14 @@ func (s *OssutilCommandSuite) TestListWithBucketCname(c *C) {
 	command := "ls"
 	args := []string{CloudURLToString(bucketName, "")}
 	str := ""
+    limitedNum := strconv.FormatInt(-1, 10)
 	options := OptionMapType{
 		"endpoint":        &str,
 		"accessKeyID":     &str,
 		"accessKeySecret": &str,
 		"stsToken":        &str,
 		"configFile":      &cfile,
+        "limitedNum":      &limitedNum,
 	}
 	showElapse, err := cm.RunCommand(command, args, options)
 	c.Assert(err, IsNil)
@@ -153,12 +168,14 @@ func (s *OssutilCommandSuite) TestListObjectsBucketNotExist(c *C) {
 	command := "ls"
 	args := []string{CloudURLToString(bucketName, "")}
 	str := ""
+    limitedNum := strconv.FormatInt(-1, 10)
 	options := OptionMapType{
 		"endpoint":        &str,
 		"accessKeyID":     &str,
 		"accessKeySecret": &str,
 		"stsToken":        &str,
 		"configFile":      &configFile,
+        "limitedNum":      &limitedNum,
 	}
 	showElapse, err := cm.RunCommand(command, args, options)
 	c.Assert(err, NotNil)
@@ -246,12 +263,14 @@ func (s *OssutilCommandSuite) TestListIDKey(c *C) {
 	command := "ls"
 	str := ""
 	args := []string{"oss://"}
+    limitedNum := strconv.FormatInt(-1, 10)
 	options := OptionMapType{
 		"endpoint":        &str,
 		"accessKeyID":     &str,
 		"accessKeySecret": &str,
 		"stsToken":        &str,
 		"configFile":      &cfile,
+        "limitedNum":      &limitedNum,
 	}
 	showElapse, err := cm.RunCommand(command, args, options)
 	c.Assert(err, NotNil)
@@ -262,6 +281,7 @@ func (s *OssutilCommandSuite) TestListIDKey(c *C) {
 		"accessKeySecret": &accessKeySecret,
 		"stsToken":        &str,
 		"configFile":      &cfile,
+        "limitedNum":      &limitedNum,
 	}
 	showElapse, err = cm.RunCommand(command, args, options)
 	c.Assert(err, IsNil)
@@ -282,12 +302,14 @@ func (s *OssutilCommandSuite) TestListBucketIDKey(c *C) {
 	command := "ls"
 	str := ""
 	args := []string{CloudURLToString(bucketName, "")}
+    limitedNum := strconv.FormatInt(-1, 10)
 	options := OptionMapType{
 		"endpoint":        &str,
 		"accessKeyID":     &str,
 		"accessKeySecret": &str,
 		"stsToken":        &str,
 		"configFile":      &cfile,
+        "limitedNum":      &limitedNum,
 	}
 	showElapse, err := cm.RunCommand(command, args, options)
 	c.Assert(err, NotNil)
@@ -298,12 +320,27 @@ func (s *OssutilCommandSuite) TestListBucketIDKey(c *C) {
 		"accessKeySecret": &accessKeySecret,
 		"stsToken":        &str,
 		"configFile":      &cfile,
+        "limitedNum":      &limitedNum,
 	}
 	showElapse, err = cm.RunCommand(command, args, options)
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
 
 	os.Remove(cfile)
+    cfile = randStr(20)
+
+    // list without config file
+	options = OptionMapType{
+		"endpoint":        &endpoint,
+		"accessKeyID":     &accessKeyID,
+		"accessKeySecret": &accessKeySecret,
+		"stsToken":        &str,
+		"configFile":      &cfile,
+        "limitedNum":      &limitedNum,
+	}
+	showElapse, err = cm.RunCommand(command, args, options)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
 }
 
 // list multipart
@@ -315,6 +352,7 @@ func (s *OssutilCommandSuite) TestListMultipartUploads(c *C) {
 	args := []string{CloudURLToString(bucketName, "")}
 	str := ""
 	ok := true
+    limitedNum := strconv.FormatInt(-1, 10)
 	options := OptionMapType{
 		"endpoint":        &str,
 		"accessKeyID":     &str,
@@ -324,6 +362,7 @@ func (s *OssutilCommandSuite) TestListMultipartUploads(c *C) {
 		"recursive":       &ok,
 		"force":           &ok,
 		"allType":         &ok,
+        "limitedNum":      &limitedNum,
 	}
 	cm.RunCommand(command, args, options)
 
@@ -380,3 +419,116 @@ func (s *OssutilCommandSuite) TestListMultipartUploads(c *C) {
 
 	s.removeBucket(bucketName, true, c)
 }
+
+func (s *OssutilCommandSuite) TestListLimitedMarker(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+    // list bucket
+	buckets := s.listLimitedMarker("", "", "ls ", -1, "", "", c)
+	c.Assert(FindPos(bucketName, buckets) != -1, Equals, true)
+
+    // list bucket
+	buckets = s.listLimitedMarker("", "", "ls ", 0, "", "", c)
+    c.Assert(len(buckets), Equals, 0)
+
+	buckets = s.listLimitedMarker("", "", "ls ", -1, "t", "", c)
+    c.Assert(FindPos(bucketName, buckets), Equals, -1)
+
+	buckets = s.listLimitedMarker("", "", "ls ", -1, "", "t", c)
+    c.Assert(FindPos(bucketName, buckets) != -1, Equals, true)
+
+	objectPrefix := "prefix"
+    for i := 0; i < 5; i++ {
+	    s.putObject(bucketName, fmt.Sprintf("%s%d", objectPrefix, i), uploadFileName, c)
+    }
+
+	bucket, err := listCommand.command.ossBucket(bucketName)
+
+	for i := 0; i < 5; i++ {
+		_, err = bucket.InitiateMultipartUpload(fmt.Sprintf("%s%d", objectPrefix, 0))
+		c.Assert(err, IsNil)
+	}
+
+	lmr, err := bucket.ListMultipartUploads(oss.Prefix(fmt.Sprintf("%s%d", objectPrefix, 0)))
+	c.Assert(err, IsNil)
+    uploadIDs := []string{}
+    for _, uploadID := range lmr.Uploads {
+        uploadIDs = append(uploadIDs, uploadID.UploadID)
+    }
+    c.Assert(len(uploadIDs), Equals, 5)
+
+    sort.Strings(uploadIDs)
+
+    // list object with limitedNum
+	objects := s.listLimitedMarker(bucketName, "", "ls ", -1, "", "", c)
+    c.Assert(len(objects), Equals, 5)
+
+	objects = s.listLimitedMarker(bucketName, "", "ls -a ", -1, "", "", c)
+    c.Assert(len(objects), Equals, 10)
+
+	objects = s.listLimitedMarker(bucketName, "", "ls -m ", -1, "", "", c)
+    c.Assert(len(objects), Equals, 5)
+
+    // normal list
+	objects = s.listLimitedMarker(bucketName, "", "ls ", 6, "", "", c)
+    c.Assert(len(objects), Equals, 5)
+
+	objects = s.listLimitedMarker(bucketName, "", "ls ", 2, "", "", c)
+    c.Assert(len(objects), Equals, 2)
+
+	objects = s.listLimitedMarker(bucketName, "", "ls ", 2, fmt.Sprintf("%s%d", objectPrefix, 1), "", c)
+    c.Assert(len(objects), Equals, 2)
+
+	objects = s.listLimitedMarker(bucketName, "", "ls ", 2, fmt.Sprintf("%s%d", objectPrefix, 3), "", c)
+    c.Assert(len(objects), Equals, 1)
+
+	objects = s.listLimitedMarker(bucketName, "", "ls ", 2, fmt.Sprintf("%s%d", objectPrefix, 3), "t", c)
+    c.Assert(len(objects), Equals, 1)
+    c.Assert(objects[0], Equals, fmt.Sprintf("%s%d", objectPrefix, 4))
+
+    // list -m
+	objects = s.listLimitedMarker(bucketName, "", "ls -m", 6, "", "", c)
+    c.Assert(len(objects), Equals, 5)
+
+	objects = s.listLimitedMarker(bucketName, "", "ls -m", 2, "", "", c)
+    c.Assert(len(objects), Equals, 2)
+
+	objects = s.listLimitedMarker(bucketName, "", "ls -m", 2, "", uploadIDs[0], c)
+    c.Assert(len(objects), Equals, 2)
+
+	objects = s.listLimitedMarker(bucketName, "", "ls -m", 10, "", uploadIDs[1], c)
+    c.Assert(len(objects), Equals, 5)
+
+	objects = s.listLimitedMarker(bucketName, "", "ls -m", 10, objectPrefix, uploadIDs[1], c)
+    c.Assert(len(objects), Equals, 5)
+
+	objects = s.listLimitedMarker(bucketName, "", "ls -m", 10, fmt.Sprintf("%s%d", objectPrefix, 3), uploadIDs[1], c)
+    c.Assert(len(objects), Equals, 0)
+
+	objects = s.listLimitedMarker(bucketName, "", "ls -m", 2, objectPrefix, uploadIDs[2], c)
+    c.Assert(len(objects), Equals, 2)
+
+    // list -a
+	objects = s.listLimitedMarker(bucketName, "", "ls -a", 6, "", "", c)
+    c.Assert(len(objects), Equals, 6)
+
+	objects = s.listLimitedMarker(bucketName, "", "ls -a", 11, "", "", c)
+    c.Assert(len(objects), Equals, 10)
+
+	objects = s.listLimitedMarker(bucketName, "", "ls -a", 20, fmt.Sprintf("%s%d", objectPrefix, 0), uploadIDs[2], c)
+    c.Assert(len(objects), Equals, 6)
+
+	objects = s.listLimitedMarker(bucketName, "", "ls -a", 5, fmt.Sprintf("%s%d", objectPrefix, 0), uploadIDs[2], c)
+    c.Assert(len(objects), Equals, 5)
+
+	objects = s.listLimitedMarker(bucketName, "", "ls -a", 20, fmt.Sprintf("%s%d", objectPrefix, 3), "", c)
+    c.Assert(len(objects), Equals, 1)
+
+	objects = s.listLimitedMarker(bucketName, "", "ls -a", 4, fmt.Sprintf("%s%d", objectPrefix, 0), uploadIDs[0], c)
+    c.Assert(len(objects), Equals, 4)
+
+	objects = s.listLimitedMarker(bucketName, "", "ls -a", 20, "t", uploadIDs[0], c)
+    c.Assert(len(objects), Equals, 0)
+}
+

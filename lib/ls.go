@@ -14,7 +14,7 @@ var specChineseList = SpecText{
 	paramText: "[url] [options]",
 
 	syntaxText: ` 
-    ossutil ls [oss://bucket[/prefix]] [-s] [-d] [-c file] 
+    ossutil ls [oss://bucket[/prefix]] [-s] [-d] [--limited-num num] [--marker marker] [--upload-id-marker umarker] [-c file] 
 `,
 
 	detailHelpText: ` 
@@ -26,12 +26,12 @@ var specChineseList = SpecText{
 
     该命令有两种用法：
 
-    1) ossutil ls [oss://] [-s]
+    1) ossutil ls [oss://] [-s] [--limited-num num] [--marker marker]
         如果用户列举时缺失url参数，则ossutil获取用户的身份凭证信息（从配置文件中读取），
     并列举该身份凭证下的所有buckets，并显示每个bucket的最新更新时间和位置信息。如果指定
     了--short-format选项则只输出bucket名称。该用法不支持--directory选项。
 
-    2) ossutil ls oss://bucket[/prefix] [-s] [-d] [-m] [-a]
+    2) ossutil ls oss://bucket[/prefix] [-s] [-d] [-m] [-a] [--limited-num num] [--marker marker] [--upload-id-marker umarker]
         如果未指定--multipart和--all-type选项，则ossutil列举指定bucket下的objects（如果指定
     了前缀，则列举拥有该前缀的objects）。并同时展示object大小，最新更新时间和etag，但是如果
     指定了--short-format选项则只输出object名称。如果指定了--directory选项，则返回指定bucket
@@ -45,6 +45,11 @@ var specChineseList = SpecText{
         如果指定了--all-type选项，则显示指定URL(oss://bucket[/prefix])下的object和未完成的
 	上传任务（即，同时列举以prefix为前缀的object，和object名称以prefix为前缀的所有未complete
     的uploadId）。该选项同样支持--short-format和--directory选项。
+        如果指定了--limited-num选项，ossutil总共会输出的对象个数不超过limited-num个，当同时
+    输出object和Multipart Upload时，两者的总数不超过limited-num个。
+        在列举objects时，--upload-id-marker选项不起作用。在列举Multipart Uploads事件时，--marker
+    和--upload-id-marker选项同时限定了列举的起始位置，更多信息请见oss的官网：
+    https://help.aliyun.com/document_detail/31997.html?spm=5176.doc31965.6.887.MK6GVw.
 `,
 
 	sampleText: ` 
@@ -123,6 +128,19 @@ var specChineseList = SpecText{
         2A1F9B4A95E341BD9285CC42BB950EE0  oss://bucket1/obj1
         3998971ACAF94AD9AC48EAC1988BE863  oss://bucket1/obj2
         UploadID Number is: 3
+
+    11) ossutil ls oss://bucket1/obj -a -s --marker=obj1 
+        Object Number is: 0
+        UploadID                          ObjectName
+        3998971ACAF94AD9AC48EAC1988BE863  oss://bucket1/obj2
+        UploadID Number is: 1
+
+    12) ossutil ls oss://bucket1/obj -a -s --limited-num=2 
+        oss://bucket1/obj1
+        Object Number is: 1
+        UploadID                          ObjectName
+        15754AF7980C4DFB8193F190837520BB  oss://bucket1/obj1
+        UploadID Number is: 1
 `,
 }
 
@@ -133,7 +151,7 @@ var specEnglishList = SpecText{
 	paramText: "[url] [options]",
 
 	syntaxText: ` 
-    ossutil ls [oss://bucket[/prefix]] [-s] [-d] [-c file] 
+    ossutil ls [oss://bucket[/prefix]] [-s] [-d] [--limited-num num] [--marker marker] [--upload-id-marker umarker] [-c file] 
 `,
 
 	detailHelpText: ` 
@@ -146,13 +164,13 @@ Usage:
 
     There are two usages:
 
-    1) ossutil ls [oss://] [-s] [-m] [-a]
+    1) ossutil ls [oss://] [-s] [--limited-num num] [--marker marker]
         If you list without a url, ossutil lists all the buckets using the credentials
     in config file with last modified time and location in addition. --show_format option 
     will ignore last modified time and location. The usage do not support --directory 
     option.
 
-    2) ossutil ls oss://bucket[/prefix] [-s] [-d] [-m] [-a]
+    2) ossutil ls oss://bucket[/prefix] [-s] [-d] [-m] [-a] [--limited-num num] [--marker marker] [--upload-id-marker umarker]
         If you list without --multipart and --all-type option, ossutil will list objects 
     in the specified bucket(with the prefix if you specified), with object size, last 
     modified time and etag in addition, --short-format option ignores all the additional 
@@ -167,6 +185,12 @@ Usage:
     which means, ossutil will both show the objects with the specified prefix and the uploadId of 
     those uncompleted multipart, whose object name starts with the specified prefix. The usage also 
     support --short-format and --directory option.
+        If user specified --limited-num option, the total num will not exceed the num. If user list 
+    objects and Multipart Uploads meanwhile, the total num of objects and Multipart Uploads will not 
+    exceed the num. 
+        --upload-id-marker option is not effective when list objects. When list Multipart Uploads, 
+    --marker option and --upload-id-marker option decide the initial position of listing meanwhile,
+    for more initial, see: https://help.aliyun.com/document_detail/31997.html?spm=5176.doc31965.6.887.MK6GVw.
 `,
 
 	sampleText: ` 
@@ -245,6 +269,19 @@ Usage:
         2A1F9B4A95E341BD9285CC42BB950EE0  oss://bucket1/obj1
         3998971ACAF94AD9AC48EAC1988BE863  oss://bucket1/obj2
         UploadID Number is: 3
+
+    11) ossutil ls oss://bucket1/obj -a -s --marker=obj1 
+        Object Number is: 0
+        UploadID                          ObjectName
+        3998971ACAF94AD9AC48EAC1988BE863  oss://bucket1/obj2
+        UploadID Number is: 1
+
+    12) ossutil ls oss://bucket1/obj -a -s --limited-num=2 
+        oss://bucket1/obj1
+        Object Number is: 1
+        UploadID                          ObjectName
+        15754AF7980C4DFB8193F190837520BB  oss://bucket1/obj1
+        UploadID Number is: 1
 `,
 }
 
@@ -267,6 +304,9 @@ var listCommand = ListCommand{
 			OptionDirectory,
 			OptionMultipart,
 			OptionAllType,
+			OptionLimitedNum,
+			OptionMarker,
+			OptionUploadIDMarker,
 			OptionConfigFile,
 			OptionEndpoint,
 			OptionAccessKeyID,
@@ -315,7 +355,11 @@ func (lc *ListCommand) listBuckets(prefix string) error {
 	}
 
 	shortFormat, _ := GetBool(OptionShortFormat, lc.command.options)
-	num := 0
+	limitedNum, _ := GetInt(OptionLimitedNum, lc.command.options)
+	vmarker, _ := GetString(OptionMarker, lc.command.options)
+
+	var num int64
+	num = 0
 
 	client, err := lc.command.ossClient("")
 	if err != nil {
@@ -324,8 +368,8 @@ func (lc *ListCommand) listBuckets(prefix string) error {
 
 	// list all buckets
 	pre := oss.Prefix(prefix)
-	marker := oss.Marker("")
-	for {
+	marker := oss.Marker(vmarker)
+	for limitedNum < 0 || num < limitedNum {
 		lbr, err := lc.ossListBucketsRetry(client, pre, marker)
 		if err != nil {
 			return err
@@ -336,13 +380,16 @@ func (lc *ListCommand) listBuckets(prefix string) error {
 			fmt.Printf("%-30s %20s%s%s\n", "CreationTime", "Region", FormatTAB, "BucketName")
 		}
 		for _, bucket := range lbr.Buckets {
+			if limitedNum >= 0 && num >= limitedNum {
+				break
+			}
 			if !shortFormat {
 				fmt.Printf("%-30s %20s%s%s\n", utcToLocalTime(bucket.CreationDate), bucket.Location, FormatTAB, CloudURLToString(bucket.Name, ""))
 			} else {
 				fmt.Println(CloudURLToString(bucket.Name, ""))
 			}
+			num++
 		}
-		num += len(lbr.Buckets)
 		if !lbr.IsTruncated {
 			break
 		}
@@ -376,15 +423,16 @@ func (lc *ListCommand) listFiles(cloudURL CloudURL) error {
 
 	shortFormat, _ := GetBool(OptionShortFormat, lc.command.options)
 	directory, _ := GetBool(OptionDirectory, lc.command.options)
+	limitedNum, _ := GetInt(OptionLimitedNum, lc.command.options)
 
 	typeSet := lc.getSubjectType()
 	if typeSet&objectType != 0 {
-		if err := lc.listObjects(bucket, cloudURL, shortFormat, directory); err != nil {
+		if _, err = lc.listObjects(bucket, cloudURL, shortFormat, directory, &limitedNum); err != nil {
 			return err
 		}
 	}
 	if typeSet&multipartType != 0 {
-		if err := lc.listMultipartUploads(bucket, cloudURL, shortFormat, directory); err != nil {
+		if _, err := lc.listMultipartUploads(bucket, cloudURL, shortFormat, directory, &limitedNum); err != nil {
 			return err
 		}
 	}
@@ -406,12 +454,13 @@ func (lc *ListCommand) getSubjectType() int64 {
 	return typeSet
 }
 
-func (lc *ListCommand) listObjects(bucket *oss.Bucket, cloudURL CloudURL, shortFormat bool, directory bool) error {
+func (lc *ListCommand) listObjects(bucket *oss.Bucket, cloudURL CloudURL, shortFormat bool, directory bool, limitedNum *int64) (int64, error) {
 	//list all objects or directories
+	vmarker, _ := GetString(OptionMarker, lc.command.options)
 	var num int64
 	num = 0
 	pre := oss.Prefix(cloudURL.object)
-	marker := oss.Marker("")
+	marker := oss.Marker(vmarker)
 	del := oss.Delimiter("")
 	if directory {
 		del = oss.Delimiter("/")
@@ -419,13 +468,16 @@ func (lc *ListCommand) listObjects(bucket *oss.Bucket, cloudURL CloudURL, shortF
 
 	var i int64
 	for i = 0; ; i++ {
+		if *limitedNum == 0 {
+			break
+		}
 		lor, err := lc.command.ossListObjectsRetry(bucket, marker, pre, del)
 		if err != nil {
-			return err
+			return num, err
 		}
 		pre = oss.Prefix(lor.Prefix)
 		marker = oss.Marker(lor.NextMarker)
-		num += lc.displayObjectsResult(lor, cloudURL.bucket, shortFormat, directory, i)
+		num += lc.displayObjectsResult(lor, cloudURL.bucket, shortFormat, directory, i, limitedNum)
 		if !lor.IsTruncated {
 			break
 		}
@@ -437,49 +489,66 @@ func (lc *ListCommand) listObjects(bucket *oss.Bucket, cloudURL CloudURL, shortF
 		fmt.Printf("Object and Directory Number is: %d\n", num)
 	}
 
-	return nil
+	return num, nil
 }
 
-func (lc *ListCommand) displayObjectsResult(lor oss.ListObjectsResult, bucket string, shortFormat bool, directory bool, i int64) int64 {
+func (lc *ListCommand) displayObjectsResult(lor oss.ListObjectsResult, bucket string, shortFormat bool, directory bool, i int64, limitedNum *int64) int64 {
 	if i == 0 && !shortFormat && !directory && len(lor.Objects) > 0 {
 		fmt.Printf("%-30s%12s%s%-38s%s%s\n", "LastModifiedTime", "Size(B)", "   ", "ETAG", "  ", "ObjectName")
 	}
 
 	var num int64
 	if !directory {
-		num = lc.showObjects(lor, bucket, shortFormat)
+		num = lc.showObjects(lor, bucket, shortFormat, limitedNum)
 	} else {
-		num = lc.showObjects(lor, bucket, true)
-		num1 := lc.showDirectories(lor, bucket)
+		num = lc.showObjects(lor, bucket, true, limitedNum)
+		num1 := lc.showDirectories(lor, bucket, limitedNum)
 		num += num1
 	}
 	return num
 }
 
-func (lc *ListCommand) showObjects(lor oss.ListObjectsResult, bucket string, shortFormat bool) int64 {
+func (lc *ListCommand) showObjects(lor oss.ListObjectsResult, bucket string, shortFormat bool, limitedNum *int64) int64 {
+	var num int64
+	num = 0
 	for _, object := range lor.Objects {
+		if *limitedNum == 0 {
+			break
+		}
 		if !shortFormat {
 			fmt.Printf("%-30s%12d%s%-38s%s%s\n", utcToLocalTime(object.LastModified), object.Size, "   ", strings.Trim(object.ETag, "\""), "  ", CloudURLToString(bucket, object.Key))
 		} else {
 			fmt.Printf("%s\n", CloudURLToString(bucket, object.Key))
 		}
+		*limitedNum--
+		num++
 	}
-	return int64(len(lor.Objects))
+	return num
 }
 
-func (lc *ListCommand) showDirectories(lor oss.ListObjectsResult, bucket string) int64 {
+func (lc *ListCommand) showDirectories(lor oss.ListObjectsResult, bucket string, limitedNum *int64) int64 {
+	var num int64
+	num = 0
 	for _, prefix := range lor.CommonPrefixes {
+		if *limitedNum == 0 {
+			break
+		}
 		fmt.Printf("%s\n", CloudURLToString(bucket, prefix))
+		*limitedNum--
+		num++
 	}
-	return int64(len(lor.CommonPrefixes))
+	return num
 }
 
-func (lc *ListCommand) listMultipartUploads(bucket *oss.Bucket, cloudURL CloudURL, shortFormat bool, directory bool) error {
+func (lc *ListCommand) listMultipartUploads(bucket *oss.Bucket, cloudURL CloudURL, shortFormat bool, directory bool, limitedNum *int64) (int64, error) {
+	vmarker, _ := GetString(OptionMarker, lc.command.options)
+	vuploadIdMarker, _ := GetString(OptionUploadIDMarker, lc.command.options)
+
 	var multipartNum int64
 	multipartNum = 0
 	pre := oss.Prefix(cloudURL.object)
-	keyMarker := oss.KeyMarker("")
-	uploadIdMarker := oss.UploadIDMarker("")
+	keyMarker := oss.KeyMarker(vmarker)
+	uploadIdMarker := oss.UploadIDMarker(vuploadIdMarker)
 	del := oss.Delimiter("")
 	if directory {
 		del = oss.Delimiter("/")
@@ -487,23 +556,26 @@ func (lc *ListCommand) listMultipartUploads(bucket *oss.Bucket, cloudURL CloudUR
 
 	var i int64
 	for i = 0; ; i++ {
+		if *limitedNum == 0 {
+			break
+		}
 		lmr, err := lc.command.ossListMultipartUploadsRetry(bucket, keyMarker, uploadIdMarker, pre, del)
 		if err != nil {
-			return err
+			return multipartNum, err
 		}
 		pre = oss.Prefix(lmr.Prefix)
 		keyMarker = oss.Marker(lmr.NextKeyMarker)
 		uploadIdMarker = oss.UploadIDMarker(lmr.NextUploadIDMarker)
-		multipartNum += lc.displayMultipartUploadsResult(lmr, cloudURL.bucket, shortFormat, directory, i)
+		multipartNum += lc.displayMultipartUploadsResult(lmr, cloudURL.bucket, shortFormat, directory, i, limitedNum)
 		if !lmr.IsTruncated {
 			break
 		}
 	}
 	fmt.Printf("UploadID Number is: %d\n", multipartNum)
-	return nil
+	return multipartNum, nil
 }
 
-func (lc *ListCommand) displayMultipartUploadsResult(lmr oss.ListMultipartUploadResult, bucket string, shortFormat bool, directory bool, i int64) int64 {
+func (lc *ListCommand) displayMultipartUploadsResult(lmr oss.ListMultipartUploadResult, bucket string, shortFormat bool, directory bool, i int64, limitedNum *int64) int64 {
 	if directory {
 		shortFormat = true
 	}
@@ -516,17 +588,24 @@ func (lc *ListCommand) displayMultipartUploadsResult(lmr oss.ListMultipartUpload
 		}
 	}
 
-	num := lc.showMultipartUploads(lmr, bucket, shortFormat)
+	num := lc.showMultipartUploads(lmr, bucket, shortFormat, limitedNum)
 	return num
 }
 
-func (lc *ListCommand) showMultipartUploads(lmr oss.ListMultipartUploadResult, bucket string, shortFormat bool) int64 {
+func (lc *ListCommand) showMultipartUploads(lmr oss.ListMultipartUploadResult, bucket string, shortFormat bool, limitedNum *int64) int64 {
+	var num int64
+	num = 0
 	for _, upload := range lmr.Uploads {
+		if *limitedNum == 0 {
+			break
+		}
 		if shortFormat {
 			fmt.Printf("%-32s%s%s\n", upload.UploadID, FormatTAB, CloudURLToString(bucket, upload.Key))
 		} else {
 			fmt.Printf("%-30s%s%-32s%s%s\n", utcToLocalTime(upload.Initiated), FormatTAB, upload.UploadID, FormatTAB, CloudURLToString(bucket, upload.Key))
 		}
+		*limitedNum--
+		num++
 	}
-	return int64(len(lmr.Uploads))
+	return num
 }

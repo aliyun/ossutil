@@ -13,6 +13,9 @@ const (
 	OptionSTSToken                = "stsToken"
 	OptionACL                     = "acl"
 	OptionShortFormat             = "shortFormat"
+	OptionLimitedNum              = "limitedNum"
+	OptionMarker                  = "marker"
+	OptionUploadIDMarker          = "uploadIDMarker"
 	OptionDirectory               = "directory"
 	OptionMultipart               = "multipart"
 	OptionAllType                 = "allType"
@@ -29,6 +32,7 @@ const (
 	OptionRetryTimes              = "retryTimes"
 	OptionRoutines                = "routines"
 	OptionParallel                = "parallel"
+    OptionRange                   = "range"
 	OptionLanguage                = "language"
 	OptionHashType                = "hashType"
 	OptionVersion                 = "version"
@@ -96,6 +100,8 @@ const (
 	DefaultBigFileThreshold        = 104857600
 	MaxBigFileThreshold            = MaxInt64
 	MinBigFileThreshold            = 0
+	DefaultLimitedNum              = -1
+	MinLimitedNum                  = 0
 	RetryTimes              int    = 3
 	MaxRetryTimes           int64  = 500
 	MinRetryTimes           int64  = 1

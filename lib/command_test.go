@@ -28,9 +28,9 @@ var _ = Suite(&OssutilCommandSuite{})
 
 var (
 	// Update before running test
-	endpoint        = "<testEndpoint>"
-	accessKeyID     = "<testAccessKeyID>"
-	accessKeySecret = "<testAccessKeySecret>"
+    endpoint        = "<testEndpoint>"
+    accessKeyID     = "<testAccessKeyID>"
+    accessKeySecret = "<testAccessKeySecret>"
 	stsToken        = "<testSTSToken>"
 )
 
@@ -212,6 +212,7 @@ func (s *OssutilCommandSuite) rawList(args []string, cmdline string) (bool, erro
 	a := strings.Contains(parameter[1], "a")
 
 	str := ""
+    limitedNum := strconv.FormatInt(-1, 10)
 	options := OptionMapType{
 		"endpoint":        &str,
 		"accessKeyID":     &str,
@@ -222,6 +223,67 @@ func (s *OssutilCommandSuite) rawList(args []string, cmdline string) (bool, erro
 		"directory":       &d,
 		"multipart":       &m,
 		"allType":         &a,
+        "limitedNum":      &limitedNum,
+	}
+	showElapse, err := cm.RunCommand(command, args, options)
+	return showElapse, err
+}
+
+func (s *OssutilCommandSuite) listLimitedMarker(bucket, prefix, cmdline string, limitedNum int64, marker, uploadIDMarker string, c *C) []string {
+	args := []string{CloudURLToString(bucket, prefix)}
+	out := os.Stdout
+	testResultFile, _ = os.OpenFile(resultPath, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
+	os.Stdout = testResultFile
+	showElapse, err := s.rawListLimitedMarker(args, cmdline, limitedNum, marker, uploadIDMarker)
+	os.Stdout = out
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	// get result
+    results := []string{}
+    if bucket == "" && prefix == "" {
+        results = s.getBucketResults(c)
+    } else {
+	    results = s.getObjectResults(c)
+    }
+	os.Remove(resultPath)
+	return results 
+}
+
+func (s *OssutilCommandSuite) rawListLimitedMarker(args []string, cmdline string, limitedNum int64, marker, uploadIDMarker string) (bool, error) {
+	array := strings.Split(cmdline, " ")
+	if len(array) < 2 {
+		return false, fmt.Errorf("ls test wrong cmdline given")
+	}
+
+	command := array[0]
+	parameter := strings.Split(array[1], "-")
+    sf := false
+    d := false
+    m := false
+    a := false
+	if len(parameter) >= 2 {
+        sf = strings.Contains(parameter[1], "s")
+        d = strings.Contains(parameter[1], "d")
+        m = strings.Contains(parameter[1], "m")
+        a = strings.Contains(parameter[1], "a")
+	}
+
+	str := ""
+    limitedNumStr := strconv.FormatInt(limitedNum, 10) 
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"stsToken":        &str,
+		"configFile":      &configFile,
+		"shortFormat":     &sf,
+		"directory":       &d,
+		"multipart":       &m,
+		"allType":         &a,
+        "limitedNum":      &limitedNumStr,
+        "marker":          &marker,
+        "uploadIDMarker":  &uploadIDMarker,
 	}
 	showElapse, err := cm.RunCommand(command, args, options)
 	return showElapse, err
@@ -590,6 +652,31 @@ func (s *OssutilCommandSuite) initCopyWithSnapshot(srcURL, destURL string, recur
 	err := copyCommand.Init(args, options)
 	return err
 }
+
+func (s *OssutilCommandSuite) initCopyWithRange(srcURL, destURL string, recursive, force, update bool, threshold int64, vrange string) error {
+	str := ""
+	args := []string{srcURL, destURL}
+	thre := strconv.FormatInt(threshold, 10)
+	routines := strconv.Itoa(Routines)
+	cpDir := CheckpointDir
+	options := OptionMapType{
+		"endpoint":         &str,
+		"accessKeyID":      &str,
+		"accessKeySecret":  &str,
+		"stsToken":         &str,
+		"configFile":       &configFile,
+		"recursive":        &recursive,
+		"force":            &force,
+		"update":           &update,
+		"bigfileThreshold": &thre,
+		"checkpointDir":    &cpDir,
+		"routines":         &routines,
+		"range":            &vrange,
+	}
+	err := copyCommand.Init(args, options)
+	return err
+}
+
 
 func (s *OssutilCommandSuite) putObject(bucket, object, fileName string, c *C) {
 	args := []string{fileName, CloudURLToString(bucket, object)}
@@ -969,6 +1056,21 @@ func (s *OssutilCommandSuite) TestStorageURL(c *C) {
 
 func (s *OssutilCommandSuite) TestErrOssDownloadFile(c *C) {
 	bucketName := bucketNamePrefix + "b1"
+	str := ""
+	args := []string{"", ""}
+	thre := strconv.FormatInt(1, 10)
+	routines := strconv.Itoa(Routines)
+	options := OptionMapType{
+		"endpoint":         &str,
+		"accessKeyID":      &str,
+		"accessKeySecret":  &str,
+		"stsToken":         &str,
+		"configFile":       &configFile,
+		"bigfileThreshold": &thre,
+		"routines":         &routines,
+	}
+	err := copyCommand.Init(args, options)
+    c.Assert(err, IsNil)
 	bucket, err := copyCommand.command.ossBucket(bucketName)
 	c.Assert(err, IsNil)
 
@@ -1015,4 +1117,25 @@ func (s *OssutilCommandSuite) TestGetSizeString(c *C) {
 	c.Assert(getSizeString(-1234567), Equals, "-1,234,567")
 	c.Assert(getSizeString(-123456789012), Equals, "-123,456,789,012")
 	c.Assert(getSizeString(-1234567890123), Equals, "-1,234,567,890,123")
+}
+
+func (s *OssutilCommandSuite) TestNeedConfig(c *C) {
+	str := ""
+	args := []string{"", ""}
+	thre := strconv.FormatInt(1, 10)
+	routines := strconv.Itoa(Routines)
+    e := "a"
+	options := OptionMapType{
+		"endpoint":         &e,
+		"accessKeyID":      &str,
+		"accessKeySecret":  &str,
+		"stsToken":         &str,
+		"configFile":       &str,
+        "bigfileThreshold": &thre,
+		"routines":         &routines,
+	}
+	err := copyCommand.Init(args, options)
+    c.Assert(err, IsNil)
+
+    c.Assert(copyCommand.command.needConfigFile(), Equals, false)
 }

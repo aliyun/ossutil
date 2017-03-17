@@ -114,10 +114,20 @@ func (cmd *Command) loadConfig(configFile string, cmder interface{}) error {
 		return cmdder.rewriteLoadConfig(configFile)
 	}
 	var err error
-	if cmd.configOptions, err = LoadConfig(configFile); err != nil {
+	if cmd.configOptions, err = LoadConfig(configFile); err != nil && cmd.needConfigFile() {
 		return err
 	}
 	return nil
+}
+
+func (cmd *Command) needConfigFile() bool {
+    for _, name := range []string{OptionEndpoint, OptionAccessKeyID, OptionAccessKeySecret, OptionSTSToken} {
+        val, _ := GetString(name, cmd.options)
+        if val != "" {
+            return false
+        }
+    }
+    return true
 }
 
 func (cmd *Command) checkOptions() error {
@@ -269,11 +279,27 @@ func (cmd *Command) ossClient(bucket string) (*oss.Client, error) {
 	accessKeyID, _ := GetString(OptionAccessKeyID, cmd.options)
 	accessKeySecret, _ := GetString(OptionAccessKeySecret, cmd.options)
 	stsToken, _ := GetString(OptionSTSToken, cmd.options)
+    if err := cmd.checkCredentials(endpoint, accessKeyID, accessKeySecret); err != nil {
+        return nil, err
+    }
 	client, err := oss.New(endpoint, accessKeyID, accessKeySecret, oss.UseCname(isCname), oss.SecurityToken(stsToken), oss.UserAgent(getUserAgent()), oss.Timeout(120, 1200), oss.EnableCRC(true))
 	if err != nil {
 		return nil, err
 	}
 	return client, nil
+}
+
+func (cmd *Command) checkCredentials(endpoint, accessKeyID, accessKeySecret string) error {
+    if strings.TrimSpace(endpoint) == "" {
+        return fmt.Errorf("invalid endpoint, endpoint is empty, please check your config")
+    }
+    if strings.TrimSpace(accessKeyID) ==  "" {
+        return fmt.Errorf("invalid accessKeyID, accessKeyID is empty, please check your config")
+    }
+    if strings.TrimSpace(accessKeySecret) ==  "" {
+        return fmt.Errorf("invalid accessKeySecret, accessKeySecret is empty, please check your config")
+    }
+    return nil
 }
 
 func (cmd *Command) getEndpoint(bucket string) (string, bool) {

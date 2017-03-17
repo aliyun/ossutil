@@ -40,6 +40,7 @@ type copyOptionType struct {
 	reporter     *Reporter
 	snapshotPath string
 	snapshotldb  *leveldb.DB
+    vrange       string
 }
 
 type fileInfoType struct {
@@ -95,17 +96,17 @@ var specChineseCopy = SpecText{
 	paramText: "src_url dest_url [options]",
 
 	syntaxText: ` 
-    ossutil cp file_url cloud_url  [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--snapshot-path=sdir]
-    ossutil cp cloud_url file_url  [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--snapshot-path=sdir] 
-    ossutil cp cloud_url cloud_url [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--snapshot-path=sdir]
+    ossutil cp file_url cloud_url  [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--snapshot-path=sdir] 
+    ossutil cp cloud_url file_url  [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--snapshot-path=sdir] [--range=x-y] 
+    ossutil cp cloud_url cloud_url [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--snapshot-path=sdir] 
 `,
 
 	detailHelpText: ` 
     该命令允许：从本地文件系统上传文件到oss，从oss下载object到本地文件系统，在oss
     上进行object拷贝。分别对应下述三种操作：
         ossutil cp file_url oss://bucket[/prefix] [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] [--snapshot-path=sdir]
-        ossutil cp oss://bucket[/prefix] file_url [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] [--snapshot-path=sdir]
-        ossutil cp oss://src_bucket[/src_prefix] oss://dest_bucket[/dest_prefix] [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] [--snapshot-path=sdir]
+        ossutil cp oss://bucket[/prefix] file_url [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] [--snapshot-path=sdir] [--range=x-y]
+        ossutil cp oss://src_bucket[/src_prefix] oss://dest_bucket[/dest_prefix] [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file]
 
     其中file_url代表本地文件系统中的文件路径，支持相对路径或绝对路径，请遵循本地文
     件系统的使用格式；
@@ -146,13 +147,13 @@ var specChineseCopy = SpecText{
     过多的report文件。
 
 
-增量上传：
+增量上传/下载/拷贝：
 
 --update选项（-u）
     
     如果指定了该选项，ossutil只有当目标文件（或object）不存在，或源文件（或object）新于
-    目标文件（或object）时，才执行拷贝。当指定了该选项时，无论--force选项是否指定了，在
-    目标文件存在时，ossutil都不会提示，直接采取上述策略。
+    目标文件（或object）时，才执行上传、下载、拷贝。当指定了该选项时，无论--force选项是
+    否指定了，在目标文件存在时，ossutil都不会提示，直接采取上述策略。
     该选项可用于当批量拷贝失败时，重传时跳过已经成功的文件。实现增量上传。
 
 --snapshot-path选项
@@ -180,7 +181,13 @@ var specChineseCopy = SpecText{
     是否跳过上传，如果不满足跳过条件，再根据--update判断是否跳过上传。如果指定了这两种增量上
     传策略之中的任何一种，ossutil将根据策略判断是否进行上传/下载/拷贝，当遇到目标端的文件已
     存在，也不会询问用户是否进行替换操作，此时--force选项不再生效。
+
+    另外，增量下载策略不会考虑--range选项的值，即增量下载策略只参考文件是否存在和lastModifiedTime
+    信息来决定，即如果满足跳过下载的条件，就算两次下载指定的range不一样，也同样会跳过文件。
+    所以请避免两者共同使用！
     
+
+其他选项：
 
 --force选项
 
@@ -194,6 +201,25 @@ var specChineseCopy = SpecText{
     的目录不存在，ossutil会自动创建该目录，如果用户指定的路径已存在并且不是目录，会报错。
     输出文件表示ossutil在运行过程中产生的输出文件，目前包含：在cp命令中ossutil运行出错时
     产生的report文件。
+
+--range选项
+
+    如果下载文件时只需要下载文件内容的部分，可以通过--range选项来指定下载的文件内容范围，如
+    果指定了该选项，则大文件的多线程下载和断点续传默认无效。
+
+    文件偏移从0开始，有三种形式：0-9或3-或-9。
+    比如指定--range=0-9，表示下载指定文件的第0到第9这10个字符；
+    指定--range=3-，表示下载指定文件第3字符到文件结尾的内容；
+    指定--range=-9，表示下载指定文件结尾的9个字符。
+    如果指定的范围超过文件长度范围，会下载整个文件。
+    关于range的更多信息见：https://help.aliyun.com/document_detail/31980.html?spm=5176.doc31994.6.860.YH7LL1
+    
+    如果想下载整个文件请不要指定这个选项。
+    目前上传和拷贝文件，不支持--range选项。
+
+    注意：指定了增量下载策略时（-u选项），策略决定是否跳过下载不会考虑range范围是否变化，即
+    使前后几次下载range范围不一样，满足增量下载条件时，ossutil同样会跳过下载，所以请避免两者
+    同时使用！
 
 
 大文件断点续传：
@@ -263,7 +289,7 @@ var specChineseCopy = SpecText{
                             file_url的路径。
                             否则，object名为：dest_url+/+文件或子目录相对file_url的路径。
 
-    2) ossutil cp oss://bucket[/prefix] file_url [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] [--snapshot-path=sdir]
+    2) ossutil cp oss://bucket[/prefix] file_url [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] [--snapshot-path=sdir] [--range=x-y]
         该用法下载oss上的单个或多个Object到本地文件系统。如果未指定--recursive选项，则ossutil
     认为src_url精确指定了待拷贝的单个object，此时不支持prefix匹配，如果object不存在则报错。如
     果指定了--recursive选项，ossutil会搜索prefix匹配的objects，批量拷贝这些objects，此时file_url
@@ -351,9 +377,12 @@ var specChineseCopy = SpecText{
     ossutil cp oss://bucket/abcdir1/a b/
     在目录b下生成文件a
 
+    ossutil cp oss://bucket/abcdir1/a b/ --range=30-90
+    在目录b下生成文件a，内容为object：abcdir1/a的第30到第90个字符
+
     ossutil cp oss://bucket/abcdir2/a/ b
     如果b为已存在文件，报错。
-    如果b为已存在目录，在目录b下生成目录a。
+    如果b为已存在目录，在目录b下生成目录a
 
     ossutil cp oss://bucket/abc b
     报错，object不存在。
@@ -449,7 +478,7 @@ var specEnglishCopy = SpecText{
 
 	syntaxText: ` 
     ossutil cp file_url cloud_url  [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--snapshot-path=sdir]
-    ossutil cp cloud_url file_url  [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--snapshot-path=sdir] 
+    ossutil cp cloud_url file_url  [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--snapshot-path=sdir] [--range=x-y] 
     ossutil cp cloud_url cloud_url [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--snapshot-path=sdir]
 `,
 
@@ -460,7 +489,7 @@ var specEnglishCopy = SpecText{
     3. Copy objects between oss
     Which matches with the following three kinds of operations:
         ossutil cp file_url oss://bucket[/prefix] [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] [--snapshot-path=sdir]
-        ossutil cp oss://bucket[/prefix] file_url [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] [--snapshot-path=sdir]
+        ossutil cp oss://bucket[/prefix] file_url [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] [--snapshot-path=sdir] [--range=x-y]
         ossutil cp oss://src_bucket[/src_prefix] oss://dest_bucket[/dest_prefix] [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] [--snapshot-path=sdir]
 
     file_url means the file in local file system, it supports relative path and absolute 
@@ -509,7 +538,7 @@ var specEnglishCopy = SpecText{
     regularlly to avoid too many report files in your output directory. 
 
 
-Incremental Upload:
+Incremental Upload/Download/Copy:
 
 --update option(-u)
 
@@ -554,6 +583,12 @@ Note: --update option and --snapshot-path can be used together, ossutil priority
     --force option, which means whether or not the destionation file exists, ossutil will not ask user 
     whether to replace the file, and determine whether to upload according to incremental upload policies.
 
+    Incremental download will not consider the value of --range option, and only consider whether file 
+    exists and lastModifiedTime. Which means even if the range changs between two download, ossutil will 
+    skip the files which satisfy the incremental download condition, so, please avoid to use both!
+
+
+Other Options:
 
 --force option
 
@@ -570,6 +605,26 @@ Note: --update option and --snapshot-path can be used together, ossutil priority
     error.  
 
     Output file contains: report file which used to record error message generated by cp command.
+
+--range option
+    
+    If user need to range download a file, we can use --range option, if we use the option, then 
+    resume copy of big file and multi-thread copy is ineffective.
+    
+    The offset of file is start 
+    with 0, there are three forms: 0-9 or 3- or -9.
+        eg: --range=0-9, means download the first to the tenth character of the file.
+        --range=3-, means download the fourth character to the end of the file.
+        --range=-9, means download the last nine character of the file.
+    If the range exceed the file actual scope, will download the whole file.
+    More information about range see: https://help.aliyun.com/document_detail/31980.html?spm=5176.doc31994.6.860.YH7LL1
+
+    If you need to download the whole file, please do not specify the option.
+    The option is not supported for upload and copy files. 
+
+    Note: Incremental download(-u option) will not conside --range option. Which means even if the 
+    range changs between two download, ossutil will skip the files which satisfy the incremental 
+    download condition, so, please avoid to use both!
 
 
 Resume copy of big file:
@@ -646,7 +701,7 @@ Usage:
                              else, object name is: dest_url.
         If file_url is directory: if prefix is empty or end with "/", object name is: dest_url + file path relative to file_url.
         
-    2) ossutil cp oss://bucket[/prefix] file_url [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] [--snapshot-path=sdir]
+    2) ossutil cp oss://bucket[/prefix] file_url [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] [--snapshot-path=sdir] [--range=x-y] 
         The usage download one or many objects to local system. If --recursive option is not specified, 
     ossutil considers src_url exactly specified the single object you want to download, prefix-matching 
     is not supported now, if the object not exists, error occurs. If --recursive option is specified, 
@@ -736,6 +791,9 @@ Usage:
 
     ossutil cp oss://bucket/abcdir1/a b/
     Generate file a under directory b
+
+    ossutil cp oss://bucket/abcdir1/a b/ --range=30-90
+    Generate file a under directory b, the content is the thirty-first character to the ninety-first character of object abcdir1/a.
 
     ossutil cp oss://bucket/abcdir2/a/ b
     If b exists and is a file, error occurs.
@@ -850,6 +908,7 @@ var copyCommand = CopyCommand{
 			OptionOutputDir,
 			OptionBigFileThreshold,
 			OptionCheckpointDir,
+            OptionRange,
 			OptionConfigFile,
 			OptionEndpoint,
 			OptionAccessKeyID,
@@ -891,6 +950,7 @@ func (cc *CopyCommand) RunCommand() error {
 	}
 	outputDir, _ := GetString(OptionOutputDir, cc.command.options)
 	cc.cpOption.snapshotPath, _ = GetString(OptionSnapshotPath, cc.command.options)
+    cc.cpOption.vrange, _ = GetString(OptionRange, cc.command.options)
 
 	//get file list
 	srcURLList, err := cc.getStorageURLs(cc.command.args[0 : len(cc.command.args)-1])
@@ -1016,6 +1076,10 @@ func (cc *CopyCommand) checkCopyOptions(opType operationType) error {
 		msg := fmt.Sprintf("only upload support option: \"%s\"", OptionSnapshotPath)
 		return CommandError{cc.command.name, msg}
 	}
+    if operationTypeGet != opType && cc.cpOption.vrange != "" {
+		msg := fmt.Sprintf("only download support option: \"%s\"", OptionRange)
+		return CommandError{cc.command.name, msg}
+    }
 	return nil
 }
 
@@ -1594,22 +1658,23 @@ func (cc *CopyCommand) downloadSingleFile(bucket *oss.Bucket, objectInfo objectI
 		}
 	}
 
+    rsize := cc.getRangeSize(size)
 	if cc.skipDownload(fileName, srct) {
-		return true, nil, size, msg
+		return true, nil, rsize, msg
 	}
 
 	if size == 0 && (strings.HasSuffix(object, "/") || strings.HasSuffix(object, "\\")) {
-		return false, os.MkdirAll(fileName, 0755), size, msg
+		return false, os.MkdirAll(fileName, 0755), rsize, msg
 	}
 
 	//create parent directory
 	if err := cc.createParentDirectory(fileName); err != nil {
-		return false, err, size, msg
+		return false, err, rsize, msg
 	}
 
 	var listener *OssProgressListener = &OssProgressListener{&cc.monitor, 0, 0}
-	if size < cc.cpOption.threshold {
-		return false, cc.ossDownloadFileRetry(bucket, object, fileName, oss.Progress(listener)), 0, msg
+	if size < cc.cpOption.threshold || cc.cpOption.vrange != "" {
+		return false, cc.ossDownloadFileRetry(bucket, object, fileName, oss.Progress(listener), oss.NormalizedRange(cc.cpOption.vrange)), 0, msg
 	}
 
 	partSize, rt := cc.preparePartOption(size)
@@ -1727,7 +1792,7 @@ func (cc *CopyCommand) objectStatistic(bucket *oss.Bucket, cloudURL CloudURL) {
 			}
 
 			for _, object := range lor.Objects {
-				cc.monitor.updateScanSizeNum(object.Size, 1)
+				cc.monitor.updateScanSizeNum(cc.getRangeSize(object.Size), 1)
 			}
 
 			pre = oss.Prefix(lor.Prefix)
@@ -1747,11 +1812,48 @@ func (cc *CopyCommand) objectStatistic(bucket *oss.Bucket, cloudURL CloudURL) {
 			cc.monitor.setScanError(err)
 			return
 		}
-		cc.monitor.updateScanSizeNum(size, 1)
+		cc.monitor.updateScanSizeNum(cc.getRangeSize(size), 1)
 	}
 
 	cc.monitor.setScanEnd()
 	freshProgress()
+}
+
+func (cc *CopyCommand) getRangeSize(size int64) int64 {
+    if cc.cpOption.vrange == "" {
+        return size
+    }
+    sli := strings.Split(cc.cpOption.vrange, ",")
+    str := sli[0]
+    if strings.HasPrefix(str, "-") {
+        len := str[1:]    
+        l, err := strconv.ParseInt(len, 10, 64)
+        if err != nil {
+            return size
+        }
+        return l
+    } else if strings.HasSuffix(str, "-") {
+        start := str[:len(str)-1]
+        s, err := strconv.ParseInt(start, 10, 64)
+        if err != nil || s >= size {
+            return size
+        }
+        return size - s
+    } else {
+        pos := strings.IndexAny(str, "-")
+        if pos == -1 {
+            return size
+        }
+        start := str[:pos]
+        end := str[pos+1:]
+        s, err1 := strconv.ParseInt(start, 10, 64)
+        e, err2 := strconv.ParseInt(end, 10, 64)
+        if err1 != nil || err2 != nil || s >= size || e >= size || s > e {
+            return size
+        }
+        return e - s + 1
+    }
+    return size
 }
 
 func (cc *CopyCommand) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, chObjects chan<- objectInfoType, chError chan<- error) {

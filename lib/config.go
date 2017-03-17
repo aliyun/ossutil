@@ -26,6 +26,18 @@ var specChineseConfig = SpecText{
     文件存在，假设其为:a，ossutil会将文件a另存为：a.bak，然后重新创建文件a
     并写入配置，此时，如果a.bak存在，其会被文件a覆盖。
 
+    注意：
+    （1）如果指定的配置文件路径非默认路径，在使用命令时请将--config-file选
+    项设置为你配置时指定的配置文件路径（如果不指定--config-file选项，则运
+    行命令时默认会读取` + DecideConfigFile("") + `）。
+
+    （2）某些配置可在使用命令时通过选项进行设置，如--endpoint，--access-key-id，
+    等选项（具体请见每个命令的帮助），如果使用命令时指定了这些选项，并且同
+    时配置文件中也配置了这些信息，则优先级为：选项 > 配置文件。
+
+    （3）如果使用命令时指定了--endpoint、--access-key-id、--access-key-secret
+    或--sts-token选项，则ossutil不强求配置文件一定要存在。
+
 用法:
 
     该命令有两种用法，交互式1)和非交互式2)，推荐用法为交互式，因为交互
@@ -144,8 +156,23 @@ var specEnglishConfig = SpecText{
 
     The configuration file can be specified by user, which in default
     is ` + DecideConfigFile("") + `. If the configuration file exist, suppose
-    the file is: a, ossutil will save a as a.bak, and rewrite file a, at this 
-    time, if file a.bak exists, a.bak will be rewrited.
+    the file is: a, ossutil will save a as a.bak, and rewrite file a, 
+    at this time, if file a.bak exists, a.bak will be rewrited.
+
+    Note:
+    (1) If the configuration file path you specified is not the default 
+    path, please specify --config-file option to the path when use other 
+    commands. If you do not specify the --config-file option, ossutil 
+    will read the configuration file: ` + DecideConfigFile("") + `.
+
+    (2) Several configuration can be specified through option, eg: --endpoint, 
+    --access-key-id etc(for more see the help of each command). If you 
+    specified those options when use command, and meanwhile those configurations 
+    exist in configurations file, PRI: option > configurations file. 
+
+    (3) If you specified --endpoint or --access-key-id or --access-key-secret 
+    or --sts-token option when use command, then ossutil does not insist 
+    on configurations file. 
 
 Usage:
 
