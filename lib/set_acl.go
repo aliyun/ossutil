@@ -207,6 +207,7 @@ var setACLCommand = SetACLCommand{
 			OptionRecursion,
 			OptionBucket,
 			OptionForce,
+            OptionEncodingType,
 			OptionConfigFile,
 			OptionEndpoint,
 			OptionAccessKeyID,
@@ -241,7 +242,8 @@ func (sc *SetACLCommand) RunCommand() error {
 	force, _ := GetBool(OptionForce, sc.command.options)
 	routines, _ := GetInt(OptionRoutines, sc.command.options)
 
-	cloudURL, err := CloudURLFromString(sc.command.args[0])
+    encodingType, _ := GetString(OptionEncodingType, sc.command.options)
+	cloudURL, err := CloudURLFromString(sc.command.args[0], encodingType)
 	if err != nil {
 		return err
 	}

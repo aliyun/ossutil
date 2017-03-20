@@ -5,6 +5,7 @@ import (
 	"os"
     "sort"
     "strconv"
+    "net/url"
 
 	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 	. "gopkg.in/check.v1"
@@ -532,3 +533,42 @@ func (s *OssutilCommandSuite) TestListLimitedMarker(c *C) {
     c.Assert(len(objects), Equals, 0)
 }
 
+func (s *OssutilCommandSuite) TestListURLEncoding(c *C) {
+    bucketName := bucketNamePrefix + randLowStr(10)
+    s.putBucket(bucketName, c)
+
+    object := "^M特殊字符 加上空格 test"
+    s.putObject(bucketName, object, uploadFileName, c)
+
+    urlObject := url.QueryEscape(object)
+    c.Assert(object != urlObject, Equals, true)
+
+    // list object
+    objects := s.listLimitedMarker(bucketName, "", "ls ", -1, "", "", c)
+    c.Assert(len(objects), Equals, 1)
+    c.Assert(objects[0], Equals, object)
+
+    objects = s.listLimitedMarker(bucketName, urlObject, "ls ", -1, "", "", c)
+    c.Assert(len(objects), Equals, 0)
+
+    objects = s.listLimitedMarker(bucketName, urlObject, "ls --encoding-type url -as", -1, "", "", c)
+    c.Assert(len(objects), Equals, 1)
+    c.Assert(objects[0], Equals, object)
+
+    // remove object
+    _, err := s.removeWrapper("rm -f", bucketName, urlObject, c)
+    c.Assert(err, IsNil)
+
+    objects = s.listLimitedMarker(bucketName, urlObject, "ls --encoding-type url -s", -1, "", "", c)
+    c.Assert(len(objects), Equals, 1)
+    c.Assert(objects[0], Equals, object)
+
+    // remove object
+    _, err = s.removeWrapper("rm --encoding-type url -f", bucketName, urlObject, c)
+    c.Assert(err, IsNil)
+
+    objects = s.listLimitedMarker(bucketName, urlObject, "ls --encoding-type url -s", -1, "", "", c)
+    c.Assert(len(objects), Equals, 0)
+
+	s.removeBucket(bucketName, true, c)
+}

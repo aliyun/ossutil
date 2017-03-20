@@ -24,7 +24,7 @@ type Option struct {
 	nameAlias   string
 	def         string
 	optionType  optionType
-	minVal      string // empty means no check, for OptionTypeAlternative, minVal is the alternative values connected by '/', eg: CN|EN
+	minVal      string // empty means no check, for OptionTypeAlternative, minVal is the alternative values connected by '/', eg: CN/EN
 	maxVal      string // empty means no check, for OptionTypeAlternative, maxVal is empty
 	helpChinese string
 	helpEnglish string
@@ -79,6 +79,9 @@ var OptionMap = map[string]Option{
 		fmt.Sprintf("单文件内部操作的并发任务数，取值范围：%d-%d, 默认将由ossutil根据操作类型和文件大小自行决定。", MinRoutines, MaxRoutines),
 		fmt.Sprintf("amount of concurrency tasks when work with a file, value range is: %d-%d, by default the value will be decided by ossutil intelligently.", MinRoutines, MaxRoutines)},
 	OptionRange:    Option{"", "--range", "", OptionTypeString, "", "",	"下载文件时，指定文件下载的范围，格式为：3-9或3-或-9", "the range when download objects, the form is like: 3-9 or 3- or -9"},
+	OptionEncodingType: Option{"", "--encoding-type", "", OptionTypeAlternative, URLEncodingType, "",	
+        fmt.Sprintf("输入的object名或文件名的编码方式，目前只支持url encode，即指定该选项时，取值范围为：%s，如果不指定该选项，则表示object名或文件名未经过编码。", URLEncodingType), 
+        fmt.Sprintf("the encoding type of object name or file name that user inputs, currently ossutil only supports url encode, which means the value range of the option is: %s, if you do not specify the option, it means the object name or file name that user inputed was not encoded.", URLEncodingType)},
 	OptionLanguage: Option{"-L", "--language", DefaultLanguage, OptionTypeAlternative, fmt.Sprintf("%s/%s", ChineseLanguage, EnglishLanguage), "",
 		fmt.Sprintf("设置ossutil工具的语言，默认值：%s，取值范围：%s/%s，若设置成\"%s\"，请确保您的系统编码为UTF-8。", DefaultLanguage, ChineseLanguage, EnglishLanguage, ChineseLanguage),
 		fmt.Sprintf("set the language of ossutil(default: %s), value range is: %s/%s, if you set it to \"%s\", please make sure your system language is UTF-8.", DefaultLanguage, ChineseLanguage, EnglishLanguage, ChineseLanguage)},

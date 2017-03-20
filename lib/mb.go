@@ -142,7 +142,7 @@ func (mc *MakeBucketCommand) Init(args []string, options OptionMapType) error {
 
 // RunCommand simulate inheritance, and polymorphism
 func (mc *MakeBucketCommand) RunCommand() error {
-	cloudURL, err := CloudURLFromString(mc.command.args[0])
+	cloudURL, err := CloudURLFromString(mc.command.args[0], "")
 	if err != nil {
 		return err
 	}

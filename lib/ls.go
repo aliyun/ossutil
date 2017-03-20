@@ -307,6 +307,7 @@ var listCommand = ListCommand{
 			OptionLimitedNum,
 			OptionMarker,
 			OptionUploadIDMarker,
+            OptionEncodingType,
 			OptionConfigFile,
 			OptionEndpoint,
 			OptionAccessKeyID,
@@ -337,7 +338,8 @@ func (lc *ListCommand) RunCommand() error {
 		return lc.listBuckets("")
 	}
 
-	cloudURL, err := CloudURLFromString(lc.command.args[0])
+    encodingType, _ := GetString(OptionEncodingType, lc.command.options)
+	cloudURL, err := CloudURLFromString(lc.command.args[0], encodingType)
 	if err != nil {
 		return err
 	}

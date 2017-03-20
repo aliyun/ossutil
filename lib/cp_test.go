@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+    "net/url"
 
 	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 	. "gopkg.in/check.v1"
@@ -1215,7 +1216,7 @@ func (s *OssutilCommandSuite) TestInitReportError(c *C) {
 func (s *OssutilCommandSuite) TestCopyFunction(c *C) {
 	// test fileStatistic
 	copyCommand.monitor.init(operationTypePut)
-	storageURL, err := StorageURLFromString("&~")
+	storageURL, err := StorageURLFromString("&~", "")
 	c.Assert(err, IsNil)
 	copyCommand.fileStatistic([]StorageURLer{storageURL})
 	c.Assert(copyCommand.monitor.seekAheadEnd, Equals, true)
@@ -1224,7 +1225,7 @@ func (s *OssutilCommandSuite) TestCopyFunction(c *C) {
 	// test fileProducer
 	chFiles := make(chan fileInfoType, ChannelBuf)
 	chListError := make(chan error, 1)
-	storageURL, err = StorageURLFromString("&~")
+	storageURL, err = StorageURLFromString("&~", "")
 	c.Assert(err, IsNil)
 	copyCommand.fileProducer([]StorageURLer{storageURL}, chFiles, chListError)
 	err = <-chListError
@@ -1802,5 +1803,70 @@ func (s *OssutilCommandSuite) TestRangeGet(c *C) {
     c.Assert(err, NotNil)
 
     os.RemoveAll(dir)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestCPURLEncoding(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+    specialStr := "中文测试" + randStr(5)
+    encodedStr := url.QueryEscape(specialStr) 
+	s.createFile(specialStr, content, c)
+
+    args := []string{encodedStr, CloudURLToString(bucketName, encodedStr)} 
+    command := "cp"
+    str := ""
+    thre := strconv.FormatInt(1, 10)
+    routines := strconv.Itoa(Routines)
+    encodingType := URLEncodingType
+	cpDir := CheckpointDir
+    outputDir := DefaultOutputDir
+    ok := true
+    options := OptionMapType{
+        "endpoint":         &str,
+        "accessKeyID":      &str,
+        "accessKeySecret":  &str,
+        "stsToken":         &str,
+        "configFile":       &configFile,
+        "force":            &ok,
+        "bigfileThreshold": &thre,
+        "checkpointDir":    &cpDir,
+        "outputDir":        &outputDir,
+        "routines":         &routines,
+        "encodingType":     &encodingType,
+    }
+    showElapse, err := cm.RunCommand(command, args, options)
+    c.Assert(err, IsNil)
+    c.Assert(showElapse, Equals, true)
+
+    objects := s.listLimitedMarker(bucketName, encodedStr, "ls --encoding-type url", -1, "", "", c)
+    c.Assert(len(objects), Equals, 1)
+    c.Assert(objects[0], Equals, specialStr)
+
+    objects = s.listLimitedMarker(bucketName, specialStr, "ls ", -1, "", "", c)
+    c.Assert(len(objects), Equals, 1)
+    c.Assert(objects[0], Equals, specialStr)
+
+    // get object
+    downloadFileName := "下载文件"+randLowStr(3) 
+    args = []string{CloudURLToString(bucketName, encodedStr), url.QueryEscape(downloadFileName)} 
+    showElapse, err = cm.RunCommand(command, args, options)
+    c.Assert(err, IsNil)
+    c.Assert(showElapse, Equals, true)
+
+	downStr := strings.ToLower(s.readFile(downloadFileName, c))
+    c.Assert(downStr, Equals, content)
+
+    // copy object
+    destObject := "拷贝文件" + randLowStr(3)
+    args = []string{CloudURLToString(bucketName, encodedStr), CloudURLToString(bucketName, url.QueryEscape(destObject))}
+    showElapse, err = cm.RunCommand(command, args, options)
+    c.Assert(err, IsNil)
+    c.Assert(showElapse, Equals, true)
+
+    // get object
+    s.getStat(bucketName, destObject, c) 
+
 	s.removeBucket(bucketName, true, c)
 }

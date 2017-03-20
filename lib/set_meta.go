@@ -237,6 +237,7 @@ var setMetaCommand = SetMetaCommand{
 			OptionUpdate,
 			OptionDelete,
 			OptionForce,
+            OptionEncodingType,
 			OptionConfigFile,
 			OptionEndpoint,
 			OptionAccessKeyID,
@@ -279,7 +280,8 @@ func (sc *SetMetaCommand) RunCommand() error {
 		return err
 	}
 
-	cloudURL, err := CloudURLFromString(sc.command.args[0])
+    encodingType, _ := GetString(OptionEncodingType, sc.command.options)
+	cloudURL, err := CloudURLFromString(sc.command.args[0], encodingType)
 	if err != nil {
 		return err
 	}

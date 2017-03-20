@@ -30,17 +30,18 @@ const (
 )
 
 type copyOptionType struct {
-	recursive    bool
-	force        bool
-	update       bool
-	threshold    int64
-	cpDir        string
-	routines     int64
-	ctnu         bool
-	reporter     *Reporter
-	snapshotPath string
-	snapshotldb  *leveldb.DB
-    vrange       string
+	recursive       bool
+	force           bool
+	update          bool
+	threshold       int64
+	cpDir           string
+	routines        int64
+	ctnu            bool
+	reporter        *Reporter
+	snapshotPath    string
+	snapshotldb     *leveldb.DB
+    vrange          string
+    encodingType    string
 }
 
 type fileInfoType struct {
@@ -909,6 +910,7 @@ var copyCommand = CopyCommand{
 			OptionBigFileThreshold,
 			OptionCheckpointDir,
             OptionRange,
+            OptionEncodingType,
 			OptionConfigFile,
 			OptionEndpoint,
 			OptionAccessKeyID,
@@ -951,14 +953,15 @@ func (cc *CopyCommand) RunCommand() error {
 	outputDir, _ := GetString(OptionOutputDir, cc.command.options)
 	cc.cpOption.snapshotPath, _ = GetString(OptionSnapshotPath, cc.command.options)
     cc.cpOption.vrange, _ = GetString(OptionRange, cc.command.options)
+    cc.cpOption.encodingType, _ = GetString(OptionEncodingType, cc.command.options)
 
 	//get file list
-	srcURLList, err := cc.getStorageURLs(cc.command.args[0 : len(cc.command.args)-1])
+	srcURLList, err := cc.getStorageURLs(cc.command.args[0 : len(cc.command.args) - 1])
 	if err != nil {
 		return err
 	}
 
-	destURL, err := StorageURLFromString(cc.command.args[len(cc.command.args)-1])
+	destURL, err := StorageURLFromString(cc.command.args[len(cc.command.args) - 1], cc.cpOption.encodingType)
 	if err != nil {
 		return err
 	}
@@ -1014,7 +1017,7 @@ func (cc *CopyCommand) RunCommand() error {
 func (cc *CopyCommand) getStorageURLs(urls []string) ([]StorageURLer, error) {
 	urlList := []StorageURLer{}
 	for _, url := range urls {
-		storageURL, err := StorageURLFromString(url)
+		storageURL, err := StorageURLFromString(url, cc.cpOption.encodingType)
 		if err != nil {
 			return nil, err
 		}
@@ -1673,14 +1676,14 @@ func (cc *CopyCommand) downloadSingleFile(bucket *oss.Bucket, objectInfo objectI
 	}
 
 	var listener *OssProgressListener = &OssProgressListener{&cc.monitor, 0, 0}
-	if size < cc.cpOption.threshold || cc.cpOption.vrange != "" {
+	if rsize < cc.cpOption.threshold {
 		return false, cc.ossDownloadFileRetry(bucket, object, fileName, oss.Progress(listener), oss.NormalizedRange(cc.cpOption.vrange)), 0, msg
 	}
 
 	partSize, rt := cc.preparePartOption(size)
 	absPath, _ := filepath.Abs(fileName)
 	cp := oss.Checkpoint(true, cc.formatCPFileName(cc.cpOption.cpDir, CloudURLToString(bucket.BucketName, object), absPath))
-	return false, cc.ossResumeDownloadRetry(bucket, object, fileName, size, partSize, oss.Routines(rt), cp, oss.Progress(listener)), 0, msg
+	return false, cc.ossResumeDownloadRetry(bucket, object, fileName, size, partSize, oss.Routines(rt), cp, oss.Progress(listener), oss.NormalizedRange(cc.cpOption.vrange)), 0, msg
 }
 
 func (cc *CopyCommand) makeFileName(object, filePath string) string {
