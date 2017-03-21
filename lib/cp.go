@@ -1867,31 +1867,34 @@ func (cc *CopyCommand) parseRange(str string, size int64) (int64, error) {
         len := str[1:]    
         l, err := strconv.ParseInt(len, 10, 64)
         if err != nil {
-            return size, err
+            return size, nil 
         }
         return l, nil
     } else if strings.HasSuffix(str, "-") {
         start := str[:len(str)-1]
         s, err := strconv.ParseInt(start, 10, 64)
         if err != nil || s >= size {
-            return size, err
+            return size, nil 
         }
         return size - s, nil
     } else {
         pos := strings.IndexAny(str, "-")
         if pos == -1 {
-            return size, fmt.Errorf("Invalid range") 
+            return size, nil 
         }
         start := str[:pos]
         end := str[pos+1:]
         s, err1 := strconv.ParseInt(start, 10, 64)
         e, err2 := strconv.ParseInt(end, 10, 64)
         if err1 != nil || err2 != nil || s >= size || e >= size || s > e {
-            return size, fmt.Errorf("Invalid range") 
+            return size, nil 
+        }
+        if s > e {
+            return size, fmt.Errorf("Invalid range")
         }
         return e - s + 1, nil 
     }
-    return size, fmt.Errorf("Invalid range")
+    return size, nil 
 }
 
 func (cc *CopyCommand) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, chObjects chan<- objectInfoType, chError chan<- error) {

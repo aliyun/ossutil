@@ -1416,6 +1416,34 @@ func (s *OssutilCommandSuite) TestRangeGet(c *C) {
 	str = s.readFile(downloadFileName, c)
 	c.Assert(str, Equals, data)
 
+	err = s.initCopyWithRange(CloudURLToString(bucketName, object), downloadFileName, false, true, false, DefaultBigFileThreshold, "1-2,")
+	c.Assert(err, IsNil)
+	err = copyCommand.RunCommand()
+	c.Assert(err, IsNil)
+	str = s.readFile(downloadFileName, c)
+	c.Assert(str, Equals, data[1:3])
+
+	err = s.initCopyWithRange(CloudURLToString(bucketName, object), downloadFileName, false, true, false, DefaultBigFileThreshold, "1-2,a-c")
+	c.Assert(err, IsNil)
+	err = copyCommand.RunCommand()
+	c.Assert(err, IsNil)
+	str = s.readFile(downloadFileName, c)
+	c.Assert(str, Equals, data[1:3])
+
+	err = s.initCopyWithRange(CloudURLToString(bucketName, object), downloadFileName, false, true, false, DefaultBigFileThreshold, "1-2,abc")
+	c.Assert(err, IsNil)
+	err = copyCommand.RunCommand()
+	c.Assert(err, IsNil)
+	str = s.readFile(downloadFileName, c)
+	c.Assert(str, Equals, data[1:3])
+
+	err = s.initCopyWithRange(CloudURLToString(bucketName, object), downloadFileName, false, true, false, DefaultBigFileThreshold, ",abc,1-2")
+	c.Assert(err, IsNil)
+	err = copyCommand.RunCommand()
+	c.Assert(err, IsNil)
+	str = s.readFile(downloadFileName, c)
+	c.Assert(str, Equals, data)
+
 	err = s.initCopyWithRange(CloudURLToString(bucketName, object), downloadFileName, false, true, false, DefaultBigFileThreshold, "1-5")
 	c.Assert(err, IsNil)
 	err = copyCommand.RunCommand()
@@ -1713,7 +1741,7 @@ func (s *OssutilCommandSuite) TestRangeGet(c *C) {
 	c.Assert(snap.okNum, Equals, int64(2))
 	c.Assert(snap.dealNum, Equals, int64(2))
 
-	err = s.initCopyWithRange(CloudURLToString(bucketName, ""), dir, true, true, false, 1, "3-20")
+	err = s.initCopyWithRange(CloudURLToString(bucketName, ""), dir, true, true, false, DefaultBigFileThreshold, "3-20")
 	c.Assert(err, IsNil)
 	err = copyCommand.RunCommand()
 	c.Assert(err, IsNil)
@@ -1735,7 +1763,7 @@ func (s *OssutilCommandSuite) TestRangeGet(c *C) {
 	c.Assert(snap.okNum, Equals, int64(2))
 	c.Assert(snap.dealNum, Equals, int64(2))
 
-	err = s.initCopyWithRange(CloudURLToString(bucketName, ""), dir, true, true, false, 1, "-5")
+	err = s.initCopyWithRange(CloudURLToString(bucketName, ""), dir, true, true, false, DefaultBigFileThreshold, "-5")
 	c.Assert(err, IsNil)
 	err = copyCommand.RunCommand()
 	c.Assert(err, IsNil)
@@ -1757,7 +1785,7 @@ func (s *OssutilCommandSuite) TestRangeGet(c *C) {
 	c.Assert(snap.okNum, Equals, int64(2))
 	c.Assert(snap.dealNum, Equals, int64(2))
 
-	err = s.initCopyWithRange(CloudURLToString(bucketName, ""), dir, true, true, false, 1, "-20")
+	err = s.initCopyWithRange(CloudURLToString(bucketName, ""), dir, true, true, false, DefaultBigFileThreshold, "-20")
 	c.Assert(err, IsNil)
 	err = copyCommand.RunCommand()
 	c.Assert(err, IsNil)
@@ -1775,7 +1803,7 @@ func (s *OssutilCommandSuite) TestRangeGet(c *C) {
 	c.Assert(snap.dealNum, Equals, int64(2))
 
     // batch download with skip
-	err = s.initCopyWithRange(CloudURLToString(bucketName, ""), dir, true, true, true, 1, "10-15")
+	err = s.initCopyWithRange(CloudURLToString(bucketName, ""), dir, true, true, true, DefaultBigFileThreshold, "10-15")
 	c.Assert(err, IsNil)
 	err = copyCommand.RunCommand()
 	c.Assert(err, IsNil)
@@ -1798,7 +1826,7 @@ func (s *OssutilCommandSuite) TestRangeGet(c *C) {
 	c.Assert(snap.dealNum, Equals, int64(2))
 
     os.RemoveAll(dir)
-	err = s.initCopyWithRange(CloudURLToString(bucketName, ""), dir, true, true, false, 1, "-0")
+	err = s.initCopyWithRange(CloudURLToString(bucketName, ""), dir, true, true, false, DefaultBigFileThreshold, "-0")
 	c.Assert(err, IsNil)
 	err = copyCommand.RunCommand()
 	c.Assert(err, IsNil)
