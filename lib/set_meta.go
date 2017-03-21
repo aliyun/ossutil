@@ -135,6 +135,9 @@ Headers:
 
     (4)ossutil set-meta oss://bucket/o -r
         批量设置以o开头的objects的meta为空
+
+    (5)ossutil set-meta oss://bucket1/%e4%b8%ad%e6%96%87 X-Oss-Meta-delete --delete --encoding-type url
+        删除oss://bucket1/中文的X-Oss-Meta-delete头域
 `,
 }
 
@@ -214,6 +217,9 @@ Usage:
 
     (4)ossutil set-meta oss://bucket/o -r
         Batch set the meta of objects that start with o to empty
+
+    (5)ossutil set-meta oss://bucket1/%e4%b8%ad%e6%96%87 X-Oss-Meta-delete --delete --encoding-type url
+        Delete X-Oss-Meta-delete header of oss://bucket1/中文
 `,
 }
 

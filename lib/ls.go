@@ -141,6 +141,12 @@ var specChineseList = SpecText{
         UploadID                          ObjectName
         15754AF7980C4DFB8193F190837520BB  oss://bucket1/obj1
         UploadID Number is: 1
+
+    13) ossutil ls oss://bucket1/%e4%b8%ad%e6%96%87 --encoding-type url
+        LastModifiedTime                   Size(B)   ETAG                                    ObjectName
+        2017-03-17 17:34:40 +0800 CST      8345742   BBCC8C0954B869B4A6B34D9404C5BCFD        oss://bucket1/中文
+        Object Number is: 2
+        0.066567(s) elapsed
 `,
 }
 
@@ -282,6 +288,12 @@ Usage:
         UploadID                          ObjectName
         15754AF7980C4DFB8193F190837520BB  oss://bucket1/obj1
         UploadID Number is: 1
+
+    13) ossutil ls oss://bucket1/%e4%b8%ad%e6%96%87 --encoding-type url
+        LastModifiedTime                   Size(B)   ETAG                                    ObjectName
+        2017-03-17 17:34:40 +0800 CST      8345742   BBCC8C0954B869B4A6B34D9404C5BCFD        oss://bucket1/中文
+        Object Number is: 2
+        0.066567(s) elapsed
 `,
 }
 

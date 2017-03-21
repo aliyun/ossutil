@@ -40,6 +40,7 @@ var specChineseStat = SpecText{
 	sampleText: ` 
     ossutil stat oss://bucket1
     ossutil stat oss://bucket1/object  
+    ossutil stat oss://bucket1/%e4%b8%ad%e6%96%87 --encoding-type url
 `,
 }
 
@@ -76,6 +77,7 @@ Usage：
 	sampleText: ` 
     ossutil stat oss://bucket1
     ossutil stat oss://bucket1/object  
+    ossutil stat oss://bucket1/%e4%b8%ad%e6%96%87 --encoding-type url
 `,
 }
 

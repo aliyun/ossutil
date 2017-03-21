@@ -360,6 +360,9 @@ var specChineseCopy = SpecText{
     ossutil cp local_dir oss://bucket1/b -r -u --snapshot-path=your_local_path
     同时使用--snapshot-path和--update策略进行增量上传
 
+    ossutil cp %e4%b8%ad%e6%96%87 oss://bucket1/%e6%b5%8b%e8%af%95 --encoding-type url
+    在本地查找文件名为“中文”的文件，并上传到bucket1生成名称为”测试“的object
+
     2) 从oss下载object
     假设oss上有下列objects：
         oss://bucket/abcdir1/a
@@ -404,6 +407,9 @@ var specChineseCopy = SpecText{
         
     ossutil cp oss://bucket/ local_dir -r -u
     使用--update策略进行增量下载
+
+    ossutil cp oss://bucket1/%e6%b5%8b%e8%af%95 %e4%b8%ad%e6%96%87 --encoding-type url
+    下载bucket1中名称为”测试“的object到本地，生成文件名为“中文”的文件
 
     3) 在oss间拷贝
     假设oss上有下列objects：
@@ -468,6 +474,9 @@ var specChineseCopy = SpecText{
 
     ossutil cp oss://bucket/ oss://bucket1/ -r -u
     使用--update策略进行增量拷贝
+
+    ossutil cp oss://bucket1/%e6%b5%8b%e8%af%95 oss://bucket2/%e4%b8%ad%e6%96%87 --encoding-type url
+    拷贝bucket1中名称为”测试“的object到bucket2，生成object名为“中文”的object
 `,
 }
 
@@ -778,6 +787,9 @@ Usage:
     ossutil cp local_dir oss://bucket1/b -r -u --snapshot-path=your_local_path
     Use --snapshot-path and --update policies for incremental upload
 
+    ossutil cp %e4%b8%ad%e6%96%87 oss://bucket1/%e6%b5%8b%e8%af%95 --encoding-type url
+    Upload the file "中文" to oss://bucket1/测试
+
     2) download from oss
     Suppose there are following objects in oss:
         oss://bucket/abcdir1/a
@@ -820,6 +832,9 @@ Usage:
 
     ossutil cp oss://bucket/ local_dir -r -u
     Use --update policy for incremental download
+
+    ossutil cp oss://bucket1/%e6%b5%8b%e8%af%95 %e4%b8%ad%e6%96%87 --encoding-type url
+    Download oss://bucket1/测试 to local file：中文 
 
     3) Copy between oss 
     Suppose there are following objects in oss:
@@ -882,6 +897,9 @@ Usage:
 
     ossutil cp oss://bucket/ oss://bucket1/ -r -u
     Use --update policy for incremental copy
+
+    ossutil cp oss://bucket1/%e6%b5%8b%e8%af%95 oss://bucket2/%e4%b8%ad%e6%96%87 --encoding-type url
+    Copy oss://bucket1/测试 to oss://bucket2/中文
 `,
 }
 
@@ -1676,14 +1694,20 @@ func (cc *CopyCommand) downloadSingleFile(bucket *oss.Bucket, objectInfo objectI
 	}
 
 	var listener *OssProgressListener = &OssProgressListener{&cc.monitor, 0, 0}
+    ossOptions := []oss.Option{oss.Progress(listener)}
+    if cc.cpOption.vrange != "" {
+        ossOptions = append(ossOptions, oss.NormalizedRange(cc.cpOption.vrange))
+    }
+
 	if rsize < cc.cpOption.threshold {
-		return false, cc.ossDownloadFileRetry(bucket, object, fileName, oss.Progress(listener), oss.NormalizedRange(cc.cpOption.vrange)), 0, msg
+		return false, cc.ossDownloadFileRetry(bucket, object, fileName, ossOptions...), 0, msg
 	}
 
 	partSize, rt := cc.preparePartOption(size)
 	absPath, _ := filepath.Abs(fileName)
 	cp := oss.Checkpoint(true, cc.formatCPFileName(cc.cpOption.cpDir, CloudURLToString(bucket.BucketName, object), absPath))
-	return false, cc.ossResumeDownloadRetry(bucket, object, fileName, size, partSize, oss.Routines(rt), cp, oss.Progress(listener), oss.NormalizedRange(cc.cpOption.vrange)), 0, msg
+    ossOptions = append(ossOptions, oss.Routines(rt), cp)
+	return false, cc.ossResumeDownloadRetry(bucket, object, fileName, size, partSize, ossOptions...), 0, msg
 }
 
 func (cc *CopyCommand) makeFileName(object, filePath string) string {
@@ -1827,36 +1851,47 @@ func (cc *CopyCommand) getRangeSize(size int64) int64 {
         return size
     }
     sli := strings.Split(cc.cpOption.vrange, ",")
-    str := sli[0]
+    sizes := []int64{}
+    for i := 0; i < len(sli); i++ {
+        if s, err := cc.parseRange(sli[i], size); err != nil {
+            return s
+        } else {
+            sizes = append(sizes, s)
+        }
+    }
+    return sizes[0]
+}
+
+func (cc *CopyCommand) parseRange(str string, size int64) (int64, error) {
     if strings.HasPrefix(str, "-") {
         len := str[1:]    
         l, err := strconv.ParseInt(len, 10, 64)
         if err != nil {
-            return size
+            return size, err
         }
-        return l
+        return l, nil
     } else if strings.HasSuffix(str, "-") {
         start := str[:len(str)-1]
         s, err := strconv.ParseInt(start, 10, 64)
         if err != nil || s >= size {
-            return size
+            return size, err
         }
-        return size - s
+        return size - s, nil
     } else {
         pos := strings.IndexAny(str, "-")
         if pos == -1 {
-            return size
+            return size, fmt.Errorf("Invalid range") 
         }
         start := str[:pos]
         end := str[pos+1:]
         s, err1 := strconv.ParseInt(start, 10, 64)
         e, err2 := strconv.ParseInt(end, 10, 64)
         if err1 != nil || err2 != nil || s >= size || e >= size || s > e {
-            return size
+            return size, fmt.Errorf("Invalid range") 
         }
-        return e - s + 1
+        return e - s + 1, nil 
     }
-    return size
+    return size, fmt.Errorf("Invalid range")
 }
 
 func (cc *CopyCommand) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, chObjects chan<- objectInfoType, chError chan<- error) {

@@ -112,6 +112,7 @@ var specChineseRemove = SpecText{
     ossutil rm oss://bucket1 -b
     ossutil rm oss://bucket2 -r -b -f
     ossutil rm oss://bucket2 -a -r -b -f
+    ossutil rm oss://bucket2/%e4%b8%ad%e6%96%87 --encoding-type url
 `,
 }
 
@@ -224,6 +225,7 @@ Usage:
     ossutil rm oss://bucket1 -b
     ossutil rm oss://bucket2 -r -b -f
     ossutil rm oss://bucket2 -a -r -b -f
+    ossutil rm oss://bucket2/%e4%b8%ad%e6%96%87 --encoding-type url
 `,
 }
 

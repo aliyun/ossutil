@@ -113,6 +113,8 @@ ACL：
     (2)ossutil set-acl oss://bucket1/obj1 private 
 
     (3)ossutil set-acl oss://bucket1/obj default -r
+
+    (4)ossutil set-acl oss://bucket1/%e4%b8%ad%e6%96%87 default --encoding-type url
 `,
 }
 
@@ -185,6 +187,8 @@ Usage：
     (2)ossutil set-acl oss://bucket1/obj1 private 
 
     (3)ossutil set-acl oss://bucket1/obj default -r
+
+    (4)ossutil set-acl oss://bucket1/%e4%b8%ad%e6%96%87 default --encoding-type url
 `,
 }
 
