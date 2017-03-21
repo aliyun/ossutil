@@ -1901,5 +1901,8 @@ func (s *OssutilCommandSuite) TestCPURLEncoding(c *C) {
     // get object
     s.getStat(bucketName, destObject, c) 
 
+    os.Remove(specialStr)
+    os.Remove(downloadFileName)
+
 	s.removeBucket(bucketName, true, c)
 }
