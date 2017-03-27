@@ -561,7 +561,6 @@ func (s *OssutilCommandSuite) TestSingleFileProgress(c *C) {
 		c.Assert(snap.errNum, Equals, int64(0))
 		c.Assert(snap.okNum, Equals, int64(1))
 		c.Assert(snap.dealNum, Equals, int64(1))
-		c.Assert(copyCommand.monitor.getPrecent(snap) == 100 || copyCommand.monitor.getPrecent(snap) == 0, Equals, true)
 
 		str = strings.ToLower(copyCommand.monitor.getProgressBar())
 		c.Assert(strings.Contains(str, fmt.Sprintf("num: %d", 1)), Equals, true)
