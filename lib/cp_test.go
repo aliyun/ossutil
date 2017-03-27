@@ -1374,8 +1374,20 @@ func (s *OssutilCommandSuite) TestRangeGet(c *C) {
 	object := randStr(10)
     s.putObject(bucketName, object, uploadFileName, c)
 
+    // test range put
+	err := s.initCopyWithRange(uploadFileName, CloudURLToString(bucketName, object), false, true, false, DefaultBigFileThreshold, "1-2")
+	c.Assert(err, IsNil)
+	err = copyCommand.RunCommand()
+	c.Assert(err, NotNil)
+
+    // test range copy
+	err = s.initCopyWithRange(CloudURLToString(bucketName, object), CloudURLToString(bucketName, object + "dest"), false, true, false, DefaultBigFileThreshold, "1-2")
+	c.Assert(err, IsNil)
+	err = copyCommand.RunCommand()
+	c.Assert(err, NotNil)
+
     // test range get
-	err := s.initCopyWithRange(CloudURLToString(bucketName, object), downloadFileName, false, true, false, DefaultBigFileThreshold, "")
+	err = s.initCopyWithRange(CloudURLToString(bucketName, object), downloadFileName, false, true, false, DefaultBigFileThreshold, "")
 	c.Assert(err, IsNil)
 	err = copyCommand.RunCommand()
 	c.Assert(err, IsNil)
@@ -1905,4 +1917,28 @@ func (s *OssutilCommandSuite) TestCPURLEncoding(c *C) {
     os.Remove(downloadFileName)
 
 	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestCPFunction(c *C) {
+    var srcURL CloudURL
+    srcURL.bucket = ""
+    var destURL CloudURL 
+    err := copyCommand.checkCopyArgs([]StorageURLer{srcURL}, destURL, operationTypePut)
+    c.Assert(err, NotNil)
+
+    err = copyCommand.getFileListStatistic("notexistdir")
+    c.Assert(err, NotNil)
+
+    chFiles := make(chan fileInfoType, 100)
+    err = copyCommand.getFileList("notexistdir", chFiles)
+
+    bucketName := bucketNamePrefix + randLowStr(10) 
+    bucket, err := copyCommand.command.ossBucket(bucketName)
+    destURL.bucket = bucketName
+    destURL.object = "abc"
+    var fileInfo fileInfoType
+    fileInfo.filePath = "a"
+    fileInfo.dir = "notexistdir"
+    _, err, _, _, _ = copyCommand.uploadFile(bucket, destURL, fileInfo)
+    c.Assert(err, NotNil)
 }

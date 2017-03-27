@@ -421,9 +421,43 @@ func (s *OssutilCommandSuite) TestListMultipartUploads(c *C) {
 	s.removeBucket(bucketName, true, c)
 }
 
+func (s *OssutilCommandSuite) TestListMultipartUploadsError(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	cfile := randStr(10)
+	data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s", endpoint, "abc", accessKeySecret)
+	s.createFile(cfile, data, c)
+
+	command := "ls"
+	var args []string
+	str := ""
+    limitedNum := strconv.FormatInt(-1, 10)
+    ok := true
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"stsToken":        &str,
+		"configFile":      &cfile,
+        "limitedNum":      &limitedNum,
+        "multipart":       &ok,
+	}
+	showElapse, err := cm.RunCommand(command, args, options)
+	c.Assert(err, NotNil)
+	c.Assert(showElapse, Equals, false)
+
+	os.Remove(cfile)
+
+    s.removeBucket(bucketName, true, c)
+}
+
 func (s *OssutilCommandSuite) TestListLimitedMarker(c *C) {
 	bucketName := bucketNamePrefix + randLowStr(10)
 	s.putBucket(bucketName, c)
+
+	bucketName1 := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName1, c)
 
     // list bucket
 	buckets := s.listLimitedMarker("", "", "ls ", -1, "", "", c)
@@ -432,6 +466,10 @@ func (s *OssutilCommandSuite) TestListLimitedMarker(c *C) {
     // list bucket
 	buckets = s.listLimitedMarker("", "", "ls ", 0, "", "", c)
     c.Assert(len(buckets), Equals, 0)
+
+    // list bucket
+	buckets = s.listLimitedMarker("", "", "ls ", 1, "", "", c)
+    c.Assert(len(buckets), Equals, 1)
 
 	buckets = s.listLimitedMarker("", "", "ls ", -1, "t", "", c)
     c.Assert(FindPos(bucketName, buckets), Equals, -1)
@@ -475,8 +513,17 @@ func (s *OssutilCommandSuite) TestListLimitedMarker(c *C) {
 	objects = s.listLimitedMarker(bucketName, "", "ls ", 6, "", "", c)
     c.Assert(len(objects), Equals, 5)
 
+	objects = s.listLimitedMarker(bucketName, "", "ls -d", 6, "", "", c)
+    c.Assert(len(objects), Equals, 5)
+
 	objects = s.listLimitedMarker(bucketName, "", "ls ", 2, "", "", c)
     c.Assert(len(objects), Equals, 2)
+
+	objects = s.listLimitedMarker(bucketName, "", "ls -d", 2, "", "", c)
+    c.Assert(len(objects), Equals, 2)
+
+	objects = s.listLimitedMarker(bucketName, "", "ls ", 0, "", "", c)
+    c.Assert(len(objects), Equals, 0)
 
 	objects = s.listLimitedMarker(bucketName, "", "ls ", 2, fmt.Sprintf("%s%d", objectPrefix, 1), "", c)
     c.Assert(len(objects), Equals, 2)
@@ -496,6 +543,9 @@ func (s *OssutilCommandSuite) TestListLimitedMarker(c *C) {
     c.Assert(len(objects), Equals, 2)
 
 	objects = s.listLimitedMarker(bucketName, "", "ls -m", 2, "", uploadIDs[0], c)
+    c.Assert(len(objects), Equals, 2)
+
+	objects = s.listLimitedMarker(bucketName, "", "ls -md", 2, "", uploadIDs[0], c)
     c.Assert(len(objects), Equals, 2)
 
 	objects = s.listLimitedMarker(bucketName, "", "ls -m", 10, "", uploadIDs[1], c)
@@ -531,6 +581,9 @@ func (s *OssutilCommandSuite) TestListLimitedMarker(c *C) {
 
 	objects = s.listLimitedMarker(bucketName, "", "ls -a", 20, "t", uploadIDs[0], c)
     c.Assert(len(objects), Equals, 0)
+
+	s.removeBucket(bucketName, true, c)
+	s.removeBucket(bucketName1, true, c)
 }
 
 func (s *OssutilCommandSuite) TestListURLEncoding(c *C) {

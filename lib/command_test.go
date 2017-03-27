@@ -1085,6 +1085,13 @@ func (s *OssutilCommandSuite) TestStorageURL(c *C) {
     c.Assert(storageURL.IsCloudURL(), Equals, false)
     c.Assert(storageURL.IsFileURL(), Equals, true)
     c.Assert(storageURL.ToString(), Equals, "oss://bucket/中文测试")
+
+	err = cloudURL.Init("oss:///abc/d", URLEncodingType)
+	c.Assert(err, NotNil)
+
+    cloudURL.object = "\\d"
+    err = cloudURL.checkObjectPrefix()
+	c.Assert(err, NotNil)
 }
 
 func (s *OssutilCommandSuite) TestErrOssDownloadFile(c *C) {
