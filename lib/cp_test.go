@@ -316,7 +316,6 @@ func (s *OssutilCommandSuite) TestBatchCPObject(c *C) {
 
 	_, err = os.Stat(downDir)
 	c.Assert(err, IsNil)
-	//c.Assert(f.ModTime(), Equals, f1.ModTime())
 
 	// copy files
 	destBucket := bucketNamePrefix + randLowStr(10)

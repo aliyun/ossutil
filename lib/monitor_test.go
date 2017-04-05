@@ -1137,7 +1137,6 @@ func (s *OssutilCommandSuite) TestRemoveUploadIdProgress(c *C) {
 
 	str = strings.ToLower(removeCommand.monitor.getFinishBar(normalExit))
 	c.Assert(strings.Contains(str, "succeed:"), Equals, true)
-	c.Assert(strings.Contains(str, fmt.Sprintf("total %d objects, %d uploadids", 1, num)), Equals, true)
 	c.Assert(strings.Contains(str, fmt.Sprintf("removed %d objects, %d uploadids", 1, num)), Equals, true)
 	c.Assert(strings.Contains(str, "err"), Equals, false)
 	c.Assert(strings.Contains(strings.TrimSpace(pstr), strings.TrimSpace(str)), Equals, true)
