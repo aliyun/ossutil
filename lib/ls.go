@@ -2,6 +2,7 @@ package lib
 
 import (
 	"fmt"
+	"net/url"
 	"strings"
 
 	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
@@ -319,7 +320,7 @@ var listCommand = ListCommand{
 			OptionLimitedNum,
 			OptionMarker,
 			OptionUploadIDMarker,
-            OptionEncodingType,
+			OptionEncodingType,
 			OptionConfigFile,
 			OptionEndpoint,
 			OptionAccessKeyID,
@@ -350,7 +351,7 @@ func (lc *ListCommand) RunCommand() error {
 		return lc.listBuckets("")
 	}
 
-    encodingType, _ := GetString(OptionEncodingType, lc.command.options)
+	encodingType, _ := GetString(OptionEncodingType, lc.command.options)
 	cloudURL, err := CloudURLFromString(lc.command.args[0], encodingType)
 	if err != nil {
 		return err
@@ -364,13 +365,17 @@ func (lc *ListCommand) RunCommand() error {
 }
 
 func (lc *ListCommand) listBuckets(prefix string) error {
-	if err := lc.lbCheckArgOptions(); err != nil {
+	var err error
+	if err = lc.lbCheckArgOptions(); err != nil {
 		return err
 	}
 
 	shortFormat, _ := GetBool(OptionShortFormat, lc.command.options)
 	limitedNum, _ := GetInt(OptionLimitedNum, lc.command.options)
 	vmarker, _ := GetString(OptionMarker, lc.command.options)
+	if vmarker, err = lc.getRawMarker(vmarker); err != nil {
+		return fmt.Errorf("invalid marker: %s, marker is not url encoded, %s", vmarker, err.Error())
+	}
 
 	var num int64
 	num = 0
@@ -410,6 +415,18 @@ func (lc *ListCommand) listBuckets(prefix string) error {
 	}
 	fmt.Printf("Bucket Number is: %d\n", num)
 	return nil
+}
+
+func (lc *ListCommand) getRawMarker(str string) (string, error) {
+	encodingType, _ := GetString(OptionEncodingType, lc.command.options)
+	if encodingType == URLEncodingType {
+		unencodedStr, err := url.QueryUnescape(str)
+		if err != nil {
+			return str, err
+		}
+		return unencodedStr, nil
+	}
+	return str, nil
 }
 
 func (lc *ListCommand) lbCheckArgOptions() error {
@@ -470,10 +487,14 @@ func (lc *ListCommand) getSubjectType() int64 {
 
 func (lc *ListCommand) listObjects(bucket *oss.Bucket, cloudURL CloudURL, shortFormat bool, directory bool, limitedNum *int64) (int64, error) {
 	//list all objects or directories
-	vmarker, _ := GetString(OptionMarker, lc.command.options)
+	var err error
 	var num int64
 	num = 0
 	pre := oss.Prefix(cloudURL.object)
+	vmarker, _ := GetString(OptionMarker, lc.command.options)
+	if vmarker, err = lc.getRawMarker(vmarker); err != nil {
+		return num, fmt.Errorf("invalid marker: %s, marker is not url encoded, %s", vmarker, err.Error())
+	}
 	marker := oss.Marker(vmarker)
 	del := oss.Delimiter("")
 	if directory {
@@ -555,14 +576,23 @@ func (lc *ListCommand) showDirectories(lor oss.ListObjectsResult, bucket string,
 }
 
 func (lc *ListCommand) listMultipartUploads(bucket *oss.Bucket, cloudURL CloudURL, shortFormat bool, directory bool, limitedNum *int64) (int64, error) {
-	vmarker, _ := GetString(OptionMarker, lc.command.options)
-	vuploadIdMarker, _ := GetString(OptionUploadIDMarker, lc.command.options)
-
+	var err error
 	var multipartNum int64
 	multipartNum = 0
 	pre := oss.Prefix(cloudURL.object)
+
+	vmarker, _ := GetString(OptionMarker, lc.command.options)
+	if vmarker, err = lc.getRawMarker(vmarker); err != nil {
+		return multipartNum, fmt.Errorf("invalid marker: %s, marker is not url encoded, %s", vmarker, err.Error())
+	}
 	keyMarker := oss.KeyMarker(vmarker)
+
+	vuploadIdMarker, _ := GetString(OptionUploadIDMarker, lc.command.options)
+	if vuploadIdMarker, err = lc.getRawMarker(vuploadIdMarker); err != nil {
+		return multipartNum, fmt.Errorf("invalid uploadIDMarker: %s, uploadIDMarker is not url encoded, %s", vuploadIdMarker, err.Error())
+	}
 	uploadIdMarker := oss.UploadIDMarker(vuploadIdMarker)
+
 	del := oss.Delimiter("")
 	if directory {
 		del = oss.Delimiter("/")

@@ -2,9 +2,9 @@ package lib
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"strconv"
-    "net/url"
 
 	. "gopkg.in/check.v1"
 )
@@ -271,10 +271,10 @@ func (s *OssutilCommandSuite) TestSetACLURLEncoding(c *C) {
 	bucketName := bucketNamePrefix + randLowStr(10)
 	s.putBucket(bucketName, c)
 
-    object := "^M特殊字符 加上空格 test"
-    s.putObject(bucketName, object, uploadFileName, c)
+	object := "^M特殊字符 加上空格 test"
+	s.putObject(bucketName, object, uploadFileName, c)
 
-    urlObject := url.QueryEscape(object)
+	urlObject := url.QueryEscape(object)
 
 	showElapse, err := s.rawSetObjectACL(bucketName, urlObject, "default", false, true)
 	c.Assert(err, NotNil)
@@ -285,7 +285,7 @@ func (s *OssutilCommandSuite) TestSetACLURLEncoding(c *C) {
 	args := []string{CloudURLToString(bucketName, urlObject), "public-read"}
 	routines := strconv.Itoa(Routines)
 	ok := true
-    encodingType := URLEncodingType
+	encodingType := URLEncodingType
 	options := OptionMapType{
 		"endpoint":        &endpoint,
 		"accessKeyID":     &accessKeyID,
@@ -294,7 +294,7 @@ func (s *OssutilCommandSuite) TestSetACLURLEncoding(c *C) {
 		"configFile":      &configFile,
 		"routines":        &routines,
 		"force":           &ok,
-        "encodingType":    &encodingType,
+		"encodingType":    &encodingType,
 	}
 	showElapse, err = cm.RunCommand(command, args, options)
 	c.Assert(err, IsNil)

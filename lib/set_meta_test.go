@@ -2,9 +2,9 @@ package lib
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"strconv"
-    "net/url"
 
 	. "gopkg.in/check.v1"
 )
@@ -318,10 +318,10 @@ func (s *OssutilCommandSuite) TestSetMetaURLEncoding(c *C) {
 	bucketName := bucketNamePrefix + randLowStr(10)
 	s.putBucket(bucketName, c)
 
-    object := "^M特殊字符 加上空格 test"
-    s.putObject(bucketName, object, uploadFileName, c)
+	object := "^M特殊字符 加上空格 test"
+	s.putObject(bucketName, object, uploadFileName, c)
 
-    urlObject := url.QueryEscape(object)
+	urlObject := url.QueryEscape(object)
 
 	showElapse, err := s.rawSetMeta(bucketName, urlObject, "x-oss-object-acl:private#X-Oss-Meta-A:A#Expires:2006-01-02T15:04:05Z", true, false, false, true, DefaultLanguage)
 	c.Assert(err, NotNil)
@@ -332,7 +332,7 @@ func (s *OssutilCommandSuite) TestSetMetaURLEncoding(c *C) {
 	args := []string{CloudURLToString(bucketName, urlObject), "x-oss-object-acl:private#X-Oss-Meta-A:A#Expires:2006-01-02T15:04:05Z"}
 	ok := true
 	routines := strconv.Itoa(Routines)
-    encodingType := URLEncodingType
+	encodingType := URLEncodingType
 	options := OptionMapType{
 		"endpoint":        &endpoint,
 		"accessKeyID":     &accessKeyID,
@@ -342,7 +342,7 @@ func (s *OssutilCommandSuite) TestSetMetaURLEncoding(c *C) {
 		"update":          &ok,
 		"force":           &ok,
 		"routines":        &routines,
-        "encodingType":    &encodingType,
+		"encodingType":    &encodingType,
 	}
 	showElapse, err = cm.RunCommand(command, args, options)
 	c.Assert(err, IsNil)

@@ -251,7 +251,7 @@ var removeCommand = RemoveCommand{
 			OptionForce,
 			OptionMultipart,
 			OptionAllType,
-            OptionEncodingType,
+			OptionEncodingType,
 			OptionConfigFile,
 			OptionEndpoint,
 			OptionAccessKeyID,
@@ -280,7 +280,7 @@ func (rc *RemoveCommand) Init(args []string, options OptionMapType) error {
 func (rc *RemoveCommand) RunCommand() error {
 	rc.monitor.init()
 
-    encodingType, _ := GetString(OptionEncodingType, rc.command.options)
+	encodingType, _ := GetString(OptionEncodingType, rc.command.options)
 	cloudURL, err := CloudURLFromString(rc.command.args[0], encodingType)
 	if err != nil {
 		return err

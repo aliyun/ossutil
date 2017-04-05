@@ -2,9 +2,9 @@ package lib
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"os/user"
-    "net/url"
 	"strings"
 )
 
@@ -20,7 +20,7 @@ type StorageURLer interface {
 
 // CloudURL describes oss url
 type CloudURL struct {
-	urlStr    string
+	urlStr string
 	bucket string
 	object string
 }
@@ -29,8 +29,8 @@ type CloudURL struct {
 func (cu *CloudURL) Init(urlStr, encodingType string) error {
 	cu.urlStr = urlStr
 	if err := cu.parseBucketObject(encodingType); err != nil {
-        return err
-    }
+		return err
+	}
 	if err := cu.checkBucketObject(); err != nil {
 		return err
 	}
@@ -38,7 +38,7 @@ func (cu *CloudURL) Init(urlStr, encodingType string) error {
 }
 
 func (cu *CloudURL) parseBucketObject(encodingType string) error {
-    var err error
+	var err error
 	path := cu.urlStr
 
 	if strings.HasPrefix(strings.ToLower(path), SchemePrefix) {
@@ -54,13 +54,13 @@ func (cu *CloudURL) parseBucketObject(encodingType string) error {
 	cu.bucket = sli[0]
 	if len(sli) > 1 {
 		cu.object = sli[1]
-        if encodingType == URLEncodingType {
-            if cu.object, err = url.QueryUnescape(cu.object); err != nil {
-                return fmt.Errorf("invalid cloud url: %s, object name is not url encoded, %s", cu.urlStr, err.Error())
-            }
-        }
+		if encodingType == URLEncodingType {
+			if cu.object, err = url.QueryUnescape(cu.object); err != nil {
+				return fmt.Errorf("invalid cloud url: %s, object name is not url encoded, %s", cu.urlStr, err.Error())
+			}
+		}
 	}
-    return nil
+	return nil
 }
 
 func (cu *CloudURL) checkBucketObject() error {
@@ -105,13 +105,13 @@ type FileURL struct {
 
 // Init simulate inheritance, and polymorphism
 func (fu *FileURL) Init(urlStr, encodingType string) error {
-    if encodingType == URLEncodingType {
-        vurl, err := url.QueryUnescape(urlStr) 
-        if err != nil {
-            return fmt.Errorf("invalid cloud url: %s, file name is not url encoded, %s", urlStr, err.Error())
-        }
-        urlStr = vurl
-    }
+	if encodingType == URLEncodingType {
+		vurl, err := url.QueryUnescape(urlStr)
+		if err != nil {
+			return fmt.Errorf("invalid cloud url: %s, file name is not url encoded, %s", urlStr, err.Error())
+		}
+		urlStr = vurl
+	}
 
 	usr, _ := user.Current()
 	dir := usr.HomeDir
@@ -119,7 +119,7 @@ func (fu *FileURL) Init(urlStr, encodingType string) error {
 		urlStr = strings.Replace(urlStr, "~", dir, 1)
 	}
 	fu.urlStr = urlStr
-    return nil
+	return nil
 }
 
 // IsCloudURL simulate inheritance, and polymorphism
@@ -148,8 +148,8 @@ func StorageURLFromString(urlStr, encodingType string) (StorageURLer, error) {
 	}
 	var fileURL FileURL
 	if err := fileURL.Init(urlStr, encodingType); err != nil {
-        return nil, err
-    }
+		return nil, err
+	}
 	return fileURL, nil
 }
 

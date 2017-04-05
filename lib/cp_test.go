@@ -1,12 +1,12 @@
 package lib
 
 import (
-	"os"
 	"fmt"
+	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"time"
-    "net/url"
 
 	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 	. "gopkg.in/check.v1"
@@ -1367,26 +1367,26 @@ func (s *OssutilCommandSuite) TestRangeGet(c *C) {
 	bucketName := bucketNamePrefix + randLowStr(10)
 	s.putBucket(bucketName, c)
 
-	data := randStr(20) 
+	data := randStr(20)
 	s.createFile(uploadFileName, data, c)
 
-    // put object
+	// put object
 	object := randStr(10)
-    s.putObject(bucketName, object, uploadFileName, c)
+	s.putObject(bucketName, object, uploadFileName, c)
 
-    // test range put
+	// test range put
 	err := s.initCopyWithRange(uploadFileName, CloudURLToString(bucketName, object), false, true, false, DefaultBigFileThreshold, "1-2")
 	c.Assert(err, IsNil)
 	err = copyCommand.RunCommand()
 	c.Assert(err, NotNil)
 
-    // test range copy
-	err = s.initCopyWithRange(CloudURLToString(bucketName, object), CloudURLToString(bucketName, object + "dest"), false, true, false, DefaultBigFileThreshold, "1-2")
+	// test range copy
+	err = s.initCopyWithRange(CloudURLToString(bucketName, object), CloudURLToString(bucketName, object+"dest"), false, true, false, DefaultBigFileThreshold, "1-2")
 	c.Assert(err, IsNil)
 	err = copyCommand.RunCommand()
 	c.Assert(err, NotNil)
 
-    // test range get
+	// test range get
 	err = s.initCopyWithRange(CloudURLToString(bucketName, object), downloadFileName, false, true, false, DefaultBigFileThreshold, "")
 	c.Assert(err, IsNil)
 	err = copyCommand.RunCommand()
@@ -1395,8 +1395,8 @@ func (s *OssutilCommandSuite) TestRangeGet(c *C) {
 	c.Assert(str, Equals, data)
 
 	snap := copyCommand.monitor.getSnapshot()
-    c.Assert(copyCommand.monitor.totalSize == int64(20) || copyCommand.monitor.totalSize == int64(0), Equals, true)
-    c.Assert(copyCommand.monitor.totalNum == int64(1) || copyCommand.monitor.totalNum == int64(0), Equals, true)
+	c.Assert(copyCommand.monitor.totalSize == int64(20) || copyCommand.monitor.totalSize == int64(0), Equals, true)
+	c.Assert(copyCommand.monitor.totalNum == int64(1) || copyCommand.monitor.totalNum == int64(0), Equals, true)
 	c.Assert(snap.transferSize, Equals, int64(20))
 	c.Assert(snap.skipSize, Equals, int64(0))
 	c.Assert(snap.dealSize, Equals, int64(20))
@@ -1464,8 +1464,8 @@ func (s *OssutilCommandSuite) TestRangeGet(c *C) {
 	c.Assert(str, Equals, data[1:6])
 
 	snap = copyCommand.monitor.getSnapshot()
-    c.Assert(copyCommand.monitor.totalSize == int64(5) || copyCommand.monitor.totalSize == int64(0), Equals, true)
-    c.Assert(copyCommand.monitor.totalNum == int64(1) || copyCommand.monitor.totalNum == int64(0), Equals, true)
+	c.Assert(copyCommand.monitor.totalSize == int64(5) || copyCommand.monitor.totalSize == int64(0), Equals, true)
+	c.Assert(copyCommand.monitor.totalNum == int64(1) || copyCommand.monitor.totalNum == int64(0), Equals, true)
 	c.Assert(snap.transferSize, Equals, int64(5))
 	c.Assert(snap.skipSize, Equals, int64(0))
 	c.Assert(snap.dealSize, Equals, int64(5))
@@ -1491,8 +1491,8 @@ func (s *OssutilCommandSuite) TestRangeGet(c *C) {
 	c.Assert(str, Equals, data[4:])
 
 	snap = copyCommand.monitor.getSnapshot()
-    c.Assert(copyCommand.monitor.totalSize == int64(16) || copyCommand.monitor.totalSize == int64(0), Equals, true)
-    c.Assert(copyCommand.monitor.totalNum == int64(1) || copyCommand.monitor.totalNum == int64(0), Equals, true)
+	c.Assert(copyCommand.monitor.totalSize == int64(16) || copyCommand.monitor.totalSize == int64(0), Equals, true)
+	c.Assert(copyCommand.monitor.totalNum == int64(1) || copyCommand.monitor.totalNum == int64(0), Equals, true)
 	c.Assert(snap.transferSize, Equals, int64(16))
 	c.Assert(snap.skipSize, Equals, int64(0))
 	c.Assert(snap.dealSize, Equals, int64(16))
@@ -1535,16 +1535,16 @@ func (s *OssutilCommandSuite) TestRangeGet(c *C) {
 	c.Assert(snap.okNum, Equals, int64(1))
 	c.Assert(snap.dealNum, Equals, int64(1))
 
-    os.Remove(downloadFileName)
+	os.Remove(downloadFileName)
 	err = s.initCopyWithRange(CloudURLToString(bucketName, object), downloadFileName, false, true, false, DefaultBigFileThreshold, "-0")
 	c.Assert(err, IsNil)
 	err = copyCommand.RunCommand()
 	c.Assert(err, NotNil)
-    _, err = os.Stat(downloadFileName)
-    c.Assert(err, NotNil)
+	_, err = os.Stat(downloadFileName)
+	c.Assert(err, NotNil)
 
 	snap = copyCommand.monitor.getSnapshot()
-    c.Assert(copyCommand.monitor.totalSize, Equals, int64(0))
+	c.Assert(copyCommand.monitor.totalSize, Equals, int64(0))
 	c.Assert(snap.transferSize, Equals, int64(0))
 	c.Assert(snap.skipSize, Equals, int64(0))
 	c.Assert(snap.dealSize, Equals, int64(0))
@@ -1569,7 +1569,7 @@ func (s *OssutilCommandSuite) TestRangeGet(c *C) {
 	str = s.readFile(downloadFileName, c)
 	c.Assert(str, Equals, data[3:9])
 
-    // skip download
+	// skip download
 	err = s.initCopyWithRange(CloudURLToString(bucketName, object), downloadFileName, false, true, true, DefaultBigFileThreshold, "10-15")
 	c.Assert(err, IsNil)
 	err = copyCommand.RunCommand()
@@ -1588,7 +1588,7 @@ func (s *OssutilCommandSuite) TestRangeGet(c *C) {
 	c.Assert(snap.okNum, Equals, int64(1))
 	c.Assert(snap.dealNum, Equals, int64(1))
 
-    // test bigfile range get
+	// test bigfile range get
 	err = s.initCopyWithRange(CloudURLToString(bucketName, object), downloadFileName, false, true, false, 1, "")
 	c.Assert(err, IsNil)
 	err = copyCommand.RunCommand()
@@ -1602,7 +1602,7 @@ func (s *OssutilCommandSuite) TestRangeGet(c *C) {
 	c.Assert(err, IsNil)
 	str = s.readFile(downloadFileName, c)
 	c.Assert(str, Equals, data)
-    */
+	*/
 
 	err = s.initCopyWithRange(CloudURLToString(bucketName, object), downloadFileName, false, true, false, 1, "abc")
 	/*c.Assert(err, IsNil)
@@ -1610,16 +1610,16 @@ func (s *OssutilCommandSuite) TestRangeGet(c *C) {
 	c.Assert(err, IsNil)
 	str = s.readFile(downloadFileName, c)
 	c.Assert(str, Equals, data)
-    */
+	*/
 
 	err = s.initCopyWithRange(CloudURLToString(bucketName, object), downloadFileName, false, true, false, 1, ",1-2")
-    /*
-	c.Assert(err, IsNil)
-	err = copyCommand.RunCommand()
-	c.Assert(err, IsNil)
-	str = s.readFile(downloadFileName, c)
-	c.Assert(str, Equals, data)
-    */
+	/*
+		c.Assert(err, IsNil)
+		err = copyCommand.RunCommand()
+		c.Assert(err, IsNil)
+		str = s.readFile(downloadFileName, c)
+		c.Assert(str, Equals, data)
+	*/
 
 	err = s.initCopyWithRange(CloudURLToString(bucketName, object), downloadFileName, false, true, false, 1, "1-5")
 	c.Assert(err, IsNil)
@@ -1629,8 +1629,8 @@ func (s *OssutilCommandSuite) TestRangeGet(c *C) {
 	c.Assert(str, Equals, data[1:6])
 
 	snap = copyCommand.monitor.getSnapshot()
-    c.Assert(copyCommand.monitor.totalSize == int64(5) || copyCommand.monitor.totalSize == int64(0), Equals, true)
-    c.Assert(copyCommand.monitor.totalNum == int64(1) || copyCommand.monitor.totalNum == int64(0), Equals, true)
+	c.Assert(copyCommand.monitor.totalSize == int64(5) || copyCommand.monitor.totalSize == int64(0), Equals, true)
+	c.Assert(copyCommand.monitor.totalNum == int64(1) || copyCommand.monitor.totalNum == int64(0), Equals, true)
 	c.Assert(snap.transferSize, Equals, int64(5))
 	c.Assert(snap.skipSize, Equals, int64(0))
 	c.Assert(snap.dealSize, Equals, int64(5))
@@ -1676,13 +1676,13 @@ func (s *OssutilCommandSuite) TestRangeGet(c *C) {
 	str = s.readFile(downloadFileName, c)
 	c.Assert(str, Equals, data[15:])
 
-    os.Remove(downloadFileName)
+	os.Remove(downloadFileName)
 	err = s.initCopyWithRange(CloudURLToString(bucketName, object), downloadFileName, false, true, false, 1, "-0")
 	c.Assert(err, IsNil)
 	err = copyCommand.RunCommand()
 	c.Assert(err, NotNil)
-    _, err = os.Stat(downloadFileName)
-    c.Assert(err, NotNil)
+	_, err = os.Stat(downloadFileName)
+	c.Assert(err, NotNil)
 
 	err = s.initCopyWithRange(CloudURLToString(bucketName, object), downloadFileName, false, true, false, 1, "--0")
 	/*c.Assert(err, IsNil)
@@ -1690,7 +1690,7 @@ func (s *OssutilCommandSuite) TestRangeGet(c *C) {
 	c.Assert(err, IsNil)
 	str = s.readFile(downloadFileName, c)
 	c.Assert(str, Equals, data)
-    */
+	*/
 
 	err = s.initCopyWithRange(CloudURLToString(bucketName, object), downloadFileName, false, true, false, 1, "3-8")
 	c.Assert(err, IsNil)
@@ -1699,7 +1699,7 @@ func (s *OssutilCommandSuite) TestRangeGet(c *C) {
 	str = s.readFile(downloadFileName, c)
 	c.Assert(str, Equals, data[3:9])
 
-    // skip download
+	// skip download
 	err = s.initCopyWithRange(CloudURLToString(bucketName, object), downloadFileName, false, true, true, 1, "10-15")
 	c.Assert(err, IsNil)
 	err = copyCommand.RunCommand()
@@ -1708,8 +1708,8 @@ func (s *OssutilCommandSuite) TestRangeGet(c *C) {
 	c.Assert(str, Equals, data[3:9])
 
 	snap = copyCommand.monitor.getSnapshot()
-    c.Assert(copyCommand.monitor.totalSize == int64(6) || copyCommand.monitor.totalSize == int64(0), Equals, true)
-    c.Assert(copyCommand.monitor.totalNum == int64(1) || copyCommand.monitor.totalNum == int64(0), Equals, true)
+	c.Assert(copyCommand.monitor.totalSize == int64(6) || copyCommand.monitor.totalSize == int64(0), Equals, true)
+	c.Assert(copyCommand.monitor.totalNum == int64(1) || copyCommand.monitor.totalNum == int64(0), Equals, true)
 	c.Assert(snap.transferSize, Equals, int64(0))
 	c.Assert(snap.skipSize, Equals, int64(6))
 	c.Assert(snap.dealSize, Equals, int64(6))
@@ -1720,27 +1720,27 @@ func (s *OssutilCommandSuite) TestRangeGet(c *C) {
 	c.Assert(snap.okNum, Equals, int64(1))
 	c.Assert(snap.dealNum, Equals, int64(1))
 
-    // test batch download with range get
-	data1 := randStr(30) 
+	// test batch download with range get
+	data1 := randStr(30)
 	s.createFile(uploadFileName, data1, c)
 
-    object1 := randStr(10)
-    s.putObject(bucketName, object1, uploadFileName, c)
+	object1 := randStr(10)
+	s.putObject(bucketName, object1, uploadFileName, c)
 
-    dir := randStr(10)
+	dir := randStr(10)
 
 	err = s.initCopyWithRange(CloudURLToString(bucketName, ""), dir, true, true, false, 1, "3-9")
 	c.Assert(err, IsNil)
 	err = copyCommand.RunCommand()
 	c.Assert(err, IsNil)
-	str = s.readFile(dir + string(os.PathSeparator) + object, c)
+	str = s.readFile(dir+string(os.PathSeparator)+object, c)
 	c.Assert(str, Equals, data[3:10])
-	str = s.readFile(dir + string(os.PathSeparator) + object1, c)
+	str = s.readFile(dir+string(os.PathSeparator)+object1, c)
 	c.Assert(str, Equals, data1[3:10])
 
 	snap = copyCommand.monitor.getSnapshot()
-    c.Assert(copyCommand.monitor.totalSize == int64(14) || copyCommand.monitor.totalSize == int64(0), Equals, true)
-    c.Assert(copyCommand.monitor.totalNum == int64(2) || copyCommand.monitor.totalNum == int64(0), Equals, true)
+	c.Assert(copyCommand.monitor.totalSize == int64(14) || copyCommand.monitor.totalSize == int64(0), Equals, true)
+	c.Assert(copyCommand.monitor.totalNum == int64(2) || copyCommand.monitor.totalNum == int64(0), Equals, true)
 	c.Assert(snap.transferSize, Equals, int64(14))
 	c.Assert(snap.skipSize, Equals, int64(0))
 	c.Assert(snap.dealSize, Equals, int64(14))
@@ -1755,14 +1755,14 @@ func (s *OssutilCommandSuite) TestRangeGet(c *C) {
 	c.Assert(err, IsNil)
 	err = copyCommand.RunCommand()
 	c.Assert(err, IsNil)
-	str = s.readFile(dir + string(os.PathSeparator) + object, c)
+	str = s.readFile(dir+string(os.PathSeparator)+object, c)
 	c.Assert(str, Equals, data)
-	str = s.readFile(dir + string(os.PathSeparator) + object1, c)
+	str = s.readFile(dir+string(os.PathSeparator)+object1, c)
 	c.Assert(str, Equals, data1[3:21])
 
 	snap = copyCommand.monitor.getSnapshot()
-    c.Assert(copyCommand.monitor.totalSize == int64(38) || copyCommand.monitor.totalSize == int64(0), Equals, true)
-    c.Assert(copyCommand.monitor.totalNum == int64(2) || copyCommand.monitor.totalNum == int64(0), Equals, true)
+	c.Assert(copyCommand.monitor.totalSize == int64(38) || copyCommand.monitor.totalSize == int64(0), Equals, true)
+	c.Assert(copyCommand.monitor.totalNum == int64(2) || copyCommand.monitor.totalNum == int64(0), Equals, true)
 	c.Assert(snap.transferSize, Equals, int64(38))
 	c.Assert(snap.skipSize, Equals, int64(0))
 	c.Assert(snap.dealSize, Equals, int64(38))
@@ -1777,14 +1777,14 @@ func (s *OssutilCommandSuite) TestRangeGet(c *C) {
 	c.Assert(err, IsNil)
 	err = copyCommand.RunCommand()
 	c.Assert(err, IsNil)
-	str = s.readFile(dir + string(os.PathSeparator) + object, c)
+	str = s.readFile(dir+string(os.PathSeparator)+object, c)
 	c.Assert(str, Equals, data[15:])
-	str = s.readFile(dir + string(os.PathSeparator) + object1, c)
+	str = s.readFile(dir+string(os.PathSeparator)+object1, c)
 	c.Assert(str, Equals, data1[25:])
 
 	snap = copyCommand.monitor.getSnapshot()
-    c.Assert(copyCommand.monitor.totalSize == int64(10) || copyCommand.monitor.totalSize == int64(0), Equals, true)
-    c.Assert(copyCommand.monitor.totalNum == int64(2) || copyCommand.monitor.totalNum == int64(0), Equals, true)
+	c.Assert(copyCommand.monitor.totalSize == int64(10) || copyCommand.monitor.totalSize == int64(0), Equals, true)
+	c.Assert(copyCommand.monitor.totalNum == int64(2) || copyCommand.monitor.totalNum == int64(0), Equals, true)
 	c.Assert(snap.transferSize, Equals, int64(10))
 	c.Assert(snap.skipSize, Equals, int64(0))
 	c.Assert(snap.dealSize, Equals, int64(10))
@@ -1799,32 +1799,32 @@ func (s *OssutilCommandSuite) TestRangeGet(c *C) {
 	c.Assert(err, IsNil)
 	err = copyCommand.RunCommand()
 	c.Assert(err, IsNil)
-	str = s.readFile(dir + string(os.PathSeparator) + object, c)
+	str = s.readFile(dir+string(os.PathSeparator)+object, c)
 	c.Assert(str, Equals, data)
-	str = s.readFile(dir + string(os.PathSeparator) + object1, c)
+	str = s.readFile(dir+string(os.PathSeparator)+object1, c)
 	c.Assert(str, Equals, data1[10:])
 
 	snap = copyCommand.monitor.getSnapshot()
-    c.Assert(copyCommand.monitor.totalSize == int64(40) || copyCommand.monitor.totalSize == int64(0), Equals, true)
+	c.Assert(copyCommand.monitor.totalSize == int64(40) || copyCommand.monitor.totalSize == int64(0), Equals, true)
 	c.Assert(snap.transferSize, Equals, int64(40))
 	c.Assert(snap.dealSize, Equals, int64(40))
 	c.Assert(snap.fileNum, Equals, int64(2))
 	c.Assert(snap.okNum, Equals, int64(2))
 	c.Assert(snap.dealNum, Equals, int64(2))
 
-    // batch download with skip
+	// batch download with skip
 	err = s.initCopyWithRange(CloudURLToString(bucketName, ""), dir, true, true, true, DefaultBigFileThreshold, "10-15")
 	c.Assert(err, IsNil)
 	err = copyCommand.RunCommand()
 	c.Assert(err, IsNil)
-	str = s.readFile(dir + string(os.PathSeparator) + object, c)
+	str = s.readFile(dir+string(os.PathSeparator)+object, c)
 	c.Assert(str, Equals, data)
-	str = s.readFile(dir + string(os.PathSeparator) + object1, c)
+	str = s.readFile(dir+string(os.PathSeparator)+object1, c)
 	c.Assert(str, Equals, data1[10:])
 
 	snap = copyCommand.monitor.getSnapshot()
-    c.Assert(copyCommand.monitor.totalSize == int64(12) || copyCommand.monitor.totalSize == int64(0), Equals, true)
-    c.Assert(copyCommand.monitor.totalNum == int64(2) || copyCommand.monitor.totalNum == int64(0), Equals, true)
+	c.Assert(copyCommand.monitor.totalSize == int64(12) || copyCommand.monitor.totalSize == int64(0), Equals, true)
+	c.Assert(copyCommand.monitor.totalNum == int64(2) || copyCommand.monitor.totalNum == int64(0), Equals, true)
 	c.Assert(snap.transferSize, Equals, int64(0))
 	c.Assert(snap.skipSize, Equals, int64(12))
 	c.Assert(snap.dealSize, Equals, int64(12))
@@ -1835,17 +1835,17 @@ func (s *OssutilCommandSuite) TestRangeGet(c *C) {
 	c.Assert(snap.okNum, Equals, int64(2))
 	c.Assert(snap.dealNum, Equals, int64(2))
 
-    os.RemoveAll(dir)
+	os.RemoveAll(dir)
 	err = s.initCopyWithRange(CloudURLToString(bucketName, ""), dir, true, true, false, DefaultBigFileThreshold, "-0")
 	c.Assert(err, IsNil)
 	err = copyCommand.RunCommand()
 	c.Assert(err, IsNil)
-    _, err = os.Stat(dir + string(os.PathSeparator) + object)
-    c.Assert(err, NotNil)
-    _, err = os.Stat(dir + string(os.PathSeparator) + object1)
-    c.Assert(err, NotNil)
+	_, err = os.Stat(dir + string(os.PathSeparator) + object)
+	c.Assert(err, NotNil)
+	_, err = os.Stat(dir + string(os.PathSeparator) + object1)
+	c.Assert(err, NotNil)
 
-    os.RemoveAll(dir)
+	os.RemoveAll(dir)
 	s.removeBucket(bucketName, true, c)
 }
 
@@ -1853,90 +1853,90 @@ func (s *OssutilCommandSuite) TestCPURLEncoding(c *C) {
 	bucketName := bucketNamePrefix + randLowStr(10)
 	s.putBucket(bucketName, c)
 
-    specialStr := "中文测试" + randStr(5)
-    encodedStr := url.QueryEscape(specialStr) 
+	specialStr := "中文测试" + randStr(5)
+	encodedStr := url.QueryEscape(specialStr)
 	s.createFile(specialStr, content, c)
 
-    args := []string{encodedStr, CloudURLToString(bucketName, encodedStr)} 
-    command := "cp"
-    str := ""
-    thre := strconv.FormatInt(1, 10)
-    routines := strconv.Itoa(Routines)
-    encodingType := URLEncodingType
+	args := []string{encodedStr, CloudURLToString(bucketName, encodedStr)}
+	command := "cp"
+	str := ""
+	thre := strconv.FormatInt(1, 10)
+	routines := strconv.Itoa(Routines)
+	encodingType := URLEncodingType
 	cpDir := CheckpointDir
-    outputDir := DefaultOutputDir
-    ok := true
-    options := OptionMapType{
-        "endpoint":         &str,
-        "accessKeyID":      &str,
-        "accessKeySecret":  &str,
-        "stsToken":         &str,
-        "configFile":       &configFile,
-        "force":            &ok,
-        "bigfileThreshold": &thre,
-        "checkpointDir":    &cpDir,
-        "outputDir":        &outputDir,
-        "routines":         &routines,
-        "encodingType":     &encodingType,
-    }
-    showElapse, err := cm.RunCommand(command, args, options)
-    c.Assert(err, IsNil)
-    c.Assert(showElapse, Equals, true)
+	outputDir := DefaultOutputDir
+	ok := true
+	options := OptionMapType{
+		"endpoint":         &str,
+		"accessKeyID":      &str,
+		"accessKeySecret":  &str,
+		"stsToken":         &str,
+		"configFile":       &configFile,
+		"force":            &ok,
+		"bigfileThreshold": &thre,
+		"checkpointDir":    &cpDir,
+		"outputDir":        &outputDir,
+		"routines":         &routines,
+		"encodingType":     &encodingType,
+	}
+	showElapse, err := cm.RunCommand(command, args, options)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
 
-    objects := s.listLimitedMarker(bucketName, encodedStr, "ls --encoding-type url", -1, "", "", c)
-    c.Assert(len(objects), Equals, 1)
-    c.Assert(objects[0], Equals, specialStr)
+	objects := s.listLimitedMarker(bucketName, encodedStr, "ls --encoding-type url", -1, "", "", c)
+	c.Assert(len(objects), Equals, 1)
+	c.Assert(objects[0], Equals, specialStr)
 
-    objects = s.listLimitedMarker(bucketName, specialStr, "ls ", -1, "", "", c)
-    c.Assert(len(objects), Equals, 1)
-    c.Assert(objects[0], Equals, specialStr)
+	objects = s.listLimitedMarker(bucketName, specialStr, "ls ", -1, "", "", c)
+	c.Assert(len(objects), Equals, 1)
+	c.Assert(objects[0], Equals, specialStr)
 
-    // get object
-    downloadFileName := "下载文件"+randLowStr(3) 
-    args = []string{CloudURLToString(bucketName, encodedStr), url.QueryEscape(downloadFileName)} 
-    showElapse, err = cm.RunCommand(command, args, options)
-    c.Assert(err, IsNil)
-    c.Assert(showElapse, Equals, true)
+	// get object
+	downloadFileName := "下载文件" + randLowStr(3)
+	args = []string{CloudURLToString(bucketName, encodedStr), url.QueryEscape(downloadFileName)}
+	showElapse, err = cm.RunCommand(command, args, options)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
 
 	downStr := strings.ToLower(s.readFile(downloadFileName, c))
-    c.Assert(downStr, Equals, content)
+	c.Assert(downStr, Equals, content)
 
-    // copy object
-    destObject := "拷贝文件" + randLowStr(3)
-    args = []string{CloudURLToString(bucketName, encodedStr), CloudURLToString(bucketName, url.QueryEscape(destObject))}
-    showElapse, err = cm.RunCommand(command, args, options)
-    c.Assert(err, IsNil)
-    c.Assert(showElapse, Equals, true)
+	// copy object
+	destObject := "拷贝文件" + randLowStr(3)
+	args = []string{CloudURLToString(bucketName, encodedStr), CloudURLToString(bucketName, url.QueryEscape(destObject))}
+	showElapse, err = cm.RunCommand(command, args, options)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
 
-    // get object
-    s.getStat(bucketName, destObject, c) 
+	// get object
+	s.getStat(bucketName, destObject, c)
 
-    os.Remove(specialStr)
-    os.Remove(downloadFileName)
+	os.Remove(specialStr)
+	os.Remove(downloadFileName)
 
 	s.removeBucket(bucketName, true, c)
 }
 
 func (s *OssutilCommandSuite) TestCPFunction(c *C) {
-    var srcURL CloudURL
-    srcURL.bucket = ""
-    var destURL CloudURL 
-    err := copyCommand.checkCopyArgs([]StorageURLer{srcURL}, destURL, operationTypePut)
-    c.Assert(err, NotNil)
+	var srcURL CloudURL
+	srcURL.bucket = ""
+	var destURL CloudURL
+	err := copyCommand.checkCopyArgs([]StorageURLer{srcURL}, destURL, operationTypePut)
+	c.Assert(err, NotNil)
 
-    err = copyCommand.getFileListStatistic("notexistdir")
-    c.Assert(err, NotNil)
+	err = copyCommand.getFileListStatistic("notexistdir")
+	c.Assert(err, NotNil)
 
-    chFiles := make(chan fileInfoType, 100)
-    err = copyCommand.getFileList("notexistdir", chFiles)
+	chFiles := make(chan fileInfoType, 100)
+	err = copyCommand.getFileList("notexistdir", chFiles)
 
-    bucketName := bucketNamePrefix + randLowStr(10) 
-    bucket, err := copyCommand.command.ossBucket(bucketName)
-    destURL.bucket = bucketName
-    destURL.object = "abc"
-    var fileInfo fileInfoType
-    fileInfo.filePath = "a"
-    fileInfo.dir = "notexistdir"
-    _, err, _, _, _ = copyCommand.uploadFile(bucket, destURL, fileInfo)
-    c.Assert(err, NotNil)
+	bucketName := bucketNamePrefix + randLowStr(10)
+	bucket, err := copyCommand.command.ossBucket(bucketName)
+	destURL.bucket = bucketName
+	destURL.object = "abc"
+	var fileInfo fileInfoType
+	fileInfo.filePath = "a"
+	fileInfo.dir = "notexistdir"
+	_, err, _, _, _ = copyCommand.uploadFile(bucket, destURL, fileInfo)
+	c.Assert(err, NotNil)
 }

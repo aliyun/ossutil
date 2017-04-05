@@ -28,9 +28,9 @@ var _ = Suite(&OssutilCommandSuite{})
 
 var (
 	// Update before running test
-    endpoint        = "<testEndpoint>"
-    accessKeyID     = "<testAccessKeyID>"
-    accessKeySecret = "<testAccessKeySecret>"
+	endpoint        = "<testEndpoint>"
+	accessKeyID     = "<testAccessKeyID>"
+	accessKeySecret = "<testAccessKeySecret>"
 	stsToken        = "<testSTSToken>"
 )
 
@@ -212,7 +212,7 @@ func (s *OssutilCommandSuite) rawList(args []string, cmdline string) (bool, erro
 	a := strings.Contains(parameter[1], "a")
 
 	str := ""
-    limitedNum := strconv.FormatInt(-1, 10)
+	limitedNum := strconv.FormatInt(-1, 10)
 	options := OptionMapType{
 		"endpoint":        &str,
 		"accessKeyID":     &str,
@@ -223,7 +223,7 @@ func (s *OssutilCommandSuite) rawList(args []string, cmdline string) (bool, erro
 		"directory":       &d,
 		"multipart":       &m,
 		"allType":         &a,
-        "limitedNum":      &limitedNum,
+		"limitedNum":      &limitedNum,
 	}
 	showElapse, err := cm.RunCommand(command, args, options)
 	return showElapse, err
@@ -240,14 +240,14 @@ func (s *OssutilCommandSuite) listLimitedMarker(bucket, prefix, cmdline string, 
 	c.Assert(showElapse, Equals, true)
 
 	// get result
-    results := []string{}
-    if bucket == "" && prefix == "" {
-        results = s.getBucketResults(c)
-    } else {
-	    results = s.getObjectResults(c)
-    }
+	results := []string{}
+	if bucket == "" && prefix == "" {
+		results = s.getBucketResults(c)
+	} else {
+		results = s.getObjectResults(c)
+	}
 	os.Remove(resultPath)
-	return results 
+	return results
 }
 
 func (s *OssutilCommandSuite) rawListLimitedMarker(args []string, cmdline string, limitedNum int64, marker, uploadIDMarker string) (bool, error) {
@@ -258,26 +258,26 @@ func (s *OssutilCommandSuite) rawListLimitedMarker(args []string, cmdline string
 
 	command := array[0]
 
-    encodingType := ""
-    if pos := strings.Index(array[1], "--encoding-type url"); pos != -1 {
-        encodingType = URLEncodingType
-        array[1] = array[1][0:pos] + array[1][pos+len("--encoding-type url"):]
-    }
+	encodingType := ""
+	if pos := strings.Index(array[1], "--encoding-type url"); pos != -1 {
+		encodingType = URLEncodingType
+		array[1] = array[1][0:pos] + array[1][pos+len("--encoding-type url"):]
+	}
 
 	parameter := strings.Split(array[1], "-")
-    sf := false
-    d := false
-    m := false
-    a := false
+	sf := false
+	d := false
+	m := false
+	a := false
 	if len(parameter) >= 2 {
-        sf = strings.Contains(parameter[1], "s")
-        d = strings.Contains(parameter[1], "d")
-        m = strings.Contains(parameter[1], "m")
-        a = strings.Contains(parameter[1], "a")
+		sf = strings.Contains(parameter[1], "s")
+		d = strings.Contains(parameter[1], "d")
+		m = strings.Contains(parameter[1], "m")
+		a = strings.Contains(parameter[1], "a")
 	}
 
 	str := ""
-    limitedNumStr := strconv.FormatInt(limitedNum, 10) 
+	limitedNumStr := strconv.FormatInt(limitedNum, 10)
 	options := OptionMapType{
 		"endpoint":        &str,
 		"accessKeyID":     &str,
@@ -288,10 +288,10 @@ func (s *OssutilCommandSuite) rawListLimitedMarker(args []string, cmdline string
 		"directory":       &d,
 		"multipart":       &m,
 		"allType":         &a,
-        "limitedNum":      &limitedNumStr,
-        "marker":          &marker,
-        "uploadIDMarker":  &uploadIDMarker,
-        "encodingType":    &encodingType,
+		"limitedNum":      &limitedNumStr,
+		"marker":          &marker,
+		"uploadIDMarker":  &uploadIDMarker,
+		"encodingType":    &encodingType,
 	}
 	showElapse, err := cm.RunCommand(command, args, options)
 	return showElapse, err
@@ -395,11 +395,11 @@ func (s *OssutilCommandSuite) removeWrapper(cmdline string, bucket string, objec
 		return false, fmt.Errorf("rm test wrong cmdline given")
 	}
 
-    encodingType := ""
-    if pos := strings.Index(array[1], "--encoding-type url"); pos != -1 {
-        encodingType = URLEncodingType 
-        array[1] = array[1][0:pos] + array[1][pos+len("--encoding-type url"):]
-    }
+	encodingType := ""
+	if pos := strings.Index(array[1], "--encoding-type url"); pos != -1 {
+		encodingType = URLEncodingType
+		array[1] = array[1][0:pos] + array[1][pos+len("--encoding-type url"):]
+	}
 
 	parameter := strings.Split(array[1], "-")
 	if len(parameter) < 2 {
@@ -426,7 +426,7 @@ func (s *OssutilCommandSuite) removeWrapper(cmdline string, bucket string, objec
 		"multipart":       &m,
 		"recursive":       &r,
 		"force":           &f,
-        "encodingType":    &encodingType,
+		"encodingType":    &encodingType,
 	}
 	showElapse, err := cm.RunCommand(command, args, options)
 	time.Sleep(sleepTime)
@@ -1067,30 +1067,30 @@ func (s *OssutilCommandSuite) TestStorageURL(c *C) {
 	_, err = CloudURLFromString("./file", "")
 	c.Assert(err, NotNil)
 
-    cloudURL, err = CloudURLFromString("oss://bucket/%e4%b8%ad%e6%96%87%e6%b5%8b%e8%af%95", URLEncodingType)
-    c.Assert(err, IsNil)
-    c.Assert(cloudURL.bucket, Equals, "bucket")
-    c.Assert(cloudURL.object, Equals, "中文测试")
+	cloudURL, err = CloudURLFromString("oss://bucket/%e4%b8%ad%e6%96%87%e6%b5%8b%e8%af%95", URLEncodingType)
+	c.Assert(err, IsNil)
+	c.Assert(cloudURL.bucket, Equals, "bucket")
+	c.Assert(cloudURL.object, Equals, "中文测试")
 
-    cloudURL, err = CloudURLFromString("oss://bucket/%e4%b8%ad%e6%96%87%e6%b5%8b%e8%af%95", "")
-    c.Assert(err, IsNil)
-    c.Assert(cloudURL.bucket, Equals, "bucket")
-    c.Assert(cloudURL.object, Equals, "%e4%b8%ad%e6%96%87%e6%b5%8b%e8%af%95")
+	cloudURL, err = CloudURLFromString("oss://bucket/%e4%b8%ad%e6%96%87%e6%b5%8b%e8%af%95", "")
+	c.Assert(err, IsNil)
+	c.Assert(cloudURL.bucket, Equals, "bucket")
+	c.Assert(cloudURL.object, Equals, "%e4%b8%ad%e6%96%87%e6%b5%8b%e8%af%95")
 
-    cloudURL, err = CloudURLFromString("oss%3a%2f%2fbucket%2f%e4%b8%ad%e6%96%87%e6%b5%8b%e8%af%95", URLEncodingType)
-    c.Assert(err, NotNil)
+	cloudURL, err = CloudURLFromString("oss%3a%2f%2fbucket%2f%e4%b8%ad%e6%96%87%e6%b5%8b%e8%af%95", URLEncodingType)
+	c.Assert(err, NotNil)
 
-    storageURL, err := StorageURLFromString("oss%3a%2f%2fbucket%2f%e4%b8%ad%e6%96%87%e6%b5%8b%e8%af%95", URLEncodingType)
-    c.Assert(err, IsNil)
-    c.Assert(storageURL.IsCloudURL(), Equals, false)
-    c.Assert(storageURL.IsFileURL(), Equals, true)
-    c.Assert(storageURL.ToString(), Equals, "oss://bucket/中文测试")
+	storageURL, err := StorageURLFromString("oss%3a%2f%2fbucket%2f%e4%b8%ad%e6%96%87%e6%b5%8b%e8%af%95", URLEncodingType)
+	c.Assert(err, IsNil)
+	c.Assert(storageURL.IsCloudURL(), Equals, false)
+	c.Assert(storageURL.IsFileURL(), Equals, true)
+	c.Assert(storageURL.ToString(), Equals, "oss://bucket/中文测试")
 
 	err = cloudURL.Init("oss:///abc/d", URLEncodingType)
 	c.Assert(err, NotNil)
 
-    cloudURL.object = "\\d"
-    err = cloudURL.checkObjectPrefix()
+	cloudURL.object = "\\d"
+	err = cloudURL.checkObjectPrefix()
 	c.Assert(err, NotNil)
 }
 
@@ -1110,7 +1110,7 @@ func (s *OssutilCommandSuite) TestErrOssDownloadFile(c *C) {
 		"routines":         &routines,
 	}
 	err := copyCommand.Init(args, options)
-    c.Assert(err, IsNil)
+	c.Assert(err, IsNil)
 	bucket, err := copyCommand.command.ossBucket(bucketName)
 	c.Assert(err, IsNil)
 
@@ -1164,18 +1164,18 @@ func (s *OssutilCommandSuite) TestNeedConfig(c *C) {
 	args := []string{"", ""}
 	thre := strconv.FormatInt(1, 10)
 	routines := strconv.Itoa(Routines)
-    e := "a"
+	e := "a"
 	options := OptionMapType{
 		"endpoint":         &e,
 		"accessKeyID":      &str,
 		"accessKeySecret":  &str,
 		"stsToken":         &str,
 		"configFile":       &str,
-        "bigfileThreshold": &thre,
+		"bigfileThreshold": &thre,
 		"routines":         &routines,
 	}
 	err := copyCommand.Init(args, options)
-    c.Assert(err, IsNil)
+	c.Assert(err, IsNil)
 
-    c.Assert(copyCommand.command.needConfigFile(), Equals, false)
+	c.Assert(copyCommand.command.needConfigFile(), Equals, false)
 }

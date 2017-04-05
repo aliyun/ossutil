@@ -96,7 +96,7 @@ var statCommand = StatCommand{
 		specEnglish: specEnglishStat,
 		group:       GroupTypeNormalCommand,
 		validOptionNames: []string{
-            OptionEncodingType,
+			OptionEncodingType,
 			OptionConfigFile,
 			OptionEndpoint,
 			OptionAccessKeyID,
@@ -123,7 +123,7 @@ func (sc *StatCommand) Init(args []string, options OptionMapType) error {
 
 // RunCommand simulate inheritance, and polymorphism
 func (sc *StatCommand) RunCommand() error {
-    encodingType, _ := GetString(OptionEncodingType, sc.command.options)
+	encodingType, _ := GetString(OptionEncodingType, sc.command.options)
 	cloudURL, err := CloudURLFromString(sc.command.args[0], encodingType)
 	if err != nil {
 		return err

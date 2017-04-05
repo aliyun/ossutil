@@ -2,8 +2,8 @@ package lib
 
 import (
 	"fmt"
+	"net/url"
 	"os"
-    "net/url"
 
 	. "gopkg.in/check.v1"
 )
@@ -149,19 +149,19 @@ func (s *OssutilCommandSuite) TestStatURLEncoding(c *C) {
 	bucketName := bucketNamePrefix + randLowStr(10)
 	s.putBucket(bucketName, c)
 
-    object := "^M特殊字符 加上空格 test"
-    s.putObject(bucketName, object, uploadFileName, c)
+	object := "^M特殊字符 加上空格 test"
+	s.putObject(bucketName, object, uploadFileName, c)
 
-    urlObject := url.QueryEscape(object)
+	urlObject := url.QueryEscape(object)
 
-	_, err := s.rawGetStat(bucketName, urlObject) 
+	_, err := s.rawGetStat(bucketName, urlObject)
 	c.Assert(err, NotNil)
 
 	command := "stat"
 	args := []string{CloudURLToString(bucketName, urlObject)}
 	str := ""
 	retryTimes := "3"
-    encodingType := URLEncodingType
+	encodingType := URLEncodingType
 	options := OptionMapType{
 		"endpoint":        &str,
 		"accessKeyID":     &str,
@@ -169,7 +169,7 @@ func (s *OssutilCommandSuite) TestStatURLEncoding(c *C) {
 		"stsToken":        &str,
 		"configFile":      &configFile,
 		"retryTimes":      &retryTimes,
-        "encodingType":    &encodingType,
+		"encodingType":    &encodingType,
 	}
 	showElapse, err := cm.RunCommand(command, args, options)
 	c.Assert(err, IsNil)
