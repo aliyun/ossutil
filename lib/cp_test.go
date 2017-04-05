@@ -353,7 +353,7 @@ func (s *OssutilCommandSuite) TestCPObjectUpdate(c *C) {
 	newData := "new data"
 	newFile := "newFile" + randStr(5)
 	s.createFile(oldFile, oldData, c)
-	time.Sleep(7 * time.Second)
+	time.Sleep(10 * time.Second)
 	s.createFile(newFile, newData, c)
 
 	// put newer object
@@ -369,7 +369,6 @@ func (s *OssutilCommandSuite) TestCPObjectUpdate(c *C) {
 	showElapse, err := s.rawCP(oldFile, CloudURLToString(bucketName, object), false, false, true, DefaultBigFileThreshold, CheckpointDir)
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
-	time.Sleep(7 * time.Second)
 
 	s.getObject(bucketName, object, downloadFileName, c)
 	str = s.readFile(downloadFileName, c)
