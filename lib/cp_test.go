@@ -369,6 +369,7 @@ func (s *OssutilCommandSuite) TestCPObjectUpdate(c *C) {
 	showElapse, err := s.rawCP(oldFile, CloudURLToString(bucketName, object), false, false, true, DefaultBigFileThreshold, CheckpointDir)
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
+	time.Sleep(10 * time.Second)
 
 	s.getObject(bucketName, object, downloadFileName, c)
 	str = s.readFile(downloadFileName, c)
@@ -1490,8 +1491,6 @@ func (s *OssutilCommandSuite) TestRangeGet(c *C) {
 	c.Assert(str, Equals, data[4:])
 
 	snap = copyCommand.monitor.getSnapshot()
-	c.Assert(copyCommand.monitor.totalSize == int64(16) || copyCommand.monitor.totalSize == int64(0), Equals, true)
-	c.Assert(copyCommand.monitor.totalNum == int64(1) || copyCommand.monitor.totalNum == int64(0), Equals, true)
 	c.Assert(snap.transferSize, Equals, int64(16))
 	c.Assert(snap.skipSize, Equals, int64(0))
 	c.Assert(snap.dealSize, Equals, int64(16))
