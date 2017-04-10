@@ -588,9 +588,6 @@ func (s *OssutilCommandSuite) TestListLimitedMarker(c *C) {
 	objects = s.listLimitedMarker(bucketName, "", "ls -a", 4, fmt.Sprintf("%s%d", objectPrefix, 0), uploadIDs[0], c)
 	c.Assert(len(objects), Equals, 4)
 
-	objects = s.listLimitedMarker(bucketName, "", "ls -a", 4, url.QueryEscape(fmt.Sprintf("%s%d", objectPrefix, 0)), url.QueryEscape(uploadIDs[0]), c)
-	c.Assert(len(objects), Equals, 4)
-
 	objects = s.listLimitedMarker(bucketName, "", "ls -a --encoding-type url", 4, url.QueryEscape(fmt.Sprintf("%s%d", objectPrefix, 0)), url.QueryEscape(uploadIDs[0]), c)
 	c.Assert(len(objects), Equals, 4)
 
