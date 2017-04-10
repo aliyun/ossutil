@@ -40,7 +40,8 @@ type copyOptionType struct {
 	reporter     *Reporter
 	snapshotPath string
 	snapshotldb  *leveldb.DB
-    vrange       string
+	vrange       string
+	encodingType string
 }
 
 type fileInfoType struct {
@@ -359,6 +360,9 @@ var specChineseCopy = SpecText{
     ossutil cp local_dir oss://bucket1/b -r -u --snapshot-path=your_local_path
     同时使用--snapshot-path和--update策略进行增量上传
 
+    ossutil cp %e4%b8%ad%e6%96%87 oss://bucket1/%e6%b5%8b%e8%af%95 --encoding-type url
+    在本地查找文件名为“中文”的文件，并上传到bucket1生成名称为”测试“的object
+
     2) 从oss下载object
     假设oss上有下列objects：
         oss://bucket/abcdir1/a
@@ -403,6 +407,9 @@ var specChineseCopy = SpecText{
         
     ossutil cp oss://bucket/ local_dir -r -u
     使用--update策略进行增量下载
+
+    ossutil cp oss://bucket1/%e6%b5%8b%e8%af%95 %e4%b8%ad%e6%96%87 --encoding-type url
+    下载bucket1中名称为”测试“的object到本地，生成文件名为“中文”的文件
 
     3) 在oss间拷贝
     假设oss上有下列objects：
@@ -467,6 +474,9 @@ var specChineseCopy = SpecText{
 
     ossutil cp oss://bucket/ oss://bucket1/ -r -u
     使用--update策略进行增量拷贝
+
+    ossutil cp oss://bucket1/%e6%b5%8b%e8%af%95 oss://bucket2/%e4%b8%ad%e6%96%87 --encoding-type url
+    拷贝bucket1中名称为”测试“的object到bucket2，生成object名为“中文”的object
 `,
 }
 
@@ -777,6 +787,9 @@ Usage:
     ossutil cp local_dir oss://bucket1/b -r -u --snapshot-path=your_local_path
     Use --snapshot-path and --update policies for incremental upload
 
+    ossutil cp %e4%b8%ad%e6%96%87 oss://bucket1/%e6%b5%8b%e8%af%95 --encoding-type url
+    Upload the file "中文" to oss://bucket1/测试
+
     2) download from oss
     Suppose there are following objects in oss:
         oss://bucket/abcdir1/a
@@ -819,6 +832,9 @@ Usage:
 
     ossutil cp oss://bucket/ local_dir -r -u
     Use --update policy for incremental download
+
+    ossutil cp oss://bucket1/%e6%b5%8b%e8%af%95 %e4%b8%ad%e6%96%87 --encoding-type url
+    Download oss://bucket1/测试 to local file：中文 
 
     3) Copy between oss 
     Suppose there are following objects in oss:
@@ -881,6 +897,9 @@ Usage:
 
     ossutil cp oss://bucket/ oss://bucket1/ -r -u
     Use --update policy for incremental copy
+
+    ossutil cp oss://bucket1/%e6%b5%8b%e8%af%95 oss://bucket2/%e4%b8%ad%e6%96%87 --encoding-type url
+    Copy oss://bucket1/测试 to oss://bucket2/中文
 `,
 }
 
@@ -908,7 +927,8 @@ var copyCommand = CopyCommand{
 			OptionOutputDir,
 			OptionBigFileThreshold,
 			OptionCheckpointDir,
-            OptionRange,
+			OptionRange,
+			OptionEncodingType,
 			OptionConfigFile,
 			OptionEndpoint,
 			OptionAccessKeyID,
@@ -950,7 +970,8 @@ func (cc *CopyCommand) RunCommand() error {
 	}
 	outputDir, _ := GetString(OptionOutputDir, cc.command.options)
 	cc.cpOption.snapshotPath, _ = GetString(OptionSnapshotPath, cc.command.options)
-    cc.cpOption.vrange, _ = GetString(OptionRange, cc.command.options)
+	cc.cpOption.vrange, _ = GetString(OptionRange, cc.command.options)
+	cc.cpOption.encodingType, _ = GetString(OptionEncodingType, cc.command.options)
 
 	//get file list
 	srcURLList, err := cc.getStorageURLs(cc.command.args[0 : len(cc.command.args)-1])
@@ -958,7 +979,7 @@ func (cc *CopyCommand) RunCommand() error {
 		return err
 	}
 
-	destURL, err := StorageURLFromString(cc.command.args[len(cc.command.args)-1])
+	destURL, err := StorageURLFromString(cc.command.args[len(cc.command.args)-1], cc.cpOption.encodingType)
 	if err != nil {
 		return err
 	}
@@ -1014,7 +1035,7 @@ func (cc *CopyCommand) RunCommand() error {
 func (cc *CopyCommand) getStorageURLs(urls []string) ([]StorageURLer, error) {
 	urlList := []StorageURLer{}
 	for _, url := range urls {
-		storageURL, err := StorageURLFromString(url)
+		storageURL, err := StorageURLFromString(url, cc.cpOption.encodingType)
 		if err != nil {
 			return nil, err
 		}
@@ -1076,10 +1097,10 @@ func (cc *CopyCommand) checkCopyOptions(opType operationType) error {
 		msg := fmt.Sprintf("only upload support option: \"%s\"", OptionSnapshotPath)
 		return CommandError{cc.command.name, msg}
 	}
-    if operationTypeGet != opType && cc.cpOption.vrange != "" {
+	if operationTypeGet != opType && cc.cpOption.vrange != "" {
 		msg := fmt.Sprintf("only download support option: \"%s\"", OptionRange)
 		return CommandError{cc.command.name, msg}
-    }
+	}
 	return nil
 }
 
@@ -1658,7 +1679,7 @@ func (cc *CopyCommand) downloadSingleFile(bucket *oss.Bucket, objectInfo objectI
 		}
 	}
 
-    rsize := cc.getRangeSize(size)
+	rsize := cc.getRangeSize(size)
 	if cc.skipDownload(fileName, srct) {
 		return true, nil, rsize, msg
 	}
@@ -1673,14 +1694,20 @@ func (cc *CopyCommand) downloadSingleFile(bucket *oss.Bucket, objectInfo objectI
 	}
 
 	var listener *OssProgressListener = &OssProgressListener{&cc.monitor, 0, 0}
-	if size < cc.cpOption.threshold || cc.cpOption.vrange != "" {
-		return false, cc.ossDownloadFileRetry(bucket, object, fileName, oss.Progress(listener), oss.NormalizedRange(cc.cpOption.vrange)), 0, msg
+	ossOptions := []oss.Option{oss.Progress(listener)}
+	if cc.cpOption.vrange != "" {
+		ossOptions = append(ossOptions, oss.NormalizedRange(cc.cpOption.vrange))
+	}
+
+	if rsize < cc.cpOption.threshold {
+		return false, cc.ossDownloadFileRetry(bucket, object, fileName, ossOptions...), 0, msg
 	}
 
 	partSize, rt := cc.preparePartOption(size)
 	absPath, _ := filepath.Abs(fileName)
 	cp := oss.Checkpoint(true, cc.formatCPFileName(cc.cpOption.cpDir, CloudURLToString(bucket.BucketName, object), absPath))
-	return false, cc.ossResumeDownloadRetry(bucket, object, fileName, size, partSize, oss.Routines(rt), cp, oss.Progress(listener)), 0, msg
+	ossOptions = append(ossOptions, oss.Routines(rt), cp)
+	return false, cc.ossResumeDownloadRetry(bucket, object, fileName, size, partSize, ossOptions...), 0, msg
 }
 
 func (cc *CopyCommand) makeFileName(object, filePath string) string {
@@ -1820,40 +1847,54 @@ func (cc *CopyCommand) objectStatistic(bucket *oss.Bucket, cloudURL CloudURL) {
 }
 
 func (cc *CopyCommand) getRangeSize(size int64) int64 {
-    if cc.cpOption.vrange == "" {
-        return size
-    }
-    sli := strings.Split(cc.cpOption.vrange, ",")
-    str := sli[0]
-    if strings.HasPrefix(str, "-") {
-        len := str[1:]    
-        l, err := strconv.ParseInt(len, 10, 64)
-        if err != nil {
-            return size
-        }
-        return l
-    } else if strings.HasSuffix(str, "-") {
-        start := str[:len(str)-1]
-        s, err := strconv.ParseInt(start, 10, 64)
-        if err != nil || s >= size {
-            return size
-        }
-        return size - s
-    } else {
-        pos := strings.IndexAny(str, "-")
-        if pos == -1 {
-            return size
-        }
-        start := str[:pos]
-        end := str[pos+1:]
-        s, err1 := strconv.ParseInt(start, 10, 64)
-        e, err2 := strconv.ParseInt(end, 10, 64)
-        if err1 != nil || err2 != nil || s >= size || e >= size || s > e {
-            return size
-        }
-        return e - s + 1
-    }
-    return size
+	if cc.cpOption.vrange == "" {
+		return size
+	}
+	sli := strings.Split(cc.cpOption.vrange, ",")
+	sizes := []int64{}
+	for i := 0; i < len(sli); i++ {
+		if s, err := cc.parseRange(sli[i], size); err != nil {
+			return s
+		} else {
+			sizes = append(sizes, s)
+		}
+	}
+	return sizes[0]
+}
+
+func (cc *CopyCommand) parseRange(str string, size int64) (int64, error) {
+	if strings.HasPrefix(str, "-") {
+		len := str[1:]
+		l, err := strconv.ParseInt(len, 10, 64)
+		if err != nil {
+			return size, nil
+		}
+		return l, nil
+	} else if strings.HasSuffix(str, "-") {
+		start := str[:len(str)-1]
+		s, err := strconv.ParseInt(start, 10, 64)
+		if err != nil || s >= size {
+			return size, nil
+		}
+		return size - s, nil
+	} else {
+		pos := strings.IndexAny(str, "-")
+		if pos == -1 {
+			return size, nil
+		}
+		start := str[:pos]
+		end := str[pos+1:]
+		s, err1 := strconv.ParseInt(start, 10, 64)
+		e, err2 := strconv.ParseInt(end, 10, 64)
+		if err1 != nil || err2 != nil || s >= size || e >= size || s > e {
+			return size, nil
+		}
+		if s > e {
+			return size, fmt.Errorf("Invalid range")
+		}
+		return e - s + 1, nil
+	}
+	return size, nil
 }
 
 func (cc *CopyCommand) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, chObjects chan<- objectInfoType, chError chan<- error) {

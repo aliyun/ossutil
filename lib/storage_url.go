@@ -2,6 +2,7 @@ package lib
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"os/user"
 	"strings"
@@ -19,23 +20,26 @@ type StorageURLer interface {
 
 // CloudURL describes oss url
 type CloudURL struct {
-	url    string
+	urlStr string
 	bucket string
 	object string
 }
 
 // Init is used to create a cloud url from a user input url
-func (cu *CloudURL) Init(url string) error {
-	cu.url = url
-	cu.parseBucketObject()
+func (cu *CloudURL) Init(urlStr, encodingType string) error {
+	cu.urlStr = urlStr
+	if err := cu.parseBucketObject(encodingType); err != nil {
+		return err
+	}
 	if err := cu.checkBucketObject(); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (cu *CloudURL) parseBucketObject() {
-	path := cu.url
+func (cu *CloudURL) parseBucketObject(encodingType string) error {
+	var err error
+	path := cu.urlStr
 
 	if strings.HasPrefix(strings.ToLower(path), SchemePrefix) {
 		path = string(path[len(SchemePrefix):])
@@ -50,22 +54,28 @@ func (cu *CloudURL) parseBucketObject() {
 	cu.bucket = sli[0]
 	if len(sli) > 1 {
 		cu.object = sli[1]
+		if encodingType == URLEncodingType {
+			if cu.object, err = url.QueryUnescape(cu.object); err != nil {
+				return fmt.Errorf("invalid cloud url: %s, object name is not url encoded, %s", cu.urlStr, err.Error())
+			}
+		}
 	}
+	return nil
 }
 
 func (cu *CloudURL) checkBucketObject() error {
 	if cu.bucket == "" && cu.object != "" {
-		return fmt.Errorf("invalid cloud url: %s, miss bucket", cu.url)
+		return fmt.Errorf("invalid cloud url: %s, miss bucket", cu.urlStr)
 	}
 	return nil
 }
 
 func (cu *CloudURL) checkObjectPrefix() error {
 	if strings.HasPrefix(cu.object, "/") {
-		return fmt.Errorf("invalid cloud url: %s, object name should not begin with \"/\"", cu.url)
+		return fmt.Errorf("invalid cloud url: %s, object name should not begin with \"/\"", cu.urlStr)
 	}
 	if strings.HasPrefix(cu.object, "\\") {
-		return fmt.Errorf("invalid cloud url: %s, object name should not begin with \"\\\"", cu.url)
+		return fmt.Errorf("invalid cloud url: %s, object name should not begin with \"\\\"", cu.urlStr)
 	}
 	return nil
 }
@@ -90,17 +100,26 @@ func (cu CloudURL) ToString() string {
 
 // FileURL describes file url
 type FileURL struct {
-	url string
+	urlStr string
 }
 
 // Init simulate inheritance, and polymorphism
-func (fu *FileURL) Init(url string) {
+func (fu *FileURL) Init(urlStr, encodingType string) error {
+	if encodingType == URLEncodingType {
+		vurl, err := url.QueryUnescape(urlStr)
+		if err != nil {
+			return fmt.Errorf("invalid cloud url: %s, file name is not url encoded, %s", urlStr, err.Error())
+		}
+		urlStr = vurl
+	}
+
 	usr, _ := user.Current()
 	dir := usr.HomeDir
-	if len(url) >= 2 && url[:2] == "~"+string(os.PathSeparator) {
-		url = strings.Replace(url, "~", dir, 1)
+	if len(urlStr) >= 2 && urlStr[:2] == "~"+string(os.PathSeparator) {
+		urlStr = strings.Replace(urlStr, "~", dir, 1)
 	}
-	fu.url = url
+	fu.urlStr = urlStr
+	return nil
 }
 
 // IsCloudURL simulate inheritance, and polymorphism
@@ -115,31 +134,33 @@ func (fu FileURL) IsFileURL() bool {
 
 // ToString simulate inheritance, and polymorphism
 func (fu FileURL) ToString() string {
-	return fu.url
+	return fu.urlStr
 }
 
 // StorageURLFromString analysis input url type and build a storage url from the url
-func StorageURLFromString(url string) (StorageURLer, error) {
-	if strings.HasPrefix(strings.ToLower(url), SchemePrefix) {
+func StorageURLFromString(urlStr, encodingType string) (StorageURLer, error) {
+	if strings.HasPrefix(strings.ToLower(urlStr), SchemePrefix) {
 		var cloudURL CloudURL
-		if err := cloudURL.Init(url); err != nil {
+		if err := cloudURL.Init(urlStr, encodingType); err != nil {
 			return nil, err
 		}
 		return cloudURL, nil
 	}
 	var fileURL FileURL
-	fileURL.Init(url)
+	if err := fileURL.Init(urlStr, encodingType); err != nil {
+		return nil, err
+	}
 	return fileURL, nil
 }
 
 // CloudURLFromString get a oss url from url, if url is not a cloud url, return error
-func CloudURLFromString(url string) (CloudURL, error) {
-	storageURL, err := StorageURLFromString(url)
+func CloudURLFromString(urlStr, encodingType string) (CloudURL, error) {
+	storageURL, err := StorageURLFromString(urlStr, encodingType)
 	if err != nil {
 		return CloudURL{}, err
 	}
 	if !storageURL.IsCloudURL() {
-		return CloudURL{}, fmt.Errorf("invalid cloud url: \"%s\", please make sure the url starts with: \"%s\"", url, SchemePrefix)
+		return CloudURL{}, fmt.Errorf("invalid cloud url: \"%s\", please make sure the url starts with: \"%s\"", urlStr, SchemePrefix)
 	}
 	return storageURL.(CloudURL), nil
 }

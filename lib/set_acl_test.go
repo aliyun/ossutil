@@ -2,6 +2,7 @@ package lib
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"strconv"
 
@@ -262,6 +263,42 @@ func (s *OssutilCommandSuite) TestSetACLIDKey(c *C) {
 	c.Assert(showElapse, Equals, true)
 
 	os.Remove(cfile)
+
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestSetACLURLEncoding(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	object := "^M特殊字符 加上空格 test"
+	s.putObject(bucketName, object, uploadFileName, c)
+
+	urlObject := url.QueryEscape(object)
+
+	showElapse, err := s.rawSetObjectACL(bucketName, urlObject, "default", false, true)
+	c.Assert(err, NotNil)
+	c.Assert(showElapse, Equals, false)
+
+	command := "set-acl"
+	str := ""
+	args := []string{CloudURLToString(bucketName, urlObject), "public-read"}
+	routines := strconv.Itoa(Routines)
+	ok := true
+	encodingType := URLEncodingType
+	options := OptionMapType{
+		"endpoint":        &endpoint,
+		"accessKeyID":     &accessKeyID,
+		"accessKeySecret": &accessKeySecret,
+		"stsToken":        &str,
+		"configFile":      &configFile,
+		"routines":        &routines,
+		"force":           &ok,
+		"encodingType":    &encodingType,
+	}
+	showElapse, err = cm.RunCommand(command, args, options)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
 
 	s.removeBucket(bucketName, true, c)
 }

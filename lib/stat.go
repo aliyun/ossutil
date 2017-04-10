@@ -40,6 +40,7 @@ var specChineseStat = SpecText{
 	sampleText: ` 
     ossutil stat oss://bucket1
     ossutil stat oss://bucket1/object  
+    ossutil stat oss://bucket1/%e4%b8%ad%e6%96%87 --encoding-type url
 `,
 }
 
@@ -76,6 +77,7 @@ Usage：
 	sampleText: ` 
     ossutil stat oss://bucket1
     ossutil stat oss://bucket1/object  
+    ossutil stat oss://bucket1/%e4%b8%ad%e6%96%87 --encoding-type url
 `,
 }
 
@@ -94,6 +96,7 @@ var statCommand = StatCommand{
 		specEnglish: specEnglishStat,
 		group:       GroupTypeNormalCommand,
 		validOptionNames: []string{
+			OptionEncodingType,
 			OptionConfigFile,
 			OptionEndpoint,
 			OptionAccessKeyID,
@@ -120,7 +123,8 @@ func (sc *StatCommand) Init(args []string, options OptionMapType) error {
 
 // RunCommand simulate inheritance, and polymorphism
 func (sc *StatCommand) RunCommand() error {
-	cloudURL, err := CloudURLFromString(sc.command.args[0])
+	encodingType, _ := GetString(OptionEncodingType, sc.command.options)
+	cloudURL, err := CloudURLFromString(sc.command.args[0], encodingType)
 	if err != nil {
 		return err
 	}

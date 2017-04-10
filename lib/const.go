@@ -32,7 +32,8 @@ const (
 	OptionRetryTimes              = "retryTimes"
 	OptionRoutines                = "routines"
 	OptionParallel                = "parallel"
-    OptionRange                   = "range"
+	OptionRange                   = "range"
+	OptionEncodingType            = "encodingType"
 	OptionLanguage                = "language"
 	OptionHashType                = "hashType"
 	OptionVersion                 = "version"
@@ -113,6 +114,7 @@ const (
 	DefaultHashType         string = "crc64"
 	MD5HashType             string = "md5"
 	LogFilePrefix                  = "ossutil_log_"
+	URLEncodingType                = "url"
 )
 
 const (

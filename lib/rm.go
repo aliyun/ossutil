@@ -112,6 +112,7 @@ var specChineseRemove = SpecText{
     ossutil rm oss://bucket1 -b
     ossutil rm oss://bucket2 -r -b -f
     ossutil rm oss://bucket2 -a -r -b -f
+    ossutil rm oss://bucket2/%e4%b8%ad%e6%96%87 --encoding-type url
 `,
 }
 
@@ -224,6 +225,7 @@ Usage:
     ossutil rm oss://bucket1 -b
     ossutil rm oss://bucket2 -r -b -f
     ossutil rm oss://bucket2 -a -r -b -f
+    ossutil rm oss://bucket2/%e4%b8%ad%e6%96%87 --encoding-type url
 `,
 }
 
@@ -249,6 +251,7 @@ var removeCommand = RemoveCommand{
 			OptionForce,
 			OptionMultipart,
 			OptionAllType,
+			OptionEncodingType,
 			OptionConfigFile,
 			OptionEndpoint,
 			OptionAccessKeyID,
@@ -277,7 +280,8 @@ func (rc *RemoveCommand) Init(args []string, options OptionMapType) error {
 func (rc *RemoveCommand) RunCommand() error {
 	rc.monitor.init()
 
-	cloudURL, err := CloudURLFromString(rc.command.args[0])
+	encodingType, _ := GetString(OptionEncodingType, rc.command.options)
+	cloudURL, err := CloudURLFromString(rc.command.args[0], encodingType)
 	if err != nil {
 		return err
 	}

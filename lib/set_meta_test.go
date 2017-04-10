@@ -2,6 +2,7 @@ package lib
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"strconv"
 
@@ -309,6 +310,43 @@ func (s *OssutilCommandSuite) TestSetMetaIDKey(c *C) {
 	c.Assert(showElapse, Equals, true)
 
 	os.Remove(cfile)
+
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestSetMetaURLEncoding(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	object := "^M特殊字符 加上空格 test"
+	s.putObject(bucketName, object, uploadFileName, c)
+
+	urlObject := url.QueryEscape(object)
+
+	showElapse, err := s.rawSetMeta(bucketName, urlObject, "x-oss-object-acl:private#X-Oss-Meta-A:A#Expires:2006-01-02T15:04:05Z", true, false, false, true, DefaultLanguage)
+	c.Assert(err, NotNil)
+	c.Assert(showElapse, Equals, false)
+
+	command := "set-meta"
+	str := ""
+	args := []string{CloudURLToString(bucketName, urlObject), "x-oss-object-acl:private#X-Oss-Meta-A:A#Expires:2006-01-02T15:04:05Z"}
+	ok := true
+	routines := strconv.Itoa(Routines)
+	encodingType := URLEncodingType
+	options := OptionMapType{
+		"endpoint":        &endpoint,
+		"accessKeyID":     &accessKeyID,
+		"accessKeySecret": &accessKeySecret,
+		"stsToken":        &str,
+		"configFile":      &configFile,
+		"update":          &ok,
+		"force":           &ok,
+		"routines":        &routines,
+		"encodingType":    &encodingType,
+	}
+	showElapse, err = cm.RunCommand(command, args, options)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
 
 	s.removeBucket(bucketName, true, c)
 }

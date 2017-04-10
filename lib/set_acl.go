@@ -113,6 +113,8 @@ ACL：
     (2)ossutil set-acl oss://bucket1/obj1 private 
 
     (3)ossutil set-acl oss://bucket1/obj default -r
+
+    (4)ossutil set-acl oss://bucket1/%e4%b8%ad%e6%96%87 default --encoding-type url
 `,
 }
 
@@ -185,6 +187,8 @@ Usage：
     (2)ossutil set-acl oss://bucket1/obj1 private 
 
     (3)ossutil set-acl oss://bucket1/obj default -r
+
+    (4)ossutil set-acl oss://bucket1/%e4%b8%ad%e6%96%87 default --encoding-type url
 `,
 }
 
@@ -207,6 +211,7 @@ var setACLCommand = SetACLCommand{
 			OptionRecursion,
 			OptionBucket,
 			OptionForce,
+			OptionEncodingType,
 			OptionConfigFile,
 			OptionEndpoint,
 			OptionAccessKeyID,
@@ -241,7 +246,8 @@ func (sc *SetACLCommand) RunCommand() error {
 	force, _ := GetBool(OptionForce, sc.command.options)
 	routines, _ := GetInt(OptionRoutines, sc.command.options)
 
-	cloudURL, err := CloudURLFromString(sc.command.args[0])
+	encodingType, _ := GetString(OptionEncodingType, sc.command.options)
+	cloudURL, err := CloudURLFromString(sc.command.args[0], encodingType)
 	if err != nil {
 		return err
 	}
