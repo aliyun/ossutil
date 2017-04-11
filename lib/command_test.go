@@ -896,6 +896,35 @@ func (s *OssutilCommandSuite) initSetMeta(bucket, object, meta string, update, d
 	return err
 }
 
+func (s *OssutilCommandSuite) initCreateSymlink(cmdline string) error {
+	encodingType := ""
+	if pos := strings.Index(cmdline, "--encoding-type url"); pos != -1 {
+		encodingType = URLEncodingType
+		cmdline = cmdline[0:pos] + cmdline[pos+len("--encoding-type url"):]
+	}
+
+	cmds := strings.Split(cmdline, " ")
+	args := []string{}
+	for _, cmd := range cmds {
+		cmd = strings.TrimSpace(cmd)
+		if cmd != "" {
+			args = append(args, cmd)
+		}
+	}
+
+	str := ""
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"stsToken":        &str,
+		"configFile":      &configFile,
+		"encodingType":    &encodingType,
+	}
+	err := createSymlinkCommand.Init(args, options)
+	return err
+}
+
 func (s *OssutilCommandSuite) getFileList(dpath string) ([]string, error) {
 	fileList := []string{}
 	err := filepath.Walk(dpath, func(fpath string, f os.FileInfo, err error) error {

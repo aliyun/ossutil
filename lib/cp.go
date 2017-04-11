@@ -98,15 +98,15 @@ var specChineseCopy = SpecText{
 
 	syntaxText: ` 
     ossutil cp file_url cloud_url  [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--snapshot-path=sdir] 
-    ossutil cp cloud_url file_url  [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--snapshot-path=sdir] [--range=x-y] 
-    ossutil cp cloud_url cloud_url [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--snapshot-path=sdir] 
+    ossutil cp cloud_url file_url  [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--range=x-y] 
+    ossutil cp cloud_url cloud_url [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] 
 `,
 
 	detailHelpText: ` 
     该命令允许：从本地文件系统上传文件到oss，从oss下载object到本地文件系统，在oss
     上进行object拷贝。分别对应下述三种操作：
         ossutil cp file_url oss://bucket[/prefix] [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] [--snapshot-path=sdir]
-        ossutil cp oss://bucket[/prefix] file_url [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] [--snapshot-path=sdir] [--range=x-y]
+        ossutil cp oss://bucket[/prefix] file_url [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] [--range=x-y]
         ossutil cp oss://src_bucket[/src_prefix] oss://dest_bucket[/dest_prefix] [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file]
 
     其中file_url代表本地文件系统中的文件路径，支持相对路径或绝对路径，请遵循本地文
@@ -290,7 +290,7 @@ var specChineseCopy = SpecText{
                             file_url的路径。
                             否则，object名为：dest_url+/+文件或子目录相对file_url的路径。
 
-    2) ossutil cp oss://bucket[/prefix] file_url [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] [--snapshot-path=sdir] [--range=x-y]
+    2) ossutil cp oss://bucket[/prefix] file_url [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] [--range=x-y]
         该用法下载oss上的单个或多个Object到本地文件系统。如果未指定--recursive选项，则ossutil
     认为src_url精确指定了待拷贝的单个object，此时不支持prefix匹配，如果object不存在则报错。如
     果指定了--recursive选项，ossutil会搜索prefix匹配的objects，批量拷贝这些objects，此时file_url
@@ -301,7 +301,7 @@ var specChineseCopy = SpecText{
     注意：对于以/结尾且大小为0的object，会在本地文件系统创建一个目录，而不是尝试创建一个文件。
     对于其他object会尝试创建文件。
 
-    3) ossutil cp oss://src_bucket[/src_prefix] oss://dest_bucket[/dest_prefix] [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] [--snapshot-path=sdir]
+    3) ossutil cp oss://src_bucket[/src_prefix] oss://dest_bucket[/dest_prefix] [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] 
         该用法在oss间进行object的拷贝。其中src_bucket与dest_bucket可以相同，注意，当src_url与
     dest_url完全相同时，ossutil不会做任何事情，直接提示退出。设置meta请使用set-meta命令。如果未
     指定--recursive选项，则认为src_url精确指定了待拷贝的单个object，此时不支持prefix匹配，如果
@@ -488,8 +488,8 @@ var specEnglishCopy = SpecText{
 
 	syntaxText: ` 
     ossutil cp file_url cloud_url  [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--snapshot-path=sdir]
-    ossutil cp cloud_url file_url  [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--snapshot-path=sdir] [--range=x-y] 
-    ossutil cp cloud_url cloud_url [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--snapshot-path=sdir]
+    ossutil cp cloud_url file_url  [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--range=x-y] 
+    ossutil cp cloud_url cloud_url [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] 
 `,
 
 	detailHelpText: ` 
@@ -499,8 +499,8 @@ var specEnglishCopy = SpecText{
     3. Copy objects between oss
     Which matches with the following three kinds of operations:
         ossutil cp file_url oss://bucket[/prefix] [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] [--snapshot-path=sdir]
-        ossutil cp oss://bucket[/prefix] file_url [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] [--snapshot-path=sdir] [--range=x-y]
-        ossutil cp oss://src_bucket[/src_prefix] oss://dest_bucket[/dest_prefix] [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] [--snapshot-path=sdir]
+        ossutil cp oss://bucket[/prefix] file_url [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] [--range=x-y]
+        ossutil cp oss://src_bucket[/src_prefix] oss://dest_bucket[/dest_prefix] [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] 
 
     file_url means the file in local file system, it supports relative path and absolute 
     path, the usage of file_url is same with your local file system. oss://bucket[/prefix] 
@@ -711,7 +711,7 @@ Usage:
                              else, object name is: dest_url.
         If file_url is directory: if prefix is empty or end with "/", object name is: dest_url + file path relative to file_url.
         
-    2) ossutil cp oss://bucket[/prefix] file_url [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] [--snapshot-path=sdir] [--range=x-y] 
+    2) ossutil cp oss://bucket[/prefix] file_url [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] [--range=x-y] 
         The usage download one or many objects to local system. If --recursive option is not specified, 
     ossutil considers src_url exactly specified the single object you want to download, prefix-matching 
     is not supported now, if the object not exists, error occurs. If --recursive option is specified, 
@@ -723,7 +723,7 @@ Usage:
     Warning: If the object name is end with / and size is zero, ossutil will create a directory in local 
     system, instead of creating a file.
 
-    3) ossutil cp oss://src_bucket[/src_prefix] oss://dest_bucket[/dest_prefix] [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] [--snapshot-path=sdir]
+    3) ossutil cp oss://src_bucket[/src_prefix] oss://dest_bucket[/dest_prefix] [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] 
         The usage copy objects between oss. The src_bucket can be same with dest_bucket. Pay attention 
     please, if src_url is the same with dest_url, ossutil will do nothing but exit after prompt. Set meta 
     please use "set-meta" command. If --recursive option is not specified, ossutil considers src_url exactly 

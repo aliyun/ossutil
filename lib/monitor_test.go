@@ -1886,4 +1886,3 @@ func (s *OssutilCommandSuite) TestRangeGet(c *C) {
 	os.RemoveAll(dir)
 	s.removeBucket(bucketName, true, c)
 }
-

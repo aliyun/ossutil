@@ -458,6 +458,7 @@ func GetAllCommands() []interface{} {
 		&setACLCommand,
 		&setMetaCommand,
 		&copyCommand,
+		&createSymlinkCommand,
 		&hashCommand,
 		&updateCommand,
 	}
