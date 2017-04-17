@@ -1,6 +1,7 @@
 package lib
 
 import (
+	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"os"
 )
 
@@ -21,6 +22,7 @@ const (
 	OptionAllType                 = "allType"
 	OptionRecursion               = "recursive"
 	OptionBucket                  = "bucket"
+	OptionStorageClass            = "storageClass"
 	OptionForce                   = "force"
 	OptionUpdate                  = "update"
 	OptionDelete                  = "delete"
@@ -51,6 +53,7 @@ const (
 	StatLastModified            = "Last-Modified"
 	StatContentMD5              = "Content-Md5"
 	StatCRC64                   = "X-Oss-Hash-Crc64ecma"
+	StatStorageClass            = "StorageClass"
 )
 
 // the elements show in hash file
@@ -115,6 +118,10 @@ const (
 	MD5HashType             string = "md5"
 	LogFilePrefix                  = "ossutil_log_"
 	URLEncodingType                = "url"
+	StorageStandard                = string(oss.StorageStandard)
+	StorageIA                      = string(oss.StorageIA)
+	StorageArchive                 = string(oss.StorageArchive)
+	DefaultStorageClass            = StorageStandard
 )
 
 const (

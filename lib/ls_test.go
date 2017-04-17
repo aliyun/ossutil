@@ -657,5 +657,15 @@ func (s *OssutilCommandSuite) TestListURLEncoding(c *C) {
 	c.Assert(len(objects), Equals, 1)
 	c.Assert(objects[0], Equals, object1)
 
+	_, err = s.rawListLimitedMarker([]string{"oss%3a%2f%2f"}, "ls --encoding-type url", -1, "", "")
+	c.Assert(err, NotNil)
+
+	bucketName1 := url.QueryEscape("中文")
+	_, err = s.rawListLimitedMarker([]string{"oss://" + bucketName1}, "ls --encoding-type url", -1, "", "")
+	c.Assert(err, NotNil)
+
+	_, err = s.rawListLimitedMarker([]string{"oss://" + bucketName}, "ls --encoding-type url", -1, "", "")
+	c.Assert(err, IsNil)
+
 	s.removeBucket(bucketName, true, c)
 }

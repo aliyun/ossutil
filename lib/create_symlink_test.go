@@ -78,4 +78,41 @@ func (s *OssutilCommandSuite) TestCreateSymlink(c *C) {
 	s.getObject(bucketName, symObject, downloadFileName, c)
 	str = s.readFile(downloadFileName, c)
 	c.Assert(str, Equals, data)
+
+	// error create symlink error args
+	cmdline = fmt.Sprintf("%s %s --encoding-type url", CloudURLToString("", url.QueryEscape(symObject)), urlTarget)
+	err = s.initCreateSymlink(cmdline)
+	c.Assert(err, IsNil)
+	err = createSymlinkCommand.RunCommand()
+	c.Assert(err, NotNil)
+
+	// error create symlink error args
+	cmdline = fmt.Sprintf("%s %s --encoding-type url", CloudURLToString(bucketName, ""), urlTarget)
+	err = s.initCreateSymlink(cmdline)
+	c.Assert(err, IsNil)
+	err = createSymlinkCommand.RunCommand()
+	c.Assert(err, NotNil)
+
+	// error create symlink error args
+	cmdline = fmt.Sprintf("%s %s --encoding-type url", "oss://", urlTarget)
+	err = s.initCreateSymlink(cmdline)
+	c.Assert(err, IsNil)
+	err = createSymlinkCommand.RunCommand()
+	c.Assert(err, NotNil)
+
+	// error create symlink error args
+	cmdline = fmt.Sprintf("%s %s", CloudURLToString(bucketName, symObject), CloudURLToString("", urlTarget))
+	err = s.initCreateSymlink(cmdline)
+	c.Assert(err, IsNil)
+	err = createSymlinkCommand.RunCommand()
+	c.Assert(err, NotNil)
+
+	// error create symlink error args
+	cmdline = fmt.Sprintf("%s %s", CloudURLToString(bucketName, symObject), CloudURLToString(bucketName, ""))
+	err = s.initCreateSymlink(cmdline)
+	c.Assert(err, IsNil)
+	err = createSymlinkCommand.RunCommand()
+	c.Assert(err, NotNil)
+
+	s.removeBucket(bucketName, true, c)
 }

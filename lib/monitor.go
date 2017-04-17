@@ -137,6 +137,49 @@ func (m *Monitor) getFinishBar() string {
 	return getClearStr(fmt.Sprintf("Scanned %d objects. %s %d objects, when error happens.\n", scanNum, m.opStr, snap.okNum))
 }
 
+func (m *Monitor) newProgressBar(finish bool, exitStat int) string {
+	if m.finish {
+		return ""
+	}
+	m.finish = m.finish || finish
+	if !finish {
+		return m.getProgressBar()
+	}
+	return m.getNewFinishBar(exitStat)
+}
+
+func (m *Monitor) getNewFinishBar(exitStat int) string {
+	if exitStat == normalExit {
+		return m.getWholeFinishBar()
+	}
+	return m.getDefeatBar()
+}
+
+func (m *Monitor) getWholeFinishBar() string {
+	snap := m.getSnapshot()
+	if m.seekAheadEnd && m.seekAheadError == nil {
+		if snap.errNum == 0 {
+			return getClearStr(fmt.Sprintf("Succeed: Total %d objects. %s %d objects.\n", m.totalNum, m.opStr, snap.okNum))
+		}
+		return getClearStr(fmt.Sprintf("FinishWithError: Total %d objects. %s %d objects, Error %d objects.\n", m.totalNum, m.opStr, snap.okNum, snap.errNum))
+	}
+	scanNum := max(m.totalNum, snap.dealNum)
+	if snap.errNum == 0 {
+		return getClearStr(fmt.Sprintf("Succeed: Total %d objects. %s %d objects.\n", scanNum, m.opStr, snap.okNum))
+	}
+	return getClearStr(fmt.Sprintf("FinishWithError: Scanned %d objects. %s %d objects, Error %d objects.\n", scanNum, m.opStr, snap.okNum, snap.errNum))
+}
+
+func (m *Monitor) getDefeatBar() string {
+	snap := m.getSnapshot()
+	if m.seekAheadEnd && m.seekAheadError == nil {
+		return getClearStr(fmt.Sprintf("Total %d objects. %s %d objects, when error happens.\n", m.totalNum, m.opStr, snap.okNum))
+	}
+	scanNum := max(m.totalNum, snap.dealNum)
+	return getClearStr(fmt.Sprintf("Scanned %d objects. %s %d objects, when error happens.\n", scanNum, m.opStr, snap.okNum))
+}
+
+// For rm
 type RMMonitorSnap struct {
 	objectNum      int64
 	uploadIdNum    int64

@@ -568,6 +568,28 @@ func (s *OssutilCommandSuite) putBucket(bucket string, c *C) {
 	time.Sleep(sleepTime)
 }
 
+func (s *OssutilCommandSuite) putBucketWithStorageClass(bucket string, storageClass string, c *C) error {
+	args := []string{CloudURLToString(bucket, "")}
+	err := s.initPutBucketWithStorageClass(args, storageClass)
+	c.Assert(err, IsNil)
+	err = makeBucketCommand.RunCommand()
+	return err
+}
+
+func (s *OssutilCommandSuite) initPutBucketWithStorageClass(args []string, storageClass string) error {
+	str := ""
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"stsToken":        &str,
+		"configFile":      &configFile,
+		"storageClass":    &storageClass,
+	}
+	err := makeBucketCommand.Init(args, options)
+	return err
+}
+
 func (s *OssutilCommandSuite) rawCP(srcURL, destURL string, recursive, force, update bool, threshold int64, cpDir string) (bool, error) {
 	args := []string{srcURL, destURL}
 	showElapse, err := s.rawCPWithArgs(args, recursive, force, update, threshold, cpDir)
@@ -949,6 +971,39 @@ func (s *OssutilCommandSuite) getFileList(dpath string) ([]string, error) {
 		return nil
 	})
 	return fileList, err
+}
+
+func (s *OssutilCommandSuite) initRestoreObject(args []string, cmdline string, outputDir string) error {
+	encodingType := ""
+	if pos := strings.Index(cmdline, "--encoding-type url"); pos != -1 {
+		encodingType = URLEncodingType
+		cmdline = cmdline[0:pos] + cmdline[pos+len("--encoding-type url"):]
+	}
+
+	parameter := strings.Split(cmdline, "-")
+	r := false
+	f := false
+	if len(parameter) >= 2 {
+		r = strings.Contains(parameter[1], "r")
+		f = strings.Contains(parameter[1], "f")
+	}
+
+	str := ""
+	routines := strconv.Itoa(Routines)
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"stsToken":        &str,
+		"configFile":      &configFile,
+		"recursive":       &r,
+		"force":           &f,
+		"encodingType":    &encodingType,
+		"routines":        &routines,
+		"outputDir":       &outputDir,
+	}
+	err := restoreCommand.Init(args, options)
+	return err
 }
 
 func (s *OssutilCommandSuite) TestParseOptions(c *C) {

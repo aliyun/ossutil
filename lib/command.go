@@ -2,10 +2,11 @@ package lib
 
 import (
 	"fmt"
-	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"net/http"
 	"strconv"
 	"strings"
+
+	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
 
 // group spec text of all commands
@@ -459,6 +460,7 @@ func GetAllCommands() []interface{} {
 		&setMetaCommand,
 		&copyCommand,
 		&createSymlinkCommand,
+		&restoreCommand,
 		&hashCommand,
 		&updateCommand,
 	}

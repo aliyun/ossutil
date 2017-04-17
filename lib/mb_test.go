@@ -3,6 +3,7 @@ package lib
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	. "gopkg.in/check.v1"
 )
@@ -135,4 +136,44 @@ func (s *OssutilCommandSuite) TestMakeBucketIDKey(c *C) {
 	os.Remove(cfile)
 
 	s.removeBucket(bucketName, false, c)
+}
+
+func (s *OssutilCommandSuite) TestMakeBucketStorageClass(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+
+	result := []string{StorageStandard, StorageIA, StorageArchive}
+	for i, class := range []string{StorageStandard, StorageIA, StorageArchive, strings.ToUpper(StorageStandard), strings.ToLower(StorageIA), "arCHIvE"} {
+		err := s.initPutBucketWithStorageClass([]string{CloudURLToString(bucketName, "")}, class)
+		c.Assert(err, IsNil)
+		err = makeBucketCommand.RunCommand()
+		c.Assert(err, IsNil)
+
+		bucketStat := s.getStat(bucketName, "", c)
+		c.Assert(bucketStat[StatName], Equals, bucketName)
+		c.Assert(bucketStat[StatStorageClass], Equals, result[i%3])
+
+		// delete bucket
+		s.removeBucket(bucketName, true, c)
+	}
+
+	// test error make bucket
+	err := s.initPutBucketWithStorageClass([]string{CloudURLToString("", "")}, StorageStandard)
+	c.Assert(err, IsNil)
+	err = makeBucketCommand.RunCommand()
+	c.Assert(err, NotNil)
+
+	// test error make bucket
+	err = s.initPutBucketWithStorageClass([]string{CloudURLToString("", "abc")}, StorageStandard)
+	c.Assert(err, IsNil)
+	err = makeBucketCommand.RunCommand()
+	c.Assert(err, NotNil)
+
+	// test error make bucket
+	err = s.initPutBucketWithStorageClass([]string{CloudURLToString(bucketName, "abc")}, StorageStandard)
+	c.Assert(err, IsNil)
+	err = makeBucketCommand.RunCommand()
+	c.Assert(err, NotNil)
+
+	_, err = s.rawGetStat(bucketName, "")
+	c.Assert(err, NotNil)
 }

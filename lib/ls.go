@@ -29,8 +29,8 @@ var specChineseList = SpecText{
 
     1) ossutil ls [oss://] [-s] [--limited-num num] [--marker marker]
         如果用户列举时缺失url参数，则ossutil获取用户的身份凭证信息（从配置文件中读取），
-    并列举该身份凭证下的所有buckets，并显示每个bucket的最新更新时间和位置信息。如果指定
-    了--short-format选项则只输出bucket名称。该用法不支持--directory选项。
+    并列举该身份凭证下的所有buckets，并显示每个bucket的最新更新时间，位置，存储方式等信息。
+    如果指定了--short-format选项则只输出bucket名称。该用法不支持--directory选项。
 
     2) ossutil ls oss://bucket[/prefix] [-s] [-d] [-m] [-a] [--limited-num num] [--marker marker] [--upload-id-marker umarker]
         如果未指定--multipart和--all-type选项，则ossutil列举指定bucket下的objects（如果指定
@@ -73,10 +73,10 @@ var specChineseList = SpecText{
         Object Number is: 3
 
     4) ossutil ls oss://bucket1
-        LastModifiedTime              Size(B)  ETAG                              ObjectName
-        2015-06-05 14:06:29 +0000 CST  201933  7E2F4A7F1AC9D2F0996E8332D5EA5B41  oss://bucket1/dir1/obj11
-        2015-06-05 14:36:21 +0000 CST  201933  6185CA2E8EB8510A61B3A845EAFE4174  oss://bucket1/obj1
-        2016-04-08 14:50:47 +0000 CST 6476984  4F16FDAE7AC404CEC8B727FCC67779D6  oss://bucket1/sample.txt
+        LastModifiedTime              Size(B)  StorageClass   ETAG                              ObjectName
+        2015-06-05 14:06:29 +0000 CST  201933      Standard   7E2F4A7F1AC9D2F0996E8332D5EA5B41  oss://bucket1/dir1/obj11
+        2015-06-05 14:36:21 +0000 CST  201933      Standard   6185CA2E8EB8510A61B3A845EAFE4174  oss://bucket1/obj1
+        2016-04-08 14:50:47 +0000 CST 6476984      Standard   4F16FDAE7AC404CEC8B727FCC67779D6  oss://bucket1/sample.txt
         Object Number is: 3
 
     5) ossutil ls oss://bucket1 -d
@@ -99,10 +99,10 @@ var specChineseList = SpecText{
         UploadID Number is: 2
  
     8) ossutil ls oss://bucket1 -a 
-        LastModifiedTime              Size(B)  ETAG                              ObjectName
-        2015-06-05 14:06:29 +0000 CST  201933  7E2F4A7F1AC9D2F0996E8332D5EA5B41  oss://bucket1/dir1/obj11
-        2015-06-05 14:36:21 +0000 CST  201933  6185CA2E8EB8510A61B3A845EAFE4174  oss://bucket1/obj1
-        2016-04-08 14:50:47 +0000 CST 6476984  4F16FDAE7AC404CEC8B727FCC67779D6  oss://bucket1/sample.txt
+        LastModifiedTime              Size(B)  StorageClass   ETAG                              ObjectName
+        2015-06-05 14:06:29 +0000 CST  201933      Standard   7E2F4A7F1AC9D2F0996E8332D5EA5B41  oss://bucket1/dir1/obj11
+        2015-06-05 14:36:21 +0000 CST  201933      Standard   6185CA2E8EB8510A61B3A845EAFE4174  oss://bucket1/obj1
+        2016-04-08 14:50:47 +0000 CST 6476984      Standard   4F16FDAE7AC404CEC8B727FCC67779D6  oss://bucket1/sample.txt
         Object Number is: 3
         InitiatedTime                  UploadID                          ObjectName
         2017-01-13 03:45:26 +0000 CST  15754AF7980C4DFB8193F190837520BB  oss://bucket1/obj1
@@ -112,8 +112,8 @@ var specChineseList = SpecText{
         UploadID Number is: 4
          
     9) ossutil ls oss://bucket1/obj -a 
-        LastModifiedTime              Size(B)  ETAG                              ObjectName
-        2015-06-05 14:36:21 +0000 CST  201933  6185CA2E8EB8510A61B3A845EAFE4174  oss://bucket1/obj1
+        LastModifiedTime              Size(B)  StorageClass   ETAG                              ObjectName
+        2015-06-05 14:36:21 +0000 CST  201933      Standard   6185CA2E8EB8510A61B3A845EAFE4174  oss://bucket1/obj1
         Object Number is: 1
         InitiatedTime                  UploadID                          ObjectName
         2017-01-13 03:45:26 +0000 CST  15754AF7980C4DFB8193F190837520BB  oss://bucket1/obj1
@@ -144,9 +144,9 @@ var specChineseList = SpecText{
         UploadID Number is: 1
 
     13) ossutil ls oss://bucket1/%e4%b8%ad%e6%96%87 --encoding-type url
-        LastModifiedTime                   Size(B)   ETAG                                    ObjectName
-        2017-03-17 17:34:40 +0800 CST      8345742   BBCC8C0954B869B4A6B34D9404C5BCFD        oss://bucket1/中文
-        Object Number is: 2
+        LastModifiedTime                   Size(B)  StorageClass   ETAG                                  ObjectName
+        2017-03-17 17:34:40 +0800 CST      8345742      Standard   BBCC8C0954B869B4A6B34D9404C5BCFD      oss://bucket1/中文
+        Object Number is: 1
         0.066567(s) elapsed
 `,
 }
@@ -220,10 +220,10 @@ Usage:
         Object Number is: 3
 
     4) ossutil ls oss://bucket1
-        LastModifiedTime              Size(B)  ETAG                              ObjectName
-        2015-06-05 14:06:29 +0000 CST  201933  7E2F4A7F1AC9D2F0996E8332D5EA5B41  oss://bucket1/dir1/obj11
-        2015-06-05 14:36:21 +0000 CST  201933  6185CA2E8EB8510A61B3A845EAFE4174  oss://bucket1/obj1
-        2016-04-08 14:50:47 +0000 CST 6476984  4F16FDAE7AC404CEC8B727FCC67779D6  oss://bucket1/sample.txt
+        LastModifiedTime              Size(B)  StorageClass   ETAG                              ObjectName
+        2015-06-05 14:06:29 +0000 CST  201933      Standard   7E2F4A7F1AC9D2F0996E8332D5EA5B41  oss://bucket1/dir1/obj11
+        2015-06-05 14:36:21 +0000 CST  201933      Standard   6185CA2E8EB8510A61B3A845EAFE4174  oss://bucket1/obj1
+        2016-04-08 14:50:47 +0000 CST 6476984      Standard   4F16FDAE7AC404CEC8B727FCC67779D6  oss://bucket1/sample.txt
         Object Number is: 3
 
     5) ossutil ls oss://bucket1 -d
@@ -246,10 +246,10 @@ Usage:
         UploadID Number is: 2
  
     8) ossutil ls oss://bucket1 -a 
-        LastModifiedTime              Size(B)  ETAG                              ObjectName
-        2015-06-05 14:06:29 +0000 CST  201933  7E2F4A7F1AC9D2F0996E8332D5EA5B41  oss://bucket1/dir1/obj11
-        2015-06-05 14:36:21 +0000 CST  201933  6185CA2E8EB8510A61B3A845EAFE4174  oss://bucket1/obj1
-        2016-04-08 14:50:47 +0000 CST 6476984  4F16FDAE7AC404CEC8B727FCC67779D6  oss://bucket1/sample.txt
+        LastModifiedTime              Size(B)  StorageClass   ETAG                              ObjectName
+        2015-06-05 14:06:29 +0000 CST  201933      Standard   7E2F4A7F1AC9D2F0996E8332D5EA5B41  oss://bucket1/dir1/obj11
+        2015-06-05 14:36:21 +0000 CST  201933      Standard   6185CA2E8EB8510A61B3A845EAFE4174  oss://bucket1/obj1
+        2016-04-08 14:50:47 +0000 CST 6476984      Standard   4F16FDAE7AC404CEC8B727FCC67779D6  oss://bucket1/sample.txt
         Object Number is: 3
         InitiatedTime                  UploadID                          ObjectName
         2017-01-13 03:45:26 +0000 CST  15754AF7980C4DFB8193F190837520BB  oss://bucket1/obj1
@@ -259,8 +259,8 @@ Usage:
         UploadID Number is: 4
          
     9) ossutil ls oss://bucket1/obj -a 
-        LastModifiedTime              Size(B)  ETAG                              ObjectName
-        2015-06-05 14:36:21 +0000 CST  201933  6185CA2E8EB8510A61B3A845EAFE4174  oss://bucket1/obj1
+        LastModifiedTime              Size(B)  StorageClass   ETAG                              ObjectName
+        2015-06-05 14:36:21 +0000 CST  201933      Standard   6185CA2E8EB8510A61B3A845EAFE4174  oss://bucket1/obj1
         Object Number is: 1
         InitiatedTime                  UploadID                          ObjectName
         2017-01-13 03:45:26 +0000 CST  15754AF7980C4DFB8193F190837520BB  oss://bucket1/obj1
@@ -291,9 +291,9 @@ Usage:
         UploadID Number is: 1
 
     13) ossutil ls oss://bucket1/%e4%b8%ad%e6%96%87 --encoding-type url
-        LastModifiedTime                   Size(B)   ETAG                                    ObjectName
-        2017-03-17 17:34:40 +0800 CST      8345742   BBCC8C0954B869B4A6B34D9404C5BCFD        oss://bucket1/中文
-        Object Number is: 2
+        LastModifiedTime                   Size(B)  StorageClass   ETAG                                  ObjectName
+        2017-03-17 17:34:40 +0800 CST      8345742      Standard   BBCC8C0954B869B4A6B34D9404C5BCFD      oss://bucket1/中文
+        Object Number is: 1
         0.066567(s) elapsed
 `,
 }
@@ -396,14 +396,14 @@ func (lc *ListCommand) listBuckets(prefix string) error {
 		pre = oss.Prefix(lbr.Prefix)
 		marker = oss.Marker(lbr.NextMarker)
 		if num == 0 && !shortFormat && len(lbr.Buckets) > 0 {
-			fmt.Printf("%-30s %20s%s%s\n", "CreationTime", "Region", FormatTAB, "BucketName")
+			fmt.Printf("%-30s %20s%s%12s%s%s\n", "CreationTime", "Region", FormatTAB, "StorageClass", FormatTAB, "BucketName")
 		}
 		for _, bucket := range lbr.Buckets {
 			if limitedNum >= 0 && num >= limitedNum {
 				break
 			}
 			if !shortFormat {
-				fmt.Printf("%-30s %20s%s%s\n", utcToLocalTime(bucket.CreationDate), bucket.Location, FormatTAB, CloudURLToString(bucket.Name, ""))
+				fmt.Printf("%-30s %20s%s%12s%s%s\n", utcToLocalTime(bucket.CreationDate), bucket.Location, FormatTAB, bucket.StorageClass, FormatTAB, CloudURLToString(bucket.Name, ""))
 			} else {
 				fmt.Println(CloudURLToString(bucket.Name, ""))
 			}
@@ -529,7 +529,7 @@ func (lc *ListCommand) listObjects(bucket *oss.Bucket, cloudURL CloudURL, shortF
 
 func (lc *ListCommand) displayObjectsResult(lor oss.ListObjectsResult, bucket string, shortFormat bool, directory bool, i int64, limitedNum *int64) int64 {
 	if i == 0 && !shortFormat && !directory && len(lor.Objects) > 0 {
-		fmt.Printf("%-30s%12s%s%-38s%s%s\n", "LastModifiedTime", "Size(B)", "   ", "ETAG", "  ", "ObjectName")
+		fmt.Printf("%-30s%12s%s%12s%s%-36s%s%s\n", "LastModifiedTime", "Size(B)", "  ", "StorageClass", "   ", "ETAG", "  ", "ObjectName")
 	}
 
 	var num int64
@@ -551,7 +551,7 @@ func (lc *ListCommand) showObjects(lor oss.ListObjectsResult, bucket string, sho
 			break
 		}
 		if !shortFormat {
-			fmt.Printf("%-30s%12d%s%-38s%s%s\n", utcToLocalTime(object.LastModified), object.Size, "   ", strings.Trim(object.ETag, "\""), "  ", CloudURLToString(bucket, object.Key))
+			fmt.Printf("%-30s%12d%s%12s%s%-36s%s%s\n", utcToLocalTime(object.LastModified), object.Size, "  ", object.StorageClass, "   ", strings.Trim(object.ETag, "\""), "  ", CloudURLToString(bucket, object.Key))
 		} else {
 			fmt.Printf("%s\n", CloudURLToString(bucket, object.Key))
 		}

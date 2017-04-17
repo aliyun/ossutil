@@ -151,8 +151,6 @@ func (sc *StatCommand) bucketStat(bucket *oss.Bucket, cloudURL CloudURL) error {
 		return err
 	}
 
-	attrMap := map[string]string{}
-	attrMap["Location"] = gbar.BucketInfo.Location
 	fmt.Printf("%-18s: %s\n", StatName, gbar.BucketInfo.Name)
 	fmt.Printf("%-18s: %s\n", StatLocation, gbar.BucketInfo.Location)
 	fmt.Printf("%-18s: %s\n", StatCreationDate, utcToLocalTime(gbar.BucketInfo.CreationDate))
@@ -160,6 +158,7 @@ func (sc *StatCommand) bucketStat(bucket *oss.Bucket, cloudURL CloudURL) error {
 	fmt.Printf("%-18s: %s\n", StatIntranetEndpoint, gbar.BucketInfo.IntranetEndpoint)
 	fmt.Printf("%-18s: %s\n", StatACL, gbar.BucketInfo.ACL)
 	fmt.Printf("%-18s: %s\n", StatOwner, gbar.BucketInfo.Owner.ID)
+	fmt.Printf("%-18s: %s\n", StatStorageClass, gbar.BucketInfo.StorageClass)
 	return nil
 }
 

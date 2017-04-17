@@ -6,6 +6,16 @@ import (
 	"strings"
 )
 
+var storageClassList = []string{
+	StorageStandard,
+	StorageIA,
+	StorageArchive,
+}
+
+func formatStorageClassString(sep string) string {
+	return strings.Join(storageClassList, sep)
+}
+
 var specChineseMakeBucket = SpecText{
 
 	synopsisText: "创建Bucket",
@@ -13,7 +23,7 @@ var specChineseMakeBucket = SpecText{
 	paramText: "url [options]",
 
 	syntaxText: ` 
-    ossutil mb oss://bucket [--acl=acl] [-c file] 
+    ossutil mb oss://bucket [--acl acl] [--storage-class class] [-c file] 
 `,
 
 	detailHelpText: ` 
@@ -27,28 +37,35 @@ var specChineseMakeBucket = SpecText{
 
 ACL：
 
-    bucket的acl有三种，括号里为ossutil额外支持的简写模式：
+    bucket的acl有三种：
         ` + formatACLString(bucketACL, "\n        ") + `
 
 
     关于acl的更多信息请参考help set-acl。
 
+StorageClass:
+    
+    bucket的StorageClass有三种：
+        ` + formatStorageClassString("\n        ") + `
+
+    关于StorageClass的更多信息请参考：https://help.aliyun.com/document_detail/31959.html?spm=5176.doc31957.6.839.E1ifnh
+
 用法：
 
-    该命令有两种用法：
-
-    1) ossutil mb oss://bucket [-c file]
+    ossutil mb oss://bucket [--acl=acl] [--storage-class class] [-c file]
         当未指定--acl选项时，ossutil会在指定的身份凭证下创建指定bucket，所创建的bucket的acl
     为默认private。如果需要更改acl信息，可以使用set-acl命令。
-
-    2) ossutil mb oss://bucket --acl=acl [-c file]
+        当未指定--storage-class选项时，ossutil创建的bucket的存储方式为默认存储方式：` + DefaultStorageClass + `。
         如果指定了--acl选项，ossutil会检查指定acl的合法性，如果acl非法，会进入交互模式，提
     示合法的acl输入，并询问acl信息。
+        如果指定了--storage-class选项，ossutil会检查指定storage class的合法性。
 `,
 
 	sampleText: ` 
     1)ossutil mb oss://bucket1
-    2)ossutil mb oss://bucket1 --acl=publi-read-write
+    2)ossutil mb oss://bucket1 --acl=public-read-write
+    3)ossutil mb oss://bucket1 --storage-class IA 
+    4)ossutil mb oss://bucket1 --acl=public-read-write --storage-class IA 
 `,
 }
 
@@ -59,7 +76,7 @@ var specEnglishMakeBucket = SpecText{
 	paramText: "url [options]",
 
 	syntaxText: ` 
-    ossutil mb oss://bucket [--acl=acl] [-c file]
+    ossutil mb oss://bucket [--acl acl] [--storage-class class] [-c file] 
 `,
 
 	detailHelpText: ` 
@@ -79,23 +96,32 @@ ACL:
 
     More information about acl, see help set-acl.
 
+StorageClass:
+
+    There are three kinds of StorageClass:
+        ` + formatStorageClassString("\n        ") + `
+
+    More information about StorageClass see: https://help.aliyun.com/document_detail/31959.html?spm=5176.doc31957.6.839.E1ifnh
+
 Usage:
 
-    There are two usages:
-
-    1) ossutil mb oss://bucket [-c file]
+    ossutil mb oss://bucket [--acl=acl] [--storage-class class] [-c file]
         If you create bucket without --acl option, ossutil will create bucket under the 
     specified credentials and the bucket acl is private, if you want to change acl, please 
     use set-acl command. 
-
-    2) ossutil mb oss://bucket --acl=acl [-c file]
+        If you create bucket without --storage-class option, the storage class of bucket will
+     be the default one: ` + DefaultStorageClass + `. 
         If you create bucket with --acl option, ossutil will check the validity of acl, if 
     invalid, ossutil will enter interactive mode, prompt the valid acls and ask you for it. 
+        If you create bucket with --storage-class option, ossutil will check the validity of 
+    storage class. 
 `,
 
 	sampleText: ` 
     1)ossutil mb oss://bucket1
-    2)ossutil mb oss://bucket1 --acl=publi-read-write
+    2)ossutil mb oss://bucket1 --acl=public-read-write
+    3)ossutil mb oss://bucket1 --storage-class IA 
+    4)ossutil mb oss://bucket1 --acl=public-read-write --storage-class IA 
 `,
 }
 
@@ -115,6 +141,7 @@ var makeBucketCommand = MakeBucketCommand{
 		group:       GroupTypeNormalCommand,
 		validOptionNames: []string{
 			OptionACL,
+			OptionStorageClass,
 			OptionConfigFile,
 			OptionEndpoint,
 			OptionAccessKeyID,
@@ -149,6 +176,10 @@ func (mc *MakeBucketCommand) RunCommand() error {
 
 	if cloudURL.bucket == "" {
 		return fmt.Errorf("invalid cloud url: %s, miss bucket", mc.command.args[0])
+	}
+
+	if cloudURL.object != "" {
+		return fmt.Errorf("invalid cloud url: %s, object not empty, upload object please use \"cp\" command", mc.command.args[0])
 	}
 
 	client, err := mc.command.ossClient(cloudURL.bucket)
@@ -206,9 +237,10 @@ func (mc *MakeBucketCommand) checkACL(acl string) (oss.ACLType, error) {
 }
 
 func (mc *MakeBucketCommand) ossCreateBucketRetry(client *oss.Client, bucket string, options ...oss.Option) error {
+	cbConfig := oss.CreateBucketConfiguration{StorageClass: mc.getStorageClass()}
 	retryTimes, _ := GetInt(OptionRetryTimes, mc.command.options)
 	for i := 1; ; i++ {
-		err := client.CreateBucket(bucket, options...)
+		err := client.DoCreateBucket(bucket, cbConfig, options...)
 		if err == nil {
 			return err
 		}
@@ -216,4 +248,15 @@ func (mc *MakeBucketCommand) ossCreateBucketRetry(client *oss.Client, bucket str
 			return BucketError{err, bucket}
 		}
 	}
+}
+
+func (mc *MakeBucketCommand) getStorageClass() oss.StorageClassType {
+	storageClass, _ := GetString(OptionStorageClass, mc.command.options)
+	if strings.EqualFold(storageClass, StorageIA) {
+		return oss.StorageIA
+	}
+	if strings.EqualFold(storageClass, StorageArchive) {
+		return oss.StorageArchive
+	}
+	return oss.StorageStandard
 }

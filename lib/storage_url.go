@@ -11,6 +11,15 @@ import (
 // SchemePrefix is the prefix of oss url
 const SchemePrefix string = "oss://"
 
+type CloudURLType string
+
+const (
+	CloudURLNone    CloudURLType = "none"
+	CloudURLService CloudURLType = "service"
+	CloudURLBucket  CloudURLType = "bucket"
+	CloudURLObject  CloudURLType = "object"
+)
+
 // StorageURLer is the interface for all url
 type StorageURLer interface {
 	IsCloudURL() bool
@@ -20,20 +29,23 @@ type StorageURLer interface {
 
 // CloudURL describes oss url
 type CloudURL struct {
-	urlStr string
-	bucket string
-	object string
+	urlStr  string
+	bucket  string
+	object  string
+	urlType CloudURLType
 }
 
 // Init is used to create a cloud url from a user input url
 func (cu *CloudURL) Init(urlStr, encodingType string) error {
 	cu.urlStr = urlStr
+	cu.urlType = CloudURLNone
 	if err := cu.parseBucketObject(encodingType); err != nil {
 		return err
 	}
-	if err := cu.checkBucketObject(); err != nil {
+	if err := cu.checkBucketObject(encodingType); err != nil {
 		return err
 	}
+	cu.setCloudURLType()
 	return nil
 }
 
@@ -63,9 +75,14 @@ func (cu *CloudURL) parseBucketObject(encodingType string) error {
 	return nil
 }
 
-func (cu *CloudURL) checkBucketObject() error {
+func (cu *CloudURL) checkBucketObject(encodingType string) error {
 	if cu.bucket == "" && cu.object != "" {
 		return fmt.Errorf("invalid cloud url: %s, miss bucket", cu.urlStr)
+	}
+	if encodingType == URLEncodingType && cu.bucket != "" && cu.object == "" {
+		if bucket, err := url.QueryUnescape(cu.bucket); err == nil && bucket != cu.bucket {
+			return fmt.Errorf("invalid cloud url: %s, bucket url do not support --encoding-type option", cu.urlStr)
+		}
 	}
 	return nil
 }
@@ -78,6 +95,16 @@ func (cu *CloudURL) checkObjectPrefix() error {
 		return fmt.Errorf("invalid cloud url: %s, object name should not begin with \"\\\"", cu.urlStr)
 	}
 	return nil
+}
+
+func (cu *CloudURL) setCloudURLType() {
+	if cu.bucket == "" && cu.object == "" {
+		cu.urlType = CloudURLService
+	} else if cu.bucket != "" && cu.object == "" {
+		cu.urlType = CloudURLBucket
+	} else if cu.bucket != "" && cu.object != "" {
+		cu.urlType = CloudURLObject
+	}
 }
 
 // IsCloudURL shows if the url is a cloud url

@@ -281,19 +281,19 @@ func (sc *SetMetaCommand) RunCommand() error {
 	routines, _ := GetInt(OptionRoutines, sc.command.options)
 	language, _ := GetString(OptionLanguage, sc.command.options)
 	language = strings.ToLower(language)
-
-	if err := sc.checkOption(isUpdate, isDelete, force, language); err != nil {
-		return err
-	}
-
 	encodingType, _ := GetString(OptionEncodingType, sc.command.options)
+
 	cloudURL, err := CloudURLFromString(sc.command.args[0], encodingType)
 	if err != nil {
 		return err
 	}
 
-	if cloudURL.bucket == "" {
-		return fmt.Errorf("invalid cloud url: %s, miss bucket", sc.command.args[0])
+	if err = sc.checkArgs(cloudURL, recursive); err != nil {
+		return err
+	}
+
+	if err := sc.checkOption(isUpdate, isDelete, force, language); err != nil {
+		return err
 	}
 
 	bucket, err := sc.command.ossBucket(cloudURL.bucket)
@@ -315,6 +315,16 @@ func (sc *SetMetaCommand) RunCommand() error {
 		return sc.setObjectMeta(bucket, cloudURL.object, headers, isUpdate, isDelete)
 	}
 	return sc.batchSetObjectMeta(bucket, cloudURL, headers, isUpdate, isDelete, force, routines)
+}
+
+func (sc *SetMetaCommand) checkArgs(cloudURL CloudURL, recursive bool) error {
+	if cloudURL.bucket == "" {
+		return fmt.Errorf("invalid cloud url: %s, miss bucket", sc.command.args[0])
+	}
+	if !recursive && cloudURL.object == "" {
+		return fmt.Errorf("set object meta invalid cloud url: %s, object empty. Set bucket meta is not supported, if you mean batch set meta on objects, please use --recursive", sc.command.args[0])
+	}
+	return nil
 }
 
 func (sc *SetMetaCommand) checkOption(isUpdate, isDelete, force bool, language string) error {
@@ -395,10 +405,6 @@ func (sc *SetMetaCommand) parseHeaders(str string, isDelete bool) (map[string]st
 }
 
 func (sc *SetMetaCommand) setObjectMeta(bucket *oss.Bucket, object string, headers map[string]string, isUpdate, isDelete bool) error {
-	if object == "" {
-		return fmt.Errorf("set object meta invalid url: %s, object empty. Set bucket meta is not supported, if you mean batch set meta on objects, please use --recursive", sc.command.args[0])
-	}
-
 	allheaders := headers
 	if isUpdate || isDelete {
 		props, err := sc.command.ossGetObjectStatRetry(bucket, object)

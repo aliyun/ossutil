@@ -242,6 +242,10 @@ func (s *OssutilCommandSuite) TestErrSetMeta(c *C) {
 	c.Assert(err, NotNil)
 	c.Assert(showElapse, Equals, false)
 
+	showElapse, err = s.rawSetMeta(bucketName, "", "x-oss-object-acl:private#X-Oss-Meta-A:A", false, false, false, true, DefaultLanguage)
+	c.Assert(err, NotNil)
+	c.Assert(showElapse, Equals, false)
+
 	showElapse, err = s.rawSetMetaWithArgs([]string{"oss:///object", "x-oss-object-acl:private#X-Oss-Meta-A:A"}, false, false, true, true, DefaultLanguage)
 	c.Assert(err, NotNil)
 	c.Assert(showElapse, Equals, false)

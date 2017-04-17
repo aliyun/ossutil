@@ -13,7 +13,7 @@ var specChineseCreateSymlink = SpecText{
 	paramText: "[sym_url] [target_url] [options]",
 
 	syntaxText: ` 
-    ossutil create-symlink sym_url target_object [--encoding-type url] 
+    ossutil create-symlink sym_url target_object [--encoding-type url] [-c file] 
 `,
 
 	detailHelpText: ` 
@@ -30,7 +30,6 @@ var specChineseCreateSymlink = SpecText{
     通过stat命令可以查看符号链接的目标文件。
 
     更多信息见官网API文档：https://help.aliyun.com/document_detail/45126.html?spm=5176.doc31979.6.870.x3Tqsh
-
 
 用法：
 
@@ -50,7 +49,7 @@ var specEnglishCreateSymlink = SpecText{
 	paramText: "[sym_url] [target_url] [options]",
 
 	syntaxText: ` 
-    ossutil create-symlink sym_url target_object [--encoding-type url]
+    ossutil create-symlink sym_url target_object [--encoding-type url] [-c file] 
 `,
 
 	detailHelpText: ` 
@@ -71,7 +70,6 @@ var specEnglishCreateSymlink = SpecText{
     We can use stat command to query the target object of symlink object.
 
     More information about symlink see: https://help.aliyun.com/document_detail/45126.html?spm=5176.doc31979.6.870.x3Tqsh
-
 
 Usage:
 
@@ -137,11 +135,12 @@ func (cc *CreateSymlinkCommand) RunCommand() error {
 		return err
 	}
 
+	if err := cc.checkArgs(cloudURL, targetURL); err != nil {
+		return err
+	}
+
 	targetObject := targetURL.ToString()
 	if targetURL.IsCloudURL() {
-		if targetURL.(CloudURL).bucket != cloudURL.bucket {
-			return fmt.Errorf("the bucket of target object: %s must be the same with the bucket of symlink object: %s", targetURL.(CloudURL).bucket, cloudURL.bucket)
-		}
 		targetObject = targetURL.(CloudURL).object
 	}
 
@@ -151,6 +150,27 @@ func (cc *CreateSymlinkCommand) RunCommand() error {
 	}
 
 	return cc.ossCreateSymlink(bucket, cloudURL.object, targetObject)
+}
+
+func (cc *CreateSymlinkCommand) checkArgs(symlinkURL CloudURL, targetURL StorageURLer) error {
+	if symlinkURL.bucket == "" {
+		return fmt.Errorf("invalid cloud url: %s, miss bucket", cc.command.args[0])
+	}
+	if symlinkURL.object == "" {
+		return fmt.Errorf("invalid cloud url: %s, miss object, symlink object can't be empty", cc.command.args[0])
+	}
+	if targetURL.IsCloudURL() {
+		if targetURL.(CloudURL).bucket == "" {
+			return fmt.Errorf("invalid cloud url: %s, miss bucket", cc.command.args[1])
+		}
+		if targetURL.(CloudURL).bucket != symlinkURL.bucket {
+			return fmt.Errorf("the bucket of target object: %s must be the same with the bucket of symlink object: %s", targetURL.(CloudURL).bucket, symlinkURL.bucket)
+		}
+		if targetURL.(CloudURL).object == "" {
+			return fmt.Errorf("invalid cloud url: %s, miss object, target object can't be empty", cc.command.args[1])
+		}
+	}
+	return nil
 }
 
 func (cc *CreateSymlinkCommand) ossCreateSymlink(bucket *oss.Bucket, symlinkObject, targetObject string) error {
