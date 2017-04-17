@@ -149,7 +149,7 @@ func (cc *CreateSymlinkCommand) RunCommand() error {
 		return err
 	}
 
-	return cc.ossCreateSymlink(bucket, cloudURL.object, targetObject)
+	return cc.ossCreateSymlinkRetry(bucket, cloudURL.object, targetObject)
 }
 
 func (cc *CreateSymlinkCommand) checkArgs(symlinkURL CloudURL, targetURL StorageURLer) error {
@@ -173,7 +173,7 @@ func (cc *CreateSymlinkCommand) checkArgs(symlinkURL CloudURL, targetURL Storage
 	return nil
 }
 
-func (cc *CreateSymlinkCommand) ossCreateSymlink(bucket *oss.Bucket, symlinkObject, targetObject string) error {
+func (cc *CreateSymlinkCommand) ossCreateSymlinkRetry(bucket *oss.Bucket, symlinkObject, targetObject string) error {
 	retryTimes, _ := GetInt(OptionRetryTimes, cc.command.options)
 	for i := 1; ; i++ {
 		err := bucket.PutSymlink(symlinkObject, targetObject)

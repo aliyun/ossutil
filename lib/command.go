@@ -460,6 +460,7 @@ func GetAllCommands() []interface{} {
 		&setMetaCommand,
 		&copyCommand,
 		&createSymlinkCommand,
+		&readSymlinkCommand,
 		&restoreCommand,
 		&hashCommand,
 		&updateCommand,

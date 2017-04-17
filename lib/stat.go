@@ -2,11 +2,12 @@ package lib
 
 import (
 	"fmt"
-	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"net/http"
 	"sort"
 	"strings"
 	"time"
+
+	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
 
 var specChineseStat = SpecText{
@@ -16,25 +17,23 @@ var specChineseStat = SpecText{
 	paramText: "url [options]",
 
 	syntaxText: ` 
-    ossutil stat oss://bucket[/object] [-c file] 
+    ossutil stat oss://bucket[/object] [--encoding-type url] [-c file] 
 `,
 
 	detailHelpText: ` 
-    该命令获取指定bucket或者objects的描述信息，当指定--recursive选项时，获取所有与指定
-    url匹配的objects，统计objects个数大小和最新更新时间并输出。否则，显示指定的bucket的
-    信息或者单个object的元信息。
+    该命令获取指定bucket或者object的描述信息。
 
 用法：
 
     该命令有两种用法：
 
-    1) ossutil stat oss://bucket
-        如果未指定--recursive选项，ossutil显示指定bucket的信息，包括创建时间，location，
-    访问的外网域名，内网域名，拥有者，acl信息。
+    1) ossutil stat oss://bucket [--encoding-type url]
+        ossutil显示指定bucket的信息，包括创建时间，location，访问的外网域名，内网域名，拥
+    有者，acl信息。
 
-    2) ossutil stat oss://bucket/object
-        如果未指定--recursive选项，ossutil显示指定object的元信息，包括文件大小，最新更新
-    时间，etag，文件类型，acl，文件的自定义meta等信息。
+    2) ossutil stat oss://bucket/object [--encoding-type url]
+        ossutil显示指定object的元信息，包括文件大小，最新更新时间，etag，文件类型，acl，文
+    件的自定义meta等信息。
 `,
 
 	sampleText: ` 
@@ -46,32 +45,28 @@ var specChineseStat = SpecText{
 
 var specEnglishStat = SpecText{
 
-	synopsisText: "Display status of bucket or objects",
+	synopsisText: "Display meta information of bucket or objects",
 
 	paramText: "url [options]",
 
 	syntaxText: ` 
-    ossutil stat oss://bucket[/prefix] [-c file] 
+    ossutil stat oss://bucket[/object] [--encoding-type url] [-c file] 
 `,
 
 	detailHelpText: ` 
-    The command display status of bucket or objects. If --recursive option is specified, 
-    ossutil access all the objects prefix matching the specified url, display total count 
-    and size, last modify time. If not, ossutil will display the meta information of the 
-    specified bucket or single object.
+    The command display the meta information of bucket or objects.
 
 Usage：
 
     There are three usages:    
 
-    1) ossutil stat oss://bucket
-        If you use the command to bucket without --recursive option, ossutil will display 
-    bucket meta info, include creation date, location, extranet endpoint, intranet endpoint, 
-    Owner and acl info.
+    1) ossutil stat oss://bucket [--encoding-type url]
+        ossutil display bucket meta info, include creation date, location, extranet endpoint, 
+    intranet endpoint, Owner and acl info.
 
-    2) ossutil stat oss://bucket/object
-        If you use the command to object without --recursive option, ossutil will display
-    object meta info, include file size, last modify time, etag, content-type, user meta etc.
+    2) ossutil stat oss://bucket/object [--encoding-type url]
+        ossutil display object meta info, include file size, last modify time, etag, content-type, 
+    user meta etc.
 `,
 
 	sampleText: ` 

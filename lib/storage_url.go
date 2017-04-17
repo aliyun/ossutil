@@ -29,23 +29,20 @@ type StorageURLer interface {
 
 // CloudURL describes oss url
 type CloudURL struct {
-	urlStr  string
-	bucket  string
-	object  string
-	urlType CloudURLType
+	urlStr string
+	bucket string
+	object string
 }
 
 // Init is used to create a cloud url from a user input url
 func (cu *CloudURL) Init(urlStr, encodingType string) error {
 	cu.urlStr = urlStr
-	cu.urlType = CloudURLNone
 	if err := cu.parseBucketObject(encodingType); err != nil {
 		return err
 	}
 	if err := cu.checkBucketObject(encodingType); err != nil {
 		return err
 	}
-	cu.setCloudURLType()
 	return nil
 }
 
@@ -97,14 +94,14 @@ func (cu *CloudURL) checkObjectPrefix() error {
 	return nil
 }
 
-func (cu *CloudURL) setCloudURLType() {
-	if cu.bucket == "" && cu.object == "" {
-		cu.urlType = CloudURLService
-	} else if cu.bucket != "" && cu.object == "" {
-		cu.urlType = CloudURLBucket
-	} else if cu.bucket != "" && cu.object != "" {
-		cu.urlType = CloudURLObject
+func (cu *CloudURL) checkIsObjectURL() error {
+	if cu.bucket == "" {
+		return fmt.Errorf("invalid cloud url: %s, miss bucket", cu.urlStr)
 	}
+	if cu.object == "" {
+		return fmt.Errorf("invalid cloud url: %s, miss object", cu.urlStr)
+	}
+	return nil
 }
 
 // IsCloudURL shows if the url is a cloud url
@@ -190,6 +187,15 @@ func CloudURLFromString(urlStr, encodingType string) (CloudURL, error) {
 		return CloudURL{}, fmt.Errorf("invalid cloud url: \"%s\", please make sure the url starts with: \"%s\"", urlStr, SchemePrefix)
 	}
 	return storageURL.(CloudURL), nil
+}
+
+// ObjectURLFromString get a oss url from url, if url is not a cloud url, return error
+func ObjectURLFromString(urlStr, encodingType string) (CloudURL, error) {
+	cloudURL, err := CloudURLFromString(urlStr, encodingType)
+	if err != nil {
+		return cloudURL, err
+	}
+	return cloudURL, cloudURL.checkIsObjectURL()
 }
 
 // CloudURLToString format url string from input

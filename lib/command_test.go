@@ -947,6 +947,51 @@ func (s *OssutilCommandSuite) initCreateSymlink(cmdline string) error {
 	return err
 }
 
+func (s *OssutilCommandSuite) readSymlink(cmdline string, c *C) map[string]string {
+	testResultFile, _ = os.OpenFile(resultPath, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
+	out := os.Stdout
+	os.Stdout = testResultFile
+	err := s.initReadSymlink(cmdline)
+	c.Assert(err, IsNil)
+	err = readSymlinkCommand.RunCommand()
+	c.Assert(err, IsNil)
+	os.Stdout = out
+
+	// get result
+	stat := s.getStatResults(c)
+	os.Remove(resultPath)
+	return stat
+}
+
+func (s *OssutilCommandSuite) initReadSymlink(cmdline string) error {
+	encodingType := ""
+	if pos := strings.Index(cmdline, "--encoding-type url"); pos != -1 {
+		encodingType = URLEncodingType
+		cmdline = cmdline[0:pos] + cmdline[pos+len("--encoding-type url"):]
+	}
+
+	cmds := strings.Split(cmdline, " ")
+	args := []string{}
+	for _, cmd := range cmds {
+		cmd = strings.TrimSpace(cmd)
+		if cmd != "" {
+			args = append(args, cmd)
+		}
+	}
+
+	str := ""
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"stsToken":        &str,
+		"configFile":      &configFile,
+		"encodingType":    &encodingType,
+	}
+	err := readSymlinkCommand.Init(args, options)
+	return err
+}
+
 func (s *OssutilCommandSuite) getFileList(dpath string) ([]string, error) {
 	fileList := []string{}
 	err := filepath.Walk(dpath, func(fpath string, f os.FileInfo, err error) error {
