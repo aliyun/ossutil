@@ -2,8 +2,9 @@ package lib
 
 import (
 	"fmt"
-	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"strings"
+
+	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
 
 var aclMap = map[oss.ACLType][]string{
@@ -102,9 +103,11 @@ ACL：
 
     3) ossutil set-acl oss://bucket[/prefix] [acl] -r [-f] [-c file]
         该用法可批量设置objects的acl，此时必须输入--recursive选项，ossutil会查找所有前缀匹配url的
-    objects，设置它们的acl，当错误出现时会终止命令。此时不支持--bucket选项，即ossutil不支持同时设
-    置bucket和其中objects的acl，如有需要，请分开操作。如果--force选项被指定，则不会进行询问提示。
-    如果用户在命令行中缺失acl信息，会进入交互模式，询问用户的acl信息。
+    objects，设置它们的acl，当一个object操作出现错误时，会将出错object的错误信息记录到report文件，
+    并继续操作其他object，成功操作的object信息将不会被记录到report文件中（更多信息见cp命令的帮助）。
+    此时不支持--bucket选项，即ossutil不支持同时设置bucket和其中objects的acl，如有需要，请分开操作。
+    如果--force选项被指定，则不会进行询问提示。如果用户在命令行中缺失acl信息，会进入交互模式，询问
+    用户的acl信息。
 `,
 
 	sampleText: ` 
@@ -174,11 +177,13 @@ Usage：
 
     3) ossutil set-acl oss://bucket[/prefix] [acl] -r [-f] [-c file]
         The usage can set acl on many objects, --recursive option is required for the 
-    usage, ossutil will search for prefix-matching objects and set acl on those objects, 
-    if error occurs, the operation is terminated. In the usage, --bucket option is not 
-    supported, which means set acl on bucket an objects inside simultaneously is not 
-    supported. If --force option is specified, ossutil will not show prompt question. If 
-    acl information is missed, ossutil will enter interactive mode and ask you for it. 
+    usage, ossutil will search for prefix-matching objects and set acl on those objects. 
+    If an error occurs, ossutil will record the error message to report file, and ossutil 
+    will continue to attempt to set acl on the remaining objects(more information see 
+    help of cp command). In the usage, --bucket option is not supported, which means set 
+    acl on bucket an objects inside simultaneously is not supported. If --force option 
+    is specified, ossutil will not show prompt question. If acl information is missed, 
+    ossutil will enter interactive mode and ask you for it. 
 `,
 
 	sampleText: ` 
@@ -194,8 +199,9 @@ Usage：
 
 // SetACLCommand is the command set acl
 type SetACLCommand struct {
-	command Command
-	monitor Monitor
+	command     Command
+	monitor     Monitor
+    saOption    batchOptionType
 }
 
 var setACLCommand = SetACLCommand{
@@ -219,6 +225,7 @@ var setACLCommand = SetACLCommand{
 			OptionSTSToken,
 			OptionRetryTimes,
 			OptionRoutines,
+            OptionOutputDir,
 		},
 	},
 }
@@ -383,10 +390,23 @@ func (sc *SetACLCommand) batchSetObjectACL(bucket *oss.Bucket, cloudURL CloudURL
 		return err
 	}
 
+    sc.saOption.ctnu = true
+    outputDir, _ := GetString(OptionOutputDir, sc.command.options)
+
+    // init reporter
+    if sc.saOption.reporter, err = GetReporter(sc.saOption.ctnu, outputDir, commandLine); err != nil {
+        return err
+    }
+    defer sc.saOption.reporter.Clear()
+
+    return sc.setObjectACLs(bucket, cloudURL, acl, force, routines)
+}
+
+func (sc *SetACLCommand) setObjectACLs(bucket *oss.Bucket, cloudURL CloudURL, acl oss.ACLType, force bool, routines int64) error {
 	// producer list objects
 	// consumer set acl
 	chObjects := make(chan string, ChannelBuf)
-	chError := make(chan error, routines+1)
+	chError := make(chan error, routines + 1)
 	chListError := make(chan error, 1)
 	go sc.command.objectStatistic(bucket, cloudURL, &sc.monitor)
 	go sc.command.objectProducer(bucket, cloudURL, chObjects, chListError)
@@ -394,7 +414,35 @@ func (sc *SetACLCommand) batchSetObjectACL(bucket *oss.Bucket, cloudURL CloudURL
 		go sc.setObjectACLConsumer(bucket, acl, chObjects, chError)
 	}
 
+    return sc.waitRoutinueComplete(chError, chListError, routines)
+}
+
+func (sc *SetACLCommand) setObjectACLConsumer(bucket *oss.Bucket, acl oss.ACLType, chObjects <-chan string, chError chan<- error) {
+	for object := range chObjects {
+        err := sc.setObjectACLWithReport(bucket, object, acl)
+        if err != nil {
+            chError <- err
+            if !sc.saOption.ctnu {
+                return
+            }
+            continue
+        }
+	}
+
+	chError <- nil
+}
+
+func (sc *SetACLCommand) setObjectACLWithReport(bucket *oss.Bucket, object string, acl oss.ACLType) error {
+    err := sc.ossSetObjectACLRetry(bucket, object, acl)
+    sc.command.updateMonitor(err, &sc.monitor)
+    msg := fmt.Sprintf("set acl on %s", CloudURLToString(bucket.BucketName, object))
+    sc.command.report(msg, err, &sc.saOption)
+    return err
+}
+
+func (sc *SetACLCommand) waitRoutinueComplete(chError, chListError <-chan error, routines int64) error {
 	completed := 0
+	var ferr error
 	for int64(completed) <= routines {
 		select {
 		case err := <-chListError:
@@ -403,26 +451,24 @@ func (sc *SetACLCommand) batchSetObjectACL(bucket *oss.Bucket, cloudURL CloudURL
 			}
 			completed++
 		case err := <-chError:
-			if err != nil {
-				fmt.Printf(sc.monitor.progressBar(true))
-				return err
+			if err == nil {
+				completed++
+			} else {
+				ferr = err
+				if !sc.saOption.ctnu {
+					fmt.Printf(sc.monitor.progressBar(true, errExit))
+					return err
+				}
 			}
-			completed++
 		}
 	}
-	fmt.Printf(sc.monitor.progressBar(true))
-	return nil
+	return sc.formatResultPrompt(ferr)
 }
 
-func (sc *SetACLCommand) setObjectACLConsumer(bucket *oss.Bucket, acl oss.ACLType, chObjects <-chan string, chError chan<- error) {
-	for object := range chObjects {
-		err := sc.ossSetObjectACLRetry(bucket, object, acl)
-		sc.command.updateMonitor(err, &sc.monitor)
-		if err != nil {
-			chError <- err
-			return
-		}
+func (sc *SetACLCommand) formatResultPrompt(err error) error {
+	fmt.Printf(sc.monitor.progressBar(true, normalExit))
+	if err != nil && sc.saOption.ctnu {
+		return nil
 	}
-
-	chError <- nil
+	return err
 }

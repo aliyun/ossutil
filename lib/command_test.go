@@ -54,7 +54,8 @@ var (
 )
 
 var (
-	bucketNamePrefix   = "ossutil-test-" + randLowStr(6)
+	//bucketNamePrefix   = "ossutil-test-" + randLowStr(6)
+	bucketNamePrefix   = "ossutil-test-"
 	bucketNameExist    = "special-" + bucketNamePrefix + "existbucket"
 	bucketNameDest     = "special-" + bucketNamePrefix + "destbucket"
 	bucketNameNotExist = "nodelete-ossutil-test-notexist"
@@ -850,6 +851,42 @@ func (s *OssutilCommandSuite) initSetACL(bucket, object, acl string, recursive, 
 	return err
 }
 
+func (s *OssutilCommandSuite) initSetACLWithArgs(args []string, cmdline string, outputDir string) error {
+	encodingType := ""
+	if pos := strings.Index(cmdline, "--encoding-type url"); pos != -1 {
+		encodingType = URLEncodingType
+		cmdline = cmdline[0:pos] + cmdline[pos+len("--encoding-type url"):]
+	}
+
+	parameter := strings.Split(cmdline, "-")
+	r := false
+	f := false
+    b := false
+	if len(parameter) >= 2 {
+		r = strings.Contains(parameter[1], "r")
+		f = strings.Contains(parameter[1], "f")
+        b = strings.Contains(parameter[1], "b")
+	}
+
+	str := ""
+	routines := strconv.Itoa(Routines)
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"stsToken":        &str,
+		"configFile":      &configFile,
+		"recursive":       &r,
+		"force":           &f,
+        "bucket":          &b,
+		"encodingType":    &encodingType,
+		"routines":        &routines,
+		"outputDir":       &outputDir,
+	}
+	err := setACLCommand.Init(args, options)
+	return err
+}
+
 func (s *OssutilCommandSuite) setBucketACL(bucket, acl string, c *C) {
 	args := []string{CloudURLToString(bucket, ""), acl}
 	showElapse, err := s.rawSetACLWithArgs(args, false, true, false)
@@ -913,6 +950,52 @@ func (s *OssutilCommandSuite) initSetMeta(bucket, object, meta string, update, d
 		"force":           &force,
 		"routines":        &routines,
 		"language":        &language,
+	}
+	err := setMetaCommand.Init(args, options)
+	return err
+}
+
+func (s *OssutilCommandSuite) initSetMetaWithArgs(args []string, cmdline string, outputDir string) error {
+	encodingType := ""
+	if pos := strings.Index(cmdline, "--encoding-type url"); pos != -1 {
+		encodingType = URLEncodingType
+		cmdline = cmdline[0:pos] + cmdline[pos+len("--encoding-type url"):]
+	}
+    
+    update := false
+	if pos := strings.Index(cmdline, "--update"); pos != -1 {
+        update = true
+		cmdline = cmdline[0:pos] + cmdline[pos+len("--update"):]
+	}
+   
+    delete := false
+	if pos := strings.Index(cmdline, "--delete"); pos != -1 {
+        delete = true
+		cmdline = cmdline[0:pos] + cmdline[pos+len("--delete"):]
+	}
+   
+	parameter := strings.Split(cmdline, "-")
+	r := false
+	f := false
+	if len(parameter) >= 2 {
+		r = strings.Contains(parameter[1], "r")
+		f = strings.Contains(parameter[1], "f")
+	}
+
+	str := ""
+	routines := strconv.Itoa(Routines)
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"stsToken":        &str,
+		"configFile":      &configFile,
+		"update":          &update,
+		"delete":          &delete,
+		"recursive":       &r,
+		"force":           &f,
+		"routines":        &routines,
+		"encodingType":    &encodingType,
 	}
 	err := setMetaCommand.Init(args, options)
 	return err
@@ -1049,6 +1132,15 @@ func (s *OssutilCommandSuite) initRestoreObject(args []string, cmdline string, o
 	}
 	err := restoreCommand.Init(args, options)
 	return err
+}
+
+func (s *OssutilCommandSuite) getErrorOSSBucket(bucketName string, c *C) *oss.Bucket {
+	client, err := oss.New(endpoint, "abc", accessKeySecret, oss.EnableCRC(true))
+	c.Assert(err, IsNil)
+
+	bucket, err := client.Bucket(bucketName)
+	c.Assert(err, IsNil)
+	return bucket
 }
 
 func (s *OssutilCommandSuite) TestParseOptions(c *C) {

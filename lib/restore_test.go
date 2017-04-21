@@ -5,7 +5,6 @@ import (
 	"net/url"
 	"strings"
 
-	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 	. "gopkg.in/check.v1"
 )
 
@@ -120,26 +119,26 @@ func (s *OssutilCommandSuite) TestBatchRestoreObject(c *C) {
 	c.Assert(err, IsNil)
 	restoreCommand.monitor.init("Restored")
 
-	str := restoreCommand.monitor.newProgressBar(false, normalExit)
+	str := restoreCommand.monitor.progressBar(false, normalExit)
 	c.Assert(str != "", Equals, true)
-	str = restoreCommand.monitor.newProgressBar(false, errExit)
+	str = restoreCommand.monitor.progressBar(false, errExit)
 	c.Assert(str != "", Equals, true)
-	str = restoreCommand.monitor.newProgressBar(true, normalExit)
+	str = restoreCommand.monitor.progressBar(true, normalExit)
 	c.Assert(str != "", Equals, true)
 	restoreCommand.monitor.finish = false
-	str = restoreCommand.monitor.newProgressBar(true, errExit)
+	str = restoreCommand.monitor.progressBar(true, errExit)
 	c.Assert(str != "", Equals, true)
 
 	err = restoreCommand.RunCommand()
 	c.Assert(err, IsNil)
 
-	str = restoreCommand.monitor.newProgressBar(false, normalExit)
+	str = restoreCommand.monitor.progressBar(false, normalExit)
 	c.Assert(str, Equals, "")
-	str = restoreCommand.monitor.newProgressBar(false, errExit)
+	str = restoreCommand.monitor.progressBar(false, errExit)
 	c.Assert(str, Equals, "")
-	str = restoreCommand.monitor.newProgressBar(true, normalExit)
+	str = restoreCommand.monitor.progressBar(true, normalExit)
 	c.Assert(str, Equals, "")
-	str = restoreCommand.monitor.newProgressBar(true, errExit)
+	str = restoreCommand.monitor.progressBar(true, errExit)
 	c.Assert(str, Equals, "")
 
 	snap := restoreCommand.monitor.getSnapshot()
@@ -148,22 +147,22 @@ func (s *OssutilCommandSuite) TestBatchRestoreObject(c *C) {
 	c.Assert(snap.dealNum, Equals, int64(3))
 
 	restoreCommand.monitor.seekAheadEnd = true
-	str = strings.ToLower(restoreCommand.monitor.getNewFinishBar(normalExit))
+	str = strings.ToLower(restoreCommand.monitor.getFinishBar(normalExit))
 	c.Assert(strings.Contains(str, "succeed:"), Equals, true)
 	c.Assert(strings.Contains(str, fmt.Sprintf("total %d", 3)), Equals, true)
 	c.Assert(strings.Contains(str, "err"), Equals, false)
 	restoreCommand.monitor.seekAheadEnd = false
-	str = strings.ToLower(restoreCommand.monitor.getNewFinishBar(normalExit))
+	str = strings.ToLower(restoreCommand.monitor.getFinishBar(normalExit))
 	c.Assert(strings.Contains(str, "succeed:"), Equals, true)
 	c.Assert(strings.Contains(str, fmt.Sprintf("total %d", 3)), Equals, true)
 	c.Assert(strings.Contains(str, "err"), Equals, false)
 
 	restoreCommand.monitor.seekAheadEnd = true
-	str = strings.ToLower(restoreCommand.monitor.getNewFinishBar(errExit))
+	str = strings.ToLower(restoreCommand.monitor.getFinishBar(errExit))
 	c.Assert(strings.Contains(str, "when error happens."), Equals, true)
 	c.Assert(strings.Contains(str, "total"), Equals, true)
 	restoreCommand.monitor.seekAheadEnd = false
-	str = strings.ToLower(restoreCommand.monitor.getNewFinishBar(errExit))
+	str = strings.ToLower(restoreCommand.monitor.getFinishBar(errExit))
 	c.Assert(strings.Contains(str, "when error happens."), Equals, true)
 	c.Assert(strings.Contains(str, "scanned"), Equals, true)
 
@@ -195,7 +194,7 @@ func (s *OssutilCommandSuite) TestBatchRestoreNotExistBucket(c *C) {
 	c.Assert(err, NotNil)
 }
 
-func (s *OssutilCommandSuite) TestBatchRestoreError(c *C) {
+func (s *OssutilCommandSuite) TestBatchRestoreErrorContinue(c *C) {
 	bucketName := bucketNamePrefix + randLowStr(10)
 	s.putBucketWithStorageClass(bucketName, StorageArchive, c)
 
@@ -247,13 +246,13 @@ func (s *OssutilCommandSuite) TestBatchRestoreError(c *C) {
 	err = restoreCommand.waitRoutinueComplete(chError, chListError, routines)
 	c.Assert(err, IsNil)
 
-	str := restoreCommand.monitor.newProgressBar(false, normalExit)
+	str := restoreCommand.monitor.progressBar(false, normalExit)
 	c.Assert(str, Equals, "")
-	str = restoreCommand.monitor.newProgressBar(false, errExit)
+	str = restoreCommand.monitor.progressBar(false, errExit)
 	c.Assert(str, Equals, "")
-	str = restoreCommand.monitor.newProgressBar(true, normalExit)
+	str = restoreCommand.monitor.progressBar(true, normalExit)
 	c.Assert(str, Equals, "")
-	str = restoreCommand.monitor.newProgressBar(true, errExit)
+	str = restoreCommand.monitor.progressBar(true, errExit)
 	c.Assert(str, Equals, "")
 
 	snap := restoreCommand.monitor.getSnapshot()
@@ -263,23 +262,23 @@ func (s *OssutilCommandSuite) TestBatchRestoreError(c *C) {
 
 	restoreCommand.monitor.seekAheadEnd = true
 	restoreCommand.monitor.seekAheadError = nil
-	str = strings.ToLower(restoreCommand.monitor.getNewFinishBar(normalExit))
+	str = strings.ToLower(restoreCommand.monitor.getFinishBar(normalExit))
 	c.Assert(strings.Contains(str, "finishwitherror:"), Equals, true)
 	c.Assert(strings.Contains(str, "succeed:"), Equals, false)
 	c.Assert(strings.Contains(str, "error"), Equals, true)
 	restoreCommand.monitor.seekAheadEnd = false
-	str = strings.ToLower(restoreCommand.monitor.getNewFinishBar(normalExit))
+	str = strings.ToLower(restoreCommand.monitor.getFinishBar(normalExit))
 	c.Assert(strings.Contains(str, "finishwitherror:"), Equals, true)
 	c.Assert(strings.Contains(str, "succeed:"), Equals, false)
 	c.Assert(strings.Contains(str, "error"), Equals, true)
 
 	restoreCommand.monitor.seekAheadEnd = true
 	restoreCommand.monitor.seekAheadError = nil
-	str = strings.ToLower(restoreCommand.monitor.getNewFinishBar(errExit))
+	str = strings.ToLower(restoreCommand.monitor.getFinishBar(errExit))
 	c.Assert(strings.Contains(str, "when error happens."), Equals, true)
 	c.Assert(strings.Contains(str, "total"), Equals, true)
 	restoreCommand.monitor.seekAheadEnd = false
-	str = strings.ToLower(restoreCommand.monitor.getNewFinishBar(errExit))
+	str = strings.ToLower(restoreCommand.monitor.getFinishBar(errExit))
 	c.Assert(strings.Contains(str, "when error happens."), Equals, true)
 	c.Assert(strings.Contains(str, "scanned"), Equals, true)
 
@@ -292,16 +291,7 @@ func (s *OssutilCommandSuite) TestBatchRestoreError(c *C) {
 	s.removeBucket(bucketName, true, c)
 }
 
-func (s *OssutilCommandSuite) getErrorOSSBucket(bucketName string, c *C) *oss.Bucket {
-	client, err := oss.New(endpoint, "abc", accessKeySecret, oss.EnableCRC(true))
-	c.Assert(err, IsNil)
-
-	bucket, err := client.Bucket(bucketName)
-	c.Assert(err, IsNil)
-	return bucket
-}
-
-func (s *OssutilCommandSuite) TestBatchRestoreError1(c *C) {
+func (s *OssutilCommandSuite) TestBatchRestoreErrorBreak(c *C) {
 	bucketName := bucketNamePrefix + randLowStr(10)
 	s.putBucketWithStorageClass(bucketName, StorageArchive, c)
 
@@ -352,13 +342,13 @@ func (s *OssutilCommandSuite) TestBatchRestoreError1(c *C) {
 	err = restoreCommand.waitRoutinueComplete(chError, chListError, routines)
 	c.Assert(err, NotNil)
 
-	str := restoreCommand.monitor.newProgressBar(false, normalExit)
+	str := restoreCommand.monitor.progressBar(false, normalExit)
 	c.Assert(str, Equals, "")
-	str = restoreCommand.monitor.newProgressBar(false, errExit)
+	str = restoreCommand.monitor.progressBar(false, errExit)
 	c.Assert(str, Equals, "")
-	str = restoreCommand.monitor.newProgressBar(true, normalExit)
+	str = restoreCommand.monitor.progressBar(true, normalExit)
 	c.Assert(str, Equals, "")
-	str = restoreCommand.monitor.newProgressBar(true, errExit)
+	str = restoreCommand.monitor.progressBar(true, errExit)
 	c.Assert(str, Equals, "")
 
 	snap := restoreCommand.monitor.getSnapshot()
@@ -368,23 +358,23 @@ func (s *OssutilCommandSuite) TestBatchRestoreError1(c *C) {
 
 	restoreCommand.monitor.seekAheadEnd = true
 	restoreCommand.monitor.seekAheadError = nil
-	str = strings.ToLower(restoreCommand.monitor.getNewFinishBar(normalExit))
+	str = strings.ToLower(restoreCommand.monitor.getFinishBar(normalExit))
 	c.Assert(strings.Contains(str, "finishwitherror:"), Equals, true)
 	c.Assert(strings.Contains(str, "succeed:"), Equals, false)
 	c.Assert(strings.Contains(str, "error"), Equals, true)
 	restoreCommand.monitor.seekAheadEnd = false
-	str = strings.ToLower(restoreCommand.monitor.getNewFinishBar(normalExit))
+	str = strings.ToLower(restoreCommand.monitor.getFinishBar(normalExit))
 	c.Assert(strings.Contains(str, "finishwitherror:"), Equals, true)
 	c.Assert(strings.Contains(str, "succeed:"), Equals, false)
 	c.Assert(strings.Contains(str, "error"), Equals, true)
 
 	restoreCommand.monitor.seekAheadEnd = true
 	restoreCommand.monitor.seekAheadError = nil
-	str = strings.ToLower(restoreCommand.monitor.getNewFinishBar(errExit))
+	str = strings.ToLower(restoreCommand.monitor.getFinishBar(errExit))
 	c.Assert(strings.Contains(str, "when error happens."), Equals, true)
 	c.Assert(strings.Contains(str, "total"), Equals, true)
 	restoreCommand.monitor.seekAheadEnd = false
-	str = strings.ToLower(restoreCommand.monitor.getNewFinishBar(errExit))
+	str = strings.ToLower(restoreCommand.monitor.getFinishBar(errExit))
 	c.Assert(strings.Contains(str, "when error happens."), Equals, true)
 	c.Assert(strings.Contains(str, "scanned"), Equals, true)
 

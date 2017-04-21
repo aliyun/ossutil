@@ -119,7 +119,10 @@ Headers:
 
     2) ossutil set-meta oss://bucket[/prefix] [header:value#header:value...] -r [--update] [--delete] [-f]
         如果指定了--recursive选项，ossutil会查找所有前缀匹配url的objects，批量设置这些
-    objects的meta信息，当错误出现时终止命令。如果--force选项被指定，则不会进行询问提示。
+    objects的meta信息。当一个object操作出现错误时会将出错object的错误信息记录到report文
+    件，并继续操作其他object，成功操作的object信息将不会被记录到report文件中（更多信息
+    见cp命令的帮助）。
+        如果--force选项被指定，则不会进行询问提示。
         --update选项和--delete选项的用法参考上文。
 `,
 
@@ -200,8 +203,10 @@ Usage:
 
     2) ossutil set-meta oss://bucket[/prefix] [header:value#header:value...] -r [--update] [--delete] [-f]
         If --recursive option is specified, ossutil will search for prefix-matching objects 
-    and set meta on these objects, if error occurs, the operation is terminated. If --force 
-    option is specified, ossutil will not show prompt question.
+    and set meta on these objects. If an error occurs, ossutil will record the error message 
+    to report file, and ossutil will continue to attempt to set acl on the remaining objects(
+    more information see help of cp command). 
+        If --force option is specified, ossutil will not show prompt question.
         The usage of --update option and --delete option is showed in detailHelpText.
 `,
 
@@ -225,8 +230,9 @@ Usage:
 
 // SetMetaCommand is the command set meta for object
 type SetMetaCommand struct {
-	command Command
-	monitor Monitor
+	command     Command
+	monitor     Monitor
+    smOption    batchOptionType
 }
 
 var setMetaCommand = SetMetaCommand{
@@ -252,6 +258,7 @@ var setMetaCommand = SetMetaCommand{
 			OptionRetryTimes,
 			OptionRoutines,
 			OptionLanguage,
+			OptionOutputDir,
 		},
 	},
 }
@@ -288,25 +295,29 @@ func (sc *SetMetaCommand) RunCommand() error {
 		return err
 	}
 
-	if err = sc.checkArgs(cloudURL, recursive); err != nil {
+	if err = sc.checkArgs(cloudURL, recursive, isUpdate, isDelete); err != nil {
 		return err
 	}
 
+    if !sc.confirmOP(recursive, force) {
+        return nil
+    }
+ 
 	if err := sc.checkOption(isUpdate, isDelete, force, language); err != nil {
 		return err
 	}
+   
+    str, err := sc.getMetaData(force, language)
+    if err != nil {
+        return err
+    }
+
+    headers, err := sc.parseHeaders(str, isDelete)
+    if err != nil {
+        return err
+    }
 
 	bucket, err := sc.command.ossBucket(cloudURL.bucket)
-	if err != nil {
-		return err
-	}
-
-	str, err := sc.getMetaData(force, language)
-	if err != nil {
-		return err
-	}
-
-	headers, err := sc.parseHeaders(str, isDelete)
 	if err != nil {
 		return err
 	}
@@ -317,20 +328,20 @@ func (sc *SetMetaCommand) RunCommand() error {
 	return sc.batchSetObjectMeta(bucket, cloudURL, headers, isUpdate, isDelete, force, routines)
 }
 
-func (sc *SetMetaCommand) checkArgs(cloudURL CloudURL, recursive bool) error {
+func (sc *SetMetaCommand) checkArgs(cloudURL CloudURL, recursive, isUpdate, isDelete bool) error {
 	if cloudURL.bucket == "" {
 		return fmt.Errorf("invalid cloud url: %s, miss bucket", sc.command.args[0])
 	}
 	if !recursive && cloudURL.object == "" {
 		return fmt.Errorf("set object meta invalid cloud url: %s, object empty. Set bucket meta is not supported, if you mean batch set meta on objects, please use --recursive", sc.command.args[0])
 	}
+	if isUpdate && isDelete {
+		return fmt.Errorf("--update option and --delete option are not supported for %s at the same time, please check", sc.command.args[0])
+	}
 	return nil
 }
 
 func (sc *SetMetaCommand) checkOption(isUpdate, isDelete, force bool, language string) error {
-	if isUpdate && isDelete {
-		return fmt.Errorf("--update option and --delete option are not supported for %s at the same time, please check", sc.command.args[0])
-	}
 	if !isUpdate && !isDelete && !force {
 		if language == LEnglishLanguage {
 			fmt.Printf("Warning: --update option means update the specified header, --delete option means delete the specified header, miss both options means update the whole meta info, continue to update the whole meta info(y or N)? ")
@@ -344,6 +355,18 @@ func (sc *SetMetaCommand) checkOption(isUpdate, isDelete, force bool, language s
 		fmt.Println("")
 	}
 	return nil
+}
+
+func (sc *SetMetaCommand) confirmOP(recursive, force bool) bool {
+	if recursive && !force {
+		var val string
+		fmt.Printf("Do you really mean to recursivlly set meta on objects of %s(y or N)? ", sc.command.args[0])
+		if _, err := fmt.Scanln(&val); err != nil || (strings.ToLower(val) != "yes" && strings.ToLower(val) != "y") {
+			fmt.Println("operation is canceled.")
+			return false 
+		}
+	}
+    return true
 }
 
 func (sc *SetMetaCommand) getMetaData(force bool, language string) (string, error) {
@@ -475,19 +498,24 @@ func (sc *SetMetaCommand) ossSetObjectMetaRetry(bucket *oss.Bucket, object strin
 }
 
 func (sc *SetMetaCommand) batchSetObjectMeta(bucket *oss.Bucket, cloudURL CloudURL, headers map[string]string, isUpdate, isDelete, force bool, routines int64) error {
-	if !force {
-		var val string
-		fmt.Printf("Do you really mean to recursivlly set meta on objects of %s(y or N)? ", sc.command.args[0])
-		if _, err := fmt.Scanln(&val); err != nil || (strings.ToLower(val) != "yes" && strings.ToLower(val) != "y") {
-			fmt.Println("operation is canceled.")
-			return nil
-		}
-	}
+	sc.smOption.ctnu = true
+	outputDir, _ := GetString(OptionOutputDir, sc.command.options)
 
+	// init reporter
+	var err error
+	if sc.smOption.reporter, err = GetReporter(sc.smOption.ctnu, outputDir, commandLine); err != nil {
+		return err
+	}
+	defer sc.smOption.reporter.Clear()
+
+    return sc.setObjectMetas(bucket, cloudURL, headers, isUpdate, isDelete, force, routines)
+}
+
+func (sc *SetMetaCommand) setObjectMetas(bucket *oss.Bucket, cloudURL CloudURL, headers map[string]string, isUpdate, isDelete, force bool, routines int64) error {
 	// producer list objects
 	// consumer set meta
 	chObjects := make(chan string, ChannelBuf)
-	chError := make(chan error, routines+1)
+	chError := make(chan error, routines + 1)
 	chListError := make(chan error, 1)
 	go sc.command.objectStatistic(bucket, cloudURL, &sc.monitor)
 	go sc.command.objectProducer(bucket, cloudURL, chObjects, chListError)
@@ -495,7 +523,36 @@ func (sc *SetMetaCommand) batchSetObjectMeta(bucket *oss.Bucket, cloudURL CloudU
 		go sc.setObjectMetaConsumer(bucket, headers, isUpdate, isDelete, chObjects, chError)
 	}
 
+	return sc.waitRoutinueComplete(chError, chListError, routines)
+}
+
+func (sc *SetMetaCommand) setObjectMetaConsumer(bucket *oss.Bucket, headers map[string]string, isUpdate, isDelete bool, chObjects <-chan string, chError chan<- error) {
+	for object := range chObjects {
+		err := sc.setObjectMetaWithReport(bucket, object, headers, isUpdate, isDelete)
+        if err != nil {
+            chError <- err
+            if !sc.smOption.ctnu {
+                return
+            }
+            continue
+        }
+	}
+
+	chError <- nil
+}
+
+
+func (sc *SetMetaCommand) setObjectMetaWithReport(bucket *oss.Bucket, object string, headers map[string]string, isUpdate, isDelete bool) error {
+    err := sc.setObjectMeta(bucket, object, headers, isUpdate, isDelete)
+    sc.command.updateMonitor(err, &sc.monitor)
+	msg := fmt.Sprintf("set meta on %s", CloudURLToString(bucket.BucketName, object))
+	sc.command.report(msg, err, &sc.smOption)
+	return err
+}
+
+func (sc *SetMetaCommand) waitRoutinueComplete(chError, chListError <-chan error, routines int64) error {
 	completed := 0
+	var ferr error
 	for int64(completed) <= routines {
 		select {
 		case err := <-chListError:
@@ -504,26 +561,26 @@ func (sc *SetMetaCommand) batchSetObjectMeta(bucket *oss.Bucket, cloudURL CloudU
 			}
 			completed++
 		case err := <-chError:
-			if err != nil {
-				fmt.Printf(sc.monitor.progressBar(true))
-				return err
+			if err == nil {
+				completed++
+			} else {
+				ferr = err
+				if !sc.smOption.ctnu {
+					fmt.Printf(sc.monitor.progressBar(true, errExit))
+					return err
+				}
 			}
-			completed++
 		}
 	}
-	fmt.Printf(sc.monitor.progressBar(true))
-	return nil
+	return sc.formatResultPrompt(ferr)
 }
 
-func (sc *SetMetaCommand) setObjectMetaConsumer(bucket *oss.Bucket, headers map[string]string, isUpdate, isDelete bool, chObjects <-chan string, chError chan<- error) {
-	for object := range chObjects {
-		err := sc.setObjectMeta(bucket, object, headers, isUpdate, isDelete)
-		sc.command.updateMonitor(err, &sc.monitor)
-		if err != nil {
-			chError <- err
-			return
-		}
+func (sc *SetMetaCommand) formatResultPrompt(err error) error {
+	fmt.Printf(sc.monitor.progressBar(true, normalExit))
+	if err != nil && sc.smOption.ctnu {
+		return nil
 	}
-
-	chError <- nil
+	return err
 }
+
+

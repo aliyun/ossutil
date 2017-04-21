@@ -630,13 +630,13 @@ func (s *OssutilCommandSuite) TestSetACLProgress(c *C) {
 	c.Assert(strings.Contains(str, fmt.Sprintf("%d objects", 2)), Equals, true)
 	c.Assert(strings.Contains(str, "error"), Equals, false)
 
-	str = strings.ToLower(setACLCommand.monitor.getFinishBar())
+	str = strings.ToLower(setACLCommand.monitor.getFinishBar(normalExit))
 	c.Assert(strings.Contains(str, "succeed:"), Equals, true)
 	c.Assert(strings.Contains(str, "total"), Equals, true)
 	c.Assert(strings.Contains(str, "err"), Equals, false)
 	c.Assert(strings.Contains(strings.TrimSpace(pstr), strings.TrimSpace(str)), Equals, true)
 
-	str = strings.ToLower(setACLCommand.monitor.progressBar(true))
+	str = strings.ToLower(setACLCommand.monitor.progressBar(true, normalExit))
 	c.Assert(str, Equals, "")
 
 	// batch set acl list error
@@ -668,7 +668,7 @@ func (s *OssutilCommandSuite) TestSetACLProgress(c *C) {
 	str = strings.ToLower(setACLCommand.monitor.getProgressBar())
 	c.Assert(strings.Contains(str, "error"), Equals, false)
 
-	str = strings.ToLower(setACLCommand.monitor.getFinishBar())
+	str = strings.ToLower(setACLCommand.monitor.getFinishBar(normalExit))
 	c.Assert(strings.Contains(str, "succeed:"), Equals, true)
 	c.Assert(strings.Contains(str, "total"), Equals, true)
 	c.Assert(strings.Contains(str, "err"), Equals, false)
@@ -679,7 +679,7 @@ func (s *OssutilCommandSuite) TestSetACLProgress(c *C) {
 	c.Assert(setACLCommand.monitor.errNum, Equals, int64(1))
 	c.Assert(setACLCommand.monitor.okNum, Equals, int64(0))
 
-	str = strings.ToLower(setACLCommand.monitor.getFinishBar())
+	str = strings.ToLower(setACLCommand.monitor.getFinishBar(errExit))
 	c.Assert(strings.Contains(str, "succeed:"), Equals, false)
 	c.Assert(strings.Contains(str, "when error happens"), Equals, true)
 	c.Assert(strings.Contains(str, "setted acl on 0 objects"), Equals, true)
@@ -697,8 +697,9 @@ func (s *OssutilCommandSuite) TestSetMetaProgress(c *C) {
 
 	num := 2
 	objectNames := []string{}
+    prefix := randLowStr(10)
 	for i := 0; i < num; i++ {
-		object := fmt.Sprintf("TestSetMetaProgress%d", i)
+		object := fmt.Sprintf("%s%d", prefix, i)
 		s.putObject(bucketName, object, uploadFileName, c)
 		objectNames = append(objectNames, object)
 	}
@@ -724,8 +725,10 @@ func (s *OssutilCommandSuite) TestSetMetaProgress(c *C) {
 	c.Assert(snap.dealNum, Equals, int64(0))
 
 	// batch set object acl -> progress
-	err = s.initSetMeta(bucketName, "TestSetMetaProgress", "x-oss-object-acl:default#X-Oss-Meta-A:A", true, false, true, true, DefaultLanguage)
+	err = s.initSetMeta(bucketName, prefix, "x-oss-object-acl:default#X-Oss-Meta-A:A", true, false, true, true, DefaultLanguage)
 	c.Assert(err, IsNil)
+
+    setMetaCommand.monitor.init("Setted meta on")
 
 	testResultFile, _ = os.OpenFile(resultPath, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
 	out = os.Stdout
@@ -747,7 +750,7 @@ func (s *OssutilCommandSuite) TestSetMetaProgress(c *C) {
 	c.Assert(strings.Contains(str, fmt.Sprintf("%d objects", 2)), Equals, true)
 	c.Assert(strings.Contains(str, "error"), Equals, false)
 
-	str = strings.ToLower(setMetaCommand.monitor.getFinishBar())
+	str = strings.ToLower(setMetaCommand.monitor.getFinishBar(normalExit))
 	c.Assert(strings.Contains(str, "succeed:"), Equals, true)
 	c.Assert(strings.Contains(str, "total"), Equals, true)
 	c.Assert(strings.Contains(str, "err"), Equals, false)
@@ -759,7 +762,7 @@ func (s *OssutilCommandSuite) TestSetMetaProgress(c *C) {
 	data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n", endpoint, accessKeyID, "")
 	s.createFile(configFile, data, c)
 
-	err = s.initSetMeta(bucketName, "TestSetMetaProgress", "x-oss-object-acl:default#X-Oss-Meta-A:A", true, false, true, true, DefaultLanguage)
+	err = s.initSetMeta(bucketName, prefix, "x-oss-object-acl:default#X-Oss-Meta-A:A", true, false, true, true, DefaultLanguage)
 	c.Assert(err, IsNil)
 
 	os.Remove(configFile)
@@ -783,7 +786,7 @@ func (s *OssutilCommandSuite) TestSetMetaProgress(c *C) {
 	c.Assert(strings.Contains(str, fmt.Sprintf("%d objects", 0)), Equals, true)
 	c.Assert(strings.Contains(str, "error"), Equals, false)
 
-	str = strings.ToLower(setMetaCommand.monitor.getFinishBar())
+	str = strings.ToLower(setMetaCommand.monitor.getFinishBar(normalExit))
 	c.Assert(strings.Contains(str, "succeed:"), Equals, true)
 	c.Assert(strings.Contains(str, "total"), Equals, true)
 	c.Assert(strings.Contains(str, "err"), Equals, false)
@@ -794,7 +797,7 @@ func (s *OssutilCommandSuite) TestSetMetaProgress(c *C) {
 	c.Assert(setMetaCommand.monitor.errNum, Equals, int64(1))
 	c.Assert(setMetaCommand.monitor.okNum, Equals, int64(0))
 
-	str = strings.ToLower(setMetaCommand.monitor.getFinishBar())
+	str = strings.ToLower(setMetaCommand.monitor.getFinishBar(errExit))
 	c.Assert(strings.Contains(str, "succeed:"), Equals, false)
 	c.Assert(strings.Contains(str, "when error happens"), Equals, true)
 	c.Assert(strings.Contains(str, "setted meta on 0 objects"), Equals, true)

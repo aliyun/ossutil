@@ -444,7 +444,32 @@ func (cmd *Command) updateMonitor(err error, monitor *Monitor) {
 	} else {
 		monitor.updateErrNum(1)
 	}
-	fmt.Printf(monitor.progressBar(false))
+	fmt.Printf(monitor.progressBar(false, normalExit))
+}
+
+func (cmd *Command) report(msg string, err error, option *batchOptionType) {
+    if cmd.filterError(err, option) {
+        option.reporter.ReportError(fmt.Sprintf("%s error, info: %s", msg, err.Error()))
+        option.reporter.Prompt(err)
+    }
+}
+
+func (cmd *Command) filterError(err error, option *batchOptionType) bool {
+    if err == nil {
+        return false
+    }
+
+    err = err.(ObjectError).err
+
+    switch err.(type) {
+    case oss.ServiceError:
+        code := err.(oss.ServiceError).Code
+        if code == "NoSuchBucket" || code == "InvalidAccessKeyId" || code == "SignatureDoesNotMatch" || code == "AccessDenied" || code == "RequestTimeTooSkewed" || code == "InvalidBucketName" {
+            option.ctnu = false
+            return false
+        }
+    }
+    return true
 }
 
 // GetAllCommands returns all commands list
