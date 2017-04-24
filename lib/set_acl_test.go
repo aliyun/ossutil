@@ -5,10 +5,10 @@ import (
 	"net/url"
 	"os"
 	"strconv"
-    "strings"
+	"strings"
 
+	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 	. "gopkg.in/check.v1"
-    oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
 
 func (s *OssutilCommandSuite) TestSetBucketACL(c *C) {
@@ -341,7 +341,7 @@ func (s *OssutilCommandSuite) TestBatchSetACLErrorContinue(c *C) {
 	}
 
 	// set acl prepare
-    acl := oss.ACLPrivate 
+	acl := oss.ACLPrivate
 
 	err := s.initSetACLWithArgs([]string{CloudURLToString(bucketName, ""), string(acl)}, "-rf", DefaultOutputDir)
 	c.Assert(err, IsNil)
@@ -416,7 +416,7 @@ func (s *OssutilCommandSuite) TestBatchSetACLErrorContinue(c *C) {
 
 	for _, object := range objectNames {
 		objectStat := s.getStat(bucketName, object, c)
-	    c.Assert(objectStat[StatACL], Equals, string(acl))
+		c.Assert(objectStat[StatACL], Equals, string(acl))
 	}
 
 	s.removeBucket(bucketName, true, c)
@@ -436,7 +436,7 @@ func (s *OssutilCommandSuite) TestBatchSetACLErrorBreak(c *C) {
 	}
 
 	// prepare
-    acl := oss.ACLPrivate
+	acl := oss.ACLPrivate
 
 	err := s.initSetACLWithArgs([]string{CloudURLToString(bucketName, ""), string(acl)}, "-rf", DefaultOutputDir)
 	c.Assert(err, IsNil)
@@ -510,7 +510,7 @@ func (s *OssutilCommandSuite) TestBatchSetACLErrorBreak(c *C) {
 
 	for _, object := range objectNames {
 		objectStat := s.getStat(bucketName, object, c)
-	    c.Assert(objectStat[StatACL], Equals, "default")
+		c.Assert(objectStat[StatACL], Equals, "default")
 	}
 
 	s.removeBucket(bucketName, true, c)

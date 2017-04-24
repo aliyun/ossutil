@@ -5,10 +5,10 @@ import (
 	"net/url"
 	"os"
 	"strconv"
-    "strings"
+	"strings"
 
+	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 	. "gopkg.in/check.v1"
-    oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
 
 func (s *OssutilCommandSuite) TestSetBucketMeta(c *C) {
@@ -359,7 +359,7 @@ func (s *OssutilCommandSuite) TestSetMetaURLEncoding(c *C) {
 
 func (s *OssutilCommandSuite) TestSetMetaErrArgs(c *C) {
 	object := randStr(20)
-    meta := "x-oss-object-acl:public-read-write"
+	meta := "x-oss-object-acl:public-read-write"
 
 	err := s.initSetMetaWithArgs([]string{CloudURLToString("", object), meta}, "", DefaultOutputDir)
 	c.Assert(err, IsNil)
@@ -374,7 +374,7 @@ func (s *OssutilCommandSuite) TestSetMetaErrArgs(c *C) {
 
 func (s *OssutilCommandSuite) TestBatchSetMetaNotExistBucket(c *C) {
 	// set acl notexist bucket
-    meta := "x-oss-object-acl:public-read-write"
+	meta := "x-oss-object-acl:public-read-write"
 	err := s.initSetMetaWithArgs([]string{CloudURLToString(bucketNamePrefix+randLowStr(10), ""), meta}, "-rf", DefaultOutputDir)
 	c.Assert(err, IsNil)
 	err = setMetaCommand.RunCommand()
@@ -385,7 +385,7 @@ func (s *OssutilCommandSuite) TestBatchSetMetaErrorContinue(c *C) {
 	bucketName := bucketNamePrefix + randLowStr(10)
 	s.putBucket(bucketName, c)
 
-    meta := "x-oss-object-acl:public-read-write"
+	meta := "x-oss-object-acl:public-read-write"
 
 	// put object to archive bucket
 	num := 2
@@ -424,8 +424,8 @@ func (s *OssutilCommandSuite) TestBatchSetMetaErrorContinue(c *C) {
 	chListError <- nil
 	close(chObjects)
 
-    headers := map[string]string{}
-    headers[oss.HTTPHeaderOssObjectACL] = "public-read-write"
+	headers := map[string]string{}
+	headers[oss.HTTPHeaderOssObjectACL] = "public-read-write"
 
 	for i := 0; int64(i) < routines; i++ {
 		setMetaCommand.setObjectMetaConsumer(bucket, headers, false, false, chObjects, chError)
@@ -472,7 +472,7 @@ func (s *OssutilCommandSuite) TestBatchSetMetaErrorContinue(c *C) {
 
 	for _, object := range objectNames {
 		objectStat := s.getStat(bucketName, object, c)
-	    c.Assert(objectStat[StatACL], Equals, "public-read-write")
+		c.Assert(objectStat[StatACL], Equals, "public-read-write")
 	}
 
 	s.removeBucket(bucketName, true, c)
@@ -482,7 +482,7 @@ func (s *OssutilCommandSuite) TestBatchSetMetaErrorBreak(c *C) {
 	bucketName := bucketNamePrefix + randLowStr(10)
 	s.putBucketWithStorageClass(bucketName, StorageArchive, c)
 
-    meta := "x-oss-object-acl:public-read-write"
+	meta := "x-oss-object-acl:public-read-write"
 
 	// put object to archive bucket
 	num := 2
@@ -520,8 +520,8 @@ func (s *OssutilCommandSuite) TestBatchSetMetaErrorBreak(c *C) {
 	chListError <- nil
 	close(chObjects)
 
-    headers := map[string]string{}
-    headers[oss.HTTPHeaderOssObjectACL] = "public-read-write"
+	headers := map[string]string{}
+	headers[oss.HTTPHeaderOssObjectACL] = "public-read-write"
 
 	for i := 0; int64(i) < routines; i++ {
 		setMetaCommand.setObjectMetaConsumer(bucket, headers, false, false, chObjects, chError)
@@ -568,7 +568,7 @@ func (s *OssutilCommandSuite) TestBatchSetMetaErrorBreak(c *C) {
 
 	for _, object := range objectNames {
 		objectStat := s.getStat(bucketName, object, c)
-	    c.Assert(objectStat[StatACL], Equals, "default")
+		c.Assert(objectStat[StatACL], Equals, "default")
 	}
 
 	s.removeBucket(bucketName, true, c)

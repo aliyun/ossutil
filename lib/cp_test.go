@@ -213,6 +213,7 @@ func (s *OssutilCommandSuite) TestUploadErrSrc(c *C) {
 	cpDir := CheckpointDir
 	thre := strconv.FormatInt(DefaultBigFileThreshold, 10)
 	routines := strconv.Itoa(Routines)
+	partSize := strconv.FormatInt(DefaultPartSize, 10)
 	options := OptionMapType{
 		"endpoint":         &str,
 		"accessKeyID":      &str,
@@ -223,6 +224,7 @@ func (s *OssutilCommandSuite) TestUploadErrSrc(c *C) {
 		"bigfileThreshold": &thre,
 		"checkpointDir":    &cpDir,
 		"routines":         &routines,
+		"partSize":         &partSize,
 	}
 	showElapse, err := cm.RunCommand(command, args, options)
 	c.Assert(err, NotNil)
@@ -659,33 +661,44 @@ func (s *OssutilCommandSuite) TestPreparePartOption(c *C) {
 
 	partSize, routines = copyCommand.preparePartOption(20121443)
 	c.Assert(partSize, Equals, int64(2560000))
-	c.Assert(routines, Equals, 4)
+	c.Assert(routines, Equals, 5)
 
 	partSize, routines = copyCommand.preparePartOption(80485760)
 	c.Assert(partSize, Equals, int64(2560000))
-	c.Assert(routines, Equals, 12)
+	c.Assert(routines, Equals, 10)
 
 	partSize, routines = copyCommand.preparePartOption(500000000)
 	c.Assert(partSize, Equals, int64(2561480))
-	c.Assert(routines, Equals, 12)
+	c.Assert(routines, Equals, 10)
 
 	partSize, routines = copyCommand.preparePartOption(100000000000)
 	c.Assert(partSize, Equals, int64(250000000))
-	c.Assert(routines, Equals, 16)
+	c.Assert(routines, Equals, 12)
 
 	partSize, routines = copyCommand.preparePartOption(100000000000000)
 	c.Assert(partSize, Equals, int64(10000000000))
-	c.Assert(routines, Equals, 20)
+	c.Assert(routines, Equals, 15)
 
 	partSize, routines = copyCommand.preparePartOption(MaxInt64)
 	c.Assert(partSize, Equals, int64(922337203685478))
-	c.Assert(routines, Equals, 20)
+	c.Assert(routines, Equals, 15)
 
 	p := 7
 	parallel := strconv.Itoa(p)
 	copyCommand.command.options[OptionParallel] = &parallel
 	partSize, routines = copyCommand.preparePartOption(1)
 	c.Assert(routines, Equals, p)
+
+	p = 6
+	parallel = strconv.Itoa(p)
+	ps := 100000
+	psStr := strconv.Itoa(ps)
+	copyCommand.command.options[OptionParallel] = &parallel
+	copyCommand.command.options[OptionPartSize] = &psStr
+	partSize, routines = copyCommand.preparePartOption(1)
+	c.Assert(routines, Equals, p)
+	c.Assert(partSize, Equals, int64(ps))
+
 	str := ""
 	copyCommand.command.options[OptionParallel] = &str
 }
@@ -720,6 +733,7 @@ func (s *OssutilCommandSuite) TestCPIDKey(c *C) {
 	routines := strconv.Itoa(Routines)
 	thre := strconv.FormatInt(DefaultBigFileThreshold, 10)
 	cpDir := CheckpointDir
+	partSize := strconv.FormatInt(DefaultPartSize, 10)
 	options := OptionMapType{
 		"endpoint":         &str,
 		"accessKeyID":      &str,
@@ -730,6 +744,7 @@ func (s *OssutilCommandSuite) TestCPIDKey(c *C) {
 		"bigfileThreshold": &thre,
 		"checkpointDir":    &cpDir,
 		"routines":         &routines,
+		"partSize":         &partSize,
 	}
 	showElapse, err := cm.RunCommand(command, args, options)
 	c.Assert(err, NotNil)
@@ -744,6 +759,7 @@ func (s *OssutilCommandSuite) TestCPIDKey(c *C) {
 		"bigfileThreshold": &thre,
 		"checkpointDir":    &cpDir,
 		"routines":         &routines,
+		"partSize":         &partSize,
 	}
 	showElapse, err = cm.RunCommand(command, args, options)
 	c.Assert(err, IsNil)
@@ -1277,6 +1293,7 @@ func (s *OssutilCommandSuite) TestCPURLEncoding(c *C) {
 	str := ""
 	thre := strconv.FormatInt(1, 10)
 	routines := strconv.Itoa(Routines)
+	partSize := strconv.FormatInt(DefaultPartSize, 10)
 	encodingType := URLEncodingType
 	cpDir := CheckpointDir
 	outputDir := DefaultOutputDir
@@ -1292,6 +1309,7 @@ func (s *OssutilCommandSuite) TestCPURLEncoding(c *C) {
 		"checkpointDir":    &cpDir,
 		"outputDir":        &outputDir,
 		"routines":         &routines,
+		"partSize":         &partSize,
 		"encodingType":     &encodingType,
 	}
 	showElapse, err := cm.RunCommand(command, args, options)

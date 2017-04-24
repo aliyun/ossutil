@@ -246,14 +246,35 @@ var specChineseCopy = SpecText{
     错：NoSuchUpload），这种时候如果想要重新上传整个文件，请删除相应的checkpoint文件。
 
 
---jobs选项和--parallel选项
+性能调优：
+
+--jobs选项和--parallel选项（并发控制）
 
     --jobs选项控制多个文件上传/下载/拷贝时，文件间启动的并发数，--parallel控制上传/下载/拷
-    贝大文件时，分片间的并发数，ossutil会默认根据文件大小来计算parallel个数（该选项对于小文
-    件不起作用，进行分片上传/下载/拷贝的大文件文件阈值可由--bigfile-threshold选项来控制），
-    当进行批量大文件的上传/下载/拷贝时，实际的并发数为jobs个数乘以parallel个数。该两个选项
-    可由用户调整，当ossutil自行设置的默认并发达不到用户的性能需求时，用户可以自行调整该两个
-    选项来升降性能。
+    贝大文件时，分片间的并发数。默认情况下，ossutil会根据文件大小来计算parallel个数（该选项
+    对于小文件不起作用，进行分片上传/下载/拷贝的大文件文件阈值可由--bigfile-threshold选项来
+    控制），当进行批量大文件的上传/下载/拷贝时，实际的并发数为jobs个数乘以parallel个数。该
+    两个选项可由用户调整，当ossutil自行设置的默认并发达不到用户的性能需求时，用户可以自行调
+    整该两个选项来升降性能。
+
+    注意：
+    1）如果并发数调得太大，由于线程间资源切换及抢夺等，ossutil上传/下载/拷贝性能可能会下降，
+    所以请根据实际的机器情况调整这两个选项的数值，如果要进行压测，可以一开始将两个数值调低，
+    慢慢调大寻找最优值。
+    2）如果--jobs选项和--parallel选项值太大，在机器资源有限的情况下，可能会因为网络传输太慢，
+    产生EOF错误，这个时候请适当降低--jobs选项和--parallel选项值。
+
+--part-size选项
+    
+    该选项设置大文件分片上传/下载/拷贝时，每个分片的大小。默认情况下，不需要设置该值，ossutil
+    会根据文件大小自行决定分片大小和分片并发，当用户上传/下载/拷贝性能达不到需求时，或有其他
+    特殊需求时，可以设置这些选项。
+    
+    如果设置了该选项（分片大小），分片个数为：向上取整（文件大小/分片大小），注意如果--parallel
+    选项值大于分片个数，则多余的parallel不起作用，实际的并发数为分片个数。
+
+    如果将part size值设置得过小，可能会影响ossutil文件上传/下载/拷贝的性能，设置得过大，会影
+    响实际起作用的分片并发数，所以请合理设置part size选项值。
 
 
 批量文件迁移：
@@ -666,14 +687,36 @@ Resume copy of big file:
         please remove the checkpoint file in checkpoint directory.
 
 
---jobs option or --parallel option
+Performance Tuning:
+
+--jobs option or --parallel option (Concurrency Control)
 
     --jobs option controls the amount of concurrency tasks between multi-files, --parallel option controls 
-    the amount of concurrency tasks when work with a file, ossutil will calculate the parallel num according 
-    to file size(the option is useless to small file, the file size to use multipart upload can be specified 
-    by --bigfile-threshold option), when batch upload/download/copy files, the concurrency tasks num is jobs 
-    num multiply by parallel num. The two option can be specified by user, if the performance of default 
-    setting is low, user can adjust the two options. 
+    the amount of concurrency tasks when work with a file. In default situation, ossutil will calculate the 
+    parallel num according to file size(the option is useless to small file, the file size to use multipart 
+    upload can be specified by --bigfile-threshold option). When batch upload/download/copy files, the total 
+    concurrency tasks num is jobs num multiply by parallel num. The two option can be specified by user, if 
+    the performance of default setting is poor, user can adjust the two options. 
+
+    Note:
+    1) If the parallels and jobs number are too big, because of the switching between threads, the performance 
+    of upload/download/copy may decline, so please set the options according to your machine condition. If need 
+    performance tuning, user can set the two options to two small numbers at first and increase them step by step. 
+    2) If the parallels and jobs number are too big, in the case of limited machine resources, error "EOF" may 
+    occur due to the network transfer too slow, in this situation, please reduce the --jobs and --parallel num. 
+
+--part-size option
+
+    The option specify the part size of resume upload/download/copy of big file. In default situation, ossutil 
+    will calculate the part size and parallel according to file size. When performance tuning or some other needs, 
+    user can set the option.     
+
+    If the option is specified, part num is: ceil(file size/part size). Note that if --parallel value is bigger 
+    than part num, the extra parallel is feeble, the actual parallel will be part num.
+
+    If the part size is too small, it may influence ossutil file upload/download/copy performance, if the part 
+    size is too big, it may influence the actual parallel num, so, please if specify the option, please set it 
+    to a reasonable value. 
 
 
 Batch file migration:
@@ -927,6 +970,7 @@ var copyCommand = CopyCommand{
 			OptionContinue,
 			OptionOutputDir,
 			OptionBigFileThreshold,
+			OptionPartSize,
 			OptionCheckpointDir,
 			OptionRange,
 			OptionEncodingType,
@@ -939,6 +983,7 @@ var copyCommand = CopyCommand{
 			OptionRoutines,
 			OptionParallel,
 			OptionSnapshotPath,
+			OptionDisableCRC64,
 		},
 	},
 }
@@ -1490,6 +1535,36 @@ func (cc *CopyCommand) ossUploadFileRetry(bucket *oss.Bucket, objectName string,
 }
 
 func (cc *CopyCommand) preparePartOption(fileSize int64) (int64, int) {
+	partSize, _ := GetInt(OptionPartSize, cc.command.options)
+	var partNum int64
+	if partSize < MinPartSize {
+		partSize, partNum = cc.calcPartSize(fileSize)
+	} else {
+		partNum = (fileSize-1)/partSize + 1
+	}
+
+	if parallel, err := GetInt(OptionParallel, cc.command.options); err == nil {
+		return partSize, int(parallel)
+	}
+
+	var rt int
+	if partNum < 2 {
+		rt = 1
+	} else if partNum < 4 {
+		rt = 2
+	} else if partNum <= 20 {
+		rt = 5
+	} else if partNum <= 300 {
+		rt = 10
+	} else if partNum <= 500 {
+		rt = 12
+	} else {
+		rt = 15
+	}
+	return partSize, rt
+}
+
+func (cc *CopyCommand) calcPartSize(fileSize int64) (int64, int64) {
 	partSize := int64(math.Ceil(float64(fileSize) / float64(MaxPartNum)))
 	if partSize < oss.MinPartSize {
 		partSize = oss.MinPartSize
@@ -1505,26 +1580,7 @@ func (cc *CopyCommand) preparePartOption(fileSize int64) (int64, int) {
 		partSize *= 5
 		partNum = (fileSize-1)/partSize + 1
 	}
-
-	if parallel, err := GetInt(OptionParallel, cc.command.options); err == nil {
-		return partSize, int(parallel)
-	}
-
-	var rt int
-	if partNum < 2 {
-		rt = 1
-	} else if partNum < 4 {
-		rt = 2
-	} else if partNum <= 20 {
-		rt = 4
-	} else if partNum <= 300 {
-		rt = 12
-	} else if partNum <= 500 {
-		rt = 16
-	} else {
-		rt = 20
-	}
-	return partSize, rt
+	return partSize, partNum
 }
 
 func (cc *CopyCommand) formatCPFileName(cpDir, srcf, destf string) string {

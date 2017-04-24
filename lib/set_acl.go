@@ -199,9 +199,9 @@ Usage：
 
 // SetACLCommand is the command set acl
 type SetACLCommand struct {
-	command     Command
-	monitor     Monitor
-    saOption    batchOptionType
+	command  Command
+	monitor  Monitor
+	saOption batchOptionType
 }
 
 var setACLCommand = SetACLCommand{
@@ -225,7 +225,7 @@ var setACLCommand = SetACLCommand{
 			OptionSTSToken,
 			OptionRetryTimes,
 			OptionRoutines,
-            OptionOutputDir,
+			OptionOutputDir,
 		},
 	},
 }
@@ -390,23 +390,23 @@ func (sc *SetACLCommand) batchSetObjectACL(bucket *oss.Bucket, cloudURL CloudURL
 		return err
 	}
 
-    sc.saOption.ctnu = true
-    outputDir, _ := GetString(OptionOutputDir, sc.command.options)
+	sc.saOption.ctnu = true
+	outputDir, _ := GetString(OptionOutputDir, sc.command.options)
 
-    // init reporter
-    if sc.saOption.reporter, err = GetReporter(sc.saOption.ctnu, outputDir, commandLine); err != nil {
-        return err
-    }
-    defer sc.saOption.reporter.Clear()
+	// init reporter
+	if sc.saOption.reporter, err = GetReporter(sc.saOption.ctnu, outputDir, commandLine); err != nil {
+		return err
+	}
+	defer sc.saOption.reporter.Clear()
 
-    return sc.setObjectACLs(bucket, cloudURL, acl, force, routines)
+	return sc.setObjectACLs(bucket, cloudURL, acl, force, routines)
 }
 
 func (sc *SetACLCommand) setObjectACLs(bucket *oss.Bucket, cloudURL CloudURL, acl oss.ACLType, force bool, routines int64) error {
 	// producer list objects
 	// consumer set acl
 	chObjects := make(chan string, ChannelBuf)
-	chError := make(chan error, routines + 1)
+	chError := make(chan error, routines+1)
 	chListError := make(chan error, 1)
 	go sc.command.objectStatistic(bucket, cloudURL, &sc.monitor)
 	go sc.command.objectProducer(bucket, cloudURL, chObjects, chListError)
@@ -414,30 +414,30 @@ func (sc *SetACLCommand) setObjectACLs(bucket *oss.Bucket, cloudURL CloudURL, ac
 		go sc.setObjectACLConsumer(bucket, acl, chObjects, chError)
 	}
 
-    return sc.waitRoutinueComplete(chError, chListError, routines)
+	return sc.waitRoutinueComplete(chError, chListError, routines)
 }
 
 func (sc *SetACLCommand) setObjectACLConsumer(bucket *oss.Bucket, acl oss.ACLType, chObjects <-chan string, chError chan<- error) {
 	for object := range chObjects {
-        err := sc.setObjectACLWithReport(bucket, object, acl)
-        if err != nil {
-            chError <- err
-            if !sc.saOption.ctnu {
-                return
-            }
-            continue
-        }
+		err := sc.setObjectACLWithReport(bucket, object, acl)
+		if err != nil {
+			chError <- err
+			if !sc.saOption.ctnu {
+				return
+			}
+			continue
+		}
 	}
 
 	chError <- nil
 }
 
 func (sc *SetACLCommand) setObjectACLWithReport(bucket *oss.Bucket, object string, acl oss.ACLType) error {
-    err := sc.ossSetObjectACLRetry(bucket, object, acl)
-    sc.command.updateMonitor(err, &sc.monitor)
-    msg := fmt.Sprintf("set acl on %s", CloudURLToString(bucket.BucketName, object))
-    sc.command.report(msg, err, &sc.saOption)
-    return err
+	err := sc.ossSetObjectACLRetry(bucket, object, acl)
+	sc.command.updateMonitor(err, &sc.monitor)
+	msg := fmt.Sprintf("set acl on %s", CloudURLToString(bucket.BucketName, object))
+	sc.command.report(msg, err, &sc.saOption)
+	return err
 }
 
 func (sc *SetACLCommand) waitRoutinueComplete(chError, chListError <-chan error, routines int64) error {

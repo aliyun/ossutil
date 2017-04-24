@@ -39,6 +39,8 @@ const (
 	OptionLanguage                = "language"
 	OptionHashType                = "hashType"
 	OptionVersion                 = "version"
+	OptionPartSize                = "partSize"
+	OptionDisableCRC64            = "disableCRC64"
 )
 
 // the elements show in stat object
@@ -85,10 +87,10 @@ const (
 	DefaultLanguage                = ChineseLanguage
 	Scheme                  string = "oss"
 	DefaultConfigFile              = "~" + string(os.PathSeparator) + ".ossutilconfig"
-	MaxUint                        = ^uint(0)
-	MaxInt                         = int(MaxUint >> 1)
-	MaxUint64                      = ^uint64(0)
-	MaxInt64                       = int64(MaxUint64 >> 1)
+	MaxUint                 uint   = ^uint(0)
+	MaxInt                  int    = int(MaxUint >> 1)
+	MaxUint64               uint64 = ^uint64(0)
+	MaxInt64                int64  = int64(MaxUint64 >> 1)
 	ReportPrefix                   = "ossutil_report_"
 	ReportSuffix                   = ".report"
 	DefaultOutputDir               = "ossutil_output"
@@ -101,9 +103,12 @@ const (
 	MinIdealPartNum                = MaxPartNum / 500
 	MaxIdealPartSize               = 524288000
 	MinIdealPartSize               = 1048576
-	DefaultBigFileThreshold        = 104857600
-	MaxBigFileThreshold            = MaxInt64
-	MinBigFileThreshold            = 0
+	DefaultBigFileThreshold int64  = 104857600
+	MaxBigFileThreshold     int64  = MaxInt64
+	MinBigFileThreshold     int64  = 0
+	DefaultPartSize         int64  = -1
+	MaxPartSize             int64  = MaxInt64
+	MinPartSize             int64  = 1
 	DefaultLimitedNum              = -1
 	MinLimitedNum                  = 0
 	RetryTimes              int    = 3

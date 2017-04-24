@@ -697,7 +697,7 @@ func (s *OssutilCommandSuite) TestSetMetaProgress(c *C) {
 
 	num := 2
 	objectNames := []string{}
-    prefix := randLowStr(10)
+	prefix := randLowStr(10)
 	for i := 0; i < num; i++ {
 		object := fmt.Sprintf("%s%d", prefix, i)
 		s.putObject(bucketName, object, uploadFileName, c)
@@ -728,7 +728,7 @@ func (s *OssutilCommandSuite) TestSetMetaProgress(c *C) {
 	err = s.initSetMeta(bucketName, prefix, "x-oss-object-acl:default#X-Oss-Meta-A:A", true, false, true, true, DefaultLanguage)
 	c.Assert(err, IsNil)
 
-    setMetaCommand.monitor.init("Setted meta on")
+	setMetaCommand.monitor.init("Setted meta on")
 
 	testResultFile, _ = os.OpenFile(resultPath, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
 	out = os.Stdout
