@@ -1358,7 +1358,7 @@ func (s *OssutilCommandSuite) TestSnapshot(c *C) {
 	c.Assert(err, IsNil)
 
 	// modify local and upload again
-    time.Sleep(1)
+	time.Sleep(time.Second)
 	data = randStr(21)
 	s.createFile(uploadFileName, data, c)
 
