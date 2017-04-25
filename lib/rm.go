@@ -22,7 +22,7 @@ var specChineseRemove = SpecText{
 
 	synopsisText: "删除Bucket或Objects",
 
-	paramText: "url [options]",
+	paramText: "cloud_url [options]",
 
 	syntaxText: ` 
     ossutil rm oss://bucket[/prefix] [-r] [-b] [-f] [-c file] 
@@ -61,23 +61,23 @@ var specChineseRemove = SpecText{
 
     1) ossutil rm oss://bucket/object [-m] [-a] 
         （删除单个object）
-        如果未指定--recursive和--bucket选项，删除指定的单个object，此时请确保url精确指
-    定了待删除的object，ossutil不会进行前缀匹配。无论是否指定--force选项，ossutil都不会
-    进行询问提示。如果此时指定了--bucket选项，将会报错，单独删除bucket参考用法4)。
+        如果未指定--recursive和--bucket选项，删除指定的单个object，此时请确保cloud_url
+    精确指定了待删除的object，ossutil不会进行前缀匹配。无论是否指定--force选项，ossutil
+    都不会进行询问提示。如果此时指定了--bucket选项，将会报错，单独删除bucket参考用法4)。
         如果指定了--multipart选项, 删除指定object下未complete的Multipart Upload事件。
         如果指定了--all-type选项, 删除指定object以及其下未complete的Multipart Upload事件。
 
     2) ossutil rm oss://bucket -b [-f]
         （删除bucket，不删除objects）
-        如果指定了--bucket选项，未指定--recursive选项，ossutil删除指定的bucket，但并不
-    去删除该bucket下的objects。此时请确保url精确匹配待删除的bucket，并且指定的bucket内
-    容为空，否则会报错。如果指定了--force选项，则删除前不会进行询问提示。
+        如果指定了--bucket选项，未指定--recursive选项，ossutil删除指定的bucket，但并不去
+    删除该bucket下的objects。此时请确保cloud_url精确匹配待删除的bucket，并且指定的bucket
+    内容为空，否则会报错。如果指定了--force选项，则删除前不会进行询问提示。
 
     3) ossutil rm oss://bucket[/prefix] -r [-m] [-a] [-f]
         （删除objects，不删除bucket）
-        如果指定了--recursive选项，未指定--bucket选项。则可以进行objects的批量删除。该
-    用法查找与指定url前缀匹配的所有objects（prefix为空代表bucket下的所有objects），删除
-    这些objects。由于未指定--bucket选项，则ossutil保留bucket。如果指定了--force选项，则
+        如果指定了--recursive选项，未指定--bucket选项。则可以进行objects的批量删除。该用
+    法查找与指定cloud_url前缀匹配的所有objects（prefix为空代表bucket下的所有objects），删
+    除这些objects。由于未指定--bucket选项，则ossutil保留bucket。如果指定了--force选项，则
     删除前不会进行询问提示。
         如果指定了--multipart选项，删除以指定prefix开头的所有object下的未complete的Multipart 
     Upload任务。
@@ -120,7 +120,7 @@ var specEnglishRemove = SpecText{
 
 	synopsisText: "Remove Bucket or Objects",
 
-	paramText: "url [options]",
+	paramText: "cloud_url [options]",
 
 	syntaxText: ` 
     ossutil rm oss://bucket[/prefix] [-r] [-b] [-f] [-c file]
@@ -146,12 +146,13 @@ var specEnglishRemove = SpecText{
         successfully.
 
     By default, when remove object, ossutil will reserve the uncompleted multipart upload 
-    tasks whose object name match the specified url, if you want to remove those multipart 
+    tasks whose object name match the specified cloud_url, if you want to remove those multipart 
     upload tasks, please specify --multipart option. Note: ossutil will remove all the multipart 
-    upload tasks of the specified url, remove a special single multipart upload task is unsupported. 
+    upload tasks of the specified cloud_url, remove a special single multipart upload task 
+    is unsupported. 
 
     If you need to remove object and the multipart upload tasks whose object name match the 
-    specified url meanwhile, please use --all-type option.
+    specified cloud_url meanwhile, please use --all-type option.
 
     Note: remove the multipart upload tasks uncompleted will cause upload the part fail next 
     time. Because cp command use multipart upload to realize resume upload/download/copy, so 
@@ -166,8 +167,8 @@ Usage:
     1) ossutil rm oss://bucket/object
         (Remove single object)
         If you remove without --recursive and --bucket option, ossutil remove the single 
-    object specified in url. In the usage, please make sure url exactly specified the 
-    object you want to remove, ossutil will not treat object as prefix and remove prefix 
+    object specified in cloud_url. In the usage, please make sure cloud_url exactly specified 
+    the object you want to remove, ossutil will not treat object as prefix and remove prefix 
     matching objects. No matter --force is specified or not, ossutil will not show prompt 
     question.
         If --multipart option is specified, ossutil will remove the multipart upload tasks 
@@ -179,14 +180,14 @@ Usage:
         (Remove bucket, don't remove objects inside)
         If you remove with --bucket option, without --recursive option, ossutil try to 
     remove the bucket, if the bucket is not empty, error occurs. In the usage, please make 
-    sure url exactly specified the bucket you want to remove, or error occurs. If --force 
+    sure cloud_url exactly specified the bucket you want to remove, or error occurs. If --force 
     option is specified, ossutil will not show prompt question. 
 
     3) ossutil rm oss://bucket[/prefix] -r [-m] [-a] [-f]
         (Remove objects, reserve bucket)
         If you remove with --recursive option, without --bucket option, ossutil remove all 
-    the objects that prefix-matching the url you specified(empty prefix means all objects in 
-    the bucket), bucket will be reserved because of missing --bucket option.
+    the objects that prefix-matching the cloud_url you specified(empty prefix means all 
+    objects in the bucket), bucket will be reserved because of missing --bucket option.
         If --multipart option is specified, ossutil will remove the multipart upload tasks 
     whose object name start with the specified prefix.
         If --all-type option is specified, ossutil will remove the objects with the specified 

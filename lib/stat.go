@@ -14,14 +14,15 @@ var specChineseStat = SpecText{
 
 	synopsisText: "显示bucket或者object的描述信息",
 
-	paramText: "url [options]",
+	paramText: "cloud_url [options]",
 
 	syntaxText: ` 
     ossutil stat oss://bucket[/object] [--encoding-type url] [-c file] 
 `,
 
 	detailHelpText: ` 
-    该命令获取指定bucket或者object的描述信息。
+    该命令获取指定bucket或者object的描述信息。通过set-meta命令设置的object元信息，可以通过
+    该命令查看。
 
 用法：
 
@@ -47,14 +48,15 @@ var specEnglishStat = SpecText{
 
 	synopsisText: "Display meta information of bucket or objects",
 
-	paramText: "url [options]",
+	paramText: "cloud_url [options]",
 
 	syntaxText: ` 
     ossutil stat oss://bucket[/object] [--encoding-type url] [-c file] 
 `,
 
 	detailHelpText: ` 
-    The command display the meta information of bucket or objects.
+    The command display the meta information of bucket or objects. The object meta information 
+    setted through set-meta command, can be check by the command.
 
 Usage：
 

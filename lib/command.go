@@ -489,9 +489,9 @@ func GetAllCommands() []interface{} {
 		&setACLCommand,
 		&setMetaCommand,
 		&copyCommand,
+		&restoreCommand,
 		&createSymlinkCommand,
 		&readSymlinkCommand,
-		&restoreCommand,
 		&hashCommand,
 		&updateCommand,
 	}

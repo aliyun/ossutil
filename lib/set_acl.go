@@ -57,7 +57,7 @@ var specChineseSetACL = SpecText{
 
 	synopsisText: "设置bucket或者objects的acl",
 
-	paramText: "url [acl] [options]",
+	paramText: "cloud_url [acl] [options]",
 
 	syntaxText: ` 
     ossutil set-acl oss://bucket[/prefix] [acl] [-r] [-b] [-f] [-c file] 
@@ -92,18 +92,18 @@ ACL：
 
     1) ossutil set-acl oss://bucket [acl] -b [-c file]
         当设置了--bucket选项时，ossutil会尝试设置bucket的acl，此时不支持--recursive选项，并且请
-    确保输入的url精确匹配想要设置acl的bucket，无论--force选项是否指定，都不会进行询问提示。如果
-    用户在命令行中缺失acl信息，会进入交互模式，询问用户的acl信息。 
+    确保输入的cloud_url精确匹配想要设置acl的bucket，无论--force选项是否指定，都不会进行询问提示。
+    如果用户在命令行中缺失acl信息，会进入交互模式，询问用户的acl信息。 
 
     2) ossutil set-acl oss://bucket/object [acl] [-c file]
         该用法设置指定单个object的acl，当指定object不存在时，ossutil会提示错误，此时请确保指定的
-    url精确匹配需要设置acl的object，并且不要指定--recursive选项（否则ossutil会进行前缀匹配，设置
-    多个objects的acl），无论--force选项是否指定，都不会进行询问提示。如果用户在命令行中缺失acl信
-    息，会进入交互模式，询问用户的acl信息。
+    cloud_url精确匹配需要设置acl的object，并且不要指定--recursive选项（否则ossutil会进行前缀匹配，
+    设置多个objects的acl），无论--force选项是否指定，都不会进行询问提示。如果用户在命令行中缺失
+    acl信息，会进入交互模式，询问用户的acl信息。
 
     3) ossutil set-acl oss://bucket[/prefix] [acl] -r [-f] [-c file]
-        该用法可批量设置objects的acl，此时必须输入--recursive选项，ossutil会查找所有前缀匹配url的
-    objects，设置它们的acl，当一个object操作出现错误时，会将出错object的错误信息记录到report文件，
+        该用法可批量设置objects的acl，此时必须输入--recursive选项，ossutil会查找所有前缀匹配cloud_url
+    的objects，设置它们的acl，当一个object操作出现错误时，会将出错object的错误信息记录到report文件，
     并继续操作其他object，成功操作的object信息将不会被记录到report文件中（更多信息见cp命令的帮助）。
     此时不支持--bucket选项，即ossutil不支持同时设置bucket和其中objects的acl，如有需要，请分开操作。
     如果--force选项被指定，则不会进行询问提示。如果用户在命令行中缺失acl信息，会进入交互模式，询问
@@ -125,7 +125,7 @@ var specEnglishSetACL = SpecText{
 
 	synopsisText: "Set acl on bucket or objects",
 
-	paramText: "url [acl] [options]",
+	paramText: "cloud_url [acl] [options]",
 
 	syntaxText: ` 
     ossutil set-acl oss://bucket[/prefix] [acl] [-r] [-b] [-f] [-c file] 
@@ -162,15 +162,15 @@ Usage：
 
     1) ossutil set-acl oss://bucket [acl] -b [-c file]
         If --bucket option is specified, ossutil will try to set acl on bucket. In the 
-    usage, please make sure url exactly specified the bucket you want to set acl on, 
-    and --recursive option is not supported here. No matter --force option is specified 
+    usage, please make sure cloud_url exactly specified the bucket you want to set acl 
+    on, and --recursive option is not supported here. No matter --force option is specified 
     or not, ossutil will not show prompt question. If acl information is missed, ossutil 
     will enter interactive mode and ask you for it. 
 
     2) ossutil set-acl oss://bucket/object [acl] [-c file]
         The usage set acl on single object, if object not exist, error occurs. In the 
-    usage, please make sure url exactly specified the object you want to set acl on, 
-    and --recursive option is not specified(or ossutil will search for prefix-matching 
+    usage, please make sure cloud_url exactly specified the object you want to set acl 
+    on, and --recursive option is not specified(or ossutil will search for prefix-matching 
     objects and set acl on those objects). No matter --force option is specified or not, 
     ossutil will not show prompt question. If acl information is missed, ossutil will 
     enter interactive mode and ask you for it. 

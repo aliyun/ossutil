@@ -71,7 +71,7 @@ var specChineseSetMeta = SpecText{
 
 	synopsisText: "设置已上传的objects的元信息",
 
-	paramText: "url [meta] [options]",
+	paramText: "cloud_url [meta] [options]",
 
 	syntaxText: ` 
     ossutil set-meta oss://bucket[/prefix] [header:value#header:value...] [--update] [--delete] [-r] [-f] [-c file] 
@@ -79,8 +79,8 @@ var specChineseSetMeta = SpecText{
 
 	detailHelpText: ` 
     该命令可设置或者更新或者删除指定objects的meta信息。当指定--recursive选项时，ossutil
-    获取所有与指定url匹配的objects，批量设置这些objects的meta，否则，设置指定的单个object
-    的元信息，如果该object不存在，ossutil会报错。
+    获取所有与指定cloud_url匹配的objects，批量设置这些objects的meta，否则，设置指定的单个
+    object的元信息，如果该object不存在，ossutil会报错。
 
     （1）设置全量值：如果用户未指定--update选项和--delete选项，ossutil会设置指定objects的
         meta为用户输入的[header:value#header:value...]。当缺失[header:value#header:value...]
@@ -111,16 +111,16 @@ Headers:
     该命令有两种用法：
 
     1) ossutil set-meta oss://bucket/object [header:value#header:value...] [--update] [--delete] [-f] 
-        如果未指定--recursive选项，ossutil设置指定的单个object的meta信息，此时请确保url
-    精确指定了想要设置meta的object，当object不存在时会报错。如果指定了--force选项，则不
-    会进行询问提示。如果用户未输入[header:value#header:value...]，相当于删除object的所有
-    meta。
+        如果未指定--recursive选项，ossutil设置指定的单个object的meta信息，此时请确保输入
+    的cloud_url精确指定了想要设置meta的object，当object不存在时会报错。如果指定了--force
+    选项，则不会进行询问提示。如果用户未输入[header:value#header:value...]，相当于删除
+    object的所有meta。
         --update选项和--delete选项的用法参考上文。
 
     2) ossutil set-meta oss://bucket[/prefix] [header:value#header:value...] -r [--update] [--delete] [-f]
-        如果指定了--recursive选项，ossutil会查找所有前缀匹配url的objects，批量设置这些
-    objects的meta信息。当一个object操作出现错误时会将出错object的错误信息记录到report文
-    件，并继续操作其他object，成功操作的object信息将不会被记录到report文件中（更多信息
+        如果指定了--recursive选项，ossutil会查找所有前缀匹配cloud_url的objects，批量设置
+    这些objects的meta信息。当一个object操作出现错误时会将出错object的错误信息记录到report
+    文件，并继续操作其他object，成功操作的object信息将不会被记录到report文件中（更多信息
     见cp命令的帮助）。
         如果--force选项被指定，则不会进行询问提示。
         --update选项和--delete选项的用法参考上文。
@@ -148,7 +148,7 @@ var specEnglishSetMeta = SpecText{
 
 	synopsisText: "set metadata on already uploaded objects",
 
-	paramText: "url [meta] [options]",
+	paramText: "cloud_url [meta] [options]",
 
 	syntaxText: ` 
     ossutil set-meta oss://bucket[/prefix] [header:value#header:value...] [--update] [--delete] [-r] [-f] [-c file] 
@@ -196,7 +196,7 @@ Usage:
 
     1) ossutil set-meta oss://bucket/object [header:value#header:value...] [--update] [--delete] [-f] 
         If --recursive option is not specified, ossutil set meta on the specified single 
-    object. In the usage, please make sure url exactly specified the object you want to 
+    object. In the usage, please make sure cloud_url exactly specified the object you want to 
     set meta on, if object not exist, error occurs. If --force option is specified, ossutil 
     will not show prompt question. 
         The usage of --update option and --delete option is showed in detailHelpText. 

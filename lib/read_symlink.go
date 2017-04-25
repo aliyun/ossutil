@@ -14,7 +14,7 @@ var specChineseReadSymlink = SpecText{
 
 	synopsisText: "读取符号链接文件的描述信息",
 
-	paramText: "[cloud_url] [options]",
+	paramText: "cloud_url [options]",
 
 	syntaxText: ` 
     ossutil read-symlink oss://bucket/object [--encoding-type url] [-c file] 
@@ -46,7 +46,7 @@ var specEnglishReadSymlink = SpecText{
 
 	synopsisText: "Display meta information of symlink object",
 
-	paramText: "[cloud_url] [options]",
+	paramText: "cloud_url [options]",
 
 	syntaxText: ` 
     ossutil read-symlink oss://bucket/object [--encoding-type url] [-c file]

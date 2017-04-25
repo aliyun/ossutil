@@ -12,7 +12,7 @@ var specChineseList = SpecText{
 
 	synopsisText: "列举Buckets或者Objects",
 
-	paramText: "[url] [options]",
+	paramText: "[cloud_url] [options]",
 
 	syntaxText: ` 
     ossutil ls [oss://bucket[/prefix]] [-s] [-d] [--limited-num num] [--marker marker] [--upload-id-marker umarker] [-c file] 
@@ -28,7 +28,7 @@ var specChineseList = SpecText{
     该命令有两种用法：
 
     1) ossutil ls [oss://] [-s] [--limited-num num] [--marker marker]
-        如果用户列举时缺失url参数，则ossutil获取用户的身份凭证信息（从配置文件中读取），
+        如果用户列举时缺失cloud_url参数，则ossutil获取用户的身份凭证信息（从配置文件中读取），
     并列举该身份凭证下的所有buckets，并显示每个bucket的最新更新时间，位置，存储方式等信息。
     如果指定了--short-format选项则只输出bucket名称。该用法不支持--directory选项。
 
@@ -155,7 +155,7 @@ var specEnglishList = SpecText{
 
 	synopsisText: "List Buckets or Objects",
 
-	paramText: "[url] [options]",
+	paramText: "[cloud_url] [options]",
 
 	syntaxText: ` 
     ossutil ls [oss://bucket[/prefix]] [-s] [-d] [--limited-num num] [--marker marker] [--upload-id-marker umarker] [-c file] 
@@ -172,7 +172,7 @@ Usage:
     There are two usages:
 
     1) ossutil ls [oss://] [-s] [--limited-num num] [--marker marker]
-        If you list without a url, ossutil lists all the buckets using the credentials
+        If you list without a cloud_url, ossutil lists all the buckets using the credentials
     in config file with last modified time and location in addition. --show_format option 
     will ignore last modified time and location. The usage do not support --directory 
     option.
@@ -183,12 +183,12 @@ Usage:
     modified time and etag in addition, --short-format option ignores all the additional 
     information. --directory option returns top-level subdirectory names instead of contents 
     of the subdirectory, which in default show by short format. the directory is end with /. 
-        --multipart option will show multipart upload tasks under the url(oss://bucket[/prefix]), 
+        --multipart option will show multipart upload tasks under the cloud_url(oss://bucket[/prefix]), 
     which means, ossutil will show the uploadId of those uncompleted multipart, whose object 
     name starts with the specified prefix. ossutil will show the init time of uploadId meanwhile. 
     The usage also supports --short-format and --directory option. (Multipart upload is also used 
     in resume cp. More information about multipart see: https://help.aliyun.com/document_detail/31991.html?spm=5176.doc31992.6.880.VOSDk5). 
-        --all-type option will show objects and multipart upload tasks under the url(oss://bucket[/prefix]),  
+        --all-type option will show objects and multipart upload tasks under the cloud_url(oss://bucket[/prefix]),  
     which means, ossutil will both show the objects with the specified prefix and the uploadId of 
     those uncompleted multipart, whose object name starts with the specified prefix. The usage also 
     support --short-format and --directory option.

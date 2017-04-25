@@ -20,7 +20,7 @@ var specChineseMakeBucket = SpecText{
 
 	synopsisText: "创建Bucket",
 
-	paramText: "url [options]",
+	paramText: "cloud_url [options]",
 
 	syntaxText: ` 
     ossutil mb oss://bucket [--acl acl] [--storage-class class] [-c file] 
@@ -73,7 +73,7 @@ var specEnglishMakeBucket = SpecText{
 
 	synopsisText: "Make Bucket",
 
-	paramText: "url [options]",
+	paramText: "cloud_url [options]",
 
 	syntaxText: ` 
     ossutil mb oss://bucket [--acl acl] [--storage-class class] [-c file] 
@@ -237,10 +237,10 @@ func (mc *MakeBucketCommand) checkACL(acl string) (oss.ACLType, error) {
 }
 
 func (mc *MakeBucketCommand) ossCreateBucketRetry(client *oss.Client, bucket string, options ...oss.Option) error {
-	cbConfig := oss.CreateBucketConfiguration{StorageClass: mc.getStorageClass()}
+	options = append(options, oss.StorageClass(mc.getStorageClass()))
 	retryTimes, _ := GetInt(OptionRetryTimes, mc.command.options)
 	for i := 1; ; i++ {
-		err := client.DoCreateBucket(bucket, cbConfig, options...)
+		err := client.CreateBucket(bucket, options...)
 		if err == nil {
 			return err
 		}

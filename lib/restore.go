@@ -14,16 +14,16 @@ type batchOptionType struct {
 
 var specChineseRestore = SpecText{
 
-	synopsisText: "恢复冷冻状态的Objects为读就绪状态",
+	synopsisText: "恢复冷冻状态的Objects为可读状态",
 
-	paramText: "[cloud_url] [options]",
+	paramText: "cloud_url [options]",
 
 	syntaxText: ` 
     ossutil restore cloud_url [--encoding-type url] [-r] [-f] [--output-dir=odir] [-c file] 
 `,
 
 	detailHelpText: ` 
-    该命令恢复处于冷冻状态的归档类型object进入读就绪状态，即操作对象object必须为` + StorageArchive + `存储
+    该命令恢复处于冷冻状态的归档类型object进入可读状态，即操作对象object必须为` + StorageArchive + `存储
     类型的object。
 
     如果是针对处于冷冻状态的归档类型object第一次调用restore接口，则返回成功。
@@ -37,17 +37,17 @@ var specChineseRestore = SpecText{
     该命令有两种用法：
 
     1) ossutil restore oss://bucket/object [--encoding-type url] 
-        该用法恢复单个冷冻状态object为读就绪状态，当指定object不存在时，ossutil会提示错
-    误，此时请确保指定的url精确匹配需要设置acl的object，并且不要指定--recursive选项（否
-    则ossutil会进行前缀匹配，恢复多个冷冻状态的objects为读就绪状态）。无论--force选项是
-    否指定，都不会进行询问提示。
+        该用法恢复单个冷冻状态object为可读状态，当指定object不存在时，ossutil会提示错
+    误，此时请确保指定的url精确匹配需要设置acl的object，并且不要指定--recursive选项（
+    否则ossutil会进行前缀匹配，恢复多个冷冻状态的objects为可读状态）。无论--force选项
+    是否指定，都不会进行询问提示。
 
     2) ossutil restore oss://bucket[/prefix] -r [--encoding-type url] [-f] [--output-dir=odir]
-        该用法可批量恢复多个冷冻状态的objects为读就绪状态，此时必须输入--recursive选项，
-    ossutil会查找所有前缀匹配url的objects，恢复它们为读就绪状态。当一个object操作出现错
-    误时，会将出错object的错误信息记录到report文件，并继续操作其他object，成功操作的object
-    信息将不会被记录到report文件中（更多信息见cp命令的帮助）。如果--force选项被指定，则
-    不会进行询问提示。
+        该用法可批量恢复多个冷冻状态的objects为可读状态，此时必须输入--recursive选项，
+    ossutil会查找所有前缀匹配url的objects，恢复它们为可读状态。当一个object操作出现错
+    误时，会将出错object的错误信息记录到report文件，并继续操作其他object，成功操作的
+    object信息将不会被记录到report文件中（更多信息见cp命令的帮助）。如果--force选项被
+    指定，则不会进行询问提示。
 `,
 
 	sampleText: ` 
@@ -62,7 +62,7 @@ var specEnglishRestore = SpecText{
 
 	synopsisText: "Restore Frozen State Object to Read Ready Status",
 
-	paramText: "[cloud_url] [options]",
+	paramText: "cloud_url [options]",
 
 	syntaxText: ` 
     ossutil restore cloud_url [--encoding-type url] [-r] [-f] [--output-dir=odir] [-c file] 
