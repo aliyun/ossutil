@@ -62,8 +62,8 @@ var (
 
 // Run once when the suite starts running
 func (s *OssutilCommandSuite) SetUpSuite(c *C) {
-	os.Stdout = testLogFile
-	os.Stderr = testLogFile
+	//os.Stdout = testLogFile
+	//os.Stderr = testLogFile
 	testLogger.Println("test command started")
 	SetUpCredential()
 	cm.Init()

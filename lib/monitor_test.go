@@ -1093,7 +1093,7 @@ func (s *OssutilCommandSuite) TestRemoveUploadIdProgress(c *C) {
 	str = strings.ToLower(removeCommand.monitor.getFinishBar(normalExit))
 	c.Assert(strings.Contains(str, "succeed:"), Equals, true)
 	c.Assert(strings.Contains(str, "objects"), Equals, false)
-	c.Assert(strings.Contains(str, fmt.Sprintf("total %d uploadids", num)), Equals, true)
+	c.Assert(strings.Contains(str, fmt.Sprintf("%d uploadids", num)), Equals, true)
 	c.Assert(strings.Contains(str, fmt.Sprintf("removed %d uploadids", num)), Equals, true)
 	c.Assert(strings.Contains(str, "err"), Equals, false)
 	c.Assert(strings.Contains(strings.TrimSpace(pstr), strings.TrimSpace(str)), Equals, true)
@@ -1514,6 +1514,7 @@ func (s *OssutilCommandSuite) TestRangeGet(c *C) {
 	c.Assert(str, Equals, data[1:6])
 
 	snap = copyCommand.monitor.getSnapshot()
+	fmt.Println("&&&&&&&&", snap.transferSize)
 	c.Assert(copyCommand.monitor.totalSize == int64(5) || !copyCommand.monitor.seekAheadEnd, Equals, true)
 	c.Assert(copyCommand.monitor.totalNum == int64(1) || !copyCommand.monitor.seekAheadEnd, Equals, true)
 	c.Assert(snap.transferSize, Equals, int64(5))
