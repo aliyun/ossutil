@@ -149,12 +149,12 @@ func (s *OssutilCommandSuite) TestBatchRestoreObject(c *C) {
 	restoreCommand.monitor.seekAheadEnd = true
 	str = strings.ToLower(restoreCommand.monitor.getFinishBar(normalExit))
 	c.Assert(strings.Contains(str, "succeed:"), Equals, true)
-	c.Assert(strings.Contains(str, fmt.Sprintf("total %d", 3)), Equals, true)
+	c.Assert(strings.Contains(str, fmt.Sprintf("%d", 3)), Equals, true)
 	c.Assert(strings.Contains(str, "err"), Equals, false)
 	restoreCommand.monitor.seekAheadEnd = false
 	str = strings.ToLower(restoreCommand.monitor.getFinishBar(normalExit))
 	c.Assert(strings.Contains(str, "succeed:"), Equals, true)
-	c.Assert(strings.Contains(str, fmt.Sprintf("total %d", 3)), Equals, true)
+	c.Assert(strings.Contains(str, fmt.Sprintf("%d", 3)), Equals, true)
 	c.Assert(strings.Contains(str, "err"), Equals, false)
 
 	restoreCommand.monitor.seekAheadEnd = true
