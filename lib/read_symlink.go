@@ -22,6 +22,7 @@ var specChineseReadSymlink = SpecText{
 
 	detailHelpText: ` 
     该命令获取指定符号链接object的描述信息，此操作要求用户对该符号链接有读权限。
+    如果需要读取符合链接object的文件内容，请使用cp命令下载该object。
     
     返回的项中X-Oss-Symlink-Target表示符号链接的目标文件。
 
@@ -54,7 +55,9 @@ var specEnglishReadSymlink = SpecText{
 
 	detailHelpText: ` 
     The command display the meta information of symlink object. The operation 
-    requires that the user have read permission of the symlink object. 
+    requires that the user have read permission of the symlink object. If you 
+    want to get the file data of symlink object, please use cp command to download 
+    the symlink object. 
 
     The item X-Oss-Symlink-Target shows the target object of the symlink object.
 
