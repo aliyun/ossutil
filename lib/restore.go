@@ -23,10 +23,10 @@ var specChineseRestore = SpecText{
 `,
 
 	detailHelpText: ` 
-    该命令恢复处于冷冻状态的归档类型object进入可读状态，即操作对象object必须为` + StorageArchive + `存储
-    类型的object。
+    该命令恢复处于冷冻状态的object进入可读状态，即操作对象object必须为` + StorageArchive + `存储类型
+    的object。
 
-    如果是针对处于冷冻状态的归档类型object第一次调用restore接口，则返回成功。
+    如果是针对处于冷冻状态的object第一次调用restore接口，则返回成功。
     如果已经成功调用过restore接口，且restore没有完全完成，再次调用时同样成功。
     如果已经成功调用过restore接口，且restore已经完成，再次调用时返回成功，且会将object
     的可下载时间延长一天，最多延长7天。
