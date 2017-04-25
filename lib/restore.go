@@ -84,18 +84,18 @@ Usage:
     There are two usages:
 
     1) ossutil restore oss://bucket/object [--encoding-type url] 
-        If --recursive option is not specified, ossutil restore the specified single frozen state 
-    object to read ready status. In the usage, please make sure url exactly specified the object 
-    you want to restore, if object not exist, error occurs. No matter --force option is specified 
-    or not, ossutil will not show prompt question. 
+        If --recursive option is not specified, ossutil restore the specified frozen state object 
+    to readable status. In the usage, please make sure url exactly specified the object you want to 
+    restore, if object not exist, error occurs. No matter --force option is specified or not, ossutil 
+    will not show prompt question. 
 
     2) ossutil restore oss://bucket[/prefix] -r [--encoding-type url] [-f] [--output-dir=odir]
-        The usage can restore many objects that in frozen state to read ready status, --recursive 
-    option is required for the usage, ossutil will search for prefix-matching objects and restore 
-    those objects. When an error occurs when restore an object, ossutil will record the error message 
-    to report file, and ossutil will continue to attempt to set acl on the remaining objects(more 
-    information see help of cp command). If --force option is specified, ossutil will not show 
-    prompt question. 
+        The usage restore the objects with the specified prefix and in frozen state to readable status. 
+    --recursive option is required for the usage, and ossutil will search for prefix-matching objects 
+    and restore those objects. When an error occurs when restore an object, ossutil will record the 
+    error message to report file, and ossutil will continue to attempt to set acl on the remaining 
+    objects(more information see help of cp command). If --force option is specified, ossutil will 
+    not show prompt question. 
 `,
 
 	sampleText: ` 
