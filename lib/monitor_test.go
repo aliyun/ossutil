@@ -55,6 +55,8 @@ func (s *OssutilCommandSuite) TestUploadProgressBar(c *C) {
 	c.Assert(str, Equals, "")
 
 	snap := copyCommand.monitor.getSnapshot()
+	c.Assert(copyCommand.monitor.totalSize == int64(len) || !copyCommand.monitor.seekAheadEnd, Equals, true)
+	c.Assert(copyCommand.monitor.totalNum == int64(num) || !copyCommand.monitor.seekAheadEnd, Equals, true)
 	c.Assert(snap.transferSize, Equals, int64(len))
 	c.Assert(snap.skipSize, Equals, int64(0))
 	c.Assert(snap.dealSize, Equals, int64(len))
@@ -122,6 +124,8 @@ func (s *OssutilCommandSuite) TestUploadProgressBar(c *C) {
 	c.Assert(str, Equals, "")
 
 	snap = copyCommand.monitor.getSnapshot()
+	c.Assert(copyCommand.monitor.totalSize == int64(len+len1) || !copyCommand.monitor.seekAheadEnd, Equals, true)
+	c.Assert(copyCommand.monitor.totalNum == int64(num+num1+2) || !copyCommand.monitor.seekAheadEnd, Equals, true)
 	c.Assert(snap.transferSize, Equals, int64(len1))
 	c.Assert(snap.skipSize, Equals, int64(len))
 	c.Assert(snap.dealSize, Equals, int64(len+len1))
@@ -1354,6 +1358,7 @@ func (s *OssutilCommandSuite) TestSnapshot(c *C) {
 	c.Assert(err, IsNil)
 
 	// modify local and upload again
+    time.Sleep(1)
 	data = randStr(21)
 	s.createFile(uploadFileName, data, c)
 
@@ -1440,8 +1445,8 @@ func (s *OssutilCommandSuite) TestRangeGet(c *C) {
 	c.Assert(str, Equals, data)
 
 	snap := copyCommand.monitor.getSnapshot()
-	c.Assert(copyCommand.monitor.totalSize == int64(20) || copyCommand.monitor.totalSize == int64(0), Equals, true)
-	c.Assert(copyCommand.monitor.totalNum == int64(1) || copyCommand.monitor.totalNum == int64(0), Equals, true)
+	c.Assert(copyCommand.monitor.totalSize == int64(20) || !copyCommand.monitor.seekAheadEnd, Equals, true)
+	c.Assert(copyCommand.monitor.totalNum == int64(1) || !copyCommand.monitor.seekAheadEnd, Equals, true)
 	c.Assert(snap.transferSize, Equals, int64(20))
 	c.Assert(snap.skipSize, Equals, int64(0))
 	c.Assert(snap.dealSize, Equals, int64(20))
@@ -1509,8 +1514,8 @@ func (s *OssutilCommandSuite) TestRangeGet(c *C) {
 	c.Assert(str, Equals, data[1:6])
 
 	snap = copyCommand.monitor.getSnapshot()
-	c.Assert(copyCommand.monitor.totalSize == int64(5) || copyCommand.monitor.totalSize == int64(0), Equals, true)
-	c.Assert(copyCommand.monitor.totalNum == int64(1) || copyCommand.monitor.totalNum == int64(0), Equals, true)
+	c.Assert(copyCommand.monitor.totalSize == int64(5) || !copyCommand.monitor.seekAheadEnd, Equals, true)
+	c.Assert(copyCommand.monitor.totalNum == int64(1) || !copyCommand.monitor.seekAheadEnd, Equals, true)
 	c.Assert(snap.transferSize, Equals, int64(5))
 	c.Assert(snap.skipSize, Equals, int64(0))
 	c.Assert(snap.dealSize, Equals, int64(5))
@@ -1749,8 +1754,8 @@ func (s *OssutilCommandSuite) TestRangeGet(c *C) {
 	c.Assert(str, Equals, data[3:9])
 
 	snap = copyCommand.monitor.getSnapshot()
-	c.Assert(copyCommand.monitor.totalSize == int64(6) || copyCommand.monitor.totalSize == int64(0), Equals, true)
-	c.Assert(copyCommand.monitor.totalNum == int64(1) || copyCommand.monitor.totalNum == int64(0), Equals, true)
+	c.Assert(copyCommand.monitor.totalSize == int64(6) || !copyCommand.monitor.seekAheadEnd, Equals, true)
+	c.Assert(copyCommand.monitor.totalNum == int64(1) || !copyCommand.monitor.seekAheadEnd, Equals, true)
 	c.Assert(snap.transferSize, Equals, int64(0))
 	c.Assert(snap.skipSize, Equals, int64(6))
 	c.Assert(snap.dealSize, Equals, int64(6))
@@ -1780,8 +1785,8 @@ func (s *OssutilCommandSuite) TestRangeGet(c *C) {
 	c.Assert(str, Equals, data1[3:10])
 
 	snap = copyCommand.monitor.getSnapshot()
-	c.Assert(copyCommand.monitor.totalSize == int64(14) || copyCommand.monitor.totalSize == int64(0), Equals, true)
-	c.Assert(copyCommand.monitor.totalNum == int64(2) || copyCommand.monitor.totalNum == int64(0), Equals, true)
+	c.Assert(copyCommand.monitor.totalSize == int64(14) || !copyCommand.monitor.seekAheadEnd, Equals, true)
+	c.Assert(copyCommand.monitor.totalNum == int64(2) || !copyCommand.monitor.seekAheadEnd, Equals, true)
 	c.Assert(snap.transferSize, Equals, int64(14))
 	c.Assert(snap.skipSize, Equals, int64(0))
 	c.Assert(snap.dealSize, Equals, int64(14))
@@ -1802,8 +1807,8 @@ func (s *OssutilCommandSuite) TestRangeGet(c *C) {
 	c.Assert(str, Equals, data1[3:21])
 
 	snap = copyCommand.monitor.getSnapshot()
-	c.Assert(copyCommand.monitor.totalSize == int64(38) || copyCommand.monitor.totalSize == int64(0), Equals, true)
-	c.Assert(copyCommand.monitor.totalNum == int64(2) || copyCommand.monitor.totalNum == int64(0), Equals, true)
+	c.Assert(copyCommand.monitor.totalSize == int64(38) || !copyCommand.monitor.seekAheadEnd, Equals, true)
+	c.Assert(copyCommand.monitor.totalNum == int64(2) || !copyCommand.monitor.seekAheadEnd, Equals, true)
 	c.Assert(snap.transferSize, Equals, int64(38))
 	c.Assert(snap.skipSize, Equals, int64(0))
 	c.Assert(snap.dealSize, Equals, int64(38))
@@ -1824,8 +1829,8 @@ func (s *OssutilCommandSuite) TestRangeGet(c *C) {
 	c.Assert(str, Equals, data1[25:])
 
 	snap = copyCommand.monitor.getSnapshot()
-	c.Assert(copyCommand.monitor.totalSize == int64(10) || copyCommand.monitor.totalSize == int64(0), Equals, true)
-	c.Assert(copyCommand.monitor.totalNum == int64(2) || copyCommand.monitor.totalNum == int64(0), Equals, true)
+	c.Assert(copyCommand.monitor.totalSize == int64(10) || !copyCommand.monitor.seekAheadEnd, Equals, true)
+	c.Assert(copyCommand.monitor.totalNum == int64(2) || !copyCommand.monitor.seekAheadEnd, Equals, true)
 	c.Assert(snap.transferSize, Equals, int64(10))
 	c.Assert(snap.skipSize, Equals, int64(0))
 	c.Assert(snap.dealSize, Equals, int64(10))
@@ -1863,8 +1868,8 @@ func (s *OssutilCommandSuite) TestRangeGet(c *C) {
 	c.Assert(str, Equals, data1[10:])
 
 	snap = copyCommand.monitor.getSnapshot()
-	c.Assert(copyCommand.monitor.totalSize == int64(12) || copyCommand.monitor.totalSize == int64(0), Equals, true)
-	c.Assert(copyCommand.monitor.totalNum == int64(2) || copyCommand.monitor.totalNum == int64(0), Equals, true)
+	c.Assert(copyCommand.monitor.totalSize == int64(12) || !copyCommand.monitor.seekAheadEnd, Equals, true)
+	c.Assert(copyCommand.monitor.totalNum == int64(2) || !copyCommand.monitor.seekAheadEnd, Equals, true)
 	c.Assert(snap.transferSize, Equals, int64(0))
 	c.Assert(snap.skipSize, Equals, int64(12))
 	c.Assert(snap.dealSize, Equals, int64(12))
