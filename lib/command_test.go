@@ -54,8 +54,7 @@ var (
 )
 
 var (
-	//bucketNamePrefix   = "ossutil-test-" + randLowStr(6)
-	bucketNamePrefix   = "ossutil-test-"
+	bucketNamePrefix   = "ossutil-test-" + randLowStr(6)
 	bucketNameExist    = "special-" + bucketNamePrefix + "existbucket"
 	bucketNameDest     = "special-" + bucketNamePrefix + "destbucket"
 	bucketNameNotExist = "nodelete-ossutil-test-notexist"
