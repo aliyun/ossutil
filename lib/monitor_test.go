@@ -1514,8 +1514,6 @@ func (s *OssutilCommandSuite) TestRangeGet(c *C) {
 	c.Assert(str, Equals, data[1:6])
 
 	snap = copyCommand.monitor.getSnapshot()
-	fmt.Println("&&&&&&&&", snap.transferSize)
-	c.Assert(copyCommand.monitor.totalSize == int64(5) || !copyCommand.monitor.seekAheadEnd, Equals, true)
 	c.Assert(copyCommand.monitor.totalNum == int64(1) || !copyCommand.monitor.seekAheadEnd, Equals, true)
 	c.Assert(snap.transferSize, Equals, int64(5))
 	c.Assert(snap.skipSize, Equals, int64(0))

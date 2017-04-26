@@ -19,9 +19,17 @@ var specChineseList = SpecText{
 `,
 
 	detailHelpText: ` 
-    该命令列举指定身份凭证下的buckets，或该身份凭证下对应endpoint的objects。默认显示
-    长格式，ossutil在列举buckets或者objects的同时展示它们的一些附加信息。如果指定了
-    --short-format选项，则显示精简格式。
+    该命令列举指定身份凭证下的buckets，或该身份凭证下对应endpoint的objects。默认显示长格式，
+    ossutil在列举buckets或者objects的同时展示它们的一些附加信息。如果指定了--short-format选
+    项，则显示精简格式。
+
+--encoding-type选项
+
+    如果指定了encoding-type为url，则表示输入的object（或prefix）为经过url编码的，此时如果指定了
+    --marker选项或--upload-id-marker选项，ossutil默认指定的marker或upload-id-marker也同样是经过
+    url编码的。注意：形如oss://bucket/object的cloud_url，输入形式为：oss://bucket/url_encode(object)，
+    其中oss://bucket/字符串不需要编码。
+    
 
 用法：
 
@@ -166,6 +174,17 @@ var specEnglishList = SpecText{
     endpoint and credentials, with simple additional information, about each matching 
     provider, bucket, subdirectory, or object. If --short-format option is specified, 
     ossutil will show by short format. 
+
+--encoding-type option
+
+    If the --encoding-type option is setted to url, the object/prefix inputted is url 
+    encoded, if the --marker option or --upload-id-marker option is specified, ossutil 
+    will consider the marker or upload-id-marker inputted is also url encoded.
+
+    Note: If the option is specified, the cloud_url like: oss://bucket/object should be 
+    inputted as: oss://bucket/url_encode(object), the string: oss://bucket/ should not 
+    be url encoded. 
+
 
 Usage:
 

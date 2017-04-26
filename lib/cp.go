@@ -222,6 +222,10 @@ var specChineseCopy = SpecText{
     使前后几次下载range范围不一样，满足增量下载条件时，ossutil同样会跳过下载，所以请避免两者
     同时使用！
 
+--encoding-type选项
+
+    如果指定该选项为url，则表示输入的object名和文件名都是经过url编码的。
+
 
 大文件断点续传：
 
@@ -657,6 +661,11 @@ Other Options:
     Note: Incremental download(-u option) will not conside --range option. Which means even if the 
     range changs between two download, ossutil will skip the files which satisfy the incremental 
     download condition, so, please avoid to use both!
+
+--encoding-type option
+    
+    If the --encoding-type option is setted to url, it means the object name and file name are url 
+    endcoded.
 
 
 Resume copy of big file:
