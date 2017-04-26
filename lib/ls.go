@@ -12,23 +12,31 @@ var specChineseList = SpecText{
 
 	synopsisText: "列举Buckets或者Objects",
 
-	paramText: "[url] [options]",
+	paramText: "[cloud_url] [options]",
 
 	syntaxText: ` 
     ossutil ls [oss://bucket[/prefix]] [-s] [-d] [--limited-num num] [--marker marker] [--upload-id-marker umarker] [-c file] 
 `,
 
 	detailHelpText: ` 
-    该命令列举指定身份凭证下的buckets，或该身份凭证下对应endpoint的objects。默认显示
-    长格式，ossutil在列举buckets或者objects的同时展示它们的一些附加信息。如果指定了
-    --short-format选项，则显示精简格式。
+    该命令列举指定身份凭证下的buckets，或该身份凭证下对应endpoint的objects。默认显示长格式，
+    ossutil在列举buckets或者objects的同时展示它们的一些附加信息。如果指定了--short-format选
+    项，则显示精简格式。
+
+--encoding-type选项
+
+    如果指定了encoding-type为url，则表示输入的object（或prefix）为经过url编码的，此时如果指定了
+    --marker选项或--upload-id-marker选项，ossutil默认指定的marker或upload-id-marker也同样是经过
+    url编码的。注意：形如oss://bucket/object的cloud_url，输入形式为：oss://bucket/url_encode(object)，
+    其中oss://bucket/字符串不需要编码。
+    
 
 用法：
 
     该命令有两种用法：
 
     1) ossutil ls [oss://] [-s] [--limited-num num] [--marker marker]
-        如果用户列举时缺失url参数，则ossutil获取用户的身份凭证信息（从配置文件中读取），
+        如果用户列举时缺失cloud_url参数，则ossutil获取用户的身份凭证信息（从配置文件中读取），
     并列举该身份凭证下的所有buckets，并显示每个bucket的最新更新时间，位置，存储方式等信息。
     如果指定了--short-format选项则只输出bucket名称。该用法不支持--directory选项。
 
@@ -155,7 +163,7 @@ var specEnglishList = SpecText{
 
 	synopsisText: "List Buckets or Objects",
 
-	paramText: "[url] [options]",
+	paramText: "[cloud_url] [options]",
 
 	syntaxText: ` 
     ossutil ls [oss://bucket[/prefix]] [-s] [-d] [--limited-num num] [--marker marker] [--upload-id-marker umarker] [-c file] 
@@ -167,12 +175,23 @@ var specEnglishList = SpecText{
     provider, bucket, subdirectory, or object. If --short-format option is specified, 
     ossutil will show by short format. 
 
+--encoding-type option
+
+    If the --encoding-type option is setted to url, the object/prefix inputted is url 
+    encoded, if the --marker option or --upload-id-marker option is specified, ossutil 
+    will consider the marker or upload-id-marker inputted is also url encoded.
+
+    Note: If the option is specified, the cloud_url like: oss://bucket/object should be 
+    inputted as: oss://bucket/url_encode(object), the string: oss://bucket/ should not 
+    be url encoded. 
+
+
 Usage:
 
     There are two usages:
 
     1) ossutil ls [oss://] [-s] [--limited-num num] [--marker marker]
-        If you list without a url, ossutil lists all the buckets using the credentials
+        If you list without a cloud_url, ossutil lists all the buckets using the credentials
     in config file with last modified time and location in addition. --show_format option 
     will ignore last modified time and location. The usage do not support --directory 
     option.
@@ -183,12 +202,12 @@ Usage:
     modified time and etag in addition, --short-format option ignores all the additional 
     information. --directory option returns top-level subdirectory names instead of contents 
     of the subdirectory, which in default show by short format. the directory is end with /. 
-        --multipart option will show multipart upload tasks under the url(oss://bucket[/prefix]), 
+        --multipart option will show multipart upload tasks under the cloud_url(oss://bucket[/prefix]), 
     which means, ossutil will show the uploadId of those uncompleted multipart, whose object 
     name starts with the specified prefix. ossutil will show the init time of uploadId meanwhile. 
     The usage also supports --short-format and --directory option. (Multipart upload is also used 
     in resume cp. More information about multipart see: https://help.aliyun.com/document_detail/31991.html?spm=5176.doc31992.6.880.VOSDk5). 
-        --all-type option will show objects and multipart upload tasks under the url(oss://bucket[/prefix]),  
+        --all-type option will show objects and multipart upload tasks under the cloud_url(oss://bucket[/prefix]),  
     which means, ossutil will both show the objects with the specified prefix and the uploadId of 
     those uncompleted multipart, whose object name starts with the specified prefix. The usage also 
     support --short-format and --directory option.

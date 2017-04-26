@@ -5,7 +5,9 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"strings"
 
+	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 	. "gopkg.in/check.v1"
 )
 
@@ -299,6 +301,217 @@ func (s *OssutilCommandSuite) TestSetACLURLEncoding(c *C) {
 	showElapse, err = cm.RunCommand(command, args, options)
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
+
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestSetACLErrArgs(c *C) {
+	object := randStr(20)
+
+	err := s.initSetACLWithArgs([]string{CloudURLToString("", object), "private"}, "", DefaultOutputDir)
+	c.Assert(err, IsNil)
+	err = setACLCommand.RunCommand()
+	c.Assert(err, NotNil)
+
+	err = s.initSetACLWithArgs([]string{CloudURLToString("", ""), "private"}, "", DefaultOutputDir)
+	c.Assert(err, IsNil)
+	err = setACLCommand.RunCommand()
+	c.Assert(err, NotNil)
+}
+
+func (s *OssutilCommandSuite) TestBatchSetACLNotExistBucket(c *C) {
+	// set acl notexist bucket
+	err := s.initSetACLWithArgs([]string{CloudURLToString(bucketNamePrefix+randLowStr(10), ""), "private"}, "-rf", DefaultOutputDir)
+	c.Assert(err, IsNil)
+	err = setACLCommand.RunCommand()
+	c.Assert(err, NotNil)
+}
+
+func (s *OssutilCommandSuite) TestBatchSetACLErrorContinue(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	// put object to archive bucket
+	num := 2
+	objectNames := []string{}
+	for i := 0; i < num; i++ {
+		object := fmt.Sprintf("设置权限object:%d%s", i, randStr(5))
+		s.putObject(bucketName, object, uploadFileName, c)
+		objectNames = append(objectNames, object)
+	}
+
+	// set acl prepare
+	acl := oss.ACLPrivate
+
+	err := s.initSetACLWithArgs([]string{CloudURLToString(bucketName, ""), string(acl)}, "-rf", DefaultOutputDir)
+	c.Assert(err, IsNil)
+
+	bucket, err := setACLCommand.command.ossBucket(bucketName)
+	c.Assert(err, IsNil)
+	c.Assert(bucket, NotNil)
+
+	setACLCommand.monitor.init("Setted acl on")
+	setACLCommand.saOption.ctnu = true
+
+	// init reporter
+	setACLCommand.saOption.reporter, err = GetReporter(setACLCommand.saOption.ctnu, DefaultOutputDir, commandLine)
+	c.Assert(err, IsNil)
+
+	defer setACLCommand.saOption.reporter.Clear()
+
+	var routines int64
+	routines = 3
+	chObjects := make(chan string, ChannelBuf)
+	chError := make(chan error, routines+1)
+	chListError := make(chan error, 1)
+
+	chObjects <- objectNames[0]
+	chObjects <- "notexistobject" + randStr(3)
+	chObjects <- objectNames[1]
+	chListError <- nil
+	close(chObjects)
+
+	for i := 0; int64(i) < routines; i++ {
+		setACLCommand.setObjectACLConsumer(bucket, acl, chObjects, chError)
+	}
+
+	err = setACLCommand.waitRoutinueComplete(chError, chListError, routines)
+	c.Assert(err, IsNil)
+
+	str := setACLCommand.monitor.progressBar(false, normalExit)
+	c.Assert(str, Equals, "")
+	str = setACLCommand.monitor.progressBar(false, errExit)
+	c.Assert(str, Equals, "")
+	str = setACLCommand.monitor.progressBar(true, normalExit)
+	c.Assert(str, Equals, "")
+	str = setACLCommand.monitor.progressBar(true, errExit)
+	c.Assert(str, Equals, "")
+
+	snap := setACLCommand.monitor.getSnapshot()
+	c.Assert(snap.okNum, Equals, int64(2))
+	c.Assert(snap.errNum, Equals, int64(1))
+	c.Assert(snap.dealNum, Equals, int64(3))
+
+	setACLCommand.monitor.seekAheadEnd = true
+	setACLCommand.monitor.seekAheadError = nil
+	str = strings.ToLower(setACLCommand.monitor.getFinishBar(normalExit))
+	c.Assert(strings.Contains(str, "finishwitherror:"), Equals, true)
+	c.Assert(strings.Contains(str, "succeed:"), Equals, false)
+	c.Assert(strings.Contains(str, "error"), Equals, true)
+	setACLCommand.monitor.seekAheadEnd = false
+	str = strings.ToLower(setACLCommand.monitor.getFinishBar(normalExit))
+	c.Assert(strings.Contains(str, "finishwitherror:"), Equals, true)
+	c.Assert(strings.Contains(str, "succeed:"), Equals, false)
+	c.Assert(strings.Contains(str, "error"), Equals, true)
+
+	setACLCommand.monitor.seekAheadEnd = true
+	setACLCommand.monitor.seekAheadError = nil
+	str = strings.ToLower(setACLCommand.monitor.getFinishBar(errExit))
+	c.Assert(strings.Contains(str, "when error happens."), Equals, true)
+	c.Assert(strings.Contains(str, "total"), Equals, true)
+	setACLCommand.monitor.seekAheadEnd = false
+	str = strings.ToLower(setACLCommand.monitor.getFinishBar(errExit))
+	c.Assert(strings.Contains(str, "when error happens."), Equals, true)
+	c.Assert(strings.Contains(str, "scanned"), Equals, true)
+
+	for _, object := range objectNames {
+		objectStat := s.getStat(bucketName, object, c)
+		c.Assert(objectStat[StatACL], Equals, string(acl))
+	}
+
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestBatchSetACLErrorBreak(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucketWithStorageClass(bucketName, StorageArchive, c)
+
+	// put object to archive bucket
+	num := 2
+	objectNames := []string{}
+	for i := 0; i < num; i++ {
+		object := fmt.Sprintf("设置权限object:%d%s", i, randStr(5))
+		s.putObject(bucketName, object, uploadFileName, c)
+		objectNames = append(objectNames, object)
+	}
+
+	// prepare
+	acl := oss.ACLPrivate
+
+	err := s.initSetACLWithArgs([]string{CloudURLToString(bucketName, ""), string(acl)}, "-rf", DefaultOutputDir)
+	c.Assert(err, IsNil)
+
+	// make error bucket with error id
+	bucket := s.getErrorOSSBucket(bucketName, c)
+	c.Assert(bucket, NotNil)
+
+	setACLCommand.monitor.init("Setted acl on")
+	setACLCommand.saOption.ctnu = true
+
+	// init reporter
+	setACLCommand.saOption.reporter, err = GetReporter(setACLCommand.saOption.ctnu, DefaultOutputDir, commandLine)
+	c.Assert(err, IsNil)
+
+	defer setACLCommand.saOption.reporter.Clear()
+
+	var routines int64
+	routines = 3
+	chObjects := make(chan string, ChannelBuf)
+	chError := make(chan error, routines+1)
+	chListError := make(chan error, 1)
+
+	chObjects <- objectNames[0]
+	chObjects <- objectNames[1]
+	chListError <- nil
+	close(chObjects)
+
+	for i := 0; int64(i) < routines; i++ {
+		setACLCommand.setObjectACLConsumer(bucket, acl, chObjects, chError)
+	}
+
+	err = setACLCommand.waitRoutinueComplete(chError, chListError, routines)
+	c.Assert(err, NotNil)
+
+	str := setACLCommand.monitor.progressBar(false, normalExit)
+	c.Assert(str, Equals, "")
+	str = setACLCommand.monitor.progressBar(false, errExit)
+	c.Assert(str, Equals, "")
+	str = setACLCommand.monitor.progressBar(true, normalExit)
+	c.Assert(str, Equals, "")
+	str = setACLCommand.monitor.progressBar(true, errExit)
+	c.Assert(str, Equals, "")
+
+	snap := setACLCommand.monitor.getSnapshot()
+	c.Assert(snap.okNum, Equals, int64(0))
+	c.Assert(snap.errNum, Equals, int64(2))
+	c.Assert(snap.dealNum, Equals, int64(2))
+
+	setACLCommand.monitor.seekAheadEnd = true
+	setACLCommand.monitor.seekAheadError = nil
+	str = strings.ToLower(setACLCommand.monitor.getFinishBar(normalExit))
+	c.Assert(strings.Contains(str, "finishwitherror:"), Equals, true)
+	c.Assert(strings.Contains(str, "succeed:"), Equals, false)
+	c.Assert(strings.Contains(str, "error"), Equals, true)
+	setACLCommand.monitor.seekAheadEnd = false
+	str = strings.ToLower(setACLCommand.monitor.getFinishBar(normalExit))
+	c.Assert(strings.Contains(str, "finishwitherror:"), Equals, true)
+	c.Assert(strings.Contains(str, "succeed:"), Equals, false)
+	c.Assert(strings.Contains(str, "error"), Equals, true)
+
+	setACLCommand.monitor.seekAheadEnd = true
+	setACLCommand.monitor.seekAheadError = nil
+	str = strings.ToLower(setACLCommand.monitor.getFinishBar(errExit))
+	c.Assert(strings.Contains(str, "when error happens."), Equals, true)
+	c.Assert(strings.Contains(str, "total"), Equals, true)
+	setACLCommand.monitor.seekAheadEnd = false
+	str = strings.ToLower(setACLCommand.monitor.getFinishBar(errExit))
+	c.Assert(strings.Contains(str, "when error happens."), Equals, true)
+	c.Assert(strings.Contains(str, "scanned"), Equals, true)
+
+	for _, object := range objectNames {
+		objectStat := s.getStat(bucketName, object, c)
+		c.Assert(objectStat[StatACL], Equals, "default")
+	}
 
 	s.removeBucket(bucketName, true, c)
 }

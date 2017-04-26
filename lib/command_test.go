@@ -601,6 +601,7 @@ func (s *OssutilCommandSuite) rawCPWithArgs(args []string, recursive, force, upd
 	str := ""
 	thre := strconv.FormatInt(threshold, 10)
 	routines := strconv.Itoa(Routines)
+	partSize := strconv.FormatInt(DefaultPartSize, 10)
 	options := OptionMapType{
 		"endpoint":         &str,
 		"accessKeyID":      &str,
@@ -613,6 +614,7 @@ func (s *OssutilCommandSuite) rawCPWithArgs(args []string, recursive, force, upd
 		"bigfileThreshold": &thre,
 		"checkpointDir":    &cpDir,
 		"routines":         &routines,
+		"partSize":         &partSize,
 	}
 	showElapse, err := cm.RunCommand(command, args, options)
 	return showElapse, err
@@ -624,6 +626,7 @@ func (s *OssutilCommandSuite) rawCPWithOutputDir(srcURL, destURL string, recursi
 	args := []string{srcURL, destURL}
 	thre := strconv.FormatInt(threshold, 10)
 	routines := strconv.Itoa(Routines)
+	partSize := strconv.FormatInt(DefaultPartSize, 10)
 	cpDir := CheckpointDir
 	options := OptionMapType{
 		"endpoint":         &str,
@@ -637,6 +640,7 @@ func (s *OssutilCommandSuite) rawCPWithOutputDir(srcURL, destURL string, recursi
 		"bigfileThreshold": &thre,
 		"checkpointDir":    &cpDir,
 		"routines":         &routines,
+		"partSize":         &partSize,
 		"outputDir":        &outputDir,
 	}
 	showElapse, err := cm.RunCommand(command, args, options)
@@ -648,6 +652,7 @@ func (s *OssutilCommandSuite) initCopyCommand(srcURL, destURL string, recursive,
 	args := []string{srcURL, destURL}
 	thre := strconv.FormatInt(threshold, 10)
 	routines := strconv.Itoa(Routines)
+	partSize := strconv.FormatInt(DefaultPartSize, 10)
 	options := OptionMapType{
 		"endpoint":         &str,
 		"accessKeyID":      &str,
@@ -660,6 +665,7 @@ func (s *OssutilCommandSuite) initCopyCommand(srcURL, destURL string, recursive,
 		"bigfileThreshold": &thre,
 		"checkpointDir":    &cpDir,
 		"routines":         &routines,
+		"partSize":         &partSize,
 		"outputDir":        &outputDir,
 	}
 	err := copyCommand.Init(args, options)
@@ -671,6 +677,7 @@ func (s *OssutilCommandSuite) initCopyWithSnapshot(srcURL, destURL string, recur
 	args := []string{srcURL, destURL}
 	thre := strconv.FormatInt(threshold, 10)
 	routines := strconv.Itoa(Routines)
+	partSize := strconv.FormatInt(DefaultPartSize, 10)
 	cpDir := CheckpointDir
 	options := OptionMapType{
 		"endpoint":         &str,
@@ -684,6 +691,7 @@ func (s *OssutilCommandSuite) initCopyWithSnapshot(srcURL, destURL string, recur
 		"bigfileThreshold": &thre,
 		"checkpointDir":    &cpDir,
 		"routines":         &routines,
+		"partSize":         &partSize,
 		"snapshotPath":     &snapshotPath,
 	}
 	err := copyCommand.Init(args, options)
@@ -695,6 +703,7 @@ func (s *OssutilCommandSuite) initCopyWithRange(srcURL, destURL string, recursiv
 	args := []string{srcURL, destURL}
 	thre := strconv.FormatInt(threshold, 10)
 	routines := strconv.Itoa(Routines)
+	partSize := strconv.FormatInt(DefaultPartSize, 10)
 	cpDir := CheckpointDir
 	options := OptionMapType{
 		"endpoint":         &str,
@@ -708,6 +717,7 @@ func (s *OssutilCommandSuite) initCopyWithRange(srcURL, destURL string, recursiv
 		"bigfileThreshold": &thre,
 		"checkpointDir":    &cpDir,
 		"routines":         &routines,
+		"partSize":         &partSize,
 		"range":            &vrange,
 	}
 	err := copyCommand.Init(args, options)
@@ -850,6 +860,42 @@ func (s *OssutilCommandSuite) initSetACL(bucket, object, acl string, recursive, 
 	return err
 }
 
+func (s *OssutilCommandSuite) initSetACLWithArgs(args []string, cmdline string, outputDir string) error {
+	encodingType := ""
+	if pos := strings.Index(cmdline, "--encoding-type url"); pos != -1 {
+		encodingType = URLEncodingType
+		cmdline = cmdline[0:pos] + cmdline[pos+len("--encoding-type url"):]
+	}
+
+	parameter := strings.Split(cmdline, "-")
+	r := false
+	f := false
+	b := false
+	if len(parameter) >= 2 {
+		r = strings.Contains(parameter[1], "r")
+		f = strings.Contains(parameter[1], "f")
+		b = strings.Contains(parameter[1], "b")
+	}
+
+	str := ""
+	routines := strconv.Itoa(Routines)
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"stsToken":        &str,
+		"configFile":      &configFile,
+		"recursive":       &r,
+		"force":           &f,
+		"bucket":          &b,
+		"encodingType":    &encodingType,
+		"routines":        &routines,
+		"outputDir":       &outputDir,
+	}
+	err := setACLCommand.Init(args, options)
+	return err
+}
+
 func (s *OssutilCommandSuite) setBucketACL(bucket, acl string, c *C) {
 	args := []string{CloudURLToString(bucket, ""), acl}
 	showElapse, err := s.rawSetACLWithArgs(args, false, true, false)
@@ -918,6 +964,52 @@ func (s *OssutilCommandSuite) initSetMeta(bucket, object, meta string, update, d
 	return err
 }
 
+func (s *OssutilCommandSuite) initSetMetaWithArgs(args []string, cmdline string, outputDir string) error {
+	encodingType := ""
+	if pos := strings.Index(cmdline, "--encoding-type url"); pos != -1 {
+		encodingType = URLEncodingType
+		cmdline = cmdline[0:pos] + cmdline[pos+len("--encoding-type url"):]
+	}
+
+	update := false
+	if pos := strings.Index(cmdline, "--update"); pos != -1 {
+		update = true
+		cmdline = cmdline[0:pos] + cmdline[pos+len("--update"):]
+	}
+
+	delete := false
+	if pos := strings.Index(cmdline, "--delete"); pos != -1 {
+		delete = true
+		cmdline = cmdline[0:pos] + cmdline[pos+len("--delete"):]
+	}
+
+	parameter := strings.Split(cmdline, "-")
+	r := false
+	f := false
+	if len(parameter) >= 2 {
+		r = strings.Contains(parameter[1], "r")
+		f = strings.Contains(parameter[1], "f")
+	}
+
+	str := ""
+	routines := strconv.Itoa(Routines)
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"stsToken":        &str,
+		"configFile":      &configFile,
+		"update":          &update,
+		"delete":          &delete,
+		"recursive":       &r,
+		"force":           &f,
+		"routines":        &routines,
+		"encodingType":    &encodingType,
+	}
+	err := setMetaCommand.Init(args, options)
+	return err
+}
+
 func (s *OssutilCommandSuite) initCreateSymlink(cmdline string) error {
 	encodingType := ""
 	if pos := strings.Index(cmdline, "--encoding-type url"); pos != -1 {
@@ -944,6 +1036,51 @@ func (s *OssutilCommandSuite) initCreateSymlink(cmdline string) error {
 		"encodingType":    &encodingType,
 	}
 	err := createSymlinkCommand.Init(args, options)
+	return err
+}
+
+func (s *OssutilCommandSuite) readSymlink(cmdline string, c *C) map[string]string {
+	testResultFile, _ = os.OpenFile(resultPath, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
+	out := os.Stdout
+	os.Stdout = testResultFile
+	err := s.initReadSymlink(cmdline)
+	c.Assert(err, IsNil)
+	err = readSymlinkCommand.RunCommand()
+	c.Assert(err, IsNil)
+	os.Stdout = out
+
+	// get result
+	stat := s.getStatResults(c)
+	os.Remove(resultPath)
+	return stat
+}
+
+func (s *OssutilCommandSuite) initReadSymlink(cmdline string) error {
+	encodingType := ""
+	if pos := strings.Index(cmdline, "--encoding-type url"); pos != -1 {
+		encodingType = URLEncodingType
+		cmdline = cmdline[0:pos] + cmdline[pos+len("--encoding-type url"):]
+	}
+
+	cmds := strings.Split(cmdline, " ")
+	args := []string{}
+	for _, cmd := range cmds {
+		cmd = strings.TrimSpace(cmd)
+		if cmd != "" {
+			args = append(args, cmd)
+		}
+	}
+
+	str := ""
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"stsToken":        &str,
+		"configFile":      &configFile,
+		"encodingType":    &encodingType,
+	}
+	err := readSymlinkCommand.Init(args, options)
 	return err
 }
 
@@ -1004,6 +1141,15 @@ func (s *OssutilCommandSuite) initRestoreObject(args []string, cmdline string, o
 	}
 	err := restoreCommand.Init(args, options)
 	return err
+}
+
+func (s *OssutilCommandSuite) getErrorOSSBucket(bucketName string, c *C) *oss.Bucket {
+	client, err := oss.New(endpoint, "abc", accessKeySecret, oss.EnableCRC(true))
+	c.Assert(err, IsNil)
+
+	bucket, err := client.Bucket(bucketName)
+	c.Assert(err, IsNil)
+	return bucket
 }
 
 func (s *OssutilCommandSuite) TestParseOptions(c *C) {
@@ -1184,6 +1330,7 @@ func (s *OssutilCommandSuite) TestErrOssDownloadFile(c *C) {
 	args := []string{"", ""}
 	thre := strconv.FormatInt(1, 10)
 	routines := strconv.Itoa(Routines)
+	partSize := strconv.FormatInt(DefaultPartSize, 10)
 	options := OptionMapType{
 		"endpoint":         &str,
 		"accessKeyID":      &str,
@@ -1192,6 +1339,7 @@ func (s *OssutilCommandSuite) TestErrOssDownloadFile(c *C) {
 		"configFile":       &configFile,
 		"bigfileThreshold": &thre,
 		"routines":         &routines,
+		"partSize":         &partSize,
 	}
 	err := copyCommand.Init(args, options)
 	c.Assert(err, IsNil)
@@ -1248,6 +1396,7 @@ func (s *OssutilCommandSuite) TestNeedConfig(c *C) {
 	args := []string{"", ""}
 	thre := strconv.FormatInt(1, 10)
 	routines := strconv.Itoa(Routines)
+	partSize := strconv.FormatInt(DefaultPartSize, 10)
 	e := "a"
 	options := OptionMapType{
 		"endpoint":         &e,
@@ -1257,6 +1406,7 @@ func (s *OssutilCommandSuite) TestNeedConfig(c *C) {
 		"configFile":       &str,
 		"bigfileThreshold": &thre,
 		"routines":         &routines,
+		"partSize":         &partSize,
 	}
 	err := copyCommand.Init(args, options)
 	c.Assert(err, IsNil)

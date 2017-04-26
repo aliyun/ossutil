@@ -55,6 +55,8 @@ func (s *OssutilCommandSuite) TestUploadProgressBar(c *C) {
 	c.Assert(str, Equals, "")
 
 	snap := copyCommand.monitor.getSnapshot()
+	c.Assert(copyCommand.monitor.totalSize == int64(len) || !copyCommand.monitor.seekAheadEnd, Equals, true)
+	c.Assert(copyCommand.monitor.totalNum == int64(num) || !copyCommand.monitor.seekAheadEnd, Equals, true)
 	c.Assert(snap.transferSize, Equals, int64(len))
 	c.Assert(snap.skipSize, Equals, int64(0))
 	c.Assert(snap.dealSize, Equals, int64(len))
@@ -122,6 +124,8 @@ func (s *OssutilCommandSuite) TestUploadProgressBar(c *C) {
 	c.Assert(str, Equals, "")
 
 	snap = copyCommand.monitor.getSnapshot()
+	c.Assert(copyCommand.monitor.totalSize == int64(len+len1) || !copyCommand.monitor.seekAheadEnd, Equals, true)
+	c.Assert(copyCommand.monitor.totalNum == int64(num+num1+2) || !copyCommand.monitor.seekAheadEnd, Equals, true)
 	c.Assert(snap.transferSize, Equals, int64(len1))
 	c.Assert(snap.skipSize, Equals, int64(len))
 	c.Assert(snap.dealSize, Equals, int64(len+len1))
@@ -148,6 +152,18 @@ func (s *OssutilCommandSuite) TestUploadProgressBar(c *C) {
 	c.Assert(strings.Contains(strings.TrimSpace(pstr), strings.TrimSpace(str)), Equals, true)
 
 	os.RemoveAll(udir)
+
+	snap = copyCommand.monitor.getSnapshot()
+	snap.skipSize = 1
+	snap.transferSize = 0
+	str = strings.ToLower(copyCommand.monitor.getSizeDetail(snap))
+	c.Assert(strings.Contains(str, "skip size:"), Equals, true)
+	c.Assert(strings.Contains(str, "transfer size:"), Equals, false)
+	snap.transferSize = 1
+	str = strings.ToLower(copyCommand.monitor.getSizeDetail(snap))
+	c.Assert(strings.Contains(str, "ok size:"), Equals, true)
+	c.Assert(strings.Contains(str, "transfer"), Equals, true)
+	c.Assert(strings.Contains(str, "skip"), Equals, true)
 
 	s.removeBucket(bucketName, true, c)
 }
@@ -630,13 +646,13 @@ func (s *OssutilCommandSuite) TestSetACLProgress(c *C) {
 	c.Assert(strings.Contains(str, fmt.Sprintf("%d objects", 2)), Equals, true)
 	c.Assert(strings.Contains(str, "error"), Equals, false)
 
-	str = strings.ToLower(setACLCommand.monitor.getFinishBar())
+	str = strings.ToLower(setACLCommand.monitor.getFinishBar(normalExit))
 	c.Assert(strings.Contains(str, "succeed:"), Equals, true)
 	c.Assert(strings.Contains(str, "total"), Equals, true)
 	c.Assert(strings.Contains(str, "err"), Equals, false)
 	c.Assert(strings.Contains(strings.TrimSpace(pstr), strings.TrimSpace(str)), Equals, true)
 
-	str = strings.ToLower(setACLCommand.monitor.progressBar(true))
+	str = strings.ToLower(setACLCommand.monitor.progressBar(true, normalExit))
 	c.Assert(str, Equals, "")
 
 	// batch set acl list error
@@ -668,7 +684,7 @@ func (s *OssutilCommandSuite) TestSetACLProgress(c *C) {
 	str = strings.ToLower(setACLCommand.monitor.getProgressBar())
 	c.Assert(strings.Contains(str, "error"), Equals, false)
 
-	str = strings.ToLower(setACLCommand.monitor.getFinishBar())
+	str = strings.ToLower(setACLCommand.monitor.getFinishBar(normalExit))
 	c.Assert(strings.Contains(str, "succeed:"), Equals, true)
 	c.Assert(strings.Contains(str, "total"), Equals, true)
 	c.Assert(strings.Contains(str, "err"), Equals, false)
@@ -679,7 +695,7 @@ func (s *OssutilCommandSuite) TestSetACLProgress(c *C) {
 	c.Assert(setACLCommand.monitor.errNum, Equals, int64(1))
 	c.Assert(setACLCommand.monitor.okNum, Equals, int64(0))
 
-	str = strings.ToLower(setACLCommand.monitor.getFinishBar())
+	str = strings.ToLower(setACLCommand.monitor.getFinishBar(errExit))
 	c.Assert(strings.Contains(str, "succeed:"), Equals, false)
 	c.Assert(strings.Contains(str, "when error happens"), Equals, true)
 	c.Assert(strings.Contains(str, "setted acl on 0 objects"), Equals, true)
@@ -697,8 +713,9 @@ func (s *OssutilCommandSuite) TestSetMetaProgress(c *C) {
 
 	num := 2
 	objectNames := []string{}
+	prefix := randLowStr(10)
 	for i := 0; i < num; i++ {
-		object := fmt.Sprintf("TestSetMetaProgress%d", i)
+		object := fmt.Sprintf("%s%d", prefix, i)
 		s.putObject(bucketName, object, uploadFileName, c)
 		objectNames = append(objectNames, object)
 	}
@@ -724,8 +741,10 @@ func (s *OssutilCommandSuite) TestSetMetaProgress(c *C) {
 	c.Assert(snap.dealNum, Equals, int64(0))
 
 	// batch set object acl -> progress
-	err = s.initSetMeta(bucketName, "TestSetMetaProgress", "x-oss-object-acl:default#X-Oss-Meta-A:A", true, false, true, true, DefaultLanguage)
+	err = s.initSetMeta(bucketName, prefix, "x-oss-object-acl:default#X-Oss-Meta-A:A", true, false, true, true, DefaultLanguage)
 	c.Assert(err, IsNil)
+
+	setMetaCommand.monitor.init("Setted meta on")
 
 	testResultFile, _ = os.OpenFile(resultPath, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
 	out = os.Stdout
@@ -747,7 +766,7 @@ func (s *OssutilCommandSuite) TestSetMetaProgress(c *C) {
 	c.Assert(strings.Contains(str, fmt.Sprintf("%d objects", 2)), Equals, true)
 	c.Assert(strings.Contains(str, "error"), Equals, false)
 
-	str = strings.ToLower(setMetaCommand.monitor.getFinishBar())
+	str = strings.ToLower(setMetaCommand.monitor.getFinishBar(normalExit))
 	c.Assert(strings.Contains(str, "succeed:"), Equals, true)
 	c.Assert(strings.Contains(str, "total"), Equals, true)
 	c.Assert(strings.Contains(str, "err"), Equals, false)
@@ -759,7 +778,7 @@ func (s *OssutilCommandSuite) TestSetMetaProgress(c *C) {
 	data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n", endpoint, accessKeyID, "")
 	s.createFile(configFile, data, c)
 
-	err = s.initSetMeta(bucketName, "TestSetMetaProgress", "x-oss-object-acl:default#X-Oss-Meta-A:A", true, false, true, true, DefaultLanguage)
+	err = s.initSetMeta(bucketName, prefix, "x-oss-object-acl:default#X-Oss-Meta-A:A", true, false, true, true, DefaultLanguage)
 	c.Assert(err, IsNil)
 
 	os.Remove(configFile)
@@ -783,7 +802,7 @@ func (s *OssutilCommandSuite) TestSetMetaProgress(c *C) {
 	c.Assert(strings.Contains(str, fmt.Sprintf("%d objects", 0)), Equals, true)
 	c.Assert(strings.Contains(str, "error"), Equals, false)
 
-	str = strings.ToLower(setMetaCommand.monitor.getFinishBar())
+	str = strings.ToLower(setMetaCommand.monitor.getFinishBar(normalExit))
 	c.Assert(strings.Contains(str, "succeed:"), Equals, true)
 	c.Assert(strings.Contains(str, "total"), Equals, true)
 	c.Assert(strings.Contains(str, "err"), Equals, false)
@@ -794,7 +813,7 @@ func (s *OssutilCommandSuite) TestSetMetaProgress(c *C) {
 	c.Assert(setMetaCommand.monitor.errNum, Equals, int64(1))
 	c.Assert(setMetaCommand.monitor.okNum, Equals, int64(0))
 
-	str = strings.ToLower(setMetaCommand.monitor.getFinishBar())
+	str = strings.ToLower(setMetaCommand.monitor.getFinishBar(errExit))
 	c.Assert(strings.Contains(str, "succeed:"), Equals, false)
 	c.Assert(strings.Contains(str, "when error happens"), Equals, true)
 	c.Assert(strings.Contains(str, "setted meta on 0 objects"), Equals, true)
@@ -1086,7 +1105,7 @@ func (s *OssutilCommandSuite) TestRemoveUploadIdProgress(c *C) {
 	str = strings.ToLower(removeCommand.monitor.getFinishBar(normalExit))
 	c.Assert(strings.Contains(str, "succeed:"), Equals, true)
 	c.Assert(strings.Contains(str, "objects"), Equals, false)
-	c.Assert(strings.Contains(str, fmt.Sprintf("total %d uploadids", num)), Equals, true)
+	c.Assert(strings.Contains(str, fmt.Sprintf("%d uploadids", num)), Equals, true)
 	c.Assert(strings.Contains(str, fmt.Sprintf("removed %d uploadids", num)), Equals, true)
 	c.Assert(strings.Contains(str, "err"), Equals, false)
 	c.Assert(strings.Contains(strings.TrimSpace(pstr), strings.TrimSpace(str)), Equals, true)
@@ -1351,6 +1370,7 @@ func (s *OssutilCommandSuite) TestSnapshot(c *C) {
 	c.Assert(err, IsNil)
 
 	// modify local and upload again
+	time.Sleep(time.Second)
 	data = randStr(21)
 	s.createFile(uploadFileName, data, c)
 
@@ -1437,8 +1457,8 @@ func (s *OssutilCommandSuite) TestRangeGet(c *C) {
 	c.Assert(str, Equals, data)
 
 	snap := copyCommand.monitor.getSnapshot()
-	c.Assert(copyCommand.monitor.totalSize == int64(20) || copyCommand.monitor.totalSize == int64(0), Equals, true)
-	c.Assert(copyCommand.monitor.totalNum == int64(1) || copyCommand.monitor.totalNum == int64(0), Equals, true)
+	c.Assert(copyCommand.monitor.totalSize == int64(20) || !copyCommand.monitor.seekAheadEnd, Equals, true)
+	c.Assert(copyCommand.monitor.totalNum == int64(1) || !copyCommand.monitor.seekAheadEnd, Equals, true)
 	c.Assert(snap.transferSize, Equals, int64(20))
 	c.Assert(snap.skipSize, Equals, int64(0))
 	c.Assert(snap.dealSize, Equals, int64(20))
@@ -1506,8 +1526,6 @@ func (s *OssutilCommandSuite) TestRangeGet(c *C) {
 	c.Assert(str, Equals, data[1:6])
 
 	snap = copyCommand.monitor.getSnapshot()
-	c.Assert(copyCommand.monitor.totalSize == int64(5) || copyCommand.monitor.totalSize == int64(0), Equals, true)
-	c.Assert(copyCommand.monitor.totalNum == int64(1) || copyCommand.monitor.totalNum == int64(0), Equals, true)
 	c.Assert(snap.transferSize, Equals, int64(5))
 	c.Assert(snap.skipSize, Equals, int64(0))
 	c.Assert(snap.dealSize, Equals, int64(5))
@@ -1746,8 +1764,8 @@ func (s *OssutilCommandSuite) TestRangeGet(c *C) {
 	c.Assert(str, Equals, data[3:9])
 
 	snap = copyCommand.monitor.getSnapshot()
-	c.Assert(copyCommand.monitor.totalSize == int64(6) || copyCommand.monitor.totalSize == int64(0), Equals, true)
-	c.Assert(copyCommand.monitor.totalNum == int64(1) || copyCommand.monitor.totalNum == int64(0), Equals, true)
+	c.Assert(copyCommand.monitor.totalSize == int64(6) || !copyCommand.monitor.seekAheadEnd, Equals, true)
+	c.Assert(copyCommand.monitor.totalNum == int64(1) || !copyCommand.monitor.seekAheadEnd, Equals, true)
 	c.Assert(snap.transferSize, Equals, int64(0))
 	c.Assert(snap.skipSize, Equals, int64(6))
 	c.Assert(snap.dealSize, Equals, int64(6))
@@ -1777,8 +1795,8 @@ func (s *OssutilCommandSuite) TestRangeGet(c *C) {
 	c.Assert(str, Equals, data1[3:10])
 
 	snap = copyCommand.monitor.getSnapshot()
-	c.Assert(copyCommand.monitor.totalSize == int64(14) || copyCommand.monitor.totalSize == int64(0), Equals, true)
-	c.Assert(copyCommand.monitor.totalNum == int64(2) || copyCommand.monitor.totalNum == int64(0), Equals, true)
+	c.Assert(copyCommand.monitor.totalSize == int64(14) || !copyCommand.monitor.seekAheadEnd, Equals, true)
+	c.Assert(copyCommand.monitor.totalNum == int64(2) || !copyCommand.monitor.seekAheadEnd, Equals, true)
 	c.Assert(snap.transferSize, Equals, int64(14))
 	c.Assert(snap.skipSize, Equals, int64(0))
 	c.Assert(snap.dealSize, Equals, int64(14))
@@ -1799,8 +1817,8 @@ func (s *OssutilCommandSuite) TestRangeGet(c *C) {
 	c.Assert(str, Equals, data1[3:21])
 
 	snap = copyCommand.monitor.getSnapshot()
-	c.Assert(copyCommand.monitor.totalSize == int64(38) || copyCommand.monitor.totalSize == int64(0), Equals, true)
-	c.Assert(copyCommand.monitor.totalNum == int64(2) || copyCommand.monitor.totalNum == int64(0), Equals, true)
+	c.Assert(copyCommand.monitor.totalSize == int64(38) || !copyCommand.monitor.seekAheadEnd, Equals, true)
+	c.Assert(copyCommand.monitor.totalNum == int64(2) || !copyCommand.monitor.seekAheadEnd, Equals, true)
 	c.Assert(snap.transferSize, Equals, int64(38))
 	c.Assert(snap.skipSize, Equals, int64(0))
 	c.Assert(snap.dealSize, Equals, int64(38))
@@ -1821,8 +1839,8 @@ func (s *OssutilCommandSuite) TestRangeGet(c *C) {
 	c.Assert(str, Equals, data1[25:])
 
 	snap = copyCommand.monitor.getSnapshot()
-	c.Assert(copyCommand.monitor.totalSize == int64(10) || copyCommand.monitor.totalSize == int64(0), Equals, true)
-	c.Assert(copyCommand.monitor.totalNum == int64(2) || copyCommand.monitor.totalNum == int64(0), Equals, true)
+	c.Assert(copyCommand.monitor.totalSize == int64(10) || !copyCommand.monitor.seekAheadEnd, Equals, true)
+	c.Assert(copyCommand.monitor.totalNum == int64(2) || !copyCommand.monitor.seekAheadEnd, Equals, true)
 	c.Assert(snap.transferSize, Equals, int64(10))
 	c.Assert(snap.skipSize, Equals, int64(0))
 	c.Assert(snap.dealSize, Equals, int64(10))
@@ -1843,7 +1861,6 @@ func (s *OssutilCommandSuite) TestRangeGet(c *C) {
 	c.Assert(str, Equals, data1[10:])
 
 	snap = copyCommand.monitor.getSnapshot()
-	c.Assert(copyCommand.monitor.totalSize == int64(40) || copyCommand.monitor.totalSize == int64(0), Equals, true)
 	c.Assert(snap.transferSize, Equals, int64(40))
 	c.Assert(snap.dealSize, Equals, int64(40))
 	c.Assert(snap.fileNum, Equals, int64(2))
@@ -1861,8 +1878,8 @@ func (s *OssutilCommandSuite) TestRangeGet(c *C) {
 	c.Assert(str, Equals, data1[10:])
 
 	snap = copyCommand.monitor.getSnapshot()
-	c.Assert(copyCommand.monitor.totalSize == int64(12) || copyCommand.monitor.totalSize == int64(0), Equals, true)
-	c.Assert(copyCommand.monitor.totalNum == int64(2) || copyCommand.monitor.totalNum == int64(0), Equals, true)
+	c.Assert(copyCommand.monitor.totalSize == int64(12) || !copyCommand.monitor.seekAheadEnd, Equals, true)
+	c.Assert(copyCommand.monitor.totalNum == int64(2) || !copyCommand.monitor.seekAheadEnd, Equals, true)
 	c.Assert(snap.transferSize, Equals, int64(0))
 	c.Assert(snap.skipSize, Equals, int64(12))
 	c.Assert(snap.dealSize, Equals, int64(12))

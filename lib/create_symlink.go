@@ -10,15 +10,15 @@ var specChineseCreateSymlink = SpecText{
 
 	synopsisText: "创建符号链接",
 
-	paramText: "[sym_url] [target_url] [options]",
+	paramText: "cloud_url target_url [options]",
 
 	syntaxText: ` 
-    ossutil create-symlink sym_url target_object [--encoding-type url] [-c file] 
+    ossutil create-symlink cloud_url target_object [--encoding-type url] [-c file] 
 `,
 
 	detailHelpText: ` 
     该命令在oss上创建符号链接文件，链接的目标文件必须为相同bucket下的文件，且文件类型非符
-    号链接。即，symlink_url必须为形如oss://bucket/object的cloud_url，target_object为object名。
+    号链接。即，cloud_url必须为形如oss://bucket/object的cloud_url，target_object为object名。
 
     创建符号链接时：
         不检查目标文件是否存在，
@@ -29,7 +29,7 @@ var specChineseCreateSymlink = SpecText{
 
     通过stat命令可以查看符号链接的目标文件。
 
-    更多信息见官网API文档：https://help.aliyun.com/document_detail/45126.html?spm=5176.doc31979.6.870.x3Tqsh
+    更多信息见官网文档：https://help.aliyun.com/document_detail/45126.html?spm=5176.doc31979.6.870.x3Tqsh
 
 用法：
 
@@ -46,17 +46,17 @@ var specEnglishCreateSymlink = SpecText{
 
 	synopsisText: "Create symlink of object",
 
-	paramText: "[sym_url] [target_url] [options]",
+	paramText: "cloud_url target_url [options]",
 
 	syntaxText: ` 
-    ossutil create-symlink sym_url target_object [--encoding-type url] [-c file] 
+    ossutil create-symlink cloud_url target_object [--encoding-type url] [-c file] 
 `,
 
 	detailHelpText: ` 
-    The command create symlink of object in oss, the target object must be object in the same 
-    bucket of symlink object, and the file type of target object must not be symlink. So, 
-    symlink_url must be in format: oss://bucket/object, and target_object is the object name 
-    of target object.  
+    The command create symlink of object in oss, the target object must be object in the 
+    same bucket of symlink object, and the file type of target object must not be symlink. 
+    So, cloud_url must be in format: oss://bucket/object, and target_object is the object 
+    name of target object.  
 
     When create symlink:
         Will not check whether target object exists;
@@ -64,8 +64,8 @@ var specEnglishCreateSymlink = SpecText{
         Will not check whether if have access permission of target object.
     The check will be done when visiting GetObject, etc.
 
-    If the symlink object exist, and has access permission, the object newly created will cover 
-    old object.
+    If the symlink object exist, and has access permission, the object newly created will 
+    cover the old object.
 
     We can use stat command to query the target object of symlink object.
 
@@ -149,7 +149,7 @@ func (cc *CreateSymlinkCommand) RunCommand() error {
 		return err
 	}
 
-	return cc.ossCreateSymlink(bucket, cloudURL.object, targetObject)
+	return cc.ossCreateSymlinkRetry(bucket, cloudURL.object, targetObject)
 }
 
 func (cc *CreateSymlinkCommand) checkArgs(symlinkURL CloudURL, targetURL StorageURLer) error {
@@ -173,7 +173,7 @@ func (cc *CreateSymlinkCommand) checkArgs(symlinkURL CloudURL, targetURL Storage
 	return nil
 }
 
-func (cc *CreateSymlinkCommand) ossCreateSymlink(bucket *oss.Bucket, symlinkObject, targetObject string) error {
+func (cc *CreateSymlinkCommand) ossCreateSymlinkRetry(bucket *oss.Bucket, symlinkObject, targetObject string) error {
 	retryTimes, _ := GetInt(OptionRetryTimes, cc.command.options)
 	for i := 1; ; i++ {
 		err := bucket.PutSymlink(symlinkObject, targetObject)

@@ -20,16 +20,16 @@ func (s *OssutilCommandSuite) TestMakeBucket(c *C) {
 	c.Assert(bucketStat[StatName], Equals, bucketName)
 	c.Assert(bucketStat[StatACL], Equals, "private")
 
-	// put bucket with ACL
-	for _, acl := range []string{"public-read-write"} {
-		showElapse, err := s.putBucketWithACL(bucketName, acl)
-		c.Assert(err, IsNil)
-		c.Assert(showElapse, Equals, true)
+	s.removeBucket(bucketName, true, c)
 
-		bucketStat := s.getStat(bucketName, "", c)
-		c.Assert(bucketStat[StatName], Equals, bucketName)
-		c.Assert(bucketStat[StatACL], Equals, acl)
-	}
+	bucketName = bucketNamePrefix + randLowStr(10)
+	showElapse, err := s.putBucketWithACL(bucketName, "public-read-write")
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	bucketStat = s.getStat(bucketName, "", c)
+	c.Assert(bucketStat[StatName], Equals, bucketName)
+	c.Assert(bucketStat[StatACL], Equals, "public-read-write")
 
 	s.removeBucket(bucketName, true, c)
 }

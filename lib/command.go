@@ -280,10 +280,15 @@ func (cmd *Command) ossClient(bucket string) (*oss.Client, error) {
 	accessKeyID, _ := GetString(OptionAccessKeyID, cmd.options)
 	accessKeySecret, _ := GetString(OptionAccessKeySecret, cmd.options)
 	stsToken, _ := GetString(OptionSTSToken, cmd.options)
+	disableCRC64, _ := GetBool(OptionDisableCRC64, cmd.options)
 	if err := cmd.checkCredentials(endpoint, accessKeyID, accessKeySecret); err != nil {
 		return nil, err
 	}
-	client, err := oss.New(endpoint, accessKeyID, accessKeySecret, oss.UseCname(isCname), oss.SecurityToken(stsToken), oss.UserAgent(getUserAgent()), oss.Timeout(120, 1200), oss.EnableCRC(true))
+	options := []oss.ClientOption{oss.UseCname(isCname), oss.SecurityToken(stsToken), oss.UserAgent(getUserAgent()), oss.Timeout(120, 1200)}
+	if !disableCRC64 {
+		options = append(options, oss.EnableCRC(true))
+	}
+	client, err := oss.New(endpoint, accessKeyID, accessKeySecret, options...)
 	if err != nil {
 		return nil, err
 	}
@@ -444,7 +449,32 @@ func (cmd *Command) updateMonitor(err error, monitor *Monitor) {
 	} else {
 		monitor.updateErrNum(1)
 	}
-	fmt.Printf(monitor.progressBar(false))
+	fmt.Printf(monitor.progressBar(false, normalExit))
+}
+
+func (cmd *Command) report(msg string, err error, option *batchOptionType) {
+	if cmd.filterError(err, option) {
+		option.reporter.ReportError(fmt.Sprintf("%s error, info: %s", msg, err.Error()))
+		option.reporter.Prompt(err)
+	}
+}
+
+func (cmd *Command) filterError(err error, option *batchOptionType) bool {
+	if err == nil {
+		return false
+	}
+
+	err = err.(ObjectError).err
+
+	switch err.(type) {
+	case oss.ServiceError:
+		code := err.(oss.ServiceError).Code
+		if code == "NoSuchBucket" || code == "InvalidAccessKeyId" || code == "SignatureDoesNotMatch" || code == "AccessDenied" || code == "RequestTimeTooSkewed" || code == "InvalidBucketName" {
+			option.ctnu = false
+			return false
+		}
+	}
+	return true
 }
 
 // GetAllCommands returns all commands list
@@ -459,8 +489,9 @@ func GetAllCommands() []interface{} {
 		&setACLCommand,
 		&setMetaCommand,
 		&copyCommand,
-		&createSymlinkCommand,
 		&restoreCommand,
+		&createSymlinkCommand,
+		&readSymlinkCommand,
 		&hashCommand,
 		&updateCommand,
 	}
