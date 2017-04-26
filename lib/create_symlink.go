@@ -29,7 +29,7 @@ var specChineseCreateSymlink = SpecText{
 
     通过stat命令可以查看符号链接的目标文件。
 
-    更多信息见官网API文档：https://help.aliyun.com/document_detail/45126.html?spm=5176.doc31979.6.870.x3Tqsh
+    更多信息见官网文档：https://help.aliyun.com/document_detail/45126.html?spm=5176.doc31979.6.870.x3Tqsh
 
 用法：
 

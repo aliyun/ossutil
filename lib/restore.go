@@ -26,10 +26,17 @@ var specChineseRestore = SpecText{
     该命令恢复处于冷冻状态的object进入可读状态，即操作对象object必须为` + StorageArchive + `存储类型
     的object。
 
-    如果是针对处于冷冻状态的object第一次调用restore接口，则返回成功。
-    如果已经成功调用过restore接口，且restore没有完全完成，再次调用时同样成功。
-    如果已经成功调用过restore接口，且restore已经完成，再次调用时返回成功，且会将object
-    的可下载时间延长一天，最多延长7天。
+    一个Archive类型的object初始时处于冷冻状态。
+
+    针对处于冷冻状态的object调用restore命令，返回成功。object处于解冻中，服务端执行解
+    冻，在此期间再次调用restore命令，同样成功，且不会延长object可读状态持续时间。
+
+    待服务端执行完成解冻任务后，object就进入了解冻状态，此时用户可以读取object。
+
+    解冻状态默认持续1天，对于解冻状态的object调用restore命令，会将object的解冻状态延长
+    一天，最多可以延长到7天，之后object又回到初始时的冷冻状态。
+
+    更多信息见官网文档：https://help.aliyun.com/document_detail/52930.html?spm=5176.doc31947.6.874.8GjVvu 
 
 
 用法：
@@ -69,14 +76,22 @@ var specEnglishRestore = SpecText{
 `,
 
 	detailHelpText: ` 
-    The command restore frozen state object to read ready status, the object must be in 
-    the storage class of ` + StorageArchive + `. 
+    The command restore frozen state object to read ready status, the object must be in the storage 
+    class of ` + StorageArchive + `. 
 
-    If it's the first time to restore a frozen state object, the operation will success.
-    If the object is in restoring, and the restoring is not finished, do the operation 
-    again will success.
-    If an object has been restored, do the operation again will success, and the time that 
-    the object can be downloaded will extend one day, we can at most extend seven days. 
+    An object of Archive storage class will be in frozen state at first.
+
+    If user restore a frozen state object, the operation will success, and the object will be in 
+    restroing status, oss will thaw the object. In this period, if user restore the object again, 
+    the operation will success, but the time that the object can be downloaded will not be extended.
+
+    When oss has finished restoring the object, the object can be downloaded.
+
+    The time that an restored object can be downloaded is one day in default, if user restore the 
+    object again during the time, the time that the object can be downloaded will be extended for 
+    one day, the time can be at most extended to seven days. 
+
+    More information about restore see: https://help.aliyun.com/document_detail/52930.html?spm=5176.doc31947.6.874.8GjVvu  
 
 
 Usage:

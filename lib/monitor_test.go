@@ -153,6 +153,18 @@ func (s *OssutilCommandSuite) TestUploadProgressBar(c *C) {
 
 	os.RemoveAll(udir)
 
+	snap = copyCommand.monitor.getSnapshot()
+	snap.skipSize = 1
+	snap.transferSize = 0
+	str = strings.ToLower(copyCommand.monitor.getSizeDetail(snap))
+	c.Assert(strings.Contains(str, "skip size:"), Equals, true)
+	c.Assert(strings.Contains(str, "transfer size:"), Equals, false)
+	snap.transferSize = 1
+	str = strings.ToLower(copyCommand.monitor.getSizeDetail(snap))
+	c.Assert(strings.Contains(str, "ok size:"), Equals, true)
+	c.Assert(strings.Contains(str, "transfer"), Equals, true)
+	c.Assert(strings.Contains(str, "skip"), Equals, true)
+
 	s.removeBucket(bucketName, true, c)
 }
 
@@ -1514,7 +1526,6 @@ func (s *OssutilCommandSuite) TestRangeGet(c *C) {
 	c.Assert(str, Equals, data[1:6])
 
 	snap = copyCommand.monitor.getSnapshot()
-	c.Assert(copyCommand.monitor.totalNum == int64(1) || !copyCommand.monitor.seekAheadEnd, Equals, true)
 	c.Assert(snap.transferSize, Equals, int64(5))
 	c.Assert(snap.skipSize, Equals, int64(0))
 	c.Assert(snap.dealSize, Equals, int64(5))
