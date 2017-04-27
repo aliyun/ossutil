@@ -285,7 +285,9 @@ func (cmd *Command) ossClient(bucket string) (*oss.Client, error) {
 		return nil, err
 	}
 	options := []oss.ClientOption{oss.UseCname(isCname), oss.SecurityToken(stsToken), oss.UserAgent(getUserAgent()), oss.Timeout(120, 1200)}
-	if !disableCRC64 {
+	if disableCRC64 {
+		options = append(options, oss.EnableCRC(false))
+	} else {
 		options = append(options, oss.EnableCRC(true))
 	}
 	client, err := oss.New(endpoint, accessKeyID, accessKeySecret, options...)
