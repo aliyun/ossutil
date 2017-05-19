@@ -268,7 +268,7 @@ func (s *OssutilCommandSuite) TestErrSetMeta(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestGetOSSOption(c *C) {
-	_, err := getOSSOption("unknown", "a")
+	_, err := getOSSOption(headerOptionMap, "unknown", "a")
 	c.Assert(err, NotNil)
 }
 

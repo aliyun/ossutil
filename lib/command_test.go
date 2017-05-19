@@ -1084,6 +1084,53 @@ func (s *OssutilCommandSuite) initReadSymlink(cmdline string) error {
 	return err
 }
 
+func (s *OssutilCommandSuite) initSignURL(cmdline, method string, timeout int64) error {
+	encodingType := ""
+	if pos := strings.Index(cmdline, "--encoding-type url"); pos != -1 {
+		encodingType = URLEncodingType
+		cmdline = cmdline[0:pos] + cmdline[pos+len("--encoding-type url"):]
+	}
+
+	cmds := strings.Split(cmdline, " ")
+	args := []string{}
+	for _, cmd := range cmds {
+		cmd = strings.TrimSpace(cmd)
+		if cmd != "" {
+			args = append(args, cmd)
+		}
+	}
+
+	str := ""
+	t := strconv.FormatInt(timeout, 10)
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"stsToken":        &str,
+		"configFile":      &configFile,
+		"encodingType":    &encodingType,
+		"timeout":         &t,
+		"method":          &method,
+	}
+	err := signURLCommand.Init(args, options)
+	return err
+}
+
+func (s *OssutilCommandSuite) signURL(cmdline, method string, timeout int64, c *C) string {
+	out := os.Stdout
+	testResultFile, _ = os.OpenFile(resultPath, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
+	os.Stdout = testResultFile
+	err := s.initSignURL(cmdline, method, timeout)
+	c.Assert(err, IsNil)
+	err = signURLCommand.RunCommand()
+	c.Assert(err, IsNil)
+	os.Stdout = out
+
+	results := s.getResult(c)
+	c.Assert(len(results) >= 1, Equals, true)
+	return results[0]
+}
+
 func (s *OssutilCommandSuite) getFileList(dpath string) ([]string, error) {
 	fileList := []string{}
 	err := filepath.Walk(dpath, func(fpath string, f os.FileInfo, err error) error {
