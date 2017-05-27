@@ -199,10 +199,9 @@ func (sc *SignurlCommand) parseHeaders(str string) (map[string]string, error) {
 }
 
 func (sc *SignurlCommand) ossSignurlRetry(bucket *oss.Bucket, object, method string, timeout int64, options ...oss.Option) (string, error) {
-	signURLConfig := oss.SignURLConfiguration{Expires: timeout, Method: oss.HTTPMethod(method)}
 	retryTimes, _ := GetInt(OptionRetryTimes, sc.command.options)
 	for i := 1; ; i++ {
-		str, err := bucket.SignURL(object, signURLConfig, options...)
+		str, err := bucket.SignURL(object, oss.HTTPMethod(method), timeout, options...)
 		if err == nil {
 			return str, err
 		}
