@@ -2,7 +2,9 @@ package lib
 
 import (
 	"fmt"
+	"runtime"
 	"strings"
+	"sync"
 	"sync/atomic"
 )
 
@@ -70,12 +72,25 @@ func (m *Monitor) setScanEnd() {
 	m.seekAheadEnd = true
 }
 
+func addInt64(goarch string, src *int64, delta int64) int64 {
+	if goarch == "386" || goarch == "arm64" {
+		var mu sync.RWMutex
+		mu.Lock()
+		*src += delta
+		mu.Unlock()
+	} else { // For amd64, arm64
+		atomic.AddInt64(src, delta)
+	}
+
+	return *src
+}
+
 func (m *Monitor) updateOKNum(num int64) {
-	atomic.AddInt64(&m.okNum, num)
+	addInt64(runtime.GOARCH, &m.okNum, num)
 }
 
 func (m *Monitor) updateErrNum(num int64) {
-	atomic.AddInt64(&m.errNum, num)
+	addInt64(runtime.GOARCH, &m.errNum, num)
 }
 
 func (m *Monitor) getSnapshot() *MonitorSnap {
@@ -220,19 +235,19 @@ func (m *RMMonitor) setScanEnd() {
 }
 
 func (m *RMMonitor) updateObjectNum(num int64) {
-	atomic.AddInt64(&m.objectNum, num)
+	addInt64(runtime.GOARCH, &m.objectNum, num)
 }
 
 func (m *RMMonitor) updateUploadIdNum(num int64) {
-	atomic.AddInt64(&m.uploadIdNum, num)
+	addInt64(runtime.GOARCH, &m.uploadIdNum, num)
 }
 
 func (m *RMMonitor) updateErrObjectNum(num int64) {
-	atomic.AddInt64(&m.errObjectNum, num)
+	addInt64(runtime.GOARCH, &m.errObjectNum, num)
 }
 
 func (m *RMMonitor) updateErrUploadIdNum(num int64) {
-	atomic.AddInt64(&m.errUploadIdNum, num)
+	addInt64(runtime.GOARCH, &m.errUploadIdNum, num)
 }
 
 func (m *RMMonitor) updateRemovedBucket(bucket string) {
@@ -425,27 +440,27 @@ func (m *CPMonitor) setScanEnd() {
 }
 
 func (m *CPMonitor) updateTransferSize(size int64) {
-	atomic.AddInt64(&m.transferSize, size)
+	addInt64(runtime.GOARCH, &m.transferSize, size)
 }
 
 func (m *CPMonitor) updateFile(size, num int64) {
-	atomic.AddInt64(&m.fileNum, num)
-	atomic.AddInt64(&m.transferSize, size)
+	addInt64(runtime.GOARCH, &m.fileNum, num)
+	addInt64(runtime.GOARCH, &m.transferSize, size)
 }
 
 func (m *CPMonitor) updateDir(size, num int64) {
-	atomic.AddInt64(&m.dirNum, num)
-	atomic.AddInt64(&m.transferSize, size)
+	addInt64(runtime.GOARCH, &m.dirNum, num)
+	addInt64(runtime.GOARCH, &m.transferSize, size)
 }
 
 func (m *CPMonitor) updateSkip(size, num int64) {
-	atomic.AddInt64(&m.skipNum, num)
-	atomic.AddInt64(&m.skipSize, size)
+	addInt64(runtime.GOARCH, &m.skipNum, num)
+	addInt64(runtime.GOARCH, &m.skipSize, size)
 }
 
 func (m *CPMonitor) updateErr(size, num int64) {
-	atomic.AddInt64(&m.errNum, num)
-	atomic.AddInt64(&m.transferSize, size)
+	addInt64(runtime.GOARCH, &m.errNum, num)
+	addInt64(runtime.GOARCH, &m.transferSize, size)
 }
 
 func (m *CPMonitor) getSnapshot() *CPMonitorSnap {

@@ -2,6 +2,7 @@ package lib
 
 import (
 	"fmt"
+	"math/rand"
 	"os"
 	"strings"
 	"time"
@@ -1838,6 +1839,11 @@ func (s *OssutilCommandSuite) TestRangeGet(c *C) {
 	str = s.readFile(dir+string(os.PathSeparator)+object1, c)
 	c.Assert(str, Equals, data1[25:])
 
+	fmt.Println(bucketName)
+	fmt.Println(dir)
+	fmt.Println(object)
+	fmt.Println(object1)
+
 	snap = copyCommand.monitor.getSnapshot()
 	c.Assert(copyCommand.monitor.totalSize == int64(10) || !copyCommand.monitor.seekAheadEnd, Equals, true)
 	c.Assert(copyCommand.monitor.totalNum == int64(2) || !copyCommand.monitor.seekAheadEnd, Equals, true)
@@ -1902,4 +1908,26 @@ func (s *OssutilCommandSuite) TestRangeGet(c *C) {
 
 	os.RemoveAll(dir)
 	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestAddInt64(c *C) {
+	src := rand.Int63n(10000)
+	delta := rand.Int63n(1000)
+	result := addInt64("386", &src, delta)
+	c.Assert(src+delta == result)
+
+	src = rand.Int63n(20000)
+	delta = rand.Int63n(2000)
+	result = addInt64("amd64", &src, delta)
+	c.Assert(src+delta == result)
+
+	src = rand.Int63n(30000)
+	delta = rand.Int63n(3000)
+	result = addInt64("arm", &src, delta)
+	c.Assert(src+delta == result)
+
+	src = rand.Int63n(40000)
+	delta = rand.Int63n(4000)
+	result = addInt64("arm64", &src, delta)
+	c.Assert(src+delta == result)
 }
