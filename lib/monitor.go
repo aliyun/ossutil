@@ -2,7 +2,9 @@ package lib
 
 import (
 	"fmt"
+	"runtime"
 	"strings"
+	"sync"
 	"sync/atomic"
 )
 
@@ -71,11 +73,25 @@ func (m *Monitor) setScanEnd() {
 }
 
 func (m *Monitor) updateOKNum(num int64) {
-	atomic.AddInt64(&m.okNum, num)
+	if runtime.GOARCH == "386" {
+		var mu sync.RWMutex
+		mu.Lock()
+		m.okNum += num
+		mu.Unlock()
+	} else {
+		atomic.AddInt64(&m.okNum, num)
+	}
 }
 
 func (m *Monitor) updateErrNum(num int64) {
-	atomic.AddInt64(&m.errNum, num)
+	if runtime.GOARCH == "386" {
+		var mu sync.RWMutex
+		mu.Lock()
+		m.errNum += num
+		mu.Unlock()
+	} else {
+		atomic.AddInt64(&m.errNum, num)
+	}
 }
 
 func (m *Monitor) getSnapshot() *MonitorSnap {
@@ -220,19 +236,47 @@ func (m *RMMonitor) setScanEnd() {
 }
 
 func (m *RMMonitor) updateObjectNum(num int64) {
-	atomic.AddInt64(&m.objectNum, num)
+	if runtime.GOARCH == "386" {
+		var mu sync.RWMutex
+		mu.Lock()
+		m.objectNum += num
+		mu.Unlock()
+	} else {
+		atomic.AddInt64(&m.objectNum, num)
+	}
 }
 
 func (m *RMMonitor) updateUploadIdNum(num int64) {
-	atomic.AddInt64(&m.uploadIdNum, num)
+	if runtime.GOARCH == "386" {
+		var mu sync.RWMutex
+		mu.Lock()
+		m.uploadIdNum += num
+		mu.Unlock()
+	} else {
+		atomic.AddInt64(&m.uploadIdNum, num)
+	}
 }
 
 func (m *RMMonitor) updateErrObjectNum(num int64) {
-	atomic.AddInt64(&m.errObjectNum, num)
+	if runtime.GOARCH == "386" {
+		var mu sync.RWMutex
+		mu.Lock()
+		m.errObjectNum += num
+		mu.Unlock()
+	} else {
+		atomic.AddInt64(&m.errObjectNum, num)
+	}
 }
 
 func (m *RMMonitor) updateErrUploadIdNum(num int64) {
-	atomic.AddInt64(&m.errUploadIdNum, num)
+	if runtime.GOARCH == "386" {
+		var mu sync.RWMutex
+		mu.Lock()
+		m.errUploadIdNum += num
+		mu.Unlock()
+	} else {
+		atomic.AddInt64(&m.errUploadIdNum, num)
+	}
 }
 
 func (m *RMMonitor) updateRemovedBucket(bucket string) {
@@ -425,27 +469,66 @@ func (m *CPMonitor) setScanEnd() {
 }
 
 func (m *CPMonitor) updateTransferSize(size int64) {
-	atomic.AddInt64(&m.transferSize, size)
+	if runtime.GOARCH == "386" {
+		var mu sync.RWMutex
+		mu.Lock()
+		m.transferSize += size
+		mu.Unlock()
+	} else {
+		atomic.AddInt64(&m.transferSize, size)
+	}
 }
 
 func (m *CPMonitor) updateFile(size, num int64) {
-	atomic.AddInt64(&m.fileNum, num)
-	atomic.AddInt64(&m.transferSize, size)
+	if runtime.GOARCH == "386" {
+		var mu sync.RWMutex
+		mu.Lock()
+		m.fileNum += num
+		m.transferSize += size
+		mu.Unlock()
+	} else {
+		atomic.AddInt64(&m.fileNum, num)
+		atomic.AddInt64(&m.transferSize, size)
+	}
 }
 
 func (m *CPMonitor) updateDir(size, num int64) {
-	atomic.AddInt64(&m.dirNum, num)
-	atomic.AddInt64(&m.transferSize, size)
+	if runtime.GOARCH == "386" {
+		var mu sync.RWMutex
+		mu.Lock()
+		m.dirNum += num
+		m.transferSize += size
+		mu.Unlock()
+	} else {
+		atomic.AddInt64(&m.dirNum, num)
+		atomic.AddInt64(&m.transferSize, size)
+	}
 }
 
 func (m *CPMonitor) updateSkip(size, num int64) {
-	atomic.AddInt64(&m.skipNum, num)
-	atomic.AddInt64(&m.skipSize, size)
+	if runtime.GOARCH == "386" {
+		var mu sync.RWMutex
+		mu.Lock()
+		m.skipNum += num
+		m.skipSize += size
+		mu.Unlock()
+	} else {
+		atomic.AddInt64(&m.skipNum, num)
+		atomic.AddInt64(&m.skipSize, size)
+	}
 }
 
 func (m *CPMonitor) updateErr(size, num int64) {
-	atomic.AddInt64(&m.errNum, num)
-	atomic.AddInt64(&m.transferSize, size)
+	if runtime.GOARCH == "386" {
+		var mu sync.RWMutex
+		mu.Lock()
+		m.errNum += num
+		m.transferSize += size
+		mu.Unlock()
+	} else {
+		atomic.AddInt64(&m.errNum, num)
+		atomic.AddInt64(&m.transferSize, size)
+	}
 }
 
 func (m *CPMonitor) getSnapshot() *CPMonitorSnap {
