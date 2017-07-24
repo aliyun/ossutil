@@ -123,8 +123,8 @@ Usage:
 
 // RestoreCommand is the command list buckets or objects
 type RestoreCommand struct {
+	monitor  Monitor //Put first for atomic op on some fileds
 	command  Command
-	monitor  Monitor
 	reOption batchOptionType
 }
 

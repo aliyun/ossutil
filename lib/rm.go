@@ -232,9 +232,9 @@ Usage:
 
 // RemoveCommand is the command remove bucket or objects
 type RemoveCommand struct {
+	monitor  RMMonitor //Put first for atomic op on some fileds
 	command  Command
 	rmOption removeOptionType
-	monitor  RMMonitor
 }
 
 var removeCommand = RemoveCommand{

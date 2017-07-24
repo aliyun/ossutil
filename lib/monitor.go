@@ -2,9 +2,7 @@ package lib
 
 import (
 	"fmt"
-	"runtime"
 	"strings"
-	"sync"
 	"sync/atomic"
 )
 
@@ -38,15 +36,20 @@ type MonitorSnap struct {
 	dealNum int64
 }
 
+/*
+ * Put same type variables together to make them 64bits alignment to avoid
+ * atomic.AddInt64() panic
+ * Please guarantee the alignment if you add new filed
+ */
 type Monitor struct {
 	opStr          string
 	totalNum       int64
-	seekAheadEnd   bool
+	okNum          int64
+	errNum         int64
 	seekAheadError error
-	// deal info
-	okNum  int64
-	errNum int64
-	finish bool
+	seekAheadEnd   bool
+	finish         bool
+	_              uint32 //Add padding to make sure the next data 64bits alignment
 }
 
 func (m *Monitor) init(opStr string) {
@@ -72,25 +75,12 @@ func (m *Monitor) setScanEnd() {
 	m.seekAheadEnd = true
 }
 
-func addInt64(goarch string, src *int64, delta int64) int64 {
-	if goarch == "386" || goarch == "arm" {
-		var mu sync.RWMutex
-		mu.Lock()
-		*src += delta
-		mu.Unlock()
-	} else { // For amd64, arm64
-		atomic.AddInt64(src, delta)
-	}
-
-	return *src
-}
-
 func (m *Monitor) updateOKNum(num int64) {
-	addInt64(runtime.GOARCH, &m.okNum, num)
+	atomic.AddInt64(&m.okNum, num)
 }
 
 func (m *Monitor) updateErrNum(num int64) {
-	addInt64(runtime.GOARCH, &m.errNum, num)
+	atomic.AddInt64(&m.errNum, num)
 }
 
 func (m *Monitor) getSnapshot() *MonitorSnap {
@@ -179,20 +169,24 @@ type RMMonitorSnap struct {
 	removedBucket  string
 }
 
+/*
+ * Put same type variables together to make them 64bits alignment to avoid
+ * atomic.AddInt64() panic
+ * Please guarantee the alignment if you add new filed
+ */
 type RMMonitor struct {
 	op               int64
 	totalObjectNum   int64
 	totalUploadIdNum int64
-	seekAheadEnd     bool
+	objectNum        int64
+	uploadIdNum      int64
+	errObjectNum     int64
+	errUploadIdNum   int64
+	removedBucket    string
 	seekAheadError   error
-	// object deal info
-	objectNum      int64
-	uploadIdNum    int64
-	errObjectNum   int64
-	errUploadIdNum int64
-	finish         bool
-	// bucket deal iefo
-	removedBucket string
+	seekAheadEnd     bool
+	finish           bool
+	_                uint32 //Add padding to make sure the next data 64bits alignment
 }
 
 func (m *RMMonitor) init() {
@@ -235,19 +229,19 @@ func (m *RMMonitor) setScanEnd() {
 }
 
 func (m *RMMonitor) updateObjectNum(num int64) {
-	addInt64(runtime.GOARCH, &m.objectNum, num)
+	atomic.AddInt64(&m.objectNum, num)
 }
 
 func (m *RMMonitor) updateUploadIdNum(num int64) {
-	addInt64(runtime.GOARCH, &m.uploadIdNum, num)
+	atomic.AddInt64(&m.uploadIdNum, num)
 }
 
 func (m *RMMonitor) updateErrObjectNum(num int64) {
-	addInt64(runtime.GOARCH, &m.errObjectNum, num)
+	atomic.AddInt64(&m.errObjectNum, num)
 }
 
 func (m *RMMonitor) updateErrUploadIdNum(num int64) {
-	addInt64(runtime.GOARCH, &m.errUploadIdNum, num)
+	atomic.AddInt64(&m.errUploadIdNum, num)
 }
 
 func (m *RMMonitor) updateRemovedBucket(bucket string) {
@@ -389,21 +383,25 @@ type CPMonitorSnap struct {
 	dealNum      int64
 }
 
+/*
+ * Put same type variables together to make them 64bits alignment to avoid
+ * atomic.AddInt64() panic
+ * Please guarantee the alignment if you add new filed
+ */
 type CPMonitor struct {
-	op operationType
-	// scan info
 	totalSize      int64
 	totalNum       int64
-	seekAheadEnd   bool
+	transferSize   int64
+	skipSize       int64
+	fileNum        int64
+	dirNum         int64
+	skipNum        int64
+	errNum         int64
 	seekAheadError error
-	// transfer info
-	transferSize int64
-	skipSize     int64
-	fileNum      int64
-	dirNum       int64
-	skipNum      int64
-	errNum       int64
-	finish       bool
+	op             operationType
+	seekAheadEnd   bool
+	finish         bool
+	_              uint32 //Add padding to make sure the next data 64bits alignment
 }
 
 func (m *CPMonitor) init(op operationType) {
@@ -440,27 +438,27 @@ func (m *CPMonitor) setScanEnd() {
 }
 
 func (m *CPMonitor) updateTransferSize(size int64) {
-	addInt64(runtime.GOARCH, &m.transferSize, size)
+	atomic.AddInt64(&m.transferSize, size)
 }
 
 func (m *CPMonitor) updateFile(size, num int64) {
-	addInt64(runtime.GOARCH, &m.fileNum, num)
-	addInt64(runtime.GOARCH, &m.transferSize, size)
+	atomic.AddInt64(&m.fileNum, num)
+	atomic.AddInt64(&m.transferSize, size)
 }
 
 func (m *CPMonitor) updateDir(size, num int64) {
-	addInt64(runtime.GOARCH, &m.dirNum, num)
-	addInt64(runtime.GOARCH, &m.transferSize, size)
+	atomic.AddInt64(&m.dirNum, num)
+	atomic.AddInt64(&m.transferSize, size)
 }
 
 func (m *CPMonitor) updateSkip(size, num int64) {
-	addInt64(runtime.GOARCH, &m.skipNum, num)
-	addInt64(runtime.GOARCH, &m.skipSize, size)
+	atomic.AddInt64(&m.skipNum, num)
+	atomic.AddInt64(&m.skipSize, size)
 }
 
 func (m *CPMonitor) updateErr(size, num int64) {
-	addInt64(runtime.GOARCH, &m.errNum, num)
-	addInt64(runtime.GOARCH, &m.transferSize, size)
+	atomic.AddInt64(&m.errNum, num)
+	atomic.AddInt64(&m.transferSize, size)
 }
 
 func (m *CPMonitor) getSnapshot() *CPMonitorSnap {

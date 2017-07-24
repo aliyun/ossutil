@@ -29,19 +29,24 @@ const (
 	opCopy            = "copy"
 )
 
+/*
+ * Put same type variables together to make them 64bits alignment to avoid
+ * atomic.AddInt64() panic
+ * Please guarantee the alignment if you add new filed
+ */
 type copyOptionType struct {
+	cpDir        string
+	snapshotPath string
+	vrange       string
+	encodingType string
+	threshold    int64
+	routines     int64
+	reporter     *Reporter
+	snapshotldb  *leveldb.DB
 	recursive    bool
 	force        bool
 	update       bool
-	threshold    int64
-	cpDir        string
-	routines     int64
 	ctnu         bool
-	reporter     *Reporter
-	snapshotPath string
-	snapshotldb  *leveldb.DB
-	vrange       string
-	encodingType string
 }
 
 type fileInfoType struct {
@@ -958,9 +963,9 @@ Usage:
 
 // CopyCommand is the command upload, download and copy objects
 type CopyCommand struct {
+	monitor  CPMonitor //Put first for atomic op on some fileds
 	command  Command
 	cpOption copyOptionType
-	monitor  CPMonitor
 }
 
 var copyCommand = CopyCommand{

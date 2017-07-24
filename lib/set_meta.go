@@ -230,8 +230,8 @@ Usage:
 
 // SetMetaCommand is the command set meta for object
 type SetMetaCommand struct {
+	monitor  Monitor //Put first for atomic op on some fileds
 	command  Command
-	monitor  Monitor
 	smOption batchOptionType
 }
 

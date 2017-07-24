@@ -2,7 +2,6 @@ package lib
 
 import (
 	"fmt"
-	"math/rand"
 	"os"
 	"strings"
 	"time"
@@ -1908,26 +1907,4 @@ func (s *OssutilCommandSuite) TestRangeGet(c *C) {
 
 	os.RemoveAll(dir)
 	s.removeBucket(bucketName, true, c)
-}
-
-func (s *OssutilCommandSuite) TestAddInt64(c *C) {
-	src := rand.Int63n(10000)
-	delta := rand.Int63n(1000)
-	result := addInt64("386", &src, delta)
-	c.Assert(src, Equals, result)
-
-	src = rand.Int63n(20000)
-	delta = rand.Int63n(2000)
-	result = addInt64("amd64", &src, delta)
-	c.Assert(src, Equals, result)
-
-	src = rand.Int63n(30000)
-	delta = rand.Int63n(3000)
-	result = addInt64("arm", &src, delta)
-	c.Assert(src, Equals, result)
-
-	src = rand.Int63n(40000)
-	delta = rand.Int63n(4000)
-	result = addInt64("arm64", &src, delta)
-	c.Assert(src, Equals, result)
 }
