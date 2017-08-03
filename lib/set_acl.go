@@ -199,8 +199,8 @@ Usage：
 
 // SetACLCommand is the command set acl
 type SetACLCommand struct {
+	monitor  Monitor //Put first for atomic op on some fileds
 	command  Command
-	monitor  Monitor
 	saOption batchOptionType
 }
 
