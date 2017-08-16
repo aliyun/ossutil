@@ -41,6 +41,7 @@ const (
 	OptionVersion                 = "version"
 	OptionPartSize                = "partSize"
 	OptionDisableCRC64            = "disableCRC64"
+	OptionTimeout                 = "timeout"
 )
 
 // the elements show in stat object
@@ -127,6 +128,10 @@ const (
 	StorageIA                      = string(oss.StorageIA)
 	StorageArchive                 = string(oss.StorageArchive)
 	DefaultStorageClass            = StorageStandard
+	DefaultMethod                  = string(oss.HTTPGet)
+	DefaultTimeout                 = 60
+	MinTimeout                     = 0
+	MaxTimeout                     = MaxInt64
 )
 
 const (

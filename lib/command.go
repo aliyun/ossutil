@@ -479,6 +479,22 @@ func (cmd *Command) filterError(err error, option *batchOptionType) bool {
 	return true
 }
 
+func (cmd *Command) getOSSOptions(hopMap map[string]interface{}, headers map[string]string) ([]oss.Option, error) {
+	options := []oss.Option{}
+	for name, value := range headers {
+		if strings.HasPrefix(strings.ToLower(name), strings.ToLower(oss.HTTPHeaderOssMetaPrefix)) {
+			options = append(options, oss.Meta(name[len(oss.HTTPHeaderOssMetaPrefix):], value))
+		} else {
+			option, err := getOSSOption(hopMap, name, value)
+			if err != nil {
+				return nil, err
+			}
+			options = append(options, option)
+		}
+	}
+	return options, nil
+}
+
 // GetAllCommands returns all commands list
 func GetAllCommands() []interface{} {
 	return []interface{}{
@@ -494,6 +510,7 @@ func GetAllCommands() []interface{} {
 		&restoreCommand,
 		&createSymlinkCommand,
 		&readSymlinkCommand,
+		&signURLCommand,
 		&hashCommand,
 		&updateCommand,
 	}
