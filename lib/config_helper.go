@@ -53,10 +53,12 @@ func DecideConfigFile(configFile string) string {
 	if configFile == "" {
 		configFile = DefaultConfigFile
 	}
-	usr, _ := user.Current()
-	dir := usr.HomeDir
-	if len(configFile) >= 2 && strings.HasPrefix(configFile, "~"+string(os.PathSeparator)) {
-		configFile = strings.Replace(configFile, "~", dir, 1)
+	usr, err := user.Current()
+	if err == nil {
+		dir := usr.HomeDir
+		if len(configFile) >= 2 && strings.HasPrefix(configFile, "~"+string(os.PathSeparator)) {
+			configFile = strings.Replace(configFile, "~", dir, 1)
+		}
 	}
 	return configFile
 }
