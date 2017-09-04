@@ -119,7 +119,7 @@ type helpCommandTestCase struct {
 	err        error
 }
 
-var subCommands = []string{"help", "config", "update", "mb", "ls", "rm", "stat", "set-acl", "set-meta", "cp"}
+var subCommands = []string{"help", "config", "hash", "update", "mb", "ls", "rm", "stat", "set-acl", "set-meta", "cp", "restore", "create-symlink", "read-symlink"}
 
 func (s *OssutilHelpSuite) TestHelpCommand(c *C) {
 	command := "help"

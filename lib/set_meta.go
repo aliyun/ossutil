@@ -20,9 +20,9 @@ var headerOptionMap = map[string]interface{}{
 	oss.HTTPHeaderOrigin:                  oss.Origin,
 }
 
-func formatHeaderString(sep string) string {
+func formatHeaderString(hopMap map[string]interface{}, sep string) string {
 	str := ""
-	for header := range headerOptionMap {
+	for header := range hopMap {
 		if header == oss.HTTPHeaderExpires {
 			str += header + fmt.Sprintf("(time.RFC3339: %s)", time.RFC3339) + sep
 		} else {
@@ -35,8 +35,8 @@ func formatHeaderString(sep string) string {
 	return str
 }
 
-func fetchHeaderOptionMap(name string) (interface{}, error) {
-	for header, f := range headerOptionMap {
+func fetchHeaderOptionMap(hopMap map[string]interface{}, name string) (interface{}, error) {
+	for header, f := range hopMap {
 		if strings.ToLower(name) == strings.ToLower(header) {
 			return f, nil
 		}
@@ -44,8 +44,8 @@ func fetchHeaderOptionMap(name string) (interface{}, error) {
 	return nil, fmt.Errorf("unsupported header: %s, please check", name)
 }
 
-func getOSSOption(name string, param string) (oss.Option, error) {
-	if f, err := fetchHeaderOptionMap(name); err == nil {
+func getOSSOption(hopMap map[string]interface{}, name string, param string) (oss.Option, error) {
+	if f, err := fetchHeaderOptionMap(hopMap, name); err == nil {
 		switch f.(type) {
 		case func(string) oss.Option:
 			return f.(func(string) oss.Option)(param), nil
@@ -101,7 +101,7 @@ var specChineseSetMeta = SpecText{
 Headers:
 
     可选的header列表如下：
-        ` + formatHeaderString("\n        ") + `
+        ` + formatHeaderString(headerOptionMap, "\n        ") + `
         以及以` + oss.HTTPHeaderOssMetaPrefix + `开头的header
 
     注意：header不区分大小写，但value区分大小写。
@@ -185,7 +185,7 @@ var specEnglishSetMeta = SpecText{
 Headers:
 
     ossutil supports following headers:
-        ` + formatHeaderString("\n        ") + `
+        ` + formatHeaderString(headerOptionMap, "\n        ") + `
         and headers starts with: ` + oss.HTTPHeaderOssMetaPrefix + `
 
     Warning: headers are case-insensitive, but value are case-sensitive.
@@ -392,9 +392,9 @@ func (sc *SetMetaCommand) getMetaData(force bool, language string) (string, erro
 	}
 
 	if language == LEnglishLanguage {
-		fmt.Printf("\nSupported headers:\n    %s\n    And the headers start with: \"%s\"\n\nPlease enter the header:value#header:value... pair you want to set: ", formatHeaderString("\n    "), oss.HTTPHeaderOssMetaPrefix)
+		fmt.Printf("\nSupported headers:\n    %s\n    And the headers start with: \"%s\"\n\nPlease enter the header:value#header:value... pair you want to set: ", formatHeaderString(headerOptionMap, "\n    "), oss.HTTPHeaderOssMetaPrefix)
 	} else {
-		fmt.Printf("\n支持的headers:\n    %s\n    以及以\"%s\"开头的headers\n\n请输入你想设置的header:value#header:value...：", formatHeaderString("\n    "), oss.HTTPHeaderOssMetaPrefix)
+		fmt.Printf("\n支持的headers:\n    %s\n    以及以\"%s\"开头的headers\n\n请输入你想设置的header:value#header:value...：", formatHeaderString(headerOptionMap, "\n    "), oss.HTTPHeaderOssMetaPrefix)
 	}
 	if _, err := fmt.Scanln(&str); err != nil {
 		return "", fmt.Errorf("meta empty, please check, operation is canceled")
@@ -419,7 +419,7 @@ func (sc *SetMetaCommand) parseHeaders(str string, isDelete bool) (map[string]st
 		if isDelete && value != "" {
 			return nil, fmt.Errorf("delete meta for object do no support value for header:%s, please set value:%s to empty", name, value)
 		}
-		if _, err := fetchHeaderOptionMap(name); err != nil && !strings.HasPrefix(strings.ToLower(name), strings.ToLower(oss.HTTPHeaderOssMetaPrefix)) {
+		if _, err := fetchHeaderOptionMap(headerOptionMap, name); err != nil && !strings.HasPrefix(strings.ToLower(name), strings.ToLower(oss.HTTPHeaderOssMetaPrefix)) {
 			return nil, fmt.Errorf("unsupported header:%s, please try \"help %s\" to see supported headers", name, sc.command.name)
 		}
 		headers[name] = value
@@ -437,7 +437,7 @@ func (sc *SetMetaCommand) setObjectMeta(bucket *oss.Bucket, object string, heade
 		allheaders = sc.mergeHeader(props, headers, isUpdate, isDelete)
 	}
 
-	options, err := sc.getOSSOptions(allheaders)
+	options, err := sc.command.getOSSOptions(headerOptionMap, allheaders)
 	if err != nil {
 		return err
 	}
@@ -448,7 +448,7 @@ func (sc *SetMetaCommand) setObjectMeta(bucket *oss.Bucket, object string, heade
 func (sc *SetMetaCommand) mergeHeader(props http.Header, headers map[string]string, isUpdate, isDelete bool) map[string]string {
 	allheaders := map[string]string{}
 	for name := range props {
-		if _, err := fetchHeaderOptionMap(name); err == nil || strings.HasPrefix(strings.ToLower(name), strings.ToLower(oss.HTTPHeaderOssMetaPrefix)) {
+		if _, err := fetchHeaderOptionMap(headerOptionMap, name); err == nil || strings.HasPrefix(strings.ToLower(name), strings.ToLower(oss.HTTPHeaderOssMetaPrefix)) {
 			allheaders[strings.ToLower(name)] = props.Get(name)
 		}
 		if name == StatACL {
@@ -466,22 +466,6 @@ func (sc *SetMetaCommand) mergeHeader(props http.Header, headers map[string]stri
 		}
 	}
 	return allheaders
-}
-
-func (sc *SetMetaCommand) getOSSOptions(headers map[string]string) ([]oss.Option, error) {
-	options := []oss.Option{}
-	for name, value := range headers {
-		if strings.HasPrefix(strings.ToLower(name), strings.ToLower(oss.HTTPHeaderOssMetaPrefix)) {
-			options = append(options, oss.Meta(name[len(oss.HTTPHeaderOssMetaPrefix):], value))
-		} else {
-			option, err := getOSSOption(name, value)
-			if err != nil {
-				return nil, err
-			}
-			options = append(options, option)
-		}
-	}
-	return options, nil
 }
 
 func (sc *SetMetaCommand) ossSetObjectMetaRetry(bucket *oss.Bucket, object string, options ...oss.Option) error {
