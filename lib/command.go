@@ -393,7 +393,7 @@ func (cmd *Command) ossGetObjectMetaRetry(bucket *oss.Bucket, object string) (ht
 	}
 }
 
-func (cmd *Command) objectStatistic(bucket *oss.Bucket, cloudURL CloudURL, monitor Monitorer) {
+func (cmd *Command) objectStatistic(bucket *oss.Bucket, cloudURL CloudURL, monitor Monitorer, suffix string) {
 	if monitor == nil {
 		return
 	}
@@ -407,7 +407,17 @@ func (cmd *Command) objectStatistic(bucket *oss.Bucket, cloudURL CloudURL, monit
 			return
 		}
 
-		monitor.updateScanNum(int64(len(lor.Objects)))
+		if suffix == DefaultNoneSuffix {
+			monitor.updateScanNum(int64(len(lor.Objects)))
+		} else {
+			count := 0
+			for _, object := range lor.Objects {
+				if strings.HasSuffix(object.Key, suffix) {
+					count++
+				}
+			}
+			monitor.updateScanNum(int64(count))
+		}
 
 		marker = oss.Marker(lor.NextMarker)
 		if !lor.IsTruncated {
@@ -418,7 +428,7 @@ func (cmd *Command) objectStatistic(bucket *oss.Bucket, cloudURL CloudURL, monit
 	monitor.setScanEnd()
 }
 
-func (cmd *Command) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, chObjects chan<- string, chError chan<- error) {
+func (cmd *Command) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, suffix string, chObjects chan<- string, chError chan<- error) {
 	pre := oss.Prefix(cloudURL.object)
 	marker := oss.Marker("")
 	for {
@@ -428,8 +438,16 @@ func (cmd *Command) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, chObje
 			break
 		}
 
-		for _, object := range lor.Objects {
-			chObjects <- object.Key
+		if suffix == DefaultNoneSuffix {
+			for _, object := range lor.Objects {
+				chObjects <- object.Key
+			}
+		} else {
+			for _, object := range lor.Objects {
+				if strings.HasSuffix(object.Key, suffix) {
+					chObjects <- object.Key
+				}
+			}
 		}
 
 		pre = oss.Prefix(lor.Prefix)

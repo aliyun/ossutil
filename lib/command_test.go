@@ -916,6 +916,12 @@ func (s *OssutilCommandSuite) rawSetMeta(bucket, object, meta string, update, de
 	return showElapse, err
 }
 
+func (s *OssutilCommandSuite) rawSetMetaWithSuffix(bucket, object, meta string, update, delete, recursive, force bool, language, suffix string) (bool, error) {
+	args := []string{CloudURLToString(bucket, object), meta}
+	showElapse, err := s.rawSetMetaWithArgsWithSuffix(args, update, delete, recursive, force, language, suffix)
+	return showElapse, err
+}
+
 func (s *OssutilCommandSuite) rawSetMetaWithArgs(args []string, update, delete, recursive, force bool, language string) (bool, error) {
 	command := "set-meta"
 	str := ""
@@ -933,6 +939,29 @@ func (s *OssutilCommandSuite) rawSetMetaWithArgs(args []string, update, delete, 
 		"routines":        &routines,
 		"language":        &language,
 	}
+	showElapse, err := cm.RunCommand(command, args, options)
+	return showElapse, err
+}
+
+func (s *OssutilCommandSuite) rawSetMetaWithArgsWithSuffix(args []string, update, delete, recursive, force bool, language, suffix string) (bool, error) {
+	command := "set-meta"
+	str := ""
+	routines := strconv.Itoa(Routines)
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"stsToken":        &str,
+		"configFile":      &configFile,
+		"update":          &update,
+		"delete":          &delete,
+		"recursive":       &recursive,
+		"force":           &force,
+		"routines":        &routines,
+		"language":        &language,
+		"suffix":          &suffix,
+	}
+	fmt.Println(options)
 	showElapse, err := cm.RunCommand(command, args, options)
 	return showElapse, err
 }

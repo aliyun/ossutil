@@ -42,6 +42,7 @@ const (
 	OptionPartSize                = "partSize"
 	OptionDisableCRC64            = "disableCRC64"
 	OptionTimeout                 = "timeout"
+	OptionSuffix                  = "suffix"
 )
 
 // the elements show in stat object
@@ -132,6 +133,7 @@ const (
 	DefaultTimeout                 = 60
 	MinTimeout                     = 0
 	MaxTimeout                     = MaxInt64
+	DefaultNoneSuffix              = ""
 )
 
 const (
