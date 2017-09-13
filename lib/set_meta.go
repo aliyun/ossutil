@@ -74,7 +74,7 @@ var specChineseSetMeta = SpecText{
 	paramText: "cloud_url [meta] [options]",
 
 	syntaxText: ` 
-    ossutil set-meta oss://bucket[/prefix] [header:value#header:value...] [--suffix suf] [--update] [--delete] [-r] [-f] [-c file] 
+    ossutil set-meta oss://bucket[/prefix] [header:value#header:value...] [--include pattern] [--update] [--delete] [-r] [-f] [-c file] 
 `,
 
 	detailHelpText: ` 
@@ -117,12 +117,12 @@ Headers:
     object的所有meta。
         --update选项和--delete选项的用法参考上文。
 
-    2) ossutil set-meta oss://bucket[/prefix] [header:value#header:value...] [--suffix suf] -r [--update] [--delete] [-f]
+    2) ossutil set-meta oss://bucket[/prefix] [header:value#header:value...] [--include pattern] -r [--update] [--delete] [-f]
         如果指定了--recursive选项，ossutil会查找所有前缀匹配cloud_url的objects，批量设置
     这些objects的meta信息。当一个object操作出现错误时会将出错object的错误信息记录到report
     文件，并继续操作其他object，成功操作的object信息将不会被记录到report文件中（更多信息
     见cp命令的帮助）。
-        如果指定了--suffix选项，ossutil会查找所有后缀匹配suf的objects，批量设置。
+        如果指定了--include选项，ossutil会查找所有匹配pattern的objects，批量设置。
         如果--force选项被指定，则不会进行询问提示。
         --update选项和--delete选项的用法参考上文。
 `,
@@ -134,10 +134,10 @@ Headers:
     (2)ossutil set-meta oss://bucket1/o X-Oss-Meta-empty:#Content-Type:plain/text --update -r
         批量更新以o开头的objects的X-Oss-Meta-empty和Content-Type头域
 
-    (3)ossutil set-meta oss://bucket1/ X-Oss-Meta-empty:#Content-Type:plain/text --update -r --suffix .jpg
+    (3)ossutil set-meta oss://bucket1/ X-Oss-Meta-empty:#Content-Type:plain/text --update -r --include "*.jpg"
         批量更新后缀为.jpg的objects的X-Oss-Meta-empty和Content-Type头域
 
-    (4)ossutil set-meta oss://bucket1/o X-Oss-Meta-empty:#Content-Type:plain/text --update -r --suffix .jpg
+    (4)ossutil set-meta oss://bucket1/o X-Oss-Meta-empty:#Content-Type:plain/text --update -r --include "*.jpg"
         批量更新以o开头后缀为.jpg的objects的X-Oss-Meta-empty和Content-Type头域
 
     (5)ossutil set-meta oss://bucket1/obj1 X-Oss-Meta-delete --delete
@@ -158,7 +158,7 @@ var specEnglishSetMeta = SpecText{
 	paramText: "cloud_url [meta] [options]",
 
 	syntaxText: ` 
-    ossutil set-meta oss://bucket[/prefix] [header:value#header:value...] [--suffix suf] [--update] [--delete] [-r] [-f] [-c file] 
+    ossutil set-meta oss://bucket[/prefix] [header:value#header:value...] [--include pattern] [--update] [--delete] [-r] [-f] [-c file] 
 `,
 
 	detailHelpText: ` 
@@ -208,12 +208,12 @@ Usage:
     will not show prompt question. 
         The usage of --update option and --delete option is showed in detailHelpText. 
 
-    2) ossutil set-meta oss://bucket[/prefix] [header:value#header:value...] [--suffix suf] -r [--update] [--delete] [-f]
+    2) ossutil set-meta oss://bucket[/prefix] [header:value#header:value...] [--include pattern] -r [--update] [--delete] [-f]
         If --recursive option is specified, ossutil will search for prefix-matching objects 
     and set meta on these objects. If an error occurs, ossutil will record the error message 
     to report file, and ossutil will continue to attempt to set acl on the remaining objects(
     more information see help of cp command). 
-        If --suffix option is specified, ossutil will search for suffix-matching objects and set meta on those objects.
+        If --include option is specified, ossutil will search for pattern-matching objects and set meta on those objects.
         If --force option is specified, ossutil will not show prompt question.
         The usage of --update option and --delete option is showed in detailHelpText.
 `,
@@ -225,10 +225,10 @@ Usage:
     (2)ossutil set-meta oss://bucket1/o X-Oss-Meta-empty:#Content-Type:plain/text -u -r
         Batch update X-Oss-Meta-empty and Content-Type header on objects that start with o
 
-    (3)ossutil set-meta oss://bucket1/ X-Oss-Meta-empty:#Content-Type:plain/text --update -r --suffix .jpg
+    (3)ossutil set-meta oss://bucket1/ X-Oss-Meta-empty:#Content-Type:plain/text --update -r --include "*.jpg"
         Batch update X-Oss-Meta-empty and Content-Type header on objects ending with .jpg
 
-    (4)ossutil set-meta oss://bucket1/o X-Oss-Meta-empty:#Content-Type:plain/text --update -r --suffix .jpg
+    (4)ossutil set-meta oss://bucket1/o X-Oss-Meta-empty:#Content-Type:plain/text --update -r --include ".jpg"
         Batch update X-Oss-Meta-empty and Content-Type header on objects starting with o and ending with .jpg
 
     (5)ossutil set-meta oss://bucket1/obj1 X-Oss-Meta-delete -d
@@ -264,7 +264,7 @@ var setMetaCommand = SetMetaCommand{
 			OptionDelete,
 			OptionForce,
 			OptionEncodingType,
-			OptionSuffix,
+			OptionInclude,
 			OptionConfigFile,
 			OptionEndpoint,
 			OptionAccessKeyID,
@@ -304,7 +304,9 @@ func (sc *SetMetaCommand) RunCommand() error {
 	language, _ := GetString(OptionLanguage, sc.command.options)
 	language = strings.ToLower(language)
 	encodingType, _ := GetString(OptionEncodingType, sc.command.options)
-	suffix, _ := GetString(OptionSuffix, sc.command.options)
+	pattern, _ := GetString(OptionInclude, sc.command.options)
+	// Convert to regrex
+	pattern = strings.Replace(pattern, "*", ".*", -1)
 
 	cloudURL, err := CloudURLFromString(sc.command.args[0], encodingType)
 	if err != nil {
@@ -341,7 +343,7 @@ func (sc *SetMetaCommand) RunCommand() error {
 	if !recursive {
 		return sc.setObjectMeta(bucket, cloudURL.object, headers, isUpdate, isDelete)
 	}
-	return sc.batchSetObjectMeta(bucket, cloudURL, headers, isUpdate, isDelete, force, routines, suffix)
+	return sc.batchSetObjectMeta(bucket, cloudURL, headers, isUpdate, isDelete, force, routines, pattern)
 }
 
 func (sc *SetMetaCommand) checkArgs(cloudURL CloudURL, recursive, isUpdate, isDelete bool) error {
@@ -497,7 +499,7 @@ func (sc *SetMetaCommand) ossSetObjectMetaRetry(bucket *oss.Bucket, object strin
 	}
 }
 
-func (sc *SetMetaCommand) batchSetObjectMeta(bucket *oss.Bucket, cloudURL CloudURL, headers map[string]string, isUpdate, isDelete, force bool, routines int64, suffix string) error {
+func (sc *SetMetaCommand) batchSetObjectMeta(bucket *oss.Bucket, cloudURL CloudURL, headers map[string]string, isUpdate, isDelete, force bool, routines int64, pattern string) error {
 	sc.smOption.ctnu = true
 	outputDir, _ := GetString(OptionOutputDir, sc.command.options)
 
@@ -508,19 +510,29 @@ func (sc *SetMetaCommand) batchSetObjectMeta(bucket *oss.Bucket, cloudURL CloudU
 	}
 	defer sc.smOption.reporter.Clear()
 
-	return sc.setObjectMetas(bucket, cloudURL, headers, isUpdate, isDelete, force, routines, suffix)
+	return sc.setObjectMetas(bucket, cloudURL, headers, isUpdate, isDelete, force, routines, pattern)
 }
 
-func (sc *SetMetaCommand) setObjectMetas(bucket *oss.Bucket, cloudURL CloudURL, headers map[string]string, isUpdate, isDelete, force bool, routines int64, suffix string) error {
+func (sc *SetMetaCommand) setObjectMetas(bucket *oss.Bucket, cloudURL CloudURL, headers map[string]string, isUpdate, isDelete, force bool, routines int64, pattern string) error {
 	// producer list objects
 	// consumer set meta
 	chObjects := make(chan string, ChannelBuf)
 	chError := make(chan error, routines+1)
 	chListError := make(chan error, 1)
-	go sc.command.objectStatistic(bucket, cloudURL, &sc.monitor, suffix)
-	go sc.command.objectProducer(bucket, cloudURL, suffix, chObjects, chListError)
-	for i := 0; int64(i) < routines; i++ {
-		go sc.setObjectMetaConsumer(bucket, headers, isUpdate, isDelete, chObjects, chError)
+	go sc.command.objectStatistic(bucket, cloudURL, &sc.monitor, pattern)
+	go sc.command.objectProducer(bucket, cloudURL, chObjects, chListError)
+
+	if pattern == DefaultNonePattern {
+		for i := 0; int64(i) < routines; i++ {
+			go sc.setObjectMetaConsumer(bucket, headers, isUpdate, isDelete, chObjects, chError)
+		}
+	} else {
+		chObjs := make(chan string, ChannelBuf)
+		filterObjectFromChanWithPattern(chObjects, pattern, chObjs)
+
+		for i := 0; int64(i) < routines; i++ {
+			go sc.setObjectMetaConsumer(bucket, headers, isUpdate, isDelete, chObjs, chError)
+		}
 	}
 
 	return sc.waitRoutinueComplete(chError, chListError, routines)

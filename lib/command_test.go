@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"reflect"
 	"strconv"
 	"strings"
 	"testing"
@@ -916,9 +917,9 @@ func (s *OssutilCommandSuite) rawSetMeta(bucket, object, meta string, update, de
 	return showElapse, err
 }
 
-func (s *OssutilCommandSuite) rawSetMetaWithSuffix(bucket, object, meta string, update, delete, recursive, force bool, language, suffix string) (bool, error) {
+func (s *OssutilCommandSuite) rawSetMetaWithPattern(bucket, object, meta string, update, delete, recursive, force bool, language, pattern string) (bool, error) {
 	args := []string{CloudURLToString(bucket, object), meta}
-	showElapse, err := s.rawSetMetaWithArgsWithSuffix(args, update, delete, recursive, force, language, suffix)
+	showElapse, err := s.rawSetMetaWithArgsWithPattern(args, update, delete, recursive, force, language, pattern)
 	return showElapse, err
 }
 
@@ -943,7 +944,7 @@ func (s *OssutilCommandSuite) rawSetMetaWithArgs(args []string, update, delete, 
 	return showElapse, err
 }
 
-func (s *OssutilCommandSuite) rawSetMetaWithArgsWithSuffix(args []string, update, delete, recursive, force bool, language, suffix string) (bool, error) {
+func (s *OssutilCommandSuite) rawSetMetaWithArgsWithPattern(args []string, update, delete, recursive, force bool, language, pattern string) (bool, error) {
 	command := "set-meta"
 	str := ""
 	routines := strconv.Itoa(Routines)
@@ -959,9 +960,8 @@ func (s *OssutilCommandSuite) rawSetMetaWithArgsWithSuffix(args []string, update
 		"force":           &force,
 		"routines":        &routines,
 		"language":        &language,
-		"suffix":          &suffix,
+		"include":         &pattern,
 	}
-	fmt.Println(options)
 	showElapse, err := cm.RunCommand(command, args, options)
 	return showElapse, err
 }
@@ -1481,4 +1481,234 @@ func (s *OssutilCommandSuite) TestNeedConfig(c *C) {
 	c.Assert(err, IsNil)
 
 	c.Assert(copyCommand.command.needConfigFile(), Equals, false)
+}
+
+func (s *OssutilCommandSuite) TestFilter(c *C) {
+	var strs = []string{"peach", "apple", "pear", "plum"}
+
+	res := filter(strs, func(v string) bool { return strings.Contains(v, "e") })
+	var expect = []string{"peach", "apple", "pear"}
+	same := reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	expect = []string{"peach"}
+	res = filter(strs, func(v string) bool { return strings.Contains(v, "h") })
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	suffix := ".txt"
+	strs = []string{"a.jpg", "b.txt", "c.txt", "d"}
+	expect = []string{"b.txt", "c.txt"}
+	res = filter(strs, func(v string) bool { return strings.HasSuffix(v, suffix) })
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+}
+
+func (s *OssutilCommandSuite) TestFilter2(c *C) {
+	strs := []string{"aa.jpg", "bb.txt", "cc.txt", "dd"}
+
+	expect := []string{"bb.txt", "cc.txt"}
+	res := filter2(strs, ".txt", strings.HasSuffix)
+	same := reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	expect = []string{"aa.jpg"}
+	res = filter2(strs, ".jpg", strings.HasSuffix)
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	expect = []string{"aa.jpg", "bb.txt", "cc.txt", "dd"}
+	res = filter2(strs, "", strings.HasSuffix)
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+}
+
+func (s *OssutilCommandSuite) TestFilterStr(c *C) {
+	str := "aa.jpg"
+	res := filterStr(str, ".jpg", strings.HasSuffix)
+	c.Assert(res, Equals, true)
+
+	res = filterStr(str, ".txt", strings.HasSuffix)
+	c.Assert(res, Equals, false)
+}
+
+func (s *OssutilCommandSuite) TestFilterObjectFromListResultWithSuffix(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	num := 5
+	for i := 0; i < num; i++ {
+		object := fmt.Sprintf("TestFilter_%d.txt", i)
+		s.putObject(bucketName, object, uploadFileName, c)
+
+		object = fmt.Sprintf("TestFilter_%d.jpg", i)
+		s.putObject(bucketName, object, uploadFileName, c)
+	}
+
+	err := s.initSetMeta(bucketName, "TestFilter", "", true, false, true, true, DefaultLanguage)
+	c.Assert(err, IsNil)
+
+	bucket, err := setMetaCommand.command.ossBucket(bucketName)
+	c.Assert(err, IsNil)
+
+	lor, err := bucket.ListObjects()
+	c.Assert(err, IsNil)
+
+	objs := filterObjectFromListResultWithSuffix(lor, ".txt")
+	for _, obj := range objs {
+		c.Assert(strings.HasSuffix(obj, ".txt"), Equals, true)
+	}
+
+	objs = filterObjectFromListResultWithSuffix(lor, ".jpg")
+	for _, obj := range objs {
+		c.Assert(strings.HasSuffix(obj, ".jpg"), Equals, true)
+	}
+
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestFilterObjectFromChanToArrayWithSuffix(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	num := 5
+	chObjects := make(chan string, ChannelBuf)
+	for i := 0; i < num; i++ {
+		object := fmt.Sprintf("TestFilter_%d.txt", i)
+		s.putObject(bucketName, object, uploadFileName, c)
+		chObjects <- object
+
+		object = fmt.Sprintf("TestFilter_%d.jpg", i)
+		s.putObject(bucketName, object, uploadFileName, c)
+		chObjects <- object
+	}
+	close(chObjects)
+
+	objs := filterObjectFromChanToArrayWithSuffix(chObjects, ".txt")
+	for _, obj := range objs {
+		c.Assert(strings.HasSuffix(obj, ".txt"), Equals, true)
+	}
+
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestFilterObjectFromChanWithSuffix(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	num := 5
+	chObjects := make(chan string, ChannelBuf)
+	for i := 0; i < num; i++ {
+		object := fmt.Sprintf("TestFilter_%d.txt", i)
+		s.putObject(bucketName, object, uploadFileName, c)
+		chObjects <- object
+
+		object = fmt.Sprintf("TestFilter_%d.jpg", i)
+		s.putObject(bucketName, object, uploadFileName, c)
+		chObjects <- object
+	}
+	close(chObjects)
+
+	chObjs := make(chan string, ChannelBuf)
+	filterObjectFromChanWithSuffix(chObjects, ".jpg", chObjs)
+
+	for obj := range chObjs {
+		c.Assert(strings.HasSuffix(obj, ".jpg"), Equals, true)
+	}
+
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestFilterWithPattern(c *C) {
+	strs := []string{"test1.jpg", "test8.txt", "test18.txt", "testfile"}
+
+	expect := []string{"test8.txt", "test18.txt"}
+	res := filterWithPattern(strs, ".*.txt")
+	same := reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	expect = []string{"test1.jpg"}
+	res = filterWithPattern(strs, ".*.jpg")
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	expect = []string{"test8.txt", "test18.txt"}
+	res = filterWithPattern(strs, "te.*8.*xt")
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+}
+
+func (s *OssutilCommandSuite) TestFilterObjectFromListResultWithPattern(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	num := 5
+	for i := 0; i < num; i++ {
+		object := fmt.Sprintf("TestPattern_%d.txt", i)
+		s.putObject(bucketName, object, uploadFileName, c)
+
+		object = fmt.Sprintf("TestPattern_%d.jpg", i)
+		s.putObject(bucketName, object, uploadFileName, c)
+	}
+
+	err := s.initSetMeta(bucketName, "TestPattern", "", true, false, true, true, DefaultLanguage)
+	c.Assert(err, IsNil)
+
+	bucket, err := setMetaCommand.command.ossBucket(bucketName)
+	c.Assert(err, IsNil)
+
+	lor, err := bucket.ListObjects()
+	c.Assert(err, IsNil)
+
+	objs := filterObjectFromListResultWithPattern(lor, ".*.txt")
+	for _, obj := range objs {
+		c.Assert(strings.HasSuffix(obj, ".txt"), Equals, true)
+	}
+
+	expect := []string{"TestPattern_4.jpg", "TestPattern_4.txt"}
+	objs = filterObjectFromListResultWithPattern(lor, ".*att.*4")
+	same := reflect.DeepEqual(objs, expect)
+	c.Assert(same, Equals, true)
+
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestFilterStrWithPattern(c *C) {
+	str := "aabb1234ccdd.jpg"
+	res := filterStrWithPattern(str, ".*.jpg")
+	c.Assert(res, Equals, true)
+
+	res = filterStrWithPattern(str, "aaa.*dd.*")
+	c.Assert(res, Equals, false)
+}
+
+func (s *OssutilCommandSuite) TestFilterObjectFromChanWithPattern(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	num := 5
+	chObjects := make(chan string, ChannelBuf)
+	for i := 0; i < num; i++ {
+		object := fmt.Sprintf("Test_Pattern_%d.txt", i)
+		s.putObject(bucketName, object, uploadFileName, c)
+		chObjects <- object
+
+		object = fmt.Sprintf("Test_Pattern_%d.jpg", i)
+		s.putObject(bucketName, object, uploadFileName, c)
+		chObjects <- object
+	}
+	close(chObjects)
+
+	chObjs := make(chan string, ChannelBuf)
+	filterObjectFromChanWithPattern(chObjects, ".*Pat.*[1-3].*.jpg", chObjs)
+
+	expect := []string{"Test_Pattern_1.jpg", "Test_Pattern_2.jpg", "Test_Pattern_3.jpg"}
+	objs := []string{}
+	for obj := range chObjs {
+		objs = append(objs, obj)
+	}
+	same := reflect.DeepEqual(objs, expect)
+	c.Assert(same, Equals, true)
+
+	s.removeBucket(bucketName, true, c)
 }

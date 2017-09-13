@@ -42,7 +42,7 @@ const (
 	OptionPartSize                = "partSize"
 	OptionDisableCRC64            = "disableCRC64"
 	OptionTimeout                 = "timeout"
-	OptionSuffix                  = "suffix"
+	OptionInclude                 = "include"
 )
 
 // the elements show in stat object
@@ -86,7 +86,6 @@ const (
 	DefaultEndpoint         string = "oss.aliyuncs.com"
 	ChineseLanguage                = "CH"
 	EnglishLanguage                = "EN"
-	DefaultLanguage                = ChineseLanguage
 	Scheme                  string = "oss"
 	DefaultConfigFile              = "~" + string(os.PathSeparator) + ".ossutilconfig"
 	MaxUint                 uint   = ^uint(0)
@@ -133,7 +132,7 @@ const (
 	DefaultTimeout                 = 60
 	MinTimeout                     = 0
 	MaxTimeout                     = MaxInt64
-	DefaultNoneSuffix              = ""
+	DefaultNonePattern             = ""
 )
 
 const (
@@ -142,3 +141,5 @@ const (
 	allType       = objectType | multipartType // marker for objects
 	bucketType    = 0x10000000
 )
+
+var DefaultLanguage = getOsLang()

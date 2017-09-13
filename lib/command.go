@@ -393,7 +393,7 @@ func (cmd *Command) ossGetObjectMetaRetry(bucket *oss.Bucket, object string) (ht
 	}
 }
 
-func (cmd *Command) objectStatistic(bucket *oss.Bucket, cloudURL CloudURL, monitor Monitorer, suffix string) {
+func (cmd *Command) objectStatistic(bucket *oss.Bucket, cloudURL CloudURL, monitor Monitorer, pattern string) {
 	if monitor == nil {
 		return
 	}
@@ -407,16 +407,11 @@ func (cmd *Command) objectStatistic(bucket *oss.Bucket, cloudURL CloudURL, monit
 			return
 		}
 
-		if suffix == DefaultNoneSuffix {
+		if pattern == DefaultNonePattern {
 			monitor.updateScanNum(int64(len(lor.Objects)))
 		} else {
-			count := 0
-			for _, object := range lor.Objects {
-				if strings.HasSuffix(object.Key, suffix) {
-					count++
-				}
-			}
-			monitor.updateScanNum(int64(count))
+			objs := filterObjectFromListResultWithPattern(lor, pattern)
+			monitor.updateScanNum(int64(len(objs)))
 		}
 
 		marker = oss.Marker(lor.NextMarker)
@@ -428,7 +423,7 @@ func (cmd *Command) objectStatistic(bucket *oss.Bucket, cloudURL CloudURL, monit
 	monitor.setScanEnd()
 }
 
-func (cmd *Command) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, suffix string, chObjects chan<- string, chError chan<- error) {
+func (cmd *Command) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, chObjects chan<- string, chError chan<- error) {
 	pre := oss.Prefix(cloudURL.object)
 	marker := oss.Marker("")
 	for {
@@ -438,16 +433,8 @@ func (cmd *Command) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, suffix
 			break
 		}
 
-		if suffix == DefaultNoneSuffix {
-			for _, object := range lor.Objects {
-				chObjects <- object.Key
-			}
-		} else {
-			for _, object := range lor.Objects {
-				if strings.HasSuffix(object.Key, suffix) {
-					chObjects <- object.Key
-				}
-			}
+		for _, object := range lor.Objects {
+			chObjects <- object.Key
 		}
 
 		pre = oss.Prefix(lor.Prefix)

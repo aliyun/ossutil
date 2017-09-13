@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 	"time"
@@ -106,4 +107,93 @@ func getSizeString(size int64) string {
 		strList = append(strList, str[i:i+3])
 	}
 	return fmt.Sprintf("%s%s", prefix, strings.Join(strList, ","))
+}
+
+// Returns a new slice containing all strings in the
+// slice that satisfy the predicate `f`.
+func filter(vs []string, f func(string) bool) []string {
+	vsf := make([]string, 0)
+	for _, v := range vs {
+		if f(v) {
+			vsf = append(vsf, v)
+		}
+	}
+	return vsf
+}
+
+// predicate `f` has 2 parameters
+func filter2(vs []string, s string, f func(_, _ string) bool) []string {
+	vsf := make([]string, 0)
+	for _, v := range vs {
+		if f(v, s) {
+			vsf = append(vsf, v)
+		}
+	}
+	return vsf
+}
+
+func filterStr(v string, s string, f func(string, string) bool) bool {
+	return f(v, s)
+}
+
+func filterObjectFromListResultWithSuffix(lor oss.ListObjectsResult, suffix string) []string {
+	objs := make([]string, 0)
+	for _, obj := range lor.Objects {
+		objs = append(objs, obj.Key)
+	}
+	objs = filter2(objs, suffix, strings.HasSuffix)
+	return objs
+}
+
+func filterObjectFromChanToArrayWithSuffix(srcCh <-chan string, suffix string) []string {
+	objs := make([]string, 0)
+	for obj := range srcCh {
+		objs = append(objs, obj)
+	}
+	objs = filter2(objs, suffix, strings.HasSuffix)
+	return objs
+}
+
+func filterObjectFromChanWithSuffix(srcCh <-chan string, suffix string, dstCh chan<- string) {
+	for obj := range srcCh {
+		if filterStr(obj, suffix, strings.HasSuffix) {
+			dstCh <- obj
+		}
+	}
+	defer close(dstCh)
+}
+
+func filterWithPattern(vs []string, p string) []string {
+	vsf := make([]string, 0)
+	re := regexp.MustCompile(p)
+	for _, v := range vs {
+		if re.MatchString(v) {
+			vsf = append(vsf, v)
+		}
+
+	}
+	return vsf
+}
+
+func filterObjectFromListResultWithPattern(lor oss.ListObjectsResult, pattern string) []string {
+	objs := make([]string, 0)
+	for _, obj := range lor.Objects {
+		objs = append(objs, obj.Key)
+	}
+	objs = filterWithPattern(objs, pattern)
+	return objs
+}
+
+func filterStrWithPattern(v, p string) bool {
+	re := regexp.MustCompile(p)
+	return re.MatchString(v)
+}
+
+func filterObjectFromChanWithPattern(srcCh <-chan string, pattern string, dstCh chan<- string) {
+	for obj := range srcCh {
+		if filterStrWithPattern(obj, pattern) {
+			dstCh <- obj
+		}
+	}
+	defer close(dstCh)
 }

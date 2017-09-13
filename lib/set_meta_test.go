@@ -135,42 +135,33 @@ func (s *OssutilCommandSuite) TestSetObjectMeta(c *C) {
 	s.removeBucket(bucketName, true, c)
 }
 
-func (s *OssutilCommandSuite) TestSetObjectMetaWithSuffix(c *C) {
+func (s *OssutilCommandSuite) TestSetObjectMetaWithPattern(c *C) {
 	bucketName := bucketNamePrefix + randLowStr(10)
 	s.putBucket(bucketName, c)
-
-	fmt.Println("In test")
 
 	num := 10
 	objectNames := []string{}
 	for i := 0; i < num; i++ {
-		object := fmt.Sprintf("TestSetMetaWithSuffix_setmeta:%d.txt", i)
-		fmt.Println(object)
+		object := fmt.Sprintf("TestSetMetaWithPattern_setmeta:%d.txt", i)
 		s.putObject(bucketName, object, uploadFileName, c)
 		objectNames = append(objectNames, object)
 	}
 
 	for i := 0; i < num; i++ {
-		object := fmt.Sprintf("TestSetMetaWithSuffix_setmeta:%d", i)
-		fmt.Println(object)
+		object := fmt.Sprintf("TestSetMetaWithPattern_setmeta:%d", i)
 		s.putObject(bucketName, object, uploadFileName, c)
 		objectNames = append(objectNames, object)
 	}
 
-	showElapse, err := s.rawSetMetaWithSuffix(bucketName, "", "content-type:abc#X-Oss-Meta-test:with-suffix", true, false, true, true, DefaultLanguage, ".txt")
-	fmt.Println(err)
-	fmt.Println(showElapse)
+	showElapse, err := s.rawSetMetaWithPattern(bucketName, "", "content-type:abc#X-Oss-Meta-test:with-pattern", true, false, true, true, DefaultLanguage, "*.txt")
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
 
-	fmt.Println()
-	fmt.Println("in test 2")
 	for _, object := range objectNames {
-		fmt.Println(object)
 		objectStat := s.getStat(bucketName, object, c)
 		if strings.HasSuffix(object, ".txt") {
 			c.Assert(objectStat["Content-Type"], Equals, "abc")
-			c.Assert(objectStat["X-Oss-Meta-Test"], Equals, "with-suffix")
+			c.Assert(objectStat["X-Oss-Meta-Test"], Equals, "with-pattern")
 		} else {
 			c.Assert(objectStat["Content-Type"] != "abc", Equals, true)
 			_, ok := objectStat["X-Oss-Meta-Test"]
