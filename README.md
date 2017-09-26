@@ -8,11 +8,11 @@
 
 ## About
 - This tool is developed with Go and built on the official GO SDK 1.6.0 of OSS [Alibaba Cloud Object Storage Service](http://www.aliyun.com/product/oss/).
-- Alibaba Cloud Object Storage Service (OSS) is a cloud storage service provided by Alibaba Cloud, featuring a massive capacity, security, a low cost, and high reliability.
-- The OSS can store any type of files and therefore applies to various websites, development enterprises and developers.
-- This tool aims to provide a convenient-to-use command line means for users to manage data in the OSS. 
-- The current version provides features to list and delete multipart upload tasks. 
-- The current version does not support bucket management. The feature will be available in future versions. 
+- OSS is a cloud storage service provided by Alibaba Cloud, featuring massive capacity, security, low cost, and high reliability.
+- OSS can store any type of files. It applies to various websites, development enterprises and developers.
+- This tool aims to provide a convenient-to-use command line for users to manage data in OSS.
+- The current version provides to list and delete multipart upload tasks.
+- The current version does not support bucket management. The feature will be available in future versions.
 
 ## Version
 - Current version: 1.2.0.
@@ -69,14 +69,14 @@ You can use `./ossutil help cmd` to view the help documentation for the command 
 ## Notes
 ### Run OSSUTIL
 - First, configure your Go project directory. 
-- Use the `go get` command to get the library that the project is dependent on. 
-- Run `go get github.com/aliyun/ossutil`. 
-- Enter the *src* directory under the Go project directory and build code to generate the OSSUTIL tool. For example, on Linux, you can run `go build github.com/aliyun/ossutil/ossutil.go`. 
-- Refer to the example above to run the OSSUTIL tool. 
+- Use `go get` to get the library that ossutil depends on.
+- Run `go get github.com/aliyun/ossutil`.
+- Enter the *src* directory under the Go project directory and build to generate the OSSUTIL tool. For example, on Linux, you can run `go build github.com/aliyun/ossutil/ossutil.go`.
+- Refer to the example above to run the OSSUTIL tool.
 
 ### Test
-- Enter the *src* directory under the Go project directory and modify the endpoint, AccessKeyId, AccessKeySecret and STSToken configuration items in the *github.com/aliyun/ossutil/lib/command_test.go*. 
-- Run the `go test` command under the *lib* directory. 
+- Enter the *src* directory under the Go project directory and modify the endpoint, AccessKeyId, AccessKeySecret and STSToken configuration items in the *github.com/aliyun/ossutil/lib/command_test.go*.
+- Run `go test` under the *lib* directory.
 
 ## Contact us
 - [Alibaba Cloud OSS official website](http://oss.aliyun.com).
