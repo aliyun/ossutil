@@ -19,7 +19,7 @@ var specChineseSignurl = SpecText{
 	detailHelpText: ` 
     该命令签名用户指定的cloud_url，生成经过签名的url可供第三方用户访问object，其中cloud_url
     必须为形如：oss://bucket/object的cloud_url，bucket和object不可缺少。通过--timeout选项指
-	定url的过期时间，默认为60s。
+    定url的过期时间，默认为60s。
 
 用法：
 
@@ -50,9 +50,9 @@ var specEnglishSignurl = SpecText{
 
 	detailHelpText: ` 
     The command will generate signature for user specified cloud_url. This signed url can
-	be used by third-party to access the object. 
-	Where, cloud_url must like: oss://bucket/object
-	Use --timeout to specify the expire time of url, the default is 60s.
+    be used by third-party to access the object. 
+    Where, cloud_url must like: oss://bucket/object
+    Use --timeout to specify the expire time of url, the default is 60s.
 
 Usage:
 

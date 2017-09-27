@@ -85,7 +85,6 @@ const (
 	DefaultEndpoint         string = "oss.aliyuncs.com"
 	ChineseLanguage                = "CH"
 	EnglishLanguage                = "EN"
-	DefaultLanguage                = ChineseLanguage
 	Scheme                  string = "oss"
 	DefaultConfigFile              = "~" + string(os.PathSeparator) + ".ossutilconfig"
 	MaxUint                 uint   = ^uint(0)
@@ -140,3 +139,5 @@ const (
 	allType       = objectType | multipartType // marker for objects
 	bucketType    = 0x10000000
 )
+
+var DefaultLanguage = getOsLang()
