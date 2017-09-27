@@ -408,7 +408,7 @@ func (sc *SetACLCommand) setObjectACLs(bucket *oss.Bucket, cloudURL CloudURL, ac
 	chObjects := make(chan string, ChannelBuf)
 	chError := make(chan error, routines+1)
 	chListError := make(chan error, 1)
-	go sc.command.objectStatistic(bucket, cloudURL, &sc.monitor)
+	go sc.command.objectStatistic(bucket, cloudURL, &sc.monitor, DefaultNonePattern)
 	go sc.command.objectProducer(bucket, cloudURL, chObjects, chListError)
 	for i := 0; int64(i) < routines; i++ {
 		go sc.setObjectACLConsumer(bucket, acl, chObjects, chError)

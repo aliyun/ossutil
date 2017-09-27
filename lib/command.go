@@ -393,7 +393,7 @@ func (cmd *Command) ossGetObjectMetaRetry(bucket *oss.Bucket, object string) (ht
 	}
 }
 
-func (cmd *Command) objectStatistic(bucket *oss.Bucket, cloudURL CloudURL, monitor Monitorer) {
+func (cmd *Command) objectStatistic(bucket *oss.Bucket, cloudURL CloudURL, monitor Monitorer, pattern string) {
 	if monitor == nil {
 		return
 	}
@@ -407,7 +407,12 @@ func (cmd *Command) objectStatistic(bucket *oss.Bucket, cloudURL CloudURL, monit
 			return
 		}
 
-		monitor.updateScanNum(int64(len(lor.Objects)))
+		if pattern == DefaultNonePattern {
+			monitor.updateScanNum(int64(len(lor.Objects)))
+		} else {
+			objs := filterObjectFromListResultWithPattern(lor, pattern)
+			monitor.updateScanNum(int64(len(objs)))
+		}
 
 		marker = oss.Marker(lor.NextMarker)
 		if !lor.IsTruncated {
