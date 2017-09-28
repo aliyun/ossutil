@@ -203,7 +203,7 @@ func (mc *MakeBucketCommand) RunCommand() error {
 }
 
 func (mc *MakeBucketCommand) getACL(aclStr, language string) (oss.ACLType, error) {
-	acl, err := mc.checkACL(aclStr)
+	acl, err := mc.command.checkACL(aclStr, bucketACL)
 	if err != nil {
 		if language == LEnglishLanguage {
 			fmt.Printf("Invalid acl: %s\n", aclStr)
@@ -215,25 +215,9 @@ func (mc *MakeBucketCommand) getACL(aclStr, language string) (oss.ACLType, error
 		if _, err := fmt.Scanln(&aclStr); err != nil {
 			return "", fmt.Errorf("invalid acl: %s, please check", aclStr)
 		}
-		acl, err = mc.checkACL(aclStr)
+		acl, err = mc.command.checkACL(aclStr, bucketACL)
 	}
 	return acl, err
-}
-
-func (mc *MakeBucketCommand) checkACL(acl string) (oss.ACLType, error) {
-	list := bucketACLList
-
-	for _, acll := range list {
-		if acl == string(acll) {
-			return acll, nil
-		}
-		for _, aclll := range aclMap[acll] {
-			if acl == aclll {
-				return acll, nil
-			}
-		}
-	}
-	return "", fmt.Errorf("invalid acl: %s, please check", acl)
 }
 
 func (mc *MakeBucketCommand) ossCreateBucketRetry(client *oss.Client, bucket string, options ...oss.Option) error {

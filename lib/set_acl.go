@@ -2,6 +2,7 @@ package lib
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
@@ -108,6 +109,8 @@ ACL：
     此时不支持--bucket选项，即ossutil不支持同时设置bucket和其中objects的acl，如有需要，请分开操作。
     如果--force选项被指定，则不会进行询问提示。如果用户在命令行中缺失acl信息，会进入交互模式，询问
     用户的acl信息。
+        如果指定了--include/--exclude选项，ossutil会查找所有匹配pattern的objects，批量设置。
+        --include和--exclude选项说明，请参考cp命令帮助。
 `,
 
 	sampleText: ` 
@@ -116,6 +119,8 @@ ACL：
     (2)ossutil set-acl oss://bucket1/obj1 private 
 
     (3)ossutil set-acl oss://bucket1/obj default -r
+       ossutil set-acl oss://bucket1/obj default -r --include "*.jpg"
+       ossutil set-acl oss://bucket1/obj default -r --exclude "*.jpg"
 
     (4)ossutil set-acl oss://bucket1/%e4%b8%ad%e6%96%87 default --encoding-type url
 `,
@@ -184,6 +189,9 @@ Usage：
     acl on bucket an objects inside simultaneously is not supported. If --force option 
     is specified, ossutil will not show prompt question. If acl information is missed, 
     ossutil will enter interactive mode and ask you for it. 
+        If --include/--exclude option is specified, ossutil will search for pattern-matching 
+    objects and set meta on those objects.
+        --include and --exclude option, please refer cp command help.
 `,
 
 	sampleText: ` 
@@ -192,6 +200,8 @@ Usage：
     (2)ossutil set-acl oss://bucket1/obj1 private 
 
     (3)ossutil set-acl oss://bucket1/obj default -r
+       ossutil set-acl oss://bucket1/obj default -r --include "*.jpg"
+       ossutil set-acl oss://bucket1/obj default -r --exclude "*.jpg"
 
     (4)ossutil set-acl oss://bucket1/%e4%b8%ad%e6%96%87 default --encoding-type url
 `,
@@ -202,6 +212,7 @@ type SetACLCommand struct {
 	monitor  Monitor //Put first for atomic op on some fileds
 	command  Command
 	saOption batchOptionType
+	filters  []filterOptionType
 }
 
 var setACLCommand = SetACLCommand{
@@ -219,6 +230,8 @@ var setACLCommand = SetACLCommand{
 			OptionForce,
 			OptionEncodingType,
 			OptionConfigFile,
+			OptionInclude,
+			OptionExclude,
 			OptionEndpoint,
 			OptionAccessKeyID,
 			OptionAccessKeySecret,
@@ -252,8 +265,18 @@ func (sc *SetACLCommand) RunCommand() error {
 	toBucket, _ := GetBool(OptionBucket, sc.command.options)
 	force, _ := GetBool(OptionForce, sc.command.options)
 	routines, _ := GetInt(OptionRoutines, sc.command.options)
-
 	encodingType, _ := GetString(OptionEncodingType, sc.command.options)
+
+	var res bool
+	res, sc.filters = getFilter(os.Args)
+	if !res {
+		return fmt.Errorf("--include or --exclude does not support format containing dir info")
+	}
+
+	if !recursive && len(sc.filters) > 0 {
+		return fmt.Errorf("--include or --exclude only work with --recursive")
+	}
+
 	cloudURL, err := CloudURLFromString(sc.command.args[0], encodingType)
 	if err != nil {
 		return err
@@ -312,27 +335,25 @@ func (sc *SetACLCommand) getACL(aclType setACLType, recursive bool) (oss.ACLType
 		}
 	}
 
-	return sc.checkACL(acl, aclType)
+	return sc.command.checkACL(acl, aclType)
 }
 
-func (sc *SetACLCommand) checkACL(acl string, aclType setACLType) (oss.ACLType, error) {
-	var list []oss.ACLType
+func (cmd *Command) checkACL(acl string, aclType setACLType) (oss.ACLType, error) {
 	if aclType == bucketACL {
-		list = bucketACLList
-	} else {
-		list = objectACLList
-	}
-
-	for _, acll := range list {
-		if acl == string(acll) {
-			return acll, nil
-		}
-		for _, aclll := range aclMap[acll] {
-			if acl == aclll {
-				return acll, nil
+		for _, item := range bucketACLList {
+			if acl == string(item) {
+				return item, nil
 			}
 		}
+	} else {
+		for _, item := range objectACLList {
+			if acl == string(item) {
+				return item, nil
+			}
+		}
+
 	}
+
 	return "", fmt.Errorf("invalid acl: %s, please check", acl)
 }
 
@@ -408,8 +429,8 @@ func (sc *SetACLCommand) setObjectACLs(bucket *oss.Bucket, cloudURL CloudURL, ac
 	chObjects := make(chan string, ChannelBuf)
 	chError := make(chan error, routines+1)
 	chListError := make(chan error, 1)
-	go sc.command.objectStatistic(bucket, cloudURL, &sc.monitor)
-	go sc.command.objectProducer(bucket, cloudURL, chObjects, chListError)
+	go sc.command.objectStatistic(bucket, cloudURL, &sc.monitor, sc.filters)
+	go sc.command.objectProducer(bucket, cloudURL, chObjects, chListError, sc.filters)
 	for i := 0; int64(i) < routines; i++ {
 		go sc.setObjectACLConsumer(bucket, acl, chObjects, chError)
 	}

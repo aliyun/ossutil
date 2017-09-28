@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"reflect"
 	"strconv"
 	"strings"
 	"testing"
@@ -620,6 +621,86 @@ func (s *OssutilCommandSuite) rawCPWithArgs(args []string, recursive, force, upd
 	return showElapse, err
 }
 
+func (s *OssutilCommandSuite) createTestFiles(dir, subdir string, c *C, contents map[string]string) []string {
+	// Create dirs
+	err := os.MkdirAll(dir, 0755)
+	c.Assert(err, IsNil)
+
+	err = os.MkdirAll(dir+string(os.PathSeparator)+subdir, 0755)
+	c.Assert(err, IsNil)
+
+	filenames := make([]string, 0)
+
+	// Create files
+	num := 3
+	for i := 1020; i < 1020+num; i++ {
+		filename := fmt.Sprintf("testfile%d.txt", i)
+		content := fmt.Sprintf("include测试文件：%d内容", i)
+		filenames = append(filenames, filename)
+		contents[filename] = content
+		filename = dir + "/" + filename
+		s.createFile(filename, content, c)
+	}
+
+	num = 2
+	for i := 2; i < 2+num; i++ {
+		filename := fmt.Sprintf("test%d.jpg", i)
+		content := fmt.Sprintf("include test jpg\n%dcontent", i)
+		filenames = append(filenames, filename)
+		contents[filename] = content
+		filename = dir + "/" + filename
+		s.createFile(filename, content, c)
+	}
+
+	num = 2
+	for i := 103; i < 103+num; i++ {
+		filename := fmt.Sprintf("testfile%d.txt", i)
+		filename = subdir + "/" + filename
+		content := fmt.Sprintf("include测试文件：%d内容", i)
+		filenames = append(filenames, filename)
+		contents[filename] = content
+		filename = dir + "/" + filename
+		s.createFile(filename, content, c)
+	}
+	filename := subdir + "/" + "my.rtf"
+	content := fmt.Sprintf("include测试文件：%s内容", "my.rtf")
+	filenames = append(filenames, filename)
+	contents[filename] = content
+	filename = dir + "/" + filename
+	s.createFile(filename, content, c)
+
+	return filenames
+}
+
+func (s *OssutilCommandSuite) rawCPWithFilter(args []string, recursive, force, update bool, threshold int64, cpDir string, cmdline []string, meta, acl string) (bool, error) {
+	command := "cp"
+	str := ""
+	thre := strconv.FormatInt(threshold, 10)
+	routines := strconv.Itoa(Routines)
+	partSize := strconv.FormatInt(DefaultPartSize, 10)
+
+	options := OptionMapType{
+		"endpoint":         &str,
+		"accessKeyID":      &str,
+		"accessKeySecret":  &str,
+		"stsToken":         &str,
+		"configFile":       &configFile,
+		"recursive":        &recursive,
+		"force":            &force,
+		"update":           &update,
+		"bigfileThreshold": &thre,
+		"checkpointDir":    &cpDir,
+		"routines":         &routines,
+		"partSize":         &partSize,
+		"meta":             &meta,
+		"acl":              &acl,
+	}
+	os.Args = cmdline
+	showElapse, err := cm.RunCommand(command, args, options)
+	os.Args = []string{}
+	return showElapse, err
+}
+
 func (s *OssutilCommandSuite) rawCPWithOutputDir(srcURL, destURL string, recursive, force, update bool, threshold int64, outputDir string) (bool, error) {
 	command := "cp"
 	str := ""
@@ -841,6 +922,29 @@ func (s *OssutilCommandSuite) rawSetACLWithArgs(args []string, recursive, bucket
 	return showElapse, err
 }
 
+func (s *OssutilCommandSuite) rawSetAclWithFilter(args []string, recursive, force bool, cmdline []string) (bool, error) {
+	command := "set-acl"
+	str := ""
+	routines := strconv.Itoa(Routines)
+
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"stsToken":        &str,
+		"configFile":      &configFile,
+		"routines":        &routines,
+		"recursive":       &recursive,
+		"bucket":          false,
+		"force":           &force,
+	}
+
+	os.Args = cmdline
+	showElapse, err := cm.RunCommand(command, args, options)
+	os.Args = []string{}
+	return showElapse, err
+}
+
 func (s *OssutilCommandSuite) initSetACL(bucket, object, acl string, recursive, tobucket, force bool) error {
 	args := []string{CloudURLToString(bucket, object), acl}
 	str := ""
@@ -935,6 +1039,110 @@ func (s *OssutilCommandSuite) rawSetMetaWithArgs(args []string, update, delete, 
 	}
 	showElapse, err := cm.RunCommand(command, args, options)
 	return showElapse, err
+}
+
+func (s *OssutilCommandSuite) rawSetMetaWithPattern(bucket, object, meta string, update, delete, recursive, force bool, language, pattern string) (bool, error) {
+	args := []string{CloudURLToString(bucket, object), meta}
+	showElapse, err := s.rawSetMetaWithArgsWithPattern(args, update, delete, recursive, force, language, pattern)
+	return showElapse, err
+}
+
+func (s *OssutilCommandSuite) rawSetMetaWithArgsWithPattern(args []string, update, delete, recursive, force bool, language, pattern string) (bool, error) {
+	command := "set-meta"
+	str := ""
+	routines := strconv.Itoa(Routines)
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"stsToken":        &str,
+		"configFile":      &configFile,
+		"update":          &update,
+		"delete":          &delete,
+		"recursive":       &recursive,
+		"force":           &force,
+		"routines":        &routines,
+		"language":        &language,
+		"include":         &pattern,
+	}
+	showElapse, err := cm.RunCommand(command, args, options)
+	return showElapse, err
+}
+
+func (s *OssutilCommandSuite) rawSetMetaWithFilter(args []string, update, delete, recursive, force bool, language string, cmdline []string) (bool, error) {
+	command := "set-meta"
+	str := ""
+	routines := strconv.Itoa(Routines)
+
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"stsToken":        &str,
+		"configFile":      &configFile,
+		"update":          &update,
+		"delete":          &delete,
+		"recursive":       &recursive,
+		"force":           &force,
+		"routines":        &routines,
+		"language":        &language,
+	}
+
+	os.Args = cmdline
+	showElapse, err := cm.RunCommand(command, args, options)
+	os.Args = []string{}
+	return showElapse, err
+}
+
+func (s *OssutilCommandSuite) createTestObjects(dir, subdir, bucketStr string, c *C) []string {
+	// Create dirs
+	err := os.MkdirAll(dir, 0755)
+	c.Assert(err, IsNil)
+
+	err = os.MkdirAll(dir+string(os.PathSeparator)+subdir, 0755)
+	c.Assert(err, IsNil)
+
+	objs := make([]string, 0)
+
+	// Create files
+	num := 3
+	for i := 1020; i < 1020+num; i++ {
+		filename := fmt.Sprintf("testfile%d.txt", i)
+		objs = append(objs, filename)
+		filename = dir + "/" + filename
+		s.createFile(filename, filename, c)
+	}
+
+	num = 2
+	for i := 2; i < 2+num; i++ {
+		filename := fmt.Sprintf("test%d.jpg", i)
+		objs = append(objs, filename)
+		filename = dir + "/" + filename
+		s.createFile(filename, filename, c)
+	}
+
+	num = 2
+	for i := 103; i < 103+num; i++ {
+		filename := fmt.Sprintf("testfile%d.txt", i)
+		filename = subdir + "/" + filename
+		objs = append(objs, filename)
+		filename = dir + "/" + filename
+		s.createFile(filename, filename, c)
+	}
+	filename := subdir + "/" + "my.rtf"
+	objs = append(objs, filename)
+	filename = dir + "/" + filename
+	s.createFile(filename, filename, c)
+
+	// Upload these files
+	args := []string{dir, bucketStr}
+	showElapse, err := s.rawCPWithArgs(args, true, true, false, DefaultBigFileThreshold, CheckpointDir)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	time.Sleep(1 * time.Second)
+
+	return objs
 }
 
 func (s *OssutilCommandSuite) setObjectMeta(bucket, object, meta string, update, delete, recursive, force bool, c *C) {
@@ -1452,4 +1660,812 @@ func (s *OssutilCommandSuite) TestNeedConfig(c *C) {
 	c.Assert(err, IsNil)
 
 	c.Assert(copyCommand.command.needConfigFile(), Equals, false)
+}
+
+func getFilesFromChanToArray(chFiles <-chan fileInfoType) []fileInfoType {
+	files := make([]fileInfoType, 0)
+	for f := range chFiles {
+		files = append(files, f)
+	}
+	return files
+}
+
+func matchFiltersForFiles(files []fileInfoType, filters []filterOptionType) []fileInfoType {
+	if len(filters) == 0 {
+		return files
+	}
+
+	vsf := make([]fileInfoType, 0)
+
+	for i, filter := range filters {
+		if filter.name == IncludePrompt {
+			res := filterFilesWithInclude(files, filter.pattern)
+			for _, v := range res {
+				if containsInFileSlice(vsf, v) {
+					continue
+				}
+				vsf = append(vsf, v)
+			}
+		} else {
+			if i == 0 {
+				vsf = append(vsf, filterFilesWithExclude(files, filter.pattern)...)
+			} else {
+				vsf = filterFilesWithExclude(vsf, filter.pattern)
+			}
+		}
+	}
+
+	return vsf
+}
+
+func makeFileChanFromArray(files []fileInfoType, chFiles chan<- fileInfoType) {
+	for _, f := range files {
+		chFiles <- f
+	}
+}
+
+func filterFilesFromChanWithPatterns(chFiles <-chan fileInfoType, filters []filterOptionType, dstFiles chan<- fileInfoType) {
+	files := getFilesFromChanToArray(chFiles)
+	vsf := matchFiltersForFiles(files, filters)
+	makeFileChanFromArray(vsf, dstFiles)
+	defer close(dstFiles)
+}
+
+func (s *OssutilCommandSuite) TestFilter(c *C) {
+	var strs = []string{"peach", "apple", "pear", "plum"}
+
+	res := filter(strs, func(v string) bool { return strings.Contains(v, "e") })
+	var expect = []string{"peach", "apple", "pear"}
+	same := reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	expect = []string{"peach"}
+	res = filter(strs, func(v string) bool { return strings.Contains(v, "h") })
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	suffix := ".txt"
+	strs = []string{"a.jpg", "b.txt", "c.txt", "d"}
+	expect = []string{"b.txt", "c.txt"}
+	res = filter(strs, func(v string) bool { return strings.HasSuffix(v, suffix) })
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+}
+
+func (s *OssutilCommandSuite) TestFilter2(c *C) {
+	strs := []string{"aa.jpg", "bb.txt", "cc.txt", "dd"}
+
+	expect := []string{"bb.txt", "cc.txt"}
+	res := filter2(strs, ".txt", strings.HasSuffix)
+	same := reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	expect = []string{"aa.jpg"}
+	res = filter2(strs, ".jpg", strings.HasSuffix)
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	expect = []string{"aa.jpg", "bb.txt", "cc.txt", "dd"}
+	res = filter2(strs, "", strings.HasSuffix)
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+}
+
+func (s *OssutilCommandSuite) TestFilterStr(c *C) {
+	str := "aa.jpg"
+	res := filterStr(str, ".jpg", strings.HasSuffix)
+	c.Assert(res, Equals, true)
+
+	res = filterStr(str, ".txt", strings.HasSuffix)
+	c.Assert(res, Equals, false)
+}
+
+func (s *OssutilCommandSuite) TestFilterStrWithPattern(c *C) {
+	str := "aabb1234ccdd.jpg"
+	res := filterStrWithPattern(str, "*.jpg")
+	c.Assert(res, Equals, true)
+
+	res = filterStrWithPattern(str, "aaa*dd*")
+	c.Assert(res, Equals, false)
+}
+
+func (s *OssutilCommandSuite) TestFilterStrsWithPattern(c *C) {
+	strs := []string{"test1.jpg", "test8.txt", "test18.txt", "testfile"}
+
+	expect := []string{"test8.txt", "test18.txt"}
+	res := filterStrsWithPattern(strs, "*.txt")
+	same := reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	expect = []string{"test1.jpg"}
+	res = filterStrsWithPattern(strs, "*.jpg")
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	expect = []string{"test8.txt", "test18.txt"}
+	res = filterStrsWithPattern(strs, "te*8.*xt")
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+}
+
+func (s *OssutilCommandSuite) TestFilterObjectsFromListResultWithPattern(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	num := 5
+	for i := 0; i < num; i++ {
+		object := fmt.Sprintf("TestPattern_%d.txt", i)
+		s.putObject(bucketName, object, uploadFileName, c)
+
+		object = fmt.Sprintf("TestPattern_%d.jpg", i)
+		s.putObject(bucketName, object, uploadFileName, c)
+	}
+
+	err := s.initSetMeta(bucketName, "TestPattern", "", true, false, true, true, DefaultLanguage)
+	c.Assert(err, IsNil)
+
+	bucket, err := setMetaCommand.command.ossBucket(bucketName)
+	c.Assert(err, IsNil)
+
+	lor, err := bucket.ListObjects()
+	c.Assert(err, IsNil)
+
+	objs := filterObjectsFromListResultWithPattern(lor, "*.txt")
+	for _, obj := range objs {
+		c.Assert(strings.HasSuffix(obj, ".txt"), Equals, true)
+	}
+
+	expect := []string{"TestPattern_4.jpg", "TestPattern_4.txt"}
+	objs = filterObjectsFromListResultWithPattern(lor, "*att*4*")
+	same := reflect.DeepEqual(objs, expect)
+	c.Assert(same, Equals, true)
+
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestFilterObjectsFromChanWithPattern(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	num := 5
+	chObjects := make(chan string, ChannelBuf)
+	for i := 0; i < num; i++ {
+		object := fmt.Sprintf("Test_Pattern_%d.txt", i)
+		s.putObject(bucketName, object, uploadFileName, c)
+		chObjects <- object
+
+		object = fmt.Sprintf("Test_Pattern_%d.jpg", i)
+		s.putObject(bucketName, object, uploadFileName, c)
+		chObjects <- object
+	}
+	close(chObjects)
+
+	chObjs := make(chan string, ChannelBuf)
+	filterObjectsFromChanWithPattern(chObjects, "*Pat*[1-3]*.jpg", chObjs)
+
+	expect := []string{"Test_Pattern_1.jpg", "Test_Pattern_2.jpg", "Test_Pattern_3.jpg"}
+	objs := []string{}
+	for obj := range chObjs {
+		objs = append(objs, obj)
+	}
+	same := reflect.DeepEqual(objs, expect)
+	c.Assert(same, Equals, true)
+
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestGetFilter(c *C) {
+	//e.g., ossutil cp oss://tempb4/ . -rf --include "*.txt" --exclude "*.jpg"
+	cmdline := []string{"ossutil", "cp", "oss://tempb4", ".", "-rf", "--include", "*.txt", "--exclude", "*.jpg"}
+	expect := []filterOptionType{{"--include", "*.txt"}, {"--exclude", "*.jpg"}}
+	res, fts := getFilter(cmdline)
+	same := reflect.DeepEqual(fts, expect)
+	c.Assert(same, Equals, true)
+
+	cmdline = []string{"ossutil", "cp", "oss://tempb4", ".", "-rf", "--include", "/*.txt"}
+	res, fts = getFilter(cmdline)
+	c.Assert(res, Equals, false)
+
+	cmdline = []string{"ossutil", "cp", "oss://tempb4", ".", "-rf", "--include", "*/*.txt"}
+	res, fts = getFilter(cmdline)
+	c.Assert(res, Equals, false)
+
+	cmdline = []string{"ossutil", "cp", "oss://tempb4", ".", "-rf", "--include", "bin/*.txt"}
+	res, fts = getFilter(cmdline)
+	c.Assert(res, Equals, false)
+
+	cmdline = []string{"ossutil", "cp", "oss://tempb4", ".", "-rf", "--include", "/*/*.txt"}
+	res, fts = getFilter(cmdline)
+	c.Assert(res, Equals, false)
+
+	cmdline = []string{"ossutil", "cp", "oss://tempb4", ".", "-rf", "--include", "/usr/bin/*.txt"}
+	res, fts = getFilter(cmdline)
+	c.Assert(res, Equals, false)
+
+	cmdline = []string{"ossutil", "cp", "oss://tempb4", ".", "-rf", "--exclude", "/*.txt"}
+	res, fts = getFilter(cmdline)
+	c.Assert(res, Equals, false)
+
+	cmdline = []string{"ossutil", "cp", "oss://tempb4", ".", "-rf", "--exclude", "*/*.txt"}
+	res, fts = getFilter(cmdline)
+	c.Assert(res, Equals, false)
+
+	cmdline = []string{"ossutil", "cp", "oss://tempb4", ".", "-rf", "--exclude", "bin/*.txt"}
+	res, fts = getFilter(cmdline)
+	c.Assert(res, Equals, false)
+
+	cmdline = []string{"ossutil", "cp", "oss://tempb4", ".", "-rf", "--exclude", "/*/*.txt"}
+	res, fts = getFilter(cmdline)
+	c.Assert(res, Equals, false)
+
+	cmdline = []string{"ossutil", "cp", "oss://tempb4", ".", "-rf", "--exclude", "/usr/bin/*.txt"}
+	res, fts = getFilter(cmdline)
+	c.Assert(res, Equals, false)
+
+	cmdline = []string{"ossutil", "cp", "oss://tempb4", ".", "-rf", "--exclude", "bin/*.txt", "--include", "/usr/bin/*.txt"}
+	res, fts = getFilter(cmdline)
+	c.Assert(res, Equals, false)
+
+	cmdline = []string{"ossutil", "cp", "oss://tempb4", ".", "-rf", "--exclude", "/*/*.txt", "--include", "/*/*.txt"}
+	res, fts = getFilter(cmdline)
+	c.Assert(res, Equals, false)
+}
+
+func (s *OssutilCommandSuite) TestContainsInStrsSlice(c *C) {
+	strs := []string{"dir1/my.rtf", "dir1/testfile103.txt", "testfile1021.txt"}
+
+	tar := "dir1/my.rtf"
+	res := containsInStrsSlice(strs, tar)
+	c.Assert(res, Equals, true)
+
+	tar = "dir1/myxx.rtf"
+	res = containsInStrsSlice(strs, tar)
+	c.Assert(res, Equals, false)
+
+	strs = []string{}
+
+	tar = "dir1/testfile103.txt"
+	res = containsInStrsSlice(strs, tar)
+	c.Assert(res, Equals, false)
+}
+
+func (s *OssutilCommandSuite) TestFilterSingleStr(c *C) {
+	res := filterSingleStr("test18.txt", "*.txt", true)
+	c.Assert(res, Equals, true)
+
+	res = filterSingleStr("test28.txt", "te*8.*xt", true)
+	c.Assert(res, Equals, true)
+
+	res = filterSingleStr("test28.txt", "t8.*xt", true)
+	c.Assert(res, Equals, false)
+
+	res = filterSingleStr("test28.txt", "*.txt", false)
+	c.Assert(res, Equals, false)
+
+	res = filterSingleStr("test28.txt", "t8.*xt", false)
+	c.Assert(res, Equals, true)
+}
+
+func (s *OssutilCommandSuite) TestFilterStrsWithInclude(c *C) {
+	strs := []string{"test11.jpg", "test18.txt", "test28.txt", "testfile"}
+
+	expect := []string{"test18.txt", "test28.txt"}
+	res := filterStrsWithInclude(strs, "*.txt")
+	same := reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	expect = []string{"test11.jpg"}
+	res = filterStrsWithInclude(strs, "*.jpg")
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	expect = []string{"test18.txt", "test28.txt"}
+	res = filterStrsWithInclude(strs, "te*8.*xt")
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+}
+
+func (s *OssutilCommandSuite) TestFilterStrsWithExclude(c *C) {
+	strs := []string{"test11.jpg", "test18.txt", "test28.txt", "testfile"}
+
+	expect := []string{"test11.jpg", "testfile"}
+	res := filterStrsWithExclude(strs, "*.txt")
+	same := reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	expect = []string{"test18.txt", "test28.txt", "testfile"}
+	res = filterStrsWithExclude(strs, "*.jpg")
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	expect = []string{"test11.jpg", "testfile"}
+	res = filterStrsWithExclude(strs, "te*8.*xt")
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+}
+
+func (s *OssutilCommandSuite) TestMatchFiltersForStr(c *C) {
+	fts := []filterOptionType{{"--include", "*.txt"}}
+	res := matchFiltersForStr("test18.txt", fts)
+	c.Assert(res, Equals, true)
+	res = matchFiltersForStr("test28.txt", fts)
+	c.Assert(res, Equals, true)
+	res = matchFiltersForStr("test11.jpg", fts)
+	c.Assert(res, Equals, false)
+	res = matchFiltersForStr("testfile", fts)
+	c.Assert(res, Equals, false)
+
+	fts = []filterOptionType{{"--exclude", "*.txt"}}
+	res = matchFiltersForStr("test11.jpg", fts)
+	c.Assert(res, Equals, true)
+	res = matchFiltersForStr("testfile", fts)
+	c.Assert(res, Equals, true)
+	res = matchFiltersForStr("test18.txt", fts)
+	c.Assert(res, Equals, false)
+	res = matchFiltersForStr("test28.txt", fts)
+	c.Assert(res, Equals, false)
+
+	fts = []filterOptionType{{"--include", "*.txt"}, {"--exclude", "*2*"}}
+	res = matchFiltersForStr("test18.txt", fts)
+	c.Assert(res, Equals, true)
+	res = matchFiltersForStr("test11.jpg", fts)
+	c.Assert(res, Equals, false)
+	res = matchFiltersForStr("test28.txt", fts)
+	c.Assert(res, Equals, false)
+	res = matchFiltersForStr("testfile", fts)
+	c.Assert(res, Equals, false)
+
+	fts = []filterOptionType{}
+	res = matchFiltersForStr("test18.txt", fts)
+	c.Assert(res, Equals, true)
+	res = matchFiltersForStr("test28.txt", fts)
+	c.Assert(res, Equals, true)
+	res = matchFiltersForStr("test11.jpg", fts)
+	c.Assert(res, Equals, true)
+	res = matchFiltersForStr("testfile", fts)
+	c.Assert(res, Equals, true)
+}
+
+func (s *OssutilCommandSuite) TestMatchFiltersForStrs(c *C) {
+	strs := []string{"test11.jpg", "test18.txt", "test28.txt", "testfile"}
+
+	fts := []filterOptionType{{"--include", "*.txt"}}
+	res := matchFiltersForStrs(strs, fts)
+	expect := []string{"test18.txt", "test28.txt"}
+	same := reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	fts = []filterOptionType{{"--exclude", "*.txt"}}
+	res = matchFiltersForStrs(strs, fts)
+	expect = []string{"test11.jpg", "testfile"}
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	fts = []filterOptionType{{"--include", "*.txt"}, {"--exclude", "*2*"}}
+	res = matchFiltersForStrs(strs, fts)
+	expect = []string{"test18.txt"}
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	fts = []filterOptionType{}
+	res = matchFiltersForStrs(strs, fts)
+	expect = []string{"test11.jpg", "test18.txt", "test28.txt", "testfile"}
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+}
+
+func (s *OssutilCommandSuite) TestMatchFiltersForStrsInArray(c *C) {
+	strs := []string{"test11.jpg", "test18.txt", "test28.txt", "testfile"}
+
+	fts := []filterOptionType{{"--include", "*.txt"}}
+	res := matchFiltersForStrsInArray(strs, fts)
+	expect := []string{"test18.txt", "test28.txt"}
+	same := reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	fts = []filterOptionType{{"--exclude", "*.txt"}}
+	res = matchFiltersForStrsInArray(strs, fts)
+	expect = []string{"test11.jpg", "testfile"}
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	fts = []filterOptionType{{"--include", "*.txt"}, {"--exclude", "*2*"}}
+	res = matchFiltersForStrsInArray(strs, fts)
+	expect = []string{"test18.txt"}
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	fts = []filterOptionType{}
+	res = matchFiltersForStrsInArray(strs, fts)
+	expect = []string{"test11.jpg", "test18.txt", "test28.txt", "testfile"}
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+}
+
+func (s *OssutilCommandSuite) TestDoesSingleFileMatchPatterns(c *C) {
+	filename := "testfile12.jpg"
+	fts := []filterOptionType{}
+	res := doesSingleFileMatchPatterns(filename, fts)
+	c.Assert(res, Equals, true)
+
+	filename = "dir1/testfile1.txt"
+	fts = []filterOptionType{{"--include", "*.txt"}}
+	res = doesSingleFileMatchPatterns(filename, fts)
+	c.Assert(res, Equals, true)
+
+	filename = "dir1/testfile2.txt"
+	fts = []filterOptionType{{"--include", "*.jpg"}}
+	res = doesSingleFileMatchPatterns(filename, fts)
+	c.Assert(res, Equals, false)
+
+	filename = "dir1/testfile3.txt"
+	fts = []filterOptionType{{"--exclude", "*.txt"}}
+	res = doesSingleFileMatchPatterns(filename, fts)
+	c.Assert(res, Equals, false)
+
+	filename = "dir1/testfile3.txt"
+	fts = []filterOptionType{{"--include", "*.txt"}, {"--include", "*.jpg"}, {"--exclude", "*2*"}}
+	res = doesSingleFileMatchPatterns(filename, fts)
+	c.Assert(res, Equals, true)
+}
+
+func (s *OssutilCommandSuite) TestGetFilesFromChanToArray(c *C) {
+	chFiles := make(chan fileInfoType, ChannelBuf)
+	chFiles <- fileInfoType{"dir1/my.rtf", "testdir/"}
+	chFiles <- fileInfoType{"dir1/testfile103.txt", "testdir/"}
+	chFiles <- fileInfoType{"testfile1021.txt", "testdir/"}
+	close(chFiles)
+
+	files := getFilesFromChanToArray(chFiles)
+	expect := []fileInfoType{{"dir1/my.rtf", "testdir/"}, {"dir1/testfile103.txt", "testdir/"}, {"testfile1021.txt", "testdir/"}}
+	same := reflect.DeepEqual(files, expect)
+	c.Assert(same, Equals, true)
+
+	chFiles2 := make(chan fileInfoType, ChannelBuf)
+	close(chFiles2)
+	files = getFilesFromChanToArray(chFiles2)
+	expect = []fileInfoType{}
+	same = reflect.DeepEqual(files, expect)
+	c.Assert(same, Equals, true)
+}
+
+func (s *OssutilCommandSuite) TestcontainsInFileSlice(c *C) {
+	files := []fileInfoType{{"dir1/my.rtf", "testdir/"}, {"dir1/testfile103.txt", "testdir/"}, {"testfile1021.txt", "testdir/"}}
+
+	tar := fileInfoType{"dir1/my.rtf", "testdir/"}
+	res := containsInFileSlice(files, tar)
+	c.Assert(res, Equals, true)
+
+	tar = fileInfoType{"dir1/myxx.rtf", "testdirxx/"}
+	res = containsInFileSlice(files, tar)
+	c.Assert(res, Equals, false)
+
+	files = []fileInfoType{}
+
+	tar = fileInfoType{"dir1/testfile103.txt", "testdir/"}
+	res = containsInFileSlice(files, tar)
+	c.Assert(res, Equals, false)
+}
+
+func (s *OssutilCommandSuite) TestFilterFilesWithInclude(c *C) {
+	files := []fileInfoType{{"dir1/my.rtf", "testdir/"}, {"dir1/testfile103.txt", "testdir/"}, {"testfile1021.txt", "testdir/"}}
+
+	expect := []fileInfoType{{"dir1/my.rtf", "testdir/"}}
+	res := filterFilesWithInclude(files, "*.rtf")
+	same := reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	expect = []fileInfoType{}
+	res = filterFilesWithInclude(files, "*.jpg")
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	expect = []fileInfoType{{"dir1/my.rtf", "testdir/"}, {"dir1/testfile103.txt", "testdir/"}, {"testfile1021.txt", "testdir/"}}
+	res = filterFilesWithInclude(files, "*")
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	expect = []fileInfoType{}
+	res = filterFilesWithInclude(files, "")
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+}
+
+func (s *OssutilCommandSuite) TestFilterFilesWithExclude(c *C) {
+	files := []fileInfoType{{"dir1/my.rtf", "testdir/"}, {"dir1/testfile103.txt", "testdir/"}, {"testfile1021.txt", "testdir/"}}
+
+	expect := []fileInfoType{{"dir1/testfile103.txt", "testdir/"}, {"testfile1021.txt", "testdir/"}}
+	res := filterFilesWithExclude(files, "*.rtf")
+	same := reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	expect = []fileInfoType{}
+	res = filterFilesWithExclude(files, "*")
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	expect = []fileInfoType{{"dir1/my.rtf", "testdir/"}, {"dir1/testfile103.txt", "testdir/"}, {"testfile1021.txt", "testdir/"}}
+	res = filterFilesWithExclude(files, "")
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+}
+
+func (s *OssutilCommandSuite) TestMatchFiltersForFiles(c *C) {
+	files := []fileInfoType{{"dir1/my.rtf", "testdir/"}, {"dir1/testfile103.txt", "testdir/"}, {"testfile1021.txt", "testdir/"}}
+
+	fts := []filterOptionType{}
+	res := matchFiltersForFiles(files, fts)
+	expect := []fileInfoType{{"dir1/my.rtf", "testdir/"}, {"dir1/testfile103.txt", "testdir/"}, {"testfile1021.txt", "testdir/"}}
+	same := reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	fts = []filterOptionType{{"--include", "*.txt"}}
+	res = matchFiltersForFiles(files, fts)
+	expect = []fileInfoType{{"dir1/testfile103.txt", "testdir/"}, {"testfile1021.txt", "testdir/"}}
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	fts = []filterOptionType{{"--exclude", "*.txt"}}
+	res = matchFiltersForFiles(files, fts)
+	expect = []fileInfoType{{"dir1/my.rtf", "testdir/"}}
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	fts = []filterOptionType{{"--include", "*.txt"}, {"--exclude", "*2*"}}
+	res = matchFiltersForFiles(files, fts)
+	expect = []fileInfoType{{"dir1/testfile103.txt", "testdir/"}}
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+}
+
+func (s *OssutilCommandSuite) TestMakeFileChanFromArray(c *C) {
+	files := []fileInfoType{{"dir1/my.rtf", "testdir/"}, {"dir1/testfile103.txt", "testdir/"}, {"testfile1021.txt", "testdir/"}}
+	chFiles := make(chan fileInfoType, ChannelBuf)
+	makeFileChanFromArray(files, chFiles)
+	defer close(chFiles)
+	c.Assert(len(chFiles), Equals, len(files))
+
+	files = []fileInfoType{}
+	chFiles2 := make(chan fileInfoType, ChannelBuf)
+	makeFileChanFromArray(files, chFiles2)
+	defer close(chFiles2)
+	c.Assert(len(chFiles2), Equals, len(files))
+}
+
+func (s *OssutilCommandSuite) TestFilterFileFromChanWithPatterns(c *C) {
+	chFiles := make(chan fileInfoType, ChannelBuf)
+	chFiles <- fileInfoType{"dir1/my.rtf", "testdir/"}
+	chFiles <- fileInfoType{"dir1/testfile103.txt", "testdir/"}
+	chFiles <- fileInfoType{"testfile1021.txt", "testdir/"}
+	close(chFiles)
+	fts := []filterOptionType{{"--include", "*.txt"}}
+	dstFiles := make(chan fileInfoType, ChannelBuf)
+	filterFilesFromChanWithPatterns(chFiles, fts, dstFiles)
+	c.Assert(len(dstFiles), Equals, 2)
+
+	chFiles = make(chan fileInfoType, ChannelBuf)
+	chFiles <- fileInfoType{"dir1/my.rtf", "testdir/"}
+	chFiles <- fileInfoType{"dir1/testfile103.txt", "testdir/"}
+	chFiles <- fileInfoType{"testfile1021.txt", "testdir/"}
+	close(chFiles)
+	fts = []filterOptionType{{"--exclude", "*.txt"}}
+	dstFiles2 := make(chan fileInfoType, ChannelBuf)
+	filterFilesFromChanWithPatterns(chFiles, fts, dstFiles2)
+	c.Assert(len(dstFiles2), Equals, 1)
+
+	chFiles = make(chan fileInfoType, ChannelBuf)
+	chFiles <- fileInfoType{"dir1/my.rtf", "testdir/"}
+	chFiles <- fileInfoType{"dir1/testfile103.txt", "testdir/"}
+	chFiles <- fileInfoType{"testfile1021.txt", "testdir/"}
+	close(chFiles)
+	fts = []filterOptionType{{"--include", "*.txt"}, {"--exclude", "*2*"}}
+	dstFiles3 := make(chan fileInfoType, ChannelBuf)
+	filterFilesFromChanWithPatterns(chFiles, fts, dstFiles3)
+	c.Assert(len(dstFiles3), Equals, 1)
+}
+
+func (s *OssutilCommandSuite) TestDoesSingleObjectMatchPatterns(c *C) {
+	object := "testfile3.jpg"
+	fts := []filterOptionType{}
+	res := doesSingleObjectMatchPatterns(object, fts)
+	c.Assert(res, Equals, true)
+
+	object = "dir1/testfile1.txt"
+	fts = []filterOptionType{{"--include", "*.txt"}}
+	res = doesSingleObjectMatchPatterns(object, fts)
+	c.Assert(res, Equals, true)
+
+	object = "dir1/testfile2.txt"
+	fts = []filterOptionType{{"--include", "*.jpg"}}
+	res = doesSingleObjectMatchPatterns(object, fts)
+	c.Assert(res, Equals, false)
+
+	object = "dir1/testfile3.txt"
+	fts = []filterOptionType{{"--exclude", "*.txt"}}
+	res = doesSingleObjectMatchPatterns(object, fts)
+	c.Assert(res, Equals, false)
+
+	object = "dir1/testfile4.txt"
+	fts = []filterOptionType{{"--include", "*.txt"}, {"--include", "*.jpg"}, {"--exclude", "*2*"}}
+	res = doesSingleObjectMatchPatterns(object, fts)
+	c.Assert(res, Equals, true)
+}
+
+func (s *OssutilCommandSuite) TestGetObjectsFromChanToArray(c *C) {
+	chObjects := make(chan objectInfoType, ChannelBuf)
+	chObjects <- objectInfoType{"dir1/my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)}
+	chObjects <- objectInfoType{"dir1/testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)}
+	chObjects <- objectInfoType{"testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)}
+	close(chObjects)
+
+	files := getObjectsFromChanToArray(chObjects)
+	expect := []objectInfoType{
+		{"dir1/my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)},
+		{"dir1/testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)},
+		{"testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)},
+	}
+	same := reflect.DeepEqual(files, expect)
+	c.Assert(same, Equals, true)
+
+	chObjects2 := make(chan objectInfoType, ChannelBuf)
+	close(chObjects2)
+	files = getObjectsFromChanToArray(chObjects2)
+	expect = []objectInfoType{}
+	same = reflect.DeepEqual(files, expect)
+	c.Assert(same, Equals, true)
+}
+
+func (s *OssutilCommandSuite) TestFilterObjectsWithInclude(c *C) {
+	objects := []objectInfoType{
+		{"dir1/my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)},
+		{"dir1/testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)},
+		{"testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)},
+	}
+
+	expect := []objectInfoType{{"dir1/my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)}}
+	res := filterObjectsWithInclude(objects, "*.rtf")
+	same := reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	expect = []objectInfoType{}
+	res = filterObjectsWithInclude(objects, "*.jpg")
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	expect = []objectInfoType{
+		{"dir1/my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)},
+		{"dir1/testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)},
+		{"testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)},
+	}
+	res = filterObjectsWithInclude(objects, "*")
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	expect = []objectInfoType{}
+	res = filterObjectsWithInclude(objects, "")
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+}
+
+func (s *OssutilCommandSuite) TestFilterObjectsWithExclude(c *C) {
+	objects := []objectInfoType{
+		{"dir1/my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)},
+		{"dir1/testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)},
+		{"testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)},
+	}
+
+	expect := []objectInfoType{
+		{"dir1/testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)},
+		{"testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)},
+	}
+	res := filterObjectsWithExclude(objects, "*.rtf")
+	same := reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	expect = []objectInfoType{}
+	res = filterObjectsWithExclude(objects, "*")
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	expect = []objectInfoType{
+		{"dir1/my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)},
+		{"dir1/testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)},
+		{"testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)},
+	}
+	res = filterObjectsWithExclude(objects, "")
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+}
+
+func (s *OssutilCommandSuite) TestMatchFiltersForObjects(c *C) {
+	objects := []objectInfoType{
+		{"dir1/my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)},
+		{"dir1/testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)},
+		{"testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)},
+	}
+
+	fts := []filterOptionType{}
+	res := matchFiltersForObjects(objects, fts)
+	expect := []objectInfoType{
+		{"dir1/my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)},
+		{"dir1/testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)},
+		{"testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)},
+	}
+	same := reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	fts = []filterOptionType{{"--include", "*.txt"}}
+	res = matchFiltersForObjects(objects, fts)
+	expect = []objectInfoType{
+		{"dir1/testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)},
+		{"testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)},
+	}
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	fts = []filterOptionType{{"--exclude", "*.txt"}}
+	res = matchFiltersForObjects(objects, fts)
+	expect = []objectInfoType{
+		{"dir1/my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)},
+	}
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	fts = []filterOptionType{{"--include", "*.txt"}, {"--exclude", "*2*"}}
+	res = matchFiltersForObjects(objects, fts)
+	expect = []objectInfoType{
+		{"dir1/testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)},
+	}
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+}
+
+func (s *OssutilCommandSuite) TestMakeObjectChanFromArray(c *C) {
+	objects := []objectInfoType{
+		{"dir1/my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)},
+		{"dir1/testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)},
+		{"testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)},
+	}
+	chObjects := make(chan objectInfoType, ChannelBuf)
+	makeObjectChanFromArray(objects, chObjects)
+	defer close(chObjects)
+	c.Assert(len(chObjects), Equals, len(objects))
+
+	objects = []objectInfoType{}
+	chObjects2 := make(chan objectInfoType, ChannelBuf)
+	makeObjectChanFromArray(objects, chObjects2)
+	defer close(chObjects2)
+	c.Assert(len(chObjects2), Equals, len(objects))
+}
+
+func (s *OssutilCommandSuite) TestFilterObjectFromChanWithPatterns(c *C) {
+	chObjects := make(chan objectInfoType, ChannelBuf)
+	chObjects <- objectInfoType{"dir1/my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)}
+	chObjects <- objectInfoType{"dir1/testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)}
+	chObjects <- objectInfoType{"testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)}
+	close(chObjects)
+	fts := []filterOptionType{{"--include", "*.txt"}}
+	dstObjects := make(chan objectInfoType, ChannelBuf)
+	filterObjectsFromChanWithPatterns(chObjects, fts, dstObjects)
+	c.Assert(len(dstObjects), Equals, 2)
+
+	chObjects = make(chan objectInfoType, ChannelBuf)
+	chObjects <- objectInfoType{"dir1/my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)}
+	chObjects <- objectInfoType{"dir1/testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)}
+	chObjects <- objectInfoType{"testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)}
+	close(chObjects)
+	fts = []filterOptionType{{"--exclude", "*.txt"}}
+	dstObjects2 := make(chan objectInfoType, ChannelBuf)
+	filterObjectsFromChanWithPatterns(chObjects, fts, dstObjects2)
+	c.Assert(len(dstObjects2), Equals, 1)
+
+	chObjects = make(chan objectInfoType, ChannelBuf)
+	chObjects <- objectInfoType{"dir1/my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)}
+	chObjects <- objectInfoType{"dir1/testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)}
+	chObjects <- objectInfoType{"testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)}
+	close(chObjects)
+	fts = []filterOptionType{{"--include", "*.txt"}, {"--exclude", "*2*"}}
+	dstObjects3 := make(chan objectInfoType, ChannelBuf)
+	filterObjectsFromChanWithPatterns(chObjects, fts, dstObjects3)
+	c.Assert(len(dstObjects3), Equals, 1)
 }

@@ -26,6 +26,9 @@ func (s *OssutilCommandSuite) TestUpdate(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, false)
 
+	cmdline := []string{"ossutil", "update"}
+	os.Args = cmdline
+
 	showElapse, err = s.rawUpdate(true, "ch")
 
 	showElapse, err = s.rawUpdate(true, "En")
@@ -50,6 +53,10 @@ func (s *OssutilCommandSuite) TestUpdateDiffVersion(c *C) {
 	version, err = updateCommand.getLastestVersion()
 	c.Assert(err, IsNil)
 	vVersion = version
+
+	cmdline := []string{"ossutil", "update"}
+	os.Args = cmdline
+
 	err = updateCommand.RunCommand()
 	c.Assert(err, IsNil)
 	vVersion = version + "123"

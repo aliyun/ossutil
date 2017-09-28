@@ -255,8 +255,8 @@ func (rc *RestoreCommand) restoreObjects(bucket *oss.Bucket, cloudURL CloudURL) 
 	chObjects := make(chan string, ChannelBuf)
 	chError := make(chan error, routines+1)
 	chListError := make(chan error, 1)
-	go rc.command.objectStatistic(bucket, cloudURL, &rc.monitor)
-	go rc.command.objectProducer(bucket, cloudURL, chObjects, chListError)
+	go rc.command.objectStatistic(bucket, cloudURL, &rc.monitor, []filterOptionType{})
+	go rc.command.objectProducer(bucket, cloudURL, chObjects, chListError, []filterOptionType{})
 	for i := 0; int64(i) < routines; i++ {
 		go rc.restoreConsumer(bucket, cloudURL, chObjects, chError)
 	}
