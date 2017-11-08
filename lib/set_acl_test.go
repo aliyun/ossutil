@@ -515,3 +515,686 @@ func (s *OssutilCommandSuite) TestBatchSetACLErrorBreak(c *C) {
 
 	s.removeBucket(bucketName, true, c)
 }
+
+// Test: --include '*.txt'
+func (s *OssutilCommandSuite) TestSetObjectAclWithNormalInclude(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	bucketStr := CloudURLToString(bucketName, "")
+
+	dir := "test-setacl-inc1"
+	subdir := "subdir"
+	objs := s.createTestObjects(dir, subdir, bucketStr, c)
+
+	// Set acl
+	// e.g., ossutil set-acl oss://tempb4/ public-read -rf --include "*.txt"
+	acl := "public-read"
+	args := []string{bucketStr, acl}
+	cmdline := []string{"ossutil", "set-acl", bucketStr, acl, "-rf", "--include", "*.txt"}
+
+	showElapse, err := s.rawSetAclWithFilter(args, true, true, cmdline)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	inFiles := filterStrsWithInclude(objs, "*.txt")
+	exFiles := filterStrsWithExclude(objs, "*.txt")
+
+	for _, obj := range inFiles {
+		objectStat := s.getStat(bucketName, obj, c)
+		c.Assert(objectStat["ACL"], Equals, "public-read")
+	}
+
+	for _, obj := range exFiles {
+		objectStat := s.getStat(bucketName, obj, c)
+		c.Assert(objectStat["ACL"], Equals, "default")
+	}
+
+	os.RemoveAll(dir)
+	s.removeBucket(bucketName, true, c)
+}
+
+// Test: --include '*2??txt'
+func (s *OssutilCommandSuite) TestSetObjectAclWithMarkInclude(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	bucketStr := CloudURLToString(bucketName, "")
+
+	dir := "test-setacl-inc2"
+	subdir := "subdir"
+	objs := s.createTestObjects(dir, subdir, bucketStr, c)
+
+	// Set acl
+	// e.g., ossutil set-acl oss://tempb4/ public-read -rf --include "*2??txt"
+	acl := "public-read-write"
+	args := []string{bucketStr, acl}
+	cmdline := []string{"ossutil", "set-acl", bucketStr, acl, "-rf", "--include", "*2??txt"}
+
+	showElapse, err := s.rawSetAclWithFilter(args, true, true, cmdline)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	inFiles := filterStrsWithInclude(objs, "*2??txt")
+	exFiles := filterStrsWithExclude(objs, "*2??txt")
+
+	for _, obj := range inFiles {
+		objectStat := s.getStat(bucketName, obj, c)
+		c.Assert(objectStat["ACL"], Equals, "public-read-write")
+	}
+
+	for _, obj := range exFiles {
+		objectStat := s.getStat(bucketName, obj, c)
+		c.Assert(objectStat["ACL"], Equals, "default")
+	}
+
+	os.RemoveAll(dir)
+	s.removeBucket(bucketName, true, c)
+}
+
+// Test: --include '*[0-9]?jpg'
+func (s *OssutilCommandSuite) TestSetObjectAclWithSequenceInclude(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	bucketStr := CloudURLToString(bucketName, "")
+
+	dir := "test-setacl-inc3"
+	subdir := "subdir"
+	objs := s.createTestObjects(dir, subdir, bucketStr, c)
+
+	acl := "public-read-write"
+	args := []string{bucketStr, acl}
+	cmdline := []string{"ossutil", "set-acl", bucketStr, acl, "-rf", "--include", "*[0-9]?jpg"}
+
+	showElapse, err := s.rawSetAclWithFilter(args, true, true, cmdline)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	inFiles := filterStrsWithInclude(objs, "*[0-9]?jpg")
+	exFiles := filterStrsWithExclude(objs, "*[0-9]?jpg")
+
+	for _, obj := range inFiles {
+		objectStat := s.getStat(bucketName, obj, c)
+		c.Assert(objectStat["ACL"], Equals, "public-read-write")
+	}
+
+	for _, obj := range exFiles {
+		objectStat := s.getStat(bucketName, obj, c)
+		c.Assert(objectStat["ACL"], Equals, "default")
+	}
+
+	os.RemoveAll(dir)
+	s.removeBucket(bucketName, true, c)
+}
+
+// Test: --include '*[^0-3]?txt'
+func (s *OssutilCommandSuite) TestSetObjectAclWithNonSequenceInclude(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	bucketStr := CloudURLToString(bucketName, "")
+
+	dir := "test-setacl-inc4"
+	subdir := "subdir"
+	objs := s.createTestObjects(dir, subdir, bucketStr, c)
+
+	acl := "public-read-write"
+	args := []string{bucketStr, acl}
+	cmdline := []string{"ossutil", "set-acl", bucketStr, acl, "-rf", "--include", "*[^0-3]?txt"}
+
+	showElapse, err := s.rawSetAclWithFilter(args, true, true, cmdline)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	inFiles := filterStrsWithInclude(objs, "*[^0-3]?txt")
+	exFiles := filterStrsWithExclude(objs, "*[^0-3]?txt")
+
+	for _, obj := range inFiles {
+		objectStat := s.getStat(bucketName, obj, c)
+		c.Assert(objectStat["ACL"], Equals, "public-read-write")
+	}
+
+	for _, obj := range exFiles {
+		objectStat := s.getStat(bucketName, obj, c)
+		c.Assert(objectStat["ACL"], Equals, "default")
+	}
+
+	os.RemoveAll(dir)
+	s.removeBucket(bucketName, true, c)
+}
+
+// Test: --include '*[!0-3]?txt'
+func (s *OssutilCommandSuite) TestSetObjectAclWithNonSequenceIncludeEx(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	bucketStr := CloudURLToString(bucketName, "")
+
+	dir := "test-setacl-inc4-ex"
+	subdir := "subdir"
+	objs := s.createTestObjects(dir, subdir, bucketStr, c)
+
+	acl := "public-read-write"
+	args := []string{bucketStr, acl}
+	cmdline := []string{"ossutil", "set-acl", bucketStr, acl, "-rf", "--include", "*[!0-3]?txt"}
+
+	showElapse, err := s.rawSetAclWithFilter(args, true, true, cmdline)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	res, filters := getFilter(cmdline)
+	c.Assert(res, Equals, true)
+	inFiles := filterStrsWithInclude(objs, filters[0].pattern)
+	exFiles := filterStrsWithExclude(objs, filters[0].pattern)
+
+	for _, obj := range inFiles {
+		objectStat := s.getStat(bucketName, obj, c)
+		c.Assert(objectStat["ACL"], Equals, "public-read-write")
+	}
+
+	for _, obj := range exFiles {
+		objectStat := s.getStat(bucketName, obj, c)
+		c.Assert(objectStat["ACL"], Equals, "default")
+	}
+
+	os.RemoveAll(dir)
+	s.removeBucket(bucketName, true, c)
+}
+
+// Test: repeated --include '*.jpg'
+func (s *OssutilCommandSuite) TestSetObjectAclWithRepeatedInclude(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	bucketStr := CloudURLToString(bucketName, "")
+
+	dir := "test-setacl-inc5"
+	subdir := "subdir"
+	objs := s.createTestObjects(dir, subdir, bucketStr, c)
+
+	acl := "public-read-write"
+	args := []string{bucketStr, acl}
+	cmdline := []string{"ossutil", "set-acl", bucketStr, acl, "-rf", "--include", "*.jpg", "--include", "*.jpg"}
+
+	showElapse, err := s.rawSetAclWithFilter(args, true, true, cmdline)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	inFiles := filterStrsWithInclude(objs, "*.jpg")
+	exFiles := filterStrsWithExclude(objs, "*.jpg")
+
+	for _, obj := range inFiles {
+		objectStat := s.getStat(bucketName, obj, c)
+		c.Assert(objectStat["ACL"], Equals, "public-read-write")
+	}
+
+	for _, obj := range exFiles {
+		objectStat := s.getStat(bucketName, obj, c)
+		c.Assert(objectStat["ACL"], Equals, "default")
+	}
+
+	os.RemoveAll(dir)
+	s.removeBucket(bucketName, true, c)
+}
+
+// Test: --include '*'
+func (s *OssutilCommandSuite) TestSetObjectAclWithFullInclude(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	bucketStr := CloudURLToString(bucketName, "")
+
+	dir := "test-setacl-inc6"
+	subdir := "subdir"
+	objs := s.createTestObjects(dir, subdir, bucketStr, c)
+
+	acl := "public-read-write"
+	args := []string{bucketStr, acl}
+	cmdline := []string{"ossutil", "set-acl", bucketStr, acl, "-rf", "--include", "*"}
+
+	showElapse, err := s.rawSetAclWithFilter(args, true, true, cmdline)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	inFiles := filterStrsWithInclude(objs, "*")
+	exFiles := filterStrsWithExclude(objs, "*")
+
+	for _, obj := range inFiles {
+		objectStat := s.getStat(bucketName, obj, c)
+		c.Assert(objectStat["ACL"], Equals, "public-read-write")
+	}
+
+	for _, obj := range exFiles {
+		objectStat := s.getStat(bucketName, obj, c)
+		c.Assert(objectStat["ACL"], Equals, "default")
+	}
+
+	os.RemoveAll(dir)
+	s.removeBucket(bucketName, true, c)
+}
+
+// Test: --exclude '*.txt'
+func (s *OssutilCommandSuite) TestSetObjectAclWithNormalExclude(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	bucketStr := CloudURLToString(bucketName, "")
+
+	dir := "test-setacl-exc-normal"
+	subdir := "subdir"
+	objs := s.createTestObjects(dir, subdir, bucketStr, c)
+
+	acl := "private"
+	args := []string{bucketStr, acl}
+	cmdline := []string{"ossutil", "set-acl", bucketStr, acl, "-rf", "--exclude", "*.txt"}
+
+	showElapse, err := s.rawSetAclWithFilter(args, true, true, cmdline)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	inFiles := filterStrsWithInclude(objs, "*.txt")
+	exFiles := filterStrsWithExclude(objs, "*.txt")
+
+	for _, obj := range exFiles {
+		objectStat := s.getStat(bucketName, obj, c)
+		c.Assert(objectStat["ACL"], Equals, "private")
+	}
+
+	for _, obj := range inFiles {
+		objectStat := s.getStat(bucketName, obj, c)
+		c.Assert(objectStat["ACL"], Equals, "default")
+	}
+
+	os.RemoveAll(dir)
+	s.removeBucket(bucketName, true, c)
+}
+
+// Test: --exclude '*2??txt'
+func (s *OssutilCommandSuite) TestSetObjectAclWithMarkExclude(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	bucketStr := CloudURLToString(bucketName, "")
+
+	dir := "test-setacl-exc-mark"
+	subdir := "subdir"
+	objs := s.createTestObjects(dir, subdir, bucketStr, c)
+
+	acl := "private"
+	args := []string{bucketStr, acl}
+	cmdline := []string{"ossutil", "set-acl", bucketStr, acl, "-rf", "--exclude", "*2??txt"}
+
+	showElapse, err := s.rawSetAclWithFilter(args, true, true, cmdline)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	inFiles := filterStrsWithInclude(objs, "*2??txt")
+	exFiles := filterStrsWithExclude(objs, "*2??txt")
+
+	for _, obj := range exFiles {
+		objectStat := s.getStat(bucketName, obj, c)
+		c.Assert(objectStat["ACL"], Equals, "private")
+	}
+
+	for _, obj := range inFiles {
+		objectStat := s.getStat(bucketName, obj, c)
+		c.Assert(objectStat["ACL"], Equals, "default")
+	}
+
+	os.RemoveAll(dir)
+	s.removeBucket(bucketName, true, c)
+}
+
+// Test: --exclude '*[0-9]?jpg'
+func (s *OssutilCommandSuite) TestSetObjectAclWithSequenceExclude(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	bucketStr := CloudURLToString(bucketName, "")
+
+	dir := "test-setacl-exc-sequence"
+	subdir := "subdir"
+	objs := s.createTestObjects(dir, subdir, bucketStr, c)
+
+	acl := "private"
+	args := []string{bucketStr, acl}
+	cmdline := []string{"ossutil", "set-acl", bucketStr, acl, "-rf", "--exclude", "*[0-9]?jpg"}
+
+	showElapse, err := s.rawSetAclWithFilter(args, true, true, cmdline)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	inFiles := filterStrsWithInclude(objs, "*[0-9]?jpg")
+	exFiles := filterStrsWithExclude(objs, "*[0-9]?jpg")
+
+	for _, obj := range exFiles {
+		objectStat := s.getStat(bucketName, obj, c)
+		c.Assert(objectStat["ACL"], Equals, "private")
+	}
+
+	for _, obj := range inFiles {
+		objectStat := s.getStat(bucketName, obj, c)
+		c.Assert(objectStat["ACL"], Equals, "default")
+	}
+
+	os.RemoveAll(dir)
+	s.removeBucket(bucketName, true, c)
+}
+
+// Test: --exclude '*[^0-3]?txt'
+func (s *OssutilCommandSuite) TestSetObjectAclWithNonSequenceExclude(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	bucketStr := CloudURLToString(bucketName, "")
+
+	dir := "test-setacl-exc-nonsequence"
+	subdir := "subdir"
+	objs := s.createTestObjects(dir, subdir, bucketStr, c)
+
+	acl := "private"
+	args := []string{bucketStr, acl}
+	cmdline := []string{"ossutil", "set-acl", bucketStr, acl, "-rf", "--exclude", "*[^0-3]?txt"}
+
+	showElapse, err := s.rawSetAclWithFilter(args, true, true, cmdline)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	inFiles := filterStrsWithInclude(objs, "*[^0-3]?txt")
+	exFiles := filterStrsWithExclude(objs, "*[^0-3]?txt")
+	for _, obj := range exFiles {
+		objectStat := s.getStat(bucketName, obj, c)
+		c.Assert(objectStat["ACL"], Equals, "private")
+	}
+
+	for _, obj := range inFiles {
+		objectStat := s.getStat(bucketName, obj, c)
+		c.Assert(objectStat["ACL"], Equals, "default")
+	}
+
+	os.RemoveAll(dir)
+	s.removeBucket(bucketName, true, c)
+}
+
+// Test: --exclude '*[!0-3]?txt'
+func (s *OssutilCommandSuite) TestSetObjectAclWithNonSequenceExcludeEx(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	bucketStr := CloudURLToString(bucketName, "")
+
+	dir := "test-setacl-exc-nonsequence-ex"
+	subdir := "subdir"
+	objs := s.createTestObjects(dir, subdir, bucketStr, c)
+
+	acl := "private"
+	args := []string{bucketStr, acl}
+	cmdline := []string{"ossutil", "set-acl", bucketStr, acl, "-rf", "--exclude", "*[!0-3]?txt"}
+
+	showElapse, err := s.rawSetAclWithFilter(args, true, true, cmdline)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	res, filters := getFilter(cmdline)
+	c.Assert(res, Equals, true)
+	inFiles := filterStrsWithInclude(objs, filters[0].pattern)
+	exFiles := filterStrsWithExclude(objs, filters[0].pattern)
+
+	for _, obj := range exFiles {
+		objectStat := s.getStat(bucketName, obj, c)
+		c.Assert(objectStat["ACL"], Equals, "private")
+	}
+
+	for _, obj := range inFiles {
+		objectStat := s.getStat(bucketName, obj, c)
+		c.Assert(objectStat["ACL"], Equals, "default")
+	}
+
+	os.RemoveAll(dir)
+	s.removeBucket(bucketName, true, c)
+}
+
+// Test: repeated --exclude '*.jpg'
+func (s *OssutilCommandSuite) TestSetObjectAclWithRepeatedExclude(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	bucketStr := CloudURLToString(bucketName, "")
+
+	dir := "test-setacl-exc-repeated"
+	subdir := "subdir"
+	objs := s.createTestObjects(dir, subdir, bucketStr, c)
+
+	acl := "private"
+	args := []string{bucketStr, acl}
+	cmdline := []string{"ossutil", "set-acl", bucketStr, acl, "-rf", "--exclude", "*.jpg", "--exclude", "*.jpg"}
+
+	showElapse, err := s.rawSetAclWithFilter(args, true, true, cmdline)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	inFiles := filterStrsWithInclude(objs, "*.jpg")
+	exFiles := filterStrsWithExclude(objs, "*.jpg")
+
+	for _, obj := range exFiles {
+		objectStat := s.getStat(bucketName, obj, c)
+		c.Assert(objectStat["ACL"], Equals, "private")
+	}
+
+	for _, obj := range inFiles {
+		objectStat := s.getStat(bucketName, obj, c)
+		c.Assert(objectStat["ACL"], Equals, "default")
+	}
+
+	os.RemoveAll(dir)
+	s.removeBucket(bucketName, true, c)
+}
+
+// Test: --exclude '*'
+func (s *OssutilCommandSuite) TestSetObjectAclWithFullExclude(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	bucketStr := CloudURLToString(bucketName, "")
+
+	dir := "test-setacl-exc-full"
+	subdir := "subdir"
+	objs := s.createTestObjects(dir, subdir, bucketStr, c)
+
+	acl := "private"
+	args := []string{bucketStr, acl}
+	cmdline := []string{"ossutil", "set-acl", bucketStr, acl, "-rf", "--exclude", "*"}
+
+	showElapse, err := s.rawSetAclWithFilter(args, true, true, cmdline)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	inFiles := filterStrsWithInclude(objs, "*")
+	exFiles := filterStrsWithExclude(objs, "*")
+
+	for _, obj := range exFiles {
+		objectStat := s.getStat(bucketName, obj, c)
+		c.Assert(objectStat["ACL"], Equals, "private")
+	}
+
+	for _, obj := range inFiles {
+		objectStat := s.getStat(bucketName, obj, c)
+		c.Assert(objectStat["ACL"], Equals, "default")
+	}
+
+	os.RemoveAll(dir)
+	s.removeBucket(bucketName, true, c)
+}
+
+// Test: --include '*.txt' --exclude "*2*"
+func (s *OssutilCommandSuite) TestSetObjectAclWithMultiNormalIncludeExclude(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	bucketStr := CloudURLToString(bucketName, "")
+
+	dir := "test-setacl-inc-exc-normal"
+	subdir := "subdir"
+	objs := s.createTestObjects(dir, subdir, bucketStr, c)
+
+	acl := "public-read"
+	args := []string{bucketStr, acl}
+	cmdline := []string{"ossutil", "set-acl", bucketStr, acl, "-rf", "--include", "*.txt", "--exclude", "*2*"}
+
+	showElapse, err := s.rawSetAclWithFilter(args, true, true, cmdline)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	fts := []filterOptionType{{"--include", "*.txt"}, {"--exclude", "*2*"}}
+	matchedObjs := matchFiltersForStrs(objs, fts)
+
+	for _, obj := range matchedObjs {
+		objectStat := s.getStat(bucketName, obj, c)
+		c.Assert(objectStat["ACL"], Equals, "public-read")
+	}
+
+	for _, obj := range objs {
+		if !containsInStrsSlice(matchedObjs, obj) {
+			objectStat := s.getStat(bucketName, obj, c)
+			c.Assert(objectStat["ACL"], Equals, "default")
+		}
+	}
+
+	os.RemoveAll(dir)
+	s.removeBucket(bucketName, true, c)
+}
+
+// Test repeated: --include '*.txt' --exclude "*2*" --include '*.txt' --exclude "*2*"
+func (s *OssutilCommandSuite) TestSetObjectAclWithMultiRepeatedIncludeExclude(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	bucketStr := CloudURLToString(bucketName, "")
+
+	dir := "test-setacl-inc-exc-normal"
+	subdir := "subdir"
+	objs := s.createTestObjects(dir, subdir, bucketStr, c)
+
+	acl := "public-read"
+	args := []string{bucketStr, acl}
+	cmdline := []string{"ossutil", "set-acl", bucketStr, acl, "-rf", "--include", "*.txt", "--exclude", "*2*", "--include", "*.txt", "--exclude", "*2*"}
+
+	showElapse, err := s.rawSetAclWithFilter(args, true, true, cmdline)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	fts := []filterOptionType{{"--include", "*.txt"}, {"--exclude", "*2*"}, {"--include", "*.txt"}, {"--exclude", "*2*"}}
+	matchedObjs := matchFiltersForStrs(objs, fts)
+
+	for _, obj := range matchedObjs {
+		objectStat := s.getStat(bucketName, obj, c)
+		c.Assert(objectStat["ACL"], Equals, "public-read")
+	}
+
+	for _, obj := range objs {
+		if !containsInStrsSlice(matchedObjs, obj) {
+			objectStat := s.getStat(bucketName, obj, c)
+			c.Assert(objectStat["ACL"], Equals, "default")
+		}
+	}
+
+	os.RemoveAll(dir)
+	s.removeBucket(bucketName, true, c)
+}
+
+// Test: --include '*' --exclude "*"
+func (s *OssutilCommandSuite) TestSetObjectAclWithMultiFullIncludeExclude(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	bucketStr := CloudURLToString(bucketName, "")
+
+	dir := "test-setacl-inc-exc-full"
+	subdir := "subdir"
+	objs := s.createTestObjects(dir, subdir, bucketStr, c)
+
+	acl := "public-read"
+	args := []string{bucketStr, acl}
+	cmdline := []string{"ossutil", "set-acl", bucketStr, acl, "-rf", "--include", "*", "--exclude", "*"}
+
+	showElapse, err := s.rawSetAclWithFilter(args, true, true, cmdline)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	fts := []filterOptionType{{"--include", "*"}, {"--exclude", "*"}}
+	matchedObjs := matchFiltersForStrs(objs, fts)
+
+	for _, obj := range matchedObjs {
+		objectStat := s.getStat(bucketName, obj, c)
+		c.Assert(objectStat["ACL"], Equals, "public-read")
+	}
+
+	for _, obj := range objs {
+		if !containsInStrsSlice(matchedObjs, obj) {
+			objectStat := s.getStat(bucketName, obj, c)
+			c.Assert(objectStat["ACL"], Equals, "default")
+		}
+	}
+
+	os.RemoveAll(dir)
+	s.removeBucket(bucketName, true, c)
+}
+
+// Test: --exclude '*' --include "*"
+func (s *OssutilCommandSuite) TestSetObjectAclWithMultiFullExcludeInclude(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	bucketStr := CloudURLToString(bucketName, "")
+
+	dir := "test-setacl-exc-inc-full"
+	subdir := "subdir"
+	objs := s.createTestObjects(dir, subdir, bucketStr, c)
+
+	acl := "public-read"
+	args := []string{bucketStr, acl}
+	cmdline := []string{"ossutil", "set-acl", bucketStr, acl, "-rf", "--exclude", "*", "--include", "*"}
+
+	showElapse, err := s.rawSetAclWithFilter(args, true, true, cmdline)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	fts := []filterOptionType{{"--exclude", "*"}, {"--include", "*"}}
+	matchedObjs := matchFiltersForStrs(objs, fts)
+
+	for _, obj := range matchedObjs {
+		objectStat := s.getStat(bucketName, obj, c)
+		c.Assert(objectStat["ACL"], Equals, "public-read")
+	}
+
+	for _, obj := range objs {
+		if !containsInStrsSlice(matchedObjs, obj) {
+			objectStat := s.getStat(bucketName, obj, c)
+			c.Assert(objectStat["ACL"], Equals, "default")
+		}
+	}
+
+	os.RemoveAll(dir)
+	s.removeBucket(bucketName, true, c)
+}
+
+// Nagetive test
+func (s *OssutilCommandSuite) TestSetObjectAclWithInvalidIncExc(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	bucketStr := CloudURLToString(bucketName, "")
+
+	dir := "test-setacl-invalid"
+	err := os.MkdirAll(dir, 0755)
+	c.Assert(err, IsNil)
+
+	subdir := "dir1"
+	err = os.MkdirAll(dir+string(os.PathSeparator)+subdir, 0755)
+	c.Assert(err, IsNil)
+
+	// e.g., ossutil set-acl oss://tempb4 public-read -f --exclude '*.txt'
+	acl := "public-read"
+	args := []string{bucketStr, acl}
+
+	cmdline := []string{"ossutil", "set-acl", bucketStr, acl, "-f", "--exclude", "*.txt"}
+	showElapse, err := s.rawSetAclWithFilter(args, false, true, cmdline)
+	c.Assert(showElapse, Equals, false)
+	c.Assert(err.Error() == "--include or --exclude only work with --recursive", Equals, true)
+
+	// e.g., ossutil set-acl oss://tempb4 private -f --include '*.txt' --exclude "*2*"
+	cmdline = []string{"ossutil", "set-acl", bucketStr, acl, "-f", "--include", "*.txt", "--exclude", "*2*"}
+	showElapse, err = s.rawSetAclWithFilter(args, false, true, cmdline)
+	c.Assert(showElapse, Equals, false)
+	c.Assert(err.Error() == "--include or --exclude only work with --recursive", Equals, true)
+
+	cmdline = []string{"ossutil", "set-acl", bucketStr, acl, "-f", "--include", "/*.txt", "--exclude", "*2*"}
+	showElapse, err = s.rawSetAclWithFilter(args, false, true, cmdline)
+	c.Assert(showElapse, Equals, false)
+	c.Assert(err.Error() == "--include or --exclude does not support format containing dir info", Equals, true)
+
+	os.RemoveAll(dir)
+	s.removeBucket(bucketName, true, c)
+}

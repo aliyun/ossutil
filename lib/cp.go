@@ -39,6 +39,8 @@ type copyOptionType struct {
 	snapshotPath string
 	vrange       string
 	encodingType string
+	options      []oss.Option
+	filters      []filterOptionType
 	threshold    int64
 	routines     int64
 	reporter     *Reporter
@@ -47,6 +49,11 @@ type copyOptionType struct {
 	force        bool
 	update       bool
 	ctnu         bool
+}
+
+type filterOptionType struct {
+	name    string
+	pattern string
 }
 
 type fileInfoType struct {
@@ -152,6 +159,58 @@ var specChineseCopy = SpecText{
     注意：ossutil不做report文件的维护工作，请自行查看及清理用户的report文件，避免产生
     过多的report文件。
 
+--include和--exclude选项
+
+    当指定--recursive选项时，可以指定该选项以指定规则筛选要操作的文件/object。默认情况下，
+    指定目录中所有项都包含在cp操作中。
+
+    规则支持以下格式：
+    *：匹配索引
+    ?：匹配单个字符
+    [sequence]：匹配sequence的任意字符
+    [!sequence]：匹配不在sequence的任意字符
+    注意：规则不支持带目录的格式，e.g.，--include "/usr/*/test/*.jpg"。
+
+    --include和--exclude可以出现多次。当多个规则出现时，这些规则按从左往右的顺序应用。例如：
+    当前目录下包含3个文件：
+    testfile1.jpg
+    testfiel2.txt
+    testfile33.jpg
+
+    $ ossutil cp . oss://my-bucket/path --exclude '*.jpg'
+    上传testfile2.txt到oss://my-bucket/path/testfile2.txt
+
+    $ ossutil cp . oss://my-bucket/path --exclude '*.jpg' --include 'testfile*.jpg'
+    上传testfile1.jpg到oss://my-bucket/path/testfile1.jpg
+    上传testfile33.jpg到oss://my-bucket/path/testfile33.jpg
+    上传testfile2.txt到oss://my-bucket/path/testfile2.txt
+
+    $ ossutil cp . oss://my-bucket/path --exclude '*.jpg' --include 'testfile*.jpg' --exclude 'testfile?.jpg'
+    上传testfile2.txt到oss://my-bucket/path/testfile2.txt
+    上传testfile33.jpg到oss://my-bucket/path/testfile33.jpg
+
+--meta选项
+
+    该选项在上传文件的同时设置object的meta信息。当指定--recursive选项时，会设置所有上传的
+    objects的meta信息。
+	
+    可选的header列表如下：
+        ` + formatHeaderString(headerOptionMap, "\n        ") + `
+        以及以` + oss.HTTPHeaderOssMetaPrefix + `开头的header
+    	
+    注意：header不区分大小写，但value区分大小写。设置后将用指定的meta代替原来的meta。没有指定的
+    HTTP HEADER将保留，没有指定的user meta将会被删除。
+
+--acl选项
+
+    该选项在上传文件的同时设置object的acl信息。当指定--recursive选项时，会设置所有上传的
+    objects的acl信息。
+
+    object的acl有四种：
+        ` + formatACLString(objectACL, "\n        ") + `
+
+    acl的详细信息请参见：https://help.aliyun.com/document_detail/31867.html
+
 --output-dir选项
     
     该选项指定ossutil输出文件存放的目录，默认为：当前目录下的` + DefaultOutputDir + `目录。如果指定
@@ -231,7 +290,6 @@ var specChineseCopy = SpecText{
 
     如果指定该选项为url，则表示输入的object名和文件名都是经过url编码的。
 
-
 大文件断点续传：
 
     如果源文件大小超过--bigfile-threshold选项指定的大小（默认为100M），ossutil会认为该文件
@@ -291,8 +349,11 @@ var specChineseCopy = SpecText{
     ossutil支持批量文件迁移，在这种场景下，通常的使用方式是：
     （1）批量上传：
         ossutil cp your_dir oss://your_bucket -r -f -u
+        ossutil cp your_dir oss://your_bucket -r -f -u --include "*.jpg"
+        ossutil cp your_dir oss://your_bucket -r -f -u --exclude "*.html"
     （2）批量下载：
         ossutil cp oss://your_bucket your_dir -r -f -u
+        ossutil cp oss://your_bucket your_dir -r -f -u --include "*.jpg"
     （3）同region的Bucket间迁移：
         ossutil cp oss://your_src_bucket oss://your_dest_bucket -r -f -u
 
@@ -344,6 +405,8 @@ var specChineseCopy = SpecText{
         当src_url为单个文件时，如果dest_url的prefix为空或以/结尾，object名为：dest_url+object名去除所在父目录的路径。
                                否则，object名为：dest_url。
         当src_url为多个文件时，object名为：dest_url+源object名去除src_prefix。
+
+    以上三种用法中如果指定了--recursive选项，均可以使用--include或--exclude选项使用通配符的方式过滤要操作的文件。
 `,
 
 	sampleText: ` 
@@ -576,6 +639,70 @@ var specEnglishCopy = SpecText{
 
     Note: ossutil will not mainten the report file, please check and clear your output directory 
     regularlly to avoid too many report files in your output directory. 
+
+--include and --exclude option:
+
+    When --recursive is specified, these parameters perform pattern matching to either exclude or
+    include a particular file or object. By default, all files/objects are included.
+
+    The following pattern symbols are supported.
+    *: Matches everything
+    ?: Matches any single character
+    [sequence]: Matches any character in sequence
+    [!sequence]: Matches any character not in sequence
+    Note: does not support patterns containing directory info. e.g., --include "/usr/*/test/*.jpg" 
+
+    Any number of these parameters can be passed to a command. You can do this by providing an --exclude
+    or --include argument multiple times, e.g.,
+      --include "*.txt" --include "*.png". 
+    When there are multi filters, the rule is the filters that appear later in the command take precedence
+    over filters that appear earlier in the command. e.g.,
+
+    --exclude "*" --include "*.txt"
+    All files will be excluded from the command except for files ending with .txt
+
+    --include "*.txt" --exclude "*"
+    All files will be excluded from the command.
+
+    e.g., 3 files in current dir
+    testfile1.jpg
+    testfiel2.txt
+    testfile33.jpg
+
+    $ ossutil cp . oss://my-bucket/path --exclude '*.jpg'
+    upload testfile2.txt to oss://my-bucket/path/testfile2.txt
+
+    $ ossutil cp . oss://my-bucket/path --exclude '*.jpg' --include 'testfile*.jpg'
+    upload testfile1.jpg to oss://my-bucket/path/testfile1.jpg
+    upload testfile33.jpg to oss://my-bucket/path/testfile33.jpg
+    upload testfile2.txt to oss://my-bucket/path/testfile2.txt
+
+    $ ossutil cp . oss://my-bucket/path --exclude '*.jpg' --include 'testfile*.jpg' --exclude 'testfile?.jpg'
+    upload testfile2.txt to oss://my-bucket/path/testfile2.txt
+    upload testfile33.jpg to oss://my-bucket/path/testfile33.jpg
+
+--meta option
+
+    This option will set the specified objects' meta data. If --recursive option is specified, 
+    ossutil will set meta for all uploaded objects.  
+
+    ossutil supports following headers:
+        ` + formatHeaderString(headerOptionMap, "\n        ") + `
+        and headers starts with: ` + oss.HTTPHeaderOssMetaPrefix + `
+
+    Note: headers are case-insensitive, but value are case-sensitive. After setting, origin meta will be
+    replaced with specified meta. HTTP HEADER will be reserved if no speified value. User meta will be
+    deleted if no specified value.
+
+--acl option
+
+    This option will set acl on the specified objects. If --recursive option is specified, 
+    ossutil will set acl for all uploaded objects.  
+
+    ossutil support following objet acls:
+        ` + formatACLString(objectACL, "\n        ") + `
+
+    More information about acl see ACL Control in https://help.aliyun.com/document_detail/31867.html?spm=5176.doc31960.6.147.8dVwsh.
 
 --output-dir option
     
@@ -988,6 +1115,10 @@ var copyCommand = CopyCommand{
 			OptionCheckpointDir,
 			OptionRange,
 			OptionEncodingType,
+			OptionInclude,
+			OptionExclude,
+			OptionMeta,
+			OptionACL,
 			OptionConfigFile,
 			OptionEndpoint,
 			OptionAccessKeyID,
@@ -1032,6 +1163,18 @@ func (cc *CopyCommand) RunCommand() error {
 	cc.cpOption.snapshotPath, _ = GetString(OptionSnapshotPath, cc.command.options)
 	cc.cpOption.vrange, _ = GetString(OptionRange, cc.command.options)
 	cc.cpOption.encodingType, _ = GetString(OptionEncodingType, cc.command.options)
+	meta, _ := GetString(OptionMeta, cc.command.options)
+	acl, _ := GetString(OptionACL, cc.command.options)
+
+	var res bool
+	res, cc.cpOption.filters = getFilter(os.Args)
+	if !res {
+		return fmt.Errorf("--include or --exclude does not support format containing dir info")
+	}
+
+	if !cc.cpOption.recursive && len(cc.cpOption.filters) > 0 {
+		return fmt.Errorf("--include or --exclude only work with --recursive")
+	}
 
 	//get file list
 	srcURLList, err := cc.getStorageURLs(cc.command.args[0 : len(cc.command.args)-1])
@@ -1050,6 +1193,36 @@ func (cc *CopyCommand) RunCommand() error {
 	}
 	if err := cc.checkCopyOptions(opType); err != nil {
 		return err
+	}
+
+	cc.cpOption.options = []oss.Option{}
+	if meta != "" {
+		if opType == operationTypeGet {
+			return fmt.Errorf("No need to set meta for download")
+		}
+
+		headers, err := cc.command.parseHeaders(meta, false)
+		if err != nil {
+			return err
+		}
+
+		topts, err := cc.command.getOSSOptions(headerOptionMap, headers)
+		if err != nil {
+			return err
+		}
+		cc.cpOption.options = append(cc.cpOption.options, topts...)
+	}
+
+	if acl != "" {
+		if opType == operationTypeGet {
+			return fmt.Errorf("No need to set ACL for download")
+		}
+
+		var opAcl oss.ACLType
+		if opAcl, err = cc.command.checkACL(acl, objectACL); err != nil {
+			return err
+		}
+		cc.cpOption.options = append(cc.cpOption.options, oss.ObjectACL(opAcl))
 	}
 
 	// init reporter
@@ -1199,6 +1372,7 @@ func (cc *CopyCommand) uploadFiles(srcURLList []StorageURLer, destURL CloudURL) 
 	chListError := make(chan error, 1)
 	go cc.fileStatistic(srcURLList)
 	go cc.fileProducer(srcURLList, chFiles, chListError)
+
 	for i := 0; int64(i) < cc.cpOption.routines; i++ {
 		go cc.uploadConsumer(bucket, destURL, chFiles, chError)
 	}
@@ -1286,6 +1460,7 @@ func (cc *CopyCommand) getFileListStatistic(dpath string) error {
 
 		dpath = filepath.Clean(dpath)
 		fpath = filepath.Clean(fpath)
+
 		_, err = filepath.Rel(dpath, fpath)
 		if err != nil {
 			return fmt.Errorf("list file error: %s, info: %s", fpath, err.Error())
@@ -1297,7 +1472,10 @@ func (cc *CopyCommand) getFileListStatistic(dpath string) error {
 			}
 			return nil
 		}
-		cc.monitor.updateScanSizeNum(f.Size(), 1)
+
+		if doesSingleFileMatchPatterns(f.Name(), cc.cpOption.filters) {
+			cc.monitor.updateScanSizeNum(f.Size(), 1)
+		}
 		return nil
 	})
 	return err
@@ -1341,6 +1519,7 @@ func (cc *CopyCommand) getFileList(dpath string, chFiles chan<- fileInfoType) er
 		dpath = filepath.Clean(dpath)
 		fpath = filepath.Clean(fpath)
 		fileName, err := filepath.Rel(dpath, fpath)
+
 		if err != nil {
 			return fmt.Errorf("list file error: %s, info: %s", fpath, err.Error())
 		}
@@ -1355,7 +1534,11 @@ func (cc *CopyCommand) getFileList(dpath string, chFiles chan<- fileInfoType) er
 			}
 			return nil
 		}
-		chFiles <- fileInfoType{fileName, name}
+
+		if doesSingleFileMatchPatterns(fileName, cc.cpOption.filters) {
+			chFiles <- fileInfoType{fileName, name}
+		}
+
 		return nil
 	})
 	return err
@@ -1447,7 +1630,9 @@ func (cc *CopyCommand) uploadFile(bucket *oss.Bucket, destURL CloudURL, file fil
 	var listener *OssProgressListener = &OssProgressListener{&cc.monitor, 0, 0}
 	//decide whether to use resume upload
 	if f.Size() < cc.cpOption.threshold {
-		rerr = cc.ossUploadFileRetry(bucket, objectName, filePath, oss.Progress(listener))
+		options := cc.cpOption.options
+		options = append(options, oss.Progress(listener))
+		rerr = cc.ossUploadFileRetry(bucket, objectName, filePath, options...)
 		if err := cc.updateSnapshot(rerr, spath, srct); err != nil {
 			rerr = err
 		}
@@ -1459,7 +1644,9 @@ func (cc *CopyCommand) uploadFile(bucket *oss.Bucket, destURL CloudURL, file fil
 	partSize, rt := cc.preparePartOption(f.Size())
 	//checkpoint file
 	cp := oss.Checkpoint(true, cc.formatCPFileName(cc.cpOption.cpDir, absPath, CloudURLToString(bucket.BucketName, objectName)))
-	rerr = cc.ossResumeUploadRetry(bucket, objectName, filePath, partSize, oss.Routines(rt), cp, oss.Progress(listener))
+	options := cc.cpOption.options
+	options = append(options, oss.Routines(rt), cp, oss.Progress(listener))
+	rerr = cc.ossResumeUploadRetry(bucket, objectName, filePath, partSize, options...)
 	if err := cc.updateSnapshot(rerr, spath, srct); err != nil {
 		rerr = err
 	}
@@ -1525,7 +1712,7 @@ func (cc *CopyCommand) confirm(str string) bool {
 func (cc *CopyCommand) ossPutObjectRetry(bucket *oss.Bucket, objectName string, content string) error {
 	retryTimes, _ := GetInt(OptionRetryTimes, cc.command.options)
 	for i := 1; ; i++ {
-		err := bucket.PutObject(objectName, strings.NewReader(content))
+		err := bucket.PutObject(objectName, strings.NewReader(content), cc.cpOption.options...)
 		if err == nil {
 			return err
 		}
@@ -1871,10 +2058,10 @@ func (cc *CopyCommand) batchDownloadFiles(bucket *oss.Bucket, srcURL CloudURL, f
 	chListError := make(chan error, 1)
 	go cc.objectStatistic(bucket, srcURL)
 	go cc.objectProducer(bucket, srcURL, chObjects, chListError)
+
 	for i := 0; int64(i) < cc.cpOption.routines; i++ {
 		go cc.downloadConsumer(bucket, filePath, chObjects, chError)
 	}
-
 	return cc.waitRoutinueComplete(chError, chListError, opDownload)
 }
 
@@ -1890,7 +2077,9 @@ func (cc *CopyCommand) objectStatistic(bucket *oss.Bucket, cloudURL CloudURL) {
 			}
 
 			for _, object := range lor.Objects {
-				cc.monitor.updateScanSizeNum(cc.getRangeSize(object.Size), 1)
+				if doesSingleObjectMatchPatterns(object.Key, cc.cpOption.filters) {
+					cc.monitor.updateScanSizeNum(cc.getRangeSize(object.Size), 1)
+				}
 			}
 
 			pre = oss.Prefix(lor.Prefix)
@@ -1979,7 +2168,9 @@ func (cc *CopyCommand) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, chO
 		}
 
 		for _, object := range lor.Objects {
-			chObjects <- objectInfoType{object.Key, int64(object.Size), object.LastModified}
+			if doesSingleObjectMatchPatterns(object.Key, cc.cpOption.filters) {
+				chObjects <- objectInfoType{object.Key, int64(object.Size), object.LastModified}
+			}
 		}
 
 		pre = oss.Prefix(lor.Prefix)
@@ -2129,7 +2320,9 @@ func (cc *CopyCommand) copySingleFile(bucket *oss.Bucket, objectInfo objectInfoT
 	var listener *OssProgressListener = &OssProgressListener{&cc.monitor, 0, 0}
 	partSize, rt := cc.preparePartOption(size)
 	cp := oss.Checkpoint(true, cc.formatCPFileName(cc.cpOption.cpDir, CloudURLToString(srcURL.bucket, srcObject), CloudURLToString(destURL.bucket, destObject)))
-	return false, cc.ossResumeCopyRetry(srcURL.bucket, srcObject, destURL.bucket, destObject, partSize, oss.Routines(rt), cp, oss.Progress(listener)), 0, msg
+	options := cc.cpOption.options
+	options = append(options, oss.Routines(rt), cp, oss.Progress(listener), oss.MetadataDirective(oss.MetaReplace))
+	return false, cc.ossResumeCopyRetry(srcURL.bucket, srcObject, destURL.bucket, destObject, partSize, options...), 0, msg
 }
 
 func (cc *CopyCommand) makeCopyObjectName(srcObject, srcPrefix string, destURL CloudURL) string {
@@ -2175,8 +2368,10 @@ func (cc *CopyCommand) skipCopy(destURL CloudURL, destObject string, srct time.T
 
 func (cc *CopyCommand) ossCopyObjectRetry(bucket *oss.Bucket, objectName, destBucketName, destObjectName string) error {
 	retryTimes, _ := GetInt(OptionRetryTimes, cc.command.options)
+	options := cc.cpOption.options
+	options = append(options, oss.MetadataDirective(oss.MetaReplace))
 	for i := 1; ; i++ {
-		_, err := bucket.CopyObjectTo(destBucketName, destObjectName, objectName)
+		_, err := bucket.CopyObjectTo(destBucketName, destObjectName, objectName, options...)
 		if err == nil {
 			return err
 		}
@@ -2209,6 +2404,7 @@ func (cc *CopyCommand) batchCopyFiles(bucket *oss.Bucket, srcURL, destURL CloudU
 	chListError := make(chan error, 1)
 	go cc.objectStatistic(bucket, srcURL)
 	go cc.objectProducer(bucket, srcURL, chObjects, chListError)
+
 	for i := 0; int64(i) < cc.cpOption.routines; i++ {
 		go cc.copyConsumer(bucket, srcURL, destURL, chObjects, chError)
 	}

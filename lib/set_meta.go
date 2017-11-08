@@ -4,6 +4,7 @@ import (
 	"fmt"
 	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 )
@@ -122,6 +123,8 @@ Headers:
     这些objects的meta信息。当一个object操作出现错误时会将出错object的错误信息记录到report
     文件，并继续操作其他object，成功操作的object信息将不会被记录到report文件中（更多信息
     见cp命令的帮助）。
+        如果指定了--include/--exclude选项，ossutil会查找所有匹配pattern的objects，批量设置。
+        --include和--exclude选项说明，请参考cp命令帮助。
         如果--force选项被指定，则不会进行询问提示。
         --update选项和--delete选项的用法参考上文。
 `,
@@ -133,13 +136,19 @@ Headers:
     (2)ossutil set-meta oss://bucket1/o X-Oss-Meta-empty:#Content-Type:plain/text --update -r
         批量更新以o开头的objects的X-Oss-Meta-empty和Content-Type头域
 
-    (3)ossutil set-meta oss://bucket1/obj1 X-Oss-Meta-delete --delete
+    (3)ossutil set-meta oss://bucket1/ X-Oss-Meta-empty:#Content-Type:plain/text --update -r --include "*.jpg"
+        批量更新后缀为.jpg的objects的X-Oss-Meta-empty和Content-Type头域
+
+    (4)ossutil set-meta oss://bucket1/o X-Oss-Meta-empty:#Content-Type:plain/text --update -r --exclude "*.jpg"
+        批量更新以o开头后缀为.jpg的objects的X-Oss-Meta-empty和Content-Type头域
+
+    (5)ossutil set-meta oss://bucket1/obj1 X-Oss-Meta-delete --delete
         删除obj1的X-Oss-Meta-delete头域
 
-    (4)ossutil set-meta oss://bucket/o -r
+    (6)ossutil set-meta oss://bucket/o -r
         批量设置以o开头的objects的meta为空
 
-    (5)ossutil set-meta oss://bucket1/%e4%b8%ad%e6%96%87 X-Oss-Meta-delete --delete --encoding-type url
+    (7)ossutil set-meta oss://bucket1/%e4%b8%ad%e6%96%87 X-Oss-Meta-delete --delete --encoding-type url
         删除oss://bucket1/中文的X-Oss-Meta-delete头域
 `,
 }
@@ -206,6 +215,9 @@ Usage:
     and set meta on these objects. If an error occurs, ossutil will record the error message 
     to report file, and ossutil will continue to attempt to set acl on the remaining objects(
     more information see help of cp command). 
+        If --include/--exclude option is specified, ossutil will search for pattern-matching objects and 
+    set meta on those objects. 
+	    --include and --exclude option, please refer cp command help.
         If --force option is specified, ossutil will not show prompt question.
         The usage of --update option and --delete option is showed in detailHelpText.
 `,
@@ -217,13 +229,19 @@ Usage:
     (2)ossutil set-meta oss://bucket1/o X-Oss-Meta-empty:#Content-Type:plain/text -u -r
         Batch update X-Oss-Meta-empty and Content-Type header on objects that start with o
 
-    (3)ossutil set-meta oss://bucket1/obj1 X-Oss-Meta-delete -d
+    (3)ossutil set-meta oss://bucket1/ X-Oss-Meta-empty:#Content-Type:plain/text --update -r --include "*.jpg"
+        Batch update X-Oss-Meta-empty and Content-Type header on objects ending with .jpg
+
+    (4)ossutil set-meta oss://bucket1/o X-Oss-Meta-empty:#Content-Type:plain/text --update -r --exclude ".jpg"
+        Batch update X-Oss-Meta-empty and Content-Type header on objects starting with o and ending with .jpg
+
+    (5)ossutil set-meta oss://bucket1/obj1 X-Oss-Meta-delete -d
         Delete X-Oss-Meta-delete header of obj1 
 
-    (4)ossutil set-meta oss://bucket/o -r
+    (6)ossutil set-meta oss://bucket/o -r
         Batch set the meta of objects that start with o to empty
 
-    (5)ossutil set-meta oss://bucket1/%e4%b8%ad%e6%96%87 X-Oss-Meta-delete --delete --encoding-type url
+    (7)ossutil set-meta oss://bucket1/%e4%b8%ad%e6%96%87 X-Oss-Meta-delete --delete --encoding-type url
         Delete X-Oss-Meta-delete header of oss://bucket1/中文
 `,
 }
@@ -233,6 +251,7 @@ type SetMetaCommand struct {
 	monitor  Monitor //Put first for atomic op on some fileds
 	command  Command
 	smOption batchOptionType
+	filters  []filterOptionType
 }
 
 var setMetaCommand = SetMetaCommand{
@@ -250,6 +269,8 @@ var setMetaCommand = SetMetaCommand{
 			OptionDelete,
 			OptionForce,
 			OptionEncodingType,
+			OptionInclude,
+			OptionExclude,
 			OptionConfigFile,
 			OptionEndpoint,
 			OptionAccessKeyID,
@@ -290,6 +311,16 @@ func (sc *SetMetaCommand) RunCommand() error {
 	language = strings.ToLower(language)
 	encodingType, _ := GetString(OptionEncodingType, sc.command.options)
 
+	var res bool
+	res, sc.filters = getFilter(os.Args)
+	if !res {
+		return fmt.Errorf("--include or --exclude does not support format containing dir info")
+	}
+
+	if !recursive && len(sc.filters) > 0 {
+		return fmt.Errorf("--include or --exclude only work with --recursive")
+	}
+
 	cloudURL, err := CloudURLFromString(sc.command.args[0], encodingType)
 	if err != nil {
 		return err
@@ -312,7 +343,7 @@ func (sc *SetMetaCommand) RunCommand() error {
 		return err
 	}
 
-	headers, err := sc.parseHeaders(str, isDelete)
+	headers, err := sc.command.parseHeaders(str, isDelete)
 	if err != nil {
 		return err
 	}
@@ -402,7 +433,7 @@ func (sc *SetMetaCommand) getMetaData(force bool, language string) (string, erro
 	return strings.TrimSpace(str), nil
 }
 
-func (sc *SetMetaCommand) parseHeaders(str string, isDelete bool) (map[string]string, error) {
+func (cmd *Command) parseHeaders(str string, isDelete bool) (map[string]string, error) {
 	if str == "" {
 		return nil, nil
 	}
@@ -420,7 +451,7 @@ func (sc *SetMetaCommand) parseHeaders(str string, isDelete bool) (map[string]st
 			return nil, fmt.Errorf("delete meta for object do no support value for header:%s, please set value:%s to empty", name, value)
 		}
 		if _, err := fetchHeaderOptionMap(headerOptionMap, name); err != nil && !strings.HasPrefix(strings.ToLower(name), strings.ToLower(oss.HTTPHeaderOssMetaPrefix)) {
-			return nil, fmt.Errorf("unsupported header:%s, please try \"help %s\" to see supported headers", name, sc.command.name)
+			return nil, fmt.Errorf("unsupported header:%s, please try \"help %s\" to see supported headers", name, cmd.name)
 		}
 		headers[name] = value
 	}
@@ -501,8 +532,9 @@ func (sc *SetMetaCommand) setObjectMetas(bucket *oss.Bucket, cloudURL CloudURL, 
 	chObjects := make(chan string, ChannelBuf)
 	chError := make(chan error, routines+1)
 	chListError := make(chan error, 1)
-	go sc.command.objectStatistic(bucket, cloudURL, &sc.monitor)
-	go sc.command.objectProducer(bucket, cloudURL, chObjects, chListError)
+	go sc.command.objectStatistic(bucket, cloudURL, &sc.monitor, sc.filters)
+	go sc.command.objectProducer(bucket, cloudURL, chObjects, chListError, sc.filters)
+
 	for i := 0; int64(i) < routines; i++ {
 		go sc.setObjectMetaConsumer(bucket, headers, isUpdate, isDelete, chObjects, chError)
 	}
