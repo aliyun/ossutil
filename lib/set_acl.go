@@ -243,6 +243,10 @@ var setACLCommand = SetACLCommand{
 	},
 }
 
+func (sc *SetACLCommand) GetCommand() *Command {
+	return &sc.command
+}
+
 // function for FormatHelper interface
 func (sc *SetACLCommand) formatHelpForWhole() string {
 	return sc.command.formatHelpForWhole()

@@ -108,6 +108,10 @@ var createSymlinkCommand = CreateSymlinkCommand{
 	},
 }
 
+func (cc *CreateSymlinkCommand) GetCommand() *Command {
+	return &cc.command
+}
+
 // function for FormatHelper interface
 func (cc *CreateSymlinkCommand) formatHelpForWhole() string {
 	return cc.command.formatHelpForWhole()

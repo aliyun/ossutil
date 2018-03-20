@@ -284,6 +284,10 @@ var setMetaCommand = SetMetaCommand{
 	},
 }
 
+func (sc *SetMetaCommand) GetCommand() *Command {
+	return &sc.command
+}
+
 // function for FormatHelper interface
 func (sc *SetMetaCommand) formatHelpForWhole() string {
 	return sc.command.formatHelpForWhole()

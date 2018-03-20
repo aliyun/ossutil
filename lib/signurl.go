@@ -97,6 +97,10 @@ var signURLCommand = SignurlCommand{
 	},
 }
 
+func (sc *SignurlCommand) GetCommand() *Command {
+	return &sc.command
+}
+
 // function for FormatHelper interface
 func (sc *SignurlCommand) formatHelpForWhole() string {
 	return sc.command.formatHelpForWhole()

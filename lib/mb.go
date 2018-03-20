@@ -153,6 +153,10 @@ var makeBucketCommand = MakeBucketCommand{
 	},
 }
 
+func (mc *MakeBucketCommand) GetCommand() *Command {
+	return &mc.command
+}
+
 // function for FormatHelper interface
 func (mc *MakeBucketCommand) formatHelpForWhole() string {
 	return mc.command.formatHelpForWhole()

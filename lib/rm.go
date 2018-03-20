@@ -263,6 +263,10 @@ var removeCommand = RemoveCommand{
 	},
 }
 
+func (rc *RemoveCommand) GetCommand() *Command {
+	return &rc.command
+}
+
 // function for FormatHelper interface
 func (rc *RemoveCommand) formatHelpForWhole() string {
 	return rc.command.formatHelpForWhole()
