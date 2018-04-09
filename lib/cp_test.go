@@ -661,27 +661,27 @@ func (s *OssutilCommandSuite) TestPreparePartOption(c *C) {
 
 	partSize, routines = copyCommand.preparePartOption(20121443)
 	c.Assert(partSize, Equals, int64(2560000))
-	c.Assert(routines, Equals, 5)
+	c.Assert(routines, Equals, 4)
 
 	partSize, routines = copyCommand.preparePartOption(80485760)
 	c.Assert(partSize, Equals, int64(2560000))
-	c.Assert(routines, Equals, 10)
+	c.Assert(routines, Equals, 8)
 
 	partSize, routines = copyCommand.preparePartOption(500000000)
 	c.Assert(partSize, Equals, int64(2561480))
-	c.Assert(routines, Equals, 10)
+	c.Assert(routines, Equals, 8)
 
 	partSize, routines = copyCommand.preparePartOption(100000000000)
 	c.Assert(partSize, Equals, int64(250000000))
-	c.Assert(routines, Equals, 12)
+	c.Assert(routines, Equals, 10)
 
 	partSize, routines = copyCommand.preparePartOption(100000000000000)
 	c.Assert(partSize, Equals, int64(10000000000))
-	c.Assert(routines, Equals, 15)
+	c.Assert(routines, Equals, 12)
 
 	partSize, routines = copyCommand.preparePartOption(MaxInt64)
 	c.Assert(partSize, Equals, int64(922337203685478))
-	c.Assert(routines, Equals, 15)
+	c.Assert(routines, Equals, 12)
 
 	p := 7
 	parallel := strconv.Itoa(p)

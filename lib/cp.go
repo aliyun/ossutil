@@ -1754,14 +1754,15 @@ func (cc *CopyCommand) preparePartOption(fileSize int64) (int64, int) {
 	} else if partNum < 4 {
 		rt = 2
 	} else if partNum <= 20 {
-		rt = 5
+		rt = 4
 	} else if partNum <= 300 {
-		rt = 10
+		rt = 8
 	} else if partNum <= 500 {
-		rt = 12
+		rt = 10
 	} else {
-		rt = 15
+		rt = 12
 	}
+
 	return partSize, rt
 }
 
