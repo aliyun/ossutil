@@ -1,6 +1,7 @@
 package lib
 
 import (
+        "os"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -290,6 +291,10 @@ func (cmd *Command) ossClient(bucket string) (*oss.Client, error) {
 	} else {
 		options = append(options, oss.EnableCRC(true))
 	}
+        // proxy example
+        // options = append(options, oss.Proxy("http://proxy.company.com:80"))
+        fmt.Sprintf("Proxy is: %s", os.Getenv("https_proxy"))
+        options = append(options, oss.Proxy(os.Getenv("https_proxy")))
 	client, err := oss.New(endpoint, accessKeyID, accessKeySecret, options...)
 	if err != nil {
 		return nil, err
