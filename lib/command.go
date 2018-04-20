@@ -282,6 +282,7 @@ func (cmd *Command) ossClient(bucket string) (*oss.Client, error) {
 	accessKeySecret, _ := GetString(OptionAccessKeySecret, cmd.options)
 	stsToken, _ := GetString(OptionSTSToken, cmd.options)
 	disableCRC64, _ := GetBool(OptionDisableCRC64, cmd.options)
+	proxy := os.Getenv("https_proxy")
 	if err := cmd.checkCredentials(endpoint, accessKeyID, accessKeySecret); err != nil {
 		return nil, err
 	}
@@ -293,8 +294,9 @@ func (cmd *Command) ossClient(bucket string) (*oss.Client, error) {
 	}
         // proxy example
         // options = append(options, oss.Proxy("http://proxy.company.com:80"))
-        fmt.Sprintf("Proxy is: %s", os.Getenv("https_proxy"))
-        options = append(options, oss.Proxy(os.Getenv("https_proxy")))
+        if len(proxy) != 0{
+                options = append(options, oss.Proxy(proxy))
+        }
 	client, err := oss.New(endpoint, accessKeyID, accessKeySecret, options...)
 	if err != nil {
 		return nil, err
