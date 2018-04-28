@@ -342,14 +342,14 @@ func (m *RMMonitor) getObjectFinishBar(snap *RMMonitorSnap, exitStat int) string
 	if m.op&allType != 0 {
 		if m.seekAheadEnd && m.seekAheadError == nil {
 			if m.getExitStat(snap, exitStat) == errExit {
-				return getClearStr(fmt.Sprintf("Total %s. %s when error happens.\n", m.getTotalInfo(), m.getOKInfo(snap)))
+				return getClearStr(fmt.Sprintf("Total %s. %s when error happened.\n", m.getTotalInfo(), m.getOKInfo(snap)))
 			}
 			return getClearStr(fmt.Sprintf("Succeed: Total %s. %s\n", m.getTotalInfo(), m.getOKInfo(snap)))
 		}
 		m.totalObjectNum = max(m.totalObjectNum, snap.objectNum+snap.errObjectNum)
 		m.totalUploadIdNum = max(m.totalUploadIdNum, snap.uploadIdNum+snap.errUploadIdNum)
 		if m.getExitStat(snap, exitStat) == errExit {
-			return getClearStr(fmt.Sprintf("Scanned %s. %s when error happens.\n", m.getTotalInfo(), m.getOKInfo(snap)))
+			return getClearStr(fmt.Sprintf("Scanned %s. %s when error happened.\n", m.getTotalInfo(), m.getOKInfo(snap)))
 		}
 		return getClearStr(fmt.Sprintf("Succeed: Total %s. %s\n", m.getTotalInfo(), m.getOKInfo(snap)))
 	}
@@ -517,24 +517,24 @@ func (m *CPMonitor) getWholeFinishBar() string {
 	snap := m.getSnapshot()
 	if m.seekAheadEnd && m.seekAheadError == nil {
 		if snap.errNum == 0 {
-			return getClearStr(fmt.Sprintf("Succeed: Total num: %d, size: %s. OK num: %d%s%s.\n", m.totalNum, getSizeString(m.totalSize), snap.okNum, m.getDealNumDetail(snap), m.getSkipSize(snap)))
+			return getClearStr(fmt.Sprintf("Succeeded: Total num: %d, size: %s. OK num: %d%s%s.\n", m.totalNum, getSizeString(m.totalSize), snap.okNum, m.getDealNumDetail(snap), m.getSkipSize(snap)))
 		}
-		return getClearStr(fmt.Sprintf("FinishWithError: Total num: %d, size: %s. Error num: %d. OK num: %d%s%s.\n", m.totalNum, getSizeString(m.totalSize), snap.errNum, snap.okNum, m.getOKNumDetail(snap), m.getSizeDetail(snap)))
+		return getClearStr(fmt.Sprintf("FinishedWithError: Total num: %d, size: %s. Error num: %d. OK num: %d%s%s.\n", m.totalNum, getSizeString(m.totalSize), snap.errNum, snap.okNum, m.getOKNumDetail(snap), m.getSizeDetail(snap)))
 	}
 	scanNum := max(m.totalNum, snap.dealNum)
 	if snap.errNum == 0 {
-		return getClearStr(fmt.Sprintf("Succeed: Total num: %d, size: %s. OK num: %d%s%s.\n", scanNum, getSizeString(snap.dealSize), snap.okNum, m.getDealNumDetail(snap), m.getSkipSize(snap)))
+		return getClearStr(fmt.Sprintf("Succeeded: Total num: %d, size: %s. OK num: %d%s%s.\n", scanNum, getSizeString(snap.dealSize), snap.okNum, m.getDealNumDetail(snap), m.getSkipSize(snap)))
 	}
-	return getClearStr(fmt.Sprintf("FinishWithError: Scanned %d %s. Error num: %d. OK num: %d%s%s.\n", scanNum, m.getSubject(), snap.errNum, snap.okNum, m.getOKNumDetail(snap), m.getSizeDetail(snap)))
+	return getClearStr(fmt.Sprintf("FinishedWithError: Scanned %d %s. Error num: %d. OK num: %d%s%s.\n", scanNum, m.getSubject(), snap.errNum, snap.okNum, m.getOKNumDetail(snap), m.getSizeDetail(snap)))
 }
 
 func (m *CPMonitor) getDefeatBar() string {
 	snap := m.getSnapshot()
 	if m.seekAheadEnd && m.seekAheadError == nil {
-		return getClearStr(fmt.Sprintf("Total num: %d, size: %s. Dealed num: %d%s%s. When error happens.\n", m.totalNum, getSizeString(m.totalSize), snap.okNum, m.getOKNumDetail(snap), m.getSizeDetail(snap)))
+		return getClearStr(fmt.Sprintf("Total num: %d, size: %s. Dealed num: %d%s%s. When error happened.\n", m.totalNum, getSizeString(m.totalSize), snap.okNum, m.getOKNumDetail(snap), m.getSizeDetail(snap)))
 	}
 	scanNum := max(m.totalNum, snap.dealNum)
-	return getClearStr(fmt.Sprintf("Scanned %d %s. Dealed num: %d%s%s. When error happens.\n", scanNum, m.getSubject(), snap.okNum, m.getOKNumDetail(snap), m.getSizeDetail(snap)))
+	return getClearStr(fmt.Sprintf("Scanned %d %s. Dealed num: %d%s%s. When error happened.\n", scanNum, m.getSubject(), snap.okNum, m.getOKNumDetail(snap), m.getSizeDetail(snap)))
 }
 
 func (m *CPMonitor) getSubject() string {
@@ -573,7 +573,7 @@ func (m *CPMonitor) getNumDetail(snap *CPMonitorSnap, hasErr bool) string {
 		strList = append(strList, str)
 	}
 	if snap.skipNum != 0 {
-		strList = append(strList, fmt.Sprintf("skip %d %s", snap.skipNum, m.getSubject()))
+		strList = append(strList, fmt.Sprintf("skipped %d %s", snap.skipNum, m.getSubject()))
 	}
 	return fmt.Sprintf("(%s)", strings.Join(strList, ", "))
 }
@@ -581,11 +581,11 @@ func (m *CPMonitor) getNumDetail(snap *CPMonitorSnap, hasErr bool) string {
 func (m *CPMonitor) getOPStr() string {
 	switch m.op {
 	case operationTypePut:
-		return "upload"
+		return "uploaded"
 	case operationTypeGet:
-		return "download"
+		return "downloaded"
 	default:
-		return "copy"
+		return "copied"
 	}
 }
 
@@ -602,12 +602,12 @@ func (m *CPMonitor) getSkipSize(snap *CPMonitorSnap) string {
 
 func (m *CPMonitor) getSizeDetail(snap *CPMonitorSnap) string {
 	if snap.skipSize == 0 {
-		return fmt.Sprintf(", Transfer size: %s", getSizeString(snap.transferSize))
+		return fmt.Sprintf(", Transferred size: %s", getSizeString(snap.transferSize))
 	}
 	if snap.transferSize == 0 {
-		return fmt.Sprintf(", Skip size: %s", getSizeString(snap.skipSize))
+		return fmt.Sprintf(", Skipped size: %s", getSizeString(snap.skipSize))
 	}
-	return fmt.Sprintf(", OK size: %s(transfer: %s, skip: %s)", getSizeString(snap.transferSize+snap.skipSize), getSizeString(snap.transferSize), getSizeString(snap.skipSize))
+	return fmt.Sprintf(", OK size: %s (transferred: %s, skipped: %s)", getSizeString(snap.transferSize+snap.skipSize), getSizeString(snap.transferSize), getSizeString(snap.skipSize))
 }
 
 func (m *CPMonitor) getPrecent(snap *CPMonitorSnap) int {
