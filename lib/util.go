@@ -382,7 +382,8 @@ func getObjectsFromChanToArray(chObjects <-chan objectInfoType) []objectInfoType
 func filterObjectsWithInclude(vs []objectInfoType, p string) []objectInfoType {
 	vsf := make([]objectInfoType, 0)
 	for _, v := range vs {
-		_, key := filepath.Split(v.key)
+		_, key := filepath.Split(v.relativeKey)
+		//_, key := filepath.Split(v.key)
 		res, _ := filepath.Match(p, key)
 		if res {
 			vsf = append(vsf, v)
@@ -394,7 +395,8 @@ func filterObjectsWithInclude(vs []objectInfoType, p string) []objectInfoType {
 func filterObjectsWithExclude(vs []objectInfoType, p string) []objectInfoType {
 	vsf := make([]objectInfoType, 0)
 	for _, v := range vs {
-		_, key := filepath.Split(v.key)
+		_, key := filepath.Split(v.relativeKey)
+		//_, key := filepath.Split(v.key)
 		res, _ := filepath.Match(p, key)
 		if !res {
 			vsf = append(vsf, v)

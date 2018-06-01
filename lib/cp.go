@@ -62,7 +62,8 @@ type fileInfoType struct {
 }
 
 type objectInfoType struct {
-	key          string
+	prefix       string
+	relativeKey  string
 	size         int64
 	lastModified time.Time
 }
@@ -1230,7 +1231,7 @@ func (cc *CopyCommand) RunCommand() error {
 		return err
 	}
 
-	// create ckeckpoint dir
+	// create checkpoint dir
 	if err := os.MkdirAll(cc.cpOption.cpDir, 0755); err != nil {
 		return err
 	}
@@ -1866,11 +1867,28 @@ func (cc *CopyCommand) downloadFiles(srcURL CloudURL, destURL FileURL) error {
 
 	if !cc.cpOption.recursive {
 		if srcURL.object == "" {
-			return fmt.Errorf("copy object invalid url: %s, object empty. If you mean batch copy objects, please use --recursive option", srcURL.ToString())
+			return fmt.Errorf("copy object invalid url: %v, object empty. If you mean batch copy objects, please use --recursive option", srcURL.ToString())
+		}
+
+		// it is a "Dir" object
+		if strings.HasSuffix(srcURL.object, "/") || strings.HasSuffix(srcURL.object, "\\") {
+			return fmt.Errorf("cp: %v is a directory (not copied), please use --recursive option", srcURL.object)
+		}
+
+		index := strings.LastIndex(srcURL.object, "/")
+		if index < 0 {
+			index = strings.LastIndex(srcURL.object, "\\")
+		}
+
+		prefix := ""
+		relativeKey := srcURL.object
+		if index > 0 {
+			prefix = srcURL.object[:index+1]
+			relativeKey = srcURL.object[index+1:]
 		}
 
 		go cc.objectStatistic(bucket, srcURL)
-		err := cc.downloadSingleFileWithReport(bucket, objectInfoType{srcURL.object, -1, time.Now()}, filePath)
+		err := cc.downloadSingleFileWithReport(bucket, objectInfoType{prefix, relativeKey, -1, time.Now()}, filePath)
 		return cc.formatResultPrompt(err)
 	}
 	return cc.batchDownloadFiles(bucket, srcURL, filePath)
@@ -1914,13 +1932,12 @@ func (cc *CopyCommand) downloadSingleFileWithReport(bucket *oss.Bucket, objectIn
 }
 
 func (cc *CopyCommand) downloadSingleFile(bucket *oss.Bucket, objectInfo objectInfoType, filePath string) (bool, error, int64, string) {
-	//make file name
-	fileName := cc.makeFileName(objectInfo.key, filePath)
-
 	//get object size and last modify time
-	object := objectInfo.key
+	object := objectInfo.prefix + objectInfo.relativeKey
 	size := objectInfo.size
 	srct := objectInfo.lastModified
+	//make file name
+	fileName := cc.makeFileName(objectInfo.relativeKey, filePath)
 
 	msg := fmt.Sprintf("%s %s to %s", opDownload, CloudURLToString(bucket.BucketName, object), fileName)
 
@@ -1944,6 +1961,7 @@ func (cc *CopyCommand) downloadSingleFile(bucket *oss.Bucket, objectInfo objectI
 	}
 
 	if size == 0 && (strings.HasSuffix(object, "/") || strings.HasSuffix(object, "\\")) {
+		//there may be a problem with this place, to be test
 		return false, os.MkdirAll(fileName, 0755), rsize, msg
 	}
 
@@ -1969,9 +1987,9 @@ func (cc *CopyCommand) downloadSingleFile(bucket *oss.Bucket, objectInfo objectI
 	return false, cc.ossResumeDownloadRetry(bucket, object, fileName, size, partSize, ossOptions...), 0, msg
 }
 
-func (cc *CopyCommand) makeFileName(object, filePath string) string {
+func (cc *CopyCommand) makeFileName(relativeObject, filePath string) string {
 	if strings.HasSuffix(filePath, "/") || strings.HasSuffix(filePath, "\\") {
-		return filePath + object
+		return filePath + relativeObject
 	}
 	return filePath
 }
@@ -2057,6 +2075,7 @@ func (cc *CopyCommand) batchDownloadFiles(bucket *oss.Bucket, srcURL CloudURL, f
 	chObjects := make(chan objectInfoType, ChannelBuf)
 	chError := make(chan error, cc.cpOption.routines)
 	chListError := make(chan error, 1)
+	// both objectStatistic & object Producer will list objects, this is duplicate
 	go cc.objectStatistic(bucket, srcURL)
 	go cc.objectProducer(bucket, srcURL, chObjects, chListError)
 
@@ -2069,7 +2088,8 @@ func (cc *CopyCommand) batchDownloadFiles(bucket *oss.Bucket, srcURL CloudURL, f
 func (cc *CopyCommand) objectStatistic(bucket *oss.Bucket, cloudURL CloudURL) {
 	if cc.cpOption.recursive {
 		pre := oss.Prefix(cloudURL.object)
-		marker := oss.Marker("")
+		//use object key as marker, exclude the object itself
+		marker := oss.Marker(cloudURL.object)
 		for {
 			lor, err := cc.command.ossListObjectsRetry(bucket, marker, pre)
 			if err != nil {
@@ -2160,7 +2180,8 @@ func (cc *CopyCommand) parseRange(str string, size int64) (int64, error) {
 
 func (cc *CopyCommand) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, chObjects chan<- objectInfoType, chError chan<- error) {
 	pre := oss.Prefix(cloudURL.object)
-	marker := oss.Marker("")
+	//use object key as marker, exclude the object itself
+	marker := oss.Marker(cloudURL.object)
 	for {
 		lor, err := cc.command.ossListObjectsRetry(bucket, marker, pre)
 		if err != nil {
@@ -2169,8 +2190,9 @@ func (cc *CopyCommand) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, chO
 		}
 
 		for _, object := range lor.Objects {
+			relativeKey := object.Key[len(cloudURL.object):]
 			if doesSingleObjectMatchPatterns(object.Key, cc.cpOption.filters) {
-				chObjects <- objectInfoType{object.Key, int64(object.Size), object.LastModified}
+				chObjects <- objectInfoType{cloudURL.object, relativeKey, int64(object.Size), object.LastModified}
 			}
 		}
 
@@ -2241,8 +2263,25 @@ func (cc *CopyCommand) copyFiles(srcURL, destURL CloudURL) error {
 			return fmt.Errorf("copy object invalid url: %s, object empty. If you mean batch copy objects, please use --recursive option", srcURL.ToString())
 		}
 
+		// it is a "Dir" object
+		if strings.HasSuffix(srcURL.object, "/") || strings.HasSuffix(srcURL.object, "\\") {
+			return fmt.Errorf("cp: %v is a directory (not copied), please use --recursive option", srcURL.object)
+		}
+
+		index := strings.LastIndex(srcURL.object, "/")
+		if index < 0 {
+			index = strings.LastIndex(srcURL.object, "\\")
+		}
+
+		prefix := ""
+		relativeKey := srcURL.object
+		if index > 0 {
+			prefix = srcURL.object[:index+1]
+			relativeKey = srcURL.object[index+1:]
+		}
+
 		go cc.objectStatistic(bucket, srcURL)
-		err := cc.copySingleFileWithReport(bucket, objectInfoType{srcURL.object, -1, time.Now()}, srcURL, destURL)
+		err := cc.copySingleFileWithReport(bucket, objectInfoType{prefix, relativeKey, -1, time.Now()}, srcURL, destURL)
 		return cc.formatResultPrompt(err)
 	}
 	return cc.batchCopyFiles(bucket, srcURL, destURL)
@@ -2280,8 +2319,8 @@ func (cc *CopyCommand) copySingleFileWithReport(bucket *oss.Bucket, objectInfo o
 
 func (cc *CopyCommand) copySingleFile(bucket *oss.Bucket, objectInfo objectInfoType, srcURL, destURL CloudURL) (bool, error, int64, string) {
 	//make object name
-	srcObject := objectInfo.key
-	destObject := cc.makeCopyObjectName(objectInfo.key, srcURL.object, destURL)
+	srcObject := objectInfo.prefix + objectInfo.relativeKey
+	destObject := cc.makeCopyObjectName(objectInfo.relativeKey, destURL.object)
 	size := objectInfo.size
 	srct := objectInfo.lastModified
 
@@ -2326,20 +2365,11 @@ func (cc *CopyCommand) copySingleFile(bucket *oss.Bucket, objectInfo objectInfoT
 	return false, cc.ossResumeCopyRetry(srcURL.bucket, srcObject, destURL.bucket, destObject, partSize, options...), 0, msg
 }
 
-func (cc *CopyCommand) makeCopyObjectName(srcObject, srcPrefix string, destURL CloudURL) string {
-	if !cc.cpOption.recursive {
-		if destURL.object == "" || strings.HasSuffix(destURL.object, "/") || strings.HasSuffix(destURL.object, "\\") {
-			pos := strings.LastIndex(srcObject, "/")
-			pos1 := strings.LastIndex(srcObject, "\\")
-			pos = int(math.Max(float64(pos), float64(pos1)))
-			if pos > 0 {
-				srcObject = srcObject[pos+1:]
-			}
-			return destURL.object + srcObject
-		}
-		return destURL.object
+func (cc *CopyCommand) makeCopyObjectName(srcRelativeObject, destObject string) string {
+	if strings.HasSuffix(destObject, "/") || strings.HasSuffix(destObject, "\\") {
+		return destObject + srcRelativeObject
 	}
-	return destURL.object + srcObject[len(srcPrefix):]
+	return destObject
 }
 
 func (cc *CopyCommand) skipCopy(destURL CloudURL, destObject string, srct time.Time) (bool, error) {
