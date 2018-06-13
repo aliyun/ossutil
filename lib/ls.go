@@ -346,6 +346,7 @@ var listCommand = ListCommand{
 			OptionAccessKeySecret,
 			OptionSTSToken,
 			OptionRetryTimes,
+			OptionProxy,
 		},
 	},
 }

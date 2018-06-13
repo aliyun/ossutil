@@ -107,6 +107,7 @@ var OptionMap = map[string]Option{
 	OptionHashType: Option{"", "--type", DefaultHashType, OptionTypeAlternative, fmt.Sprintf("%s/%s", DefaultHashType, MD5HashType), "", fmt.Sprintf("计算的类型, 默认值：%s, 取值范围: %s/%s", DefaultHashType, DefaultHashType, MD5HashType),
 		fmt.Sprintf("hash type, Default: %s, value range is: %s/%s", DefaultHashType, DefaultHashType, MD5HashType)},
 	OptionVersion: Option{"-v", "--version", "", OptionTypeFlagTrue, "", "", fmt.Sprintf("显示ossutil的版本（%s）并退出。", Version), fmt.Sprintf("Show ossutil version (%s) and exit.", Version)},
+	OptionProxy:   Option{"-x", "--proxy", "", OptionTypeString, "", "", "代理主机访问oss。", "Proxy host to access oss."},
 }
 
 func (T *Option) getHelp(language string) string {

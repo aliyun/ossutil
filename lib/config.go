@@ -303,6 +303,7 @@ var configCommand = ConfigCommand{
 			OptionSTSToken,
 			OptionOutputDir,
 			OptionLanguage,
+			OptionProxy,
 		},
 	},
 }

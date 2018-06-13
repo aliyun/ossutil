@@ -281,6 +281,7 @@ func (cmd *Command) ossClient(bucket string) (*oss.Client, error) {
 	accessKeySecret, _ := GetString(OptionAccessKeySecret, cmd.options)
 	stsToken, _ := GetString(OptionSTSToken, cmd.options)
 	disableCRC64, _ := GetBool(OptionDisableCRC64, cmd.options)
+	proxy, _ := GetString(OptionProxy, cmd.options)
 	if err := cmd.checkCredentials(endpoint, accessKeyID, accessKeySecret); err != nil {
 		return nil, err
 	}
@@ -289,6 +290,9 @@ func (cmd *Command) ossClient(bucket string) (*oss.Client, error) {
 		options = append(options, oss.EnableCRC(false))
 	} else {
 		options = append(options, oss.EnableCRC(true))
+	}
+	if len(proxy) != 0 {
+		options = append(options, oss.Proxy(proxy))
 	}
 	client, err := oss.New(endpoint, accessKeyID, accessKeySecret, options...)
 	if err != nil {

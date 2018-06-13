@@ -1129,6 +1129,7 @@ var copyCommand = CopyCommand{
 			OptionParallel,
 			OptionSnapshotPath,
 			OptionDisableCRC64,
+			OptionProxy,
 		},
 	},
 }

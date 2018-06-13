@@ -45,6 +45,7 @@ const (
 	OptionInclude                 = "include"
 	OptionExclude                 = "exclude"
 	OptionMeta                    = "meta"
+	OptionProxy                   = "proxyHost"
 )
 
 // the elements show in stat object

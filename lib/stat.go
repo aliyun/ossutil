@@ -100,6 +100,7 @@ var statCommand = StatCommand{
 			OptionAccessKeySecret,
 			OptionSTSToken,
 			OptionRetryTimes,
+			OptionProxy,
 		},
 	},
 }
