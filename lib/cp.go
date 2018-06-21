@@ -1414,6 +1414,8 @@ func (cc *CopyCommand) adjustDestURLForUpload(srcURLList []StorageURLer, destURL
 		}
 	}
 
+	// if upload files from multi paths or is directory, the dest object should has suffix with "/"
+	// in next release, we will do a command prompt at this place
 	if destURL.object != "" && !strings.HasSuffix(destURL.object, "/") && !strings.HasSuffix(destURL.object, "\\") {
 		destURL.object += "/"
 	}
@@ -1872,7 +1874,7 @@ func (cc *CopyCommand) downloadFiles(srcURL CloudURL, destURL FileURL) error {
 
 		// it is a "Dir" object
 		if strings.HasSuffix(srcURL.object, "/") || strings.HasSuffix(srcURL.object, "\\") {
-			return fmt.Errorf("cp: %v is a directory (not copied), please use --recursive option", srcURL.object)
+			return fmt.Errorf("%v is a directory (not support copied) object, please use --recursive option", srcURL.object)
 		}
 
 		index := strings.LastIndex(srcURL.object, "/")
@@ -1890,6 +1892,9 @@ func (cc *CopyCommand) downloadFiles(srcURL CloudURL, destURL FileURL) error {
 		go cc.objectStatistic(bucket, srcURL)
 		err := cc.downloadSingleFileWithReport(bucket, objectInfoType{prefix, relativeKey, -1, time.Now()}, filePath)
 		return cc.formatResultPrompt(err)
+	}
+	if !strings.HasPrefix(srcURL.object, "/") && !strings.HasSuffix(srcURL.object, "\\") {
+		return fmt.Errorf("%v is not a directory object, no need to use --recursive option", srcURL.object)
 	}
 	return cc.batchDownloadFiles(bucket, srcURL, filePath)
 }
@@ -1911,6 +1916,8 @@ func (cc *CopyCommand) adjustDestURLForDownload(destURL FileURL) (string, error)
 		isDir = f.IsDir()
 	}
 
+	// if recusive has been specified while dest path is not an directory, the dest object should end with "/"
+	// in next release, we will do a command prompt at this place
 	if cc.cpOption.recursive || isDir {
 		if !strings.HasSuffix(filePath, "/") && !strings.HasSuffix(filePath, "\\") {
 			filePath += "/"
@@ -2283,6 +2290,12 @@ func (cc *CopyCommand) copyFiles(srcURL, destURL CloudURL) error {
 		go cc.objectStatistic(bucket, srcURL)
 		err := cc.copySingleFileWithReport(bucket, objectInfoType{prefix, relativeKey, -1, time.Now()}, srcURL, destURL)
 		return cc.formatResultPrompt(err)
+	}
+	if !strings.HasPrefix(srcURL.object, "/") && !strings.HasSuffix(srcURL.object, "\\") {
+		return fmt.Errorf("%v is not a directory object, no need to use --recursive option", srcURL.object)
+	}
+	if !strings.HasPrefix(destURL.object, "/") && !strings.HasSuffix(destURL.object, "\\") {
+		return fmt.Errorf("%v is not a directory object, no need to use --recursive option", destURL.object)
 	}
 	return cc.batchCopyFiles(bucket, srcURL, destURL)
 }
