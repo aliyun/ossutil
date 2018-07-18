@@ -15,118 +15,107 @@ import (
 func (s *OssutilCommandSuite) TestCPObject(c *C) {
 	bucketName := bucketNamePrefix + randLowStr(10)
 	s.putBucket(bucketName, c)
-	// dest bucket not exist
+	// dest bucket is not exist
 	destBucket := bucketNamePrefix + randLowStr(10)
 
 	// put object
 	s.createFile(uploadFileName, content, c)
 	object := randStr(12)
 	s.putObject(bucketName, object, uploadFileName, c)
-
 	// get object
 	s.getObject(bucketName, object, downloadFileName, c)
 	str := s.readFile(downloadFileName, c)
 	c.Assert(str, Equals, content)
 
-	// modify uploadFile content
+	// modify the content of the file
 	data := "欢迎使用ossutil"
 	s.createFile(uploadFileName, data, c)
-
 	time.Sleep(sleepTime)
-	// put to exist object
+	// overwrite the object
 	s.putObject(bucketName, object, uploadFileName, c)
-
-	// get to exist file
+	// get object
 	s.getObject(bucketName, object, downloadFileName, c)
 	str = s.readFile(downloadFileName, c)
 	c.Assert(str, Equals, data)
 
-	// get without specify dest file
+	// get object to the current directory
 	s.getObject(bucketName, object, ".", c)
 	str = s.readFile(object, c)
 	c.Assert(str, Equals, data)
 	os.Remove(object)
 
-	// put without specify dest object
-	data1 := "put without specify dest object"
+	// put object without specify the dest object
+	data1 := "put object without specify the dest object"
 	s.createFile(uploadFileName, data1, c)
 	s.putObject(bucketName, "", uploadFileName, c)
 	s.getObject(bucketName, uploadFileName, downloadFileName, c)
 	str = s.readFile(downloadFileName, c)
 	c.Assert(str, Equals, data1)
 
-	// get to file in not exist directory
-	notexistdir := "NOTEXISTDIR" + randStr(5)
+	// get object to file in directory that does not exist
+	notexistdir := "NOTEXISTDIR_" + randStr(5)
 	s.getObject(bucketName, object, notexistdir+string(os.PathSeparator)+downloadFileName, c)
 	str = s.readFile(notexistdir+string(os.PathSeparator)+downloadFileName, c)
 	c.Assert(str, Equals, data)
 	os.RemoveAll(notexistdir)
 
-	// copy file
+	// copy object
 	destObject := "TestCPObject_destObject"
 	s.copyObject(bucketName, object, bucketName, destObject, c)
-
 	objectStat := s.getStat(bucketName, destObject, c)
 	c.Assert(objectStat[StatACL], Equals, "default")
-
-	// get dest file
+	// get object
 	filePath := downloadFileName + randStr(5)
 	s.getObject(bucketName, destObject, filePath, c)
 	str = s.readFile(filePath, c)
 	c.Assert(str, Equals, data)
 	os.Remove(filePath)
 
-	// put to not exist bucket
+	// put object to non-existent bucket
 	showElapse, err := s.rawCP(uploadFileName, CloudURLToString(destBucket, object), false, true, false, DefaultBigFileThreshold, CheckpointDir)
 	c.Assert(err, NotNil)
 	c.Assert(showElapse, Equals, false)
 
-	// get not exist bucket
+	// get object from non-existent bucket
 	showElapse, err = s.rawCP(CloudURLToString(destBucket, object), downloadFileName, false, true, false, DefaultBigFileThreshold, CheckpointDir)
 	c.Assert(err, NotNil)
 	c.Assert(showElapse, Equals, false)
 
-	// get not exist object
+	// get object from non-existent object
 	showElapse, err = s.rawCP(CloudURLToString(bucketName, "notexistobject"), downloadFileName, false, true, false, DefaultBigFileThreshold, CheckpointDir)
 	c.Assert(err, NotNil)
 	c.Assert(showElapse, Equals, false)
 
-	// copy to not exist bucket
+	// copy object to non-existent bucket
 	showElapse, err = s.rawCP(CloudURLToString(bucketName, object), CloudURLToString(destBucket, destObject), false, true, false, DefaultBigFileThreshold, CheckpointDir)
 	c.Assert(err, NotNil)
 	c.Assert(showElapse, Equals, false)
 
-	// corse bucket copy
+	// copy object
 	s.putBucket(destBucket, c)
-
 	s.copyObject(bucketName, object, destBucket, destObject, c)
-
 	s.getObject(destBucket, destObject, filePath, c)
 	str = s.readFile(filePath, c)
 	c.Assert(str, Equals, data)
 	os.Remove(filePath)
 
-	// copy single object in directory, test the name of dest object
+	// copy single object in directory, verify the path of dest object
 	srcObject := "a/b/c/d/e"
 	s.putObject(bucketName, srcObject, uploadFileName, c)
 	time.Sleep(time.Second)
-
 	s.copyObject(bucketName, srcObject, destBucket, "", c)
-
 	s.getObject(destBucket, "e", filePath, c)
 	str = s.readFile(filePath, c)
 	c.Assert(str, Equals, data1)
 	os.Remove(filePath)
 
 	s.copyObject(bucketName, srcObject, destBucket, "a/", c)
-
 	s.getObject(destBucket, "a/e", filePath, c)
 	str = s.readFile(filePath, c)
 	c.Assert(str, Equals, data1)
 	os.Remove(filePath)
 
 	s.copyObject(bucketName, srcObject, destBucket, "a", c)
-
 	s.getObject(destBucket, "a", filePath, c)
 	str = s.readFile(filePath, c)
 	c.Assert(str, Equals, data1)
@@ -201,6 +190,248 @@ func (s *OssutilCommandSuite) TestErrorCP(c *C) {
 	c.Assert(showElapse, Equals, false)
 
 	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestGetInvalidSrcURL(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	s.createFile(uploadFileName, content, c)
+	dirObject := randLowStr(5) + "/"
+	object := dirObject + randLowStr(5)
+	s.putObject(bucketName, object, uploadFileName, c)
+
+	//get object, the src URL is a directory
+	showElapse, err := s.rawCP(CloudURLToString(bucketName, dirObject), downloadDir, false, true, false, DefaultBigFileThreshold, configFile)
+	c.Assert(err, NotNil)
+	c.Assert(showElapse, Equals, false)
+
+	//get object with --recusive, the src URL is not a directory
+	showElapse, err = s.rawCP(CloudURLToString(bucketName, object), downloadDir, true, true, false, DefaultBigFileThreshold, configFile)
+	c.Assert(err, NotNil)
+	c.Assert(showElapse, Equals, false)
+
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestPutInvalidSrcURL(c *C) {
+	destBucket := bucketNamePrefix + randLowStr(10)
+	s.putBucket(destBucket, c)
+
+	dir := randLowStr(5) + "/"
+	fileName := randLowStr(5)
+	filePath := dir + fileName
+	s.createFile(filePath, content, c)
+
+	//put object, the src URL is a directory
+	showElapse, err := s.rawCP(dir, CloudURLToString(destBucket, ""), false, true, false, DefaultBigFileThreshold, configFile)
+	c.Assert(err, NotNil)
+	c.Assert(showElapse, Equals, false)
+
+	//put object with --recursive, the src URL is not a directory, it is invalid
+	showElapse, err = s.rawCP(filePath, CloudURLToString(destBucket, ""), true, true, false, DefaultBigFileThreshold, configFile)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	s.removeBucket(destBucket, true, c)
+}
+
+func (s *OssutilCommandSuite) TestCopyInvalidSrcURL(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	destBucket := bucketNamePrefix + randLowStr(10)
+	s.putBucket(destBucket, c)
+
+	s.createFile(uploadFileName, content, c)
+	dirObject := randLowStr(5) + "/"
+	object := dirObject + randLowStr(5)
+	s.putObject(bucketName, object, uploadFileName, c)
+
+	//copy object, the src URL is a directory
+	showElapse, err := s.rawCP(CloudURLToString(bucketName, dirObject), CloudURLToString(destBucket, ""), false, true, false, DefaultBigFileThreshold, configFile)
+	c.Assert(err, NotNil)
+	c.Assert(showElapse, Equals, false)
+
+	//copy object with --recusive, the src URL is not a directory
+	showElapse, err = s.rawCP(CloudURLToString(bucketName, object), CloudURLToString(destBucket, ""), true, true, false, DefaultBigFileThreshold, configFile)
+	c.Assert(err, NotNil)
+	c.Assert(showElapse, Equals, false)
+
+	s.removeBucket(bucketName, true, c)
+	s.removeBucket(destBucket, true, c)
+}
+
+func (s *OssutilCommandSuite) TestGetDestURLMissSuffix(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	s.createFile(uploadFileName, content, c)
+	dirObject := randLowStr(5) + "/"
+	object := dirObject + randLowStr(5)
+	s.putObject(bucketName, object, uploadFileName, c)
+
+	downloadPath := downloadDir + randLowStr(10)
+
+	//get object with --recusive, the dest URL is not a directory, client type "no"
+	go s.confirmType("no")
+	showElapse, err := s.rawCP(CloudURLToString(bucketName, dirObject), downloadPath, true, true, false, DefaultBigFileThreshold, configFile)
+	c.Assert(err, NotNil)
+	c.Assert(showElapse, Equals, false)
+
+	//get object with --recusive, the dest URL is not a directory, client type "yes"
+	go s.confirmType("yes")
+	showElapse, err = s.rawCP(CloudURLToString(bucketName, dirObject), downloadPath, true, true, false, DefaultBigFileThreshold, configFile)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestPutDestURLMissSuffix(c *C) {
+	destBucket := bucketNamePrefix + randLowStr(10)
+	s.putBucket(destBucket, c)
+
+	s.createFile(uploadFileName, content, c)
+	dirObject := randLowStr(5) + "/"
+	object := dirObject + randLowStr(5)
+	s.putObject(destBucket, object, uploadFileName, c)
+
+	destObject := randLowStr(5)
+
+	go s.confirmType("no")
+	showElapse, err := s.rawCP(dirObject, CloudURLToString(destBucket, destObject), true, true, false, DefaultBigFileThreshold, configFile)
+	c.Assert(err, NotNil)
+	c.Assert(showElapse, Equals, false)
+
+	go s.confirmType("yes")
+	showElapse, err = s.rawCP(dirObject, CloudURLToString(destBucket, destObject), true, true, false, DefaultBigFileThreshold, configFile)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	s.removeBucket(destBucket, true, c)
+}
+
+func (s *OssutilCommandSuite) TestCopyDestURLMissSuffix(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	destBucket := bucketNamePrefix + randLowStr(10)
+	s.putBucket(destBucket, c)
+
+	s.createFile(uploadFileName, content, c)
+	dirObject := randLowStr(5) + "/"
+	object := dirObject + randLowStr(5)
+	s.putObject(bucketName, object, uploadFileName, c)
+
+	destObject := randLowStr(5)
+
+	//get object with --recusive, the dest URL is not a directory, client type "no"
+	go s.confirmType("no")
+	showElapse, err := s.rawCP(CloudURLToString(bucketName, dirObject), CloudURLToString(destBucket, destObject), true, true, false, DefaultBigFileThreshold, configFile)
+	c.Assert(err, NotNil)
+	c.Assert(showElapse, Equals, false)
+
+	//get object with --recusive, the dest URL is not a directory, client type "yes"
+	go s.confirmType("yes")
+	showElapse, err = s.rawCP(CloudURLToString(bucketName, dirObject), CloudURLToString(destBucket, destObject), true, true, false, DefaultBigFileThreshold, configFile)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestGetMultiLevelSrcURL(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	s.createFile(uploadFileName, content, c)
+	multiLevelDir := randLowStr(5) + "/" + randLowStr(5) + "/"
+	object := randLowStr(5)
+	multiLevelObj := multiLevelDir + object
+	s.putObject(bucketName, multiLevelObj, uploadFileName, c)
+
+	//get object, the src object is in multi-level directory
+	showElapse, err := s.rawCP(CloudURLToString(bucketName, multiLevelObj), downloadDir, false, true, false, DefaultBigFileThreshold, configFile)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+	_, err = os.Stat(downloadDir + object)
+	c.Assert(err, IsNil)
+	err = os.Remove(downloadDir + object)
+	c.Assert(err, IsNil)
+
+	object = randLowStr(10)
+	multiLevelObj = multiLevelDir + object
+	s.putObject(bucketName, object, uploadFileName, c)
+
+	//get object with --recursive, the src dir is multi-level directory
+	showElapse, err = s.rawCP(CloudURLToString(bucketName, multiLevelDir), downloadDir, true, true, false, DefaultBigFileThreshold, configFile)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+	_, err = os.Stat(downloadDir + object)
+	c.Assert(err, IsNil)
+	err = os.Remove(downloadDir + object)
+	c.Assert(err, IsNil)
+
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestPutMultiLevelSrcURL(c *C) {
+	destBucket := bucketNamePrefix + randLowStr(10)
+	s.putBucket(destBucket, c)
+
+	multiLevelDir := randLowStr(5) + "/" + randLowStr(5) + "/"
+	fileName := randLowStr(5)
+	filePath := multiLevelDir + fileName
+	s.createFile(filePath, content, c)
+
+	//put object, the src file is in multi-level directory
+	showElapse, err := s.rawCP(filePath, CloudURLToString(destBucket, ""), false, true, false, DefaultBigFileThreshold, configFile)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+	s.getStat(destBucket, fileName, c)
+
+	fileName = randLowStr(10)
+	filePath = multiLevelDir + fileName
+	s.createFile(filePath, content, c)
+
+	//put object with --recursive, the src dir is multi-level directory
+	showElapse, err = s.rawCP(multiLevelDir, CloudURLToString(destBucket, ""), true, true, false, DefaultBigFileThreshold, configFile)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+	s.getStat(destBucket, fileName, c)
+
+	s.removeBucket(destBucket, true, c)
+}
+
+func (s *OssutilCommandSuite) TestCopyMultiLevelSrcURL(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	destBucket := bucketNamePrefix + randLowStr(10)
+	s.putBucket(destBucket, c)
+
+	s.createFile(uploadFileName, content, c)
+	multiLevelDir := randLowStr(5) + "/" + randLowStr(5) + "/"
+	object := randLowStr(5)
+	multiLevelObj := multiLevelDir + object
+	s.putObject(bucketName, object, uploadFileName, c)
+
+	//copy object, the src object is in multi-level directory
+	showElapse, err := s.rawCP(CloudURLToString(bucketName, multiLevelObj), CloudURLToString(destBucket, ""), false, true, false, DefaultBigFileThreshold, configFile)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+	s.getStat(destBucket, object, c)
+
+	object = randLowStr(10)
+	multiLevelObj = multiLevelDir + object
+	s.putObject(bucketName, object, uploadFileName, c)
+
+	//get object with --recursive, the src dir is multi-level directory
+	showElapse, err = s.rawCP(CloudURLToString(bucketName, multiLevelDir), CloudURLToString(destBucket, ""), true, true, false, DefaultBigFileThreshold, configFile)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+	s.getStat(destBucket, object, c)
+
+	s.removeBucket(bucketName, true, c)
+	s.removeBucket(destBucket, true, c)
 }
 
 func (s *OssutilCommandSuite) TestUploadErrSrc(c *C) {

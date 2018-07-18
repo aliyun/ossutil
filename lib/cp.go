@@ -1415,10 +1415,14 @@ func (cc *CopyCommand) adjustDestURLForUpload(srcURLList []StorageURLer, destURL
 	}
 
 	// if upload files from multi paths or is directory, the dest object should has suffix with "/"
-	// in next release, we will do a command prompt at this place
-	if destURL.object != "" && !strings.HasSuffix(destURL.object, "/") && !strings.HasSuffix(destURL.object, "\\") {
+	if destURL.object != "" && !strings.HasSuffix(destURL.object, "/") {
+		confirmStr := fmt.Sprintf("%v is not end with / while upload with multi-path or directory, do you mean add / as suffix (y or N)?: ", destURL.object)
+		if !cc.confirm(confirmStr) {
+			return destURL, fmt.Errorf("%v is not end with / whilue upload with multi-path or directory", destURL.object)
+		}
 		destURL.object += "/"
 	}
+
 	return destURL, nil
 }
 
@@ -1688,7 +1692,8 @@ func (cc *CopyCommand) skipUpload(spath string, bucket *oss.Bucket, objectName s
 		}
 	} else if !cc.cpOption.force {
 		if _, err := cc.command.ossGetObjectMetaRetry(bucket, objectName); err == nil {
-			if !cc.confirm(CloudURLToString(destURL.bucket, objectName)) {
+			confirmStr := fmt.Sprintf("cp: overwrite \"%s\"(y or N)? ", CloudURLToString(destURL.bucket, objectName))
+			if !cc.confirm(confirmStr) {
 				return true, nil
 			}
 		}
@@ -1705,7 +1710,7 @@ func (cc *CopyCommand) confirm(str string) bool {
 	defer mu.Unlock()
 
 	var val string
-	fmt.Printf(getClearStr(fmt.Sprintf("cp: overwrite \"%s\"(y or N)? ", str)))
+	fmt.Printf(getClearStr(str))
 	if _, err := fmt.Scanln(&val); err != nil || (strings.ToLower(val) != "yes" && strings.ToLower(val) != "y") {
 		return false
 	}
@@ -1873,15 +1878,11 @@ func (cc *CopyCommand) downloadFiles(srcURL CloudURL, destURL FileURL) error {
 		}
 
 		// it is a "Dir" object
-		if strings.HasSuffix(srcURL.object, "/") || strings.HasSuffix(srcURL.object, "\\") {
+		if strings.HasSuffix(srcURL.object, "/") {
 			return fmt.Errorf("%v is a directory (not support copied) object, please use --recursive option", srcURL.object)
 		}
 
 		index := strings.LastIndex(srcURL.object, "/")
-		if index < 0 {
-			index = strings.LastIndex(srcURL.object, "\\")
-		}
-
 		prefix := ""
 		relativeKey := srcURL.object
 		if index > 0 {
@@ -1893,7 +1894,7 @@ func (cc *CopyCommand) downloadFiles(srcURL CloudURL, destURL FileURL) error {
 		err := cc.downloadSingleFileWithReport(bucket, objectInfoType{prefix, relativeKey, -1, time.Now()}, filePath)
 		return cc.formatResultPrompt(err)
 	}
-	if !strings.HasPrefix(srcURL.object, "/") && !strings.HasSuffix(srcURL.object, "\\") {
+	if srcURL.object != "" && !strings.HasSuffix(srcURL.object, "/") {
 		return fmt.Errorf("%v is not a directory object, no need to use --recursive option", srcURL.object)
 	}
 	return cc.batchDownloadFiles(bucket, srcURL, filePath)
@@ -1916,13 +1917,18 @@ func (cc *CopyCommand) adjustDestURLForDownload(destURL FileURL) (string, error)
 		isDir = f.IsDir()
 	}
 
-	// if recusive has been specified while dest path is not an directory, the dest object should end with "/"
-	// in next release, we will do a command prompt at this place
-	if cc.cpOption.recursive || isDir {
+	if cc.cpOption.recursive {
 		if !strings.HasSuffix(filePath, "/") && !strings.HasSuffix(filePath, "\\") {
+			if !isDir {
+				confirmStr := fmt.Sprintf("%v is not end with %v, do you mean add %v as suffix (y or N)?: ", filePath, string(os.PathSeparator), string(os.PathSeparator))
+				if !cc.confirm(confirmStr) {
+					return filePath, fmt.Errorf("%v is not end with %v while upload with --recusive", filePath, string(os.PathSeparator))
+				}
+			}
 			filePath += "/"
 		}
 	}
+
 	if strings.HasSuffix(filePath, "/") || strings.HasSuffix(filePath, "\\") {
 		if err := os.MkdirAll(filePath, 0755); err != nil {
 			return filePath, err
@@ -2012,7 +2018,8 @@ func (cc *CopyCommand) skipDownload(fileName string, srct time.Time) bool {
 	} else {
 		if !cc.cpOption.force {
 			if _, err := os.Stat(fileName); err == nil {
-				if !cc.confirm(fileName) {
+				confirmStr := fmt.Sprintf("cp: overwrite \"%s\"(y or N)? ", fileName)
+				if !cc.confirm(confirmStr) {
 					return true
 				}
 			}
@@ -2271,15 +2278,11 @@ func (cc *CopyCommand) copyFiles(srcURL, destURL CloudURL) error {
 		}
 
 		// it is a "Dir" object
-		if strings.HasSuffix(srcURL.object, "/") || strings.HasSuffix(srcURL.object, "\\") {
+		if strings.HasSuffix(srcURL.object, "/") {
 			return fmt.Errorf("cp: %v is a directory (not copied), please use --recursive option", srcURL.object)
 		}
 
 		index := strings.LastIndex(srcURL.object, "/")
-		if index < 0 {
-			index = strings.LastIndex(srcURL.object, "\\")
-		}
-
 		prefix := ""
 		relativeKey := srcURL.object
 		if index > 0 {
@@ -2291,11 +2294,14 @@ func (cc *CopyCommand) copyFiles(srcURL, destURL CloudURL) error {
 		err := cc.copySingleFileWithReport(bucket, objectInfoType{prefix, relativeKey, -1, time.Now()}, srcURL, destURL)
 		return cc.formatResultPrompt(err)
 	}
-	if !strings.HasPrefix(srcURL.object, "/") && !strings.HasSuffix(srcURL.object, "\\") {
+	if srcURL.object != "" && !strings.HasSuffix(srcURL.object, "/") {
 		return fmt.Errorf("%v is not a directory object, no need to use --recursive option", srcURL.object)
 	}
-	if !strings.HasPrefix(destURL.object, "/") && !strings.HasSuffix(destURL.object, "\\") {
-		return fmt.Errorf("%v is not a directory object, no need to use --recursive option", destURL.object)
+	if destURL.object != "" && !strings.HasSuffix(destURL.object, "/") {
+		confirmStr := fmt.Sprintf("%v is not end with / as --recursive is specified, do you mean add / as suffix (y or N)?: ", destURL.object)
+		if !cc.confirm(confirmStr) {
+			return fmt.Errorf("%v is not a directory object, no need to use --recursive option", destURL.object)
+		}
 	}
 	return cc.batchCopyFiles(bucket, srcURL, destURL)
 }
@@ -2401,7 +2407,8 @@ func (cc *CopyCommand) skipCopy(destURL CloudURL, destObject string, srct time.T
 	} else {
 		if !cc.cpOption.force {
 			if _, err := cc.command.ossGetObjectMetaRetry(destBucket, destObject); err == nil {
-				if !cc.confirm(CloudURLToString(destURL.bucket, destObject)) {
+				confirmStr := fmt.Sprintf("cp: overwrite \"%s\"(y or N)? ", CloudURLToString(destURL.bucket, destObject))
+				if !cc.confirm(confirmStr) {
 					return true, nil
 				}
 			}
