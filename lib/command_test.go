@@ -14,9 +14,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-vgo/robotgo"
+	//"github.com/go-vgo/robotgo"
 
 	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
+	//"github.com/go-vgo/robotgo"
 
 	. "gopkg.in/check.v1"
 )
@@ -173,12 +174,6 @@ func (s *OssutilCommandSuite) configNonInteractive(c *C) {
 	c.Assert(opts[OptionEndpoint], Equals, endpoint)
 	c.Assert(opts[OptionAccessKeyID], Equals, accessKeyID)
 	c.Assert(opts[OptionAccessKeySecret], Equals, accessKeySecret)
-}
-
-func (s *OssutilCommandSuite) confirmType(input string) {
-	time.Sleep(time.Second * 2)
-	robotgo.TypeString(input)
-	robotgo.KeyTap("enter")
 }
 
 func (s *OssutilCommandSuite) createFile(fileName, content string, c *C) {
@@ -373,6 +368,7 @@ func (s *OssutilCommandSuite) removeBucket(bucket string, clearObjects bool, c *
 		showElapse, err = s.removeWrapper("rm -arfb", bucket, "", c)
 	}
 	if err != nil {
+		log.Printf("the value of err is %v\n", err)
 		verr := err.(BucketError).err
 		c.Assert(verr.(oss.ServiceError).Code == "NoSuchBucket" || verr.(oss.ServiceError).Code == "BucketNotEmpty", Equals, true)
 		c.Assert(showElapse, Equals, false)
@@ -2406,7 +2402,7 @@ func (s *OssutilCommandSuite) TestMatchFiltersForObjects(c *C) {
 	fts = []filterOptionType{{"--include", "*.txt"}}
 	res = matchFiltersForObjects(objects, fts)
 	expect = []objectInfoType{
-		{"", "dir1/testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)},
+		{"dir1/", "testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)},
 		{"", "testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)},
 	}
 	same = reflect.DeepEqual(res, expect)

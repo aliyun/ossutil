@@ -2,9 +2,10 @@ package lib
 
 import (
 	"fmt"
-	configparser "github.com/alyu/configparser"
 	"os"
 	"strings"
+
+	configparser "github.com/alyu/configparser"
 )
 
 var specChineseConfig = SpecText{
@@ -401,9 +402,9 @@ func (cc *ConfigCommand) runCommandInteractive(configFile, language string) erro
 
 	configFile = DecideConfigFile(configFile)
 	if llanguage == LEnglishLanguage {
-		fmt.Println("For the following settings, carriage return means skip the configuration. Please try \"help config\" to see the meaning of the settings.\n")
+		fmt.Println("For the following settings, carriage return means skip the configuration. Please try \"help config\" to see the meaning of the settings")
 	} else {
-		fmt.Println("对于下述配置，回车将跳过相关配置项的设置，配置项的具体含义，请使用\"help config\"命令查看。\n")
+		fmt.Println("对于下述配置，回车将跳过相关配置项的设置，配置项的具体含义，请使用\"help config\"命令查看。")
 	}
 
 	if err := cc.configInteractive(configFile, language); err != nil {
