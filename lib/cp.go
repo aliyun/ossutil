@@ -1415,10 +1415,6 @@ func (cc *CopyCommand) adjustDestURLForUpload(srcURLList []StorageURLer, destURL
 		}
 	}
 
-	//if !includeDir && cc.cpOption.recursive {
-	//	return destURL, fmt.Errorf("source URL:%v do not include directory, no need to use --recursive option", srcURLList)
-	//}
-
 	if includeDir && !cc.cpOption.recursive {
 		return destURL, fmt.Errorf("source URL:%v include directories, please use --recursive option", srcURLList)
 	}
@@ -1426,10 +1422,6 @@ func (cc *CopyCommand) adjustDestURLForUpload(srcURLList []StorageURLer, destURL
 	// if upload files from multi paths or is directory, the dest object should has suffix with "/"
 	if includeDir || len(srcURLList) > 1 {
 		if destURL.object != "" && !strings.HasSuffix(destURL.object, "/") {
-			//confirmStr := fmt.Sprintf("%v is not end with / while upload with multi-path or directory, do you mean add / as suffix (y or n)?: ", destURL.object)
-			//if !cc.confirm(confirmStr) {
-			//	return destURL, fmt.Errorf("%v is not end with / while upload with multi-path or directory", destURL.object)
-			//}
 			destURL.object += "/"
 		}
 	}
@@ -1896,9 +1888,6 @@ func (cc *CopyCommand) downloadFiles(srcURL CloudURL, destURL FileURL) error {
 		err := cc.downloadSingleFileWithReport(bucket, objectInfoType{prefix, relativeKey, -1, time.Now()}, filePath)
 		return cc.formatResultPrompt(err)
 	}
-	//if srcURL.object != "" && !strings.HasSuffix(srcURL.object, "/") {
-	//	return fmt.Errorf("%v is not a directory object, no need to use --recursive option", srcURL.object)
-	//}
 	return cc.batchDownloadFiles(bucket, srcURL, filePath)
 }
 
@@ -1920,18 +1909,6 @@ func (cc *CopyCommand) adjustDestURLForDownload(destURL FileURL) (string, error)
 	}
 
 	if !strings.HasSuffix(filePath, "/") && !strings.HasSuffix(filePath, "\\") {
-		/*
-			if cc.cpOption.recursive {
-				confirmStr := fmt.Sprintf("%v is not end with %v, do you mean add %v as suffix (y or n)?: ", filePath, string(os.PathSeparator), string(os.PathSeparator))
-				if !cc.confirm(confirmStr) {
-					return filePath, fmt.Errorf("%v is not end with %v while upload with --recusive", filePath, string(os.PathSeparator))
-				}
-				filePath += "/"
-			}
-			if isDir {
-				filePath += "/"
-			}
-		*/
 		if cc.cpOption.recursive || isDir {
 			filePath += "/"
 		}
@@ -1982,7 +1959,6 @@ func (cc *CopyCommand) downloadSingleFile(bucket *oss.Bucket, objectInfo objectI
 	}
 
 	if size == 0 && strings.HasSuffix(object, "/") {
-		//there may be a problem with this place, to be test
 		return false, os.MkdirAll(fileName, 0755), rsize, msg
 	}
 
@@ -2313,14 +2289,8 @@ func (cc *CopyCommand) copyFiles(srcURL, destURL CloudURL) error {
 		err := cc.copySingleFileWithReport(bucket, objectInfoType{prefix, relativeKey, -1, time.Now()}, srcURL, destURL)
 		return cc.formatResultPrompt(err)
 	}
-	//if srcURL.object != "" && !strings.HasSuffix(srcURL.object, "/") {
-	//	return fmt.Errorf("%v is not a directory object, no need to use --recursive option", srcURL.object)
-	//}
+
 	if destURL.object != "" && !strings.HasSuffix(destURL.object, "/") {
-		//confirmStr := fmt.Sprintf("%v is not end with / as --recursive is specified, do you mean add / as suffix (y or n)?: ", destURL.object)
-		//if !cc.confirm(confirmStr) {
-		//return fmt.Errorf("%v is not a directory object, no need to use --recursive option", destURL.object)
-		//}
 		destURL.object = destURL.object + "/"
 	}
 	return cc.batchCopyFiles(bucket, srcURL, destURL)
