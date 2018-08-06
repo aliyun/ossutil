@@ -33,9 +33,9 @@ var _ = Suite(&OssutilCommandSuite{})
 
 var (
 	// Update before running test
-	endpoint        = "http://oss-cn-shenzhen.aliyuncs.com"
-	accessKeyID     = "LTAI5YuOyfY0ztyH"
-	accessKeySecret = "jinSh230jNdwrskxhvUcSVRTsPUmCK"
+	endpoint        = "<testEndpoint>"
+	accessKeyID     = "<testAccessKeyID>"
+	accessKeySecret = "<testAccessKeySecret>"
 	stsToken        = "<testSTSToken>"
 )
 
