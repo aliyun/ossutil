@@ -1,8 +1,9 @@
 package lib
 
 import (
-	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"os"
+
+	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
 
 // all supported options of ossutil
@@ -45,6 +46,7 @@ const (
 	OptionInclude                 = "include"
 	OptionExclude                 = "exclude"
 	OptionMeta                    = "meta"
+	OptionRequestPayer            = "payer"
 )
 
 // the elements show in stat object

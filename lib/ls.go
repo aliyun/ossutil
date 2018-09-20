@@ -15,7 +15,7 @@ var specChineseList = SpecText{
 	paramText: "[cloud_url] [options]",
 
 	syntaxText: ` 
-    ossutil ls [oss://bucket[/prefix]] [-s] [-d] [--limited-num num] [--marker marker] [--upload-id-marker umarker] [-c file] 
+    ossutil ls [oss://bucket[/prefix]] [-s] [-d] [--limited-num num] [--marker marker] [--upload-id-marker umarker] [--payer requester] [-c file]
 `,
 
 	detailHelpText: ` 
@@ -166,7 +166,7 @@ var specEnglishList = SpecText{
 	paramText: "[cloud_url] [options]",
 
 	syntaxText: ` 
-    ossutil ls [oss://bucket[/prefix]] [-s] [-d] [--limited-num num] [--marker marker] [--upload-id-marker umarker] [-c file] 
+    ossutil ls [oss://bucket[/prefix]] [-s] [-d] [--limited-num num] [--marker marker] [--upload-id-marker umarker] [--payer requester] [-c file]
 `,
 
 	detailHelpText: ` 
@@ -319,7 +319,8 @@ Usage:
 
 // ListCommand is the command list buckets or objects
 type ListCommand struct {
-	command Command
+	command     Command
+	payerOption oss.Option
 }
 
 var listCommand = ListCommand{
@@ -346,6 +347,7 @@ var listCommand = ListCommand{
 			OptionAccessKeySecret,
 			OptionSTSToken,
 			OptionRetryTimes,
+			OptionRequestPayer,
 		},
 	},
 }
@@ -375,6 +377,14 @@ func (lc *ListCommand) RunCommand() error {
 	if err != nil {
 		return err
 	}
+
+	payer, _ := GetString(OptionRequestPayer, lc.command.options)
+	if payer != "" {
+		if payer != string(oss.BucketOwner) && payer != string(oss.Requester) {
+			return fmt.Errorf("invalid request payer: %s, please check", payer)
+		}
+	}
+	lc.payerOption = oss.RequestPayer(oss.PayerType(payer))
 
 	if cloudURL.bucket == "" {
 		return lc.listBuckets("")
@@ -407,8 +417,9 @@ func (lc *ListCommand) listBuckets(prefix string) error {
 	// list all buckets
 	pre := oss.Prefix(prefix)
 	marker := oss.Marker(vmarker)
+	payer := lc.payerOption
 	for limitedNum < 0 || num < limitedNum {
-		lbr, err := lc.ossListBucketsRetry(client, pre, marker)
+		lbr, err := lc.ossListBucketsRetry(client, pre, marker, payer)
 		if err != nil {
 			return err
 		}
@@ -519,13 +530,14 @@ func (lc *ListCommand) listObjects(bucket *oss.Bucket, cloudURL CloudURL, shortF
 	if directory {
 		del = oss.Delimiter("/")
 	}
+	payer := lc.payerOption
 
 	var i int64
 	for i = 0; ; i++ {
 		if *limitedNum == 0 {
 			break
 		}
-		lor, err := lc.command.ossListObjectsRetry(bucket, marker, pre, del)
+		lor, err := lc.command.ossListObjectsRetry(bucket, marker, pre, del, payer)
 		if err != nil {
 			return num, err
 		}
@@ -616,13 +628,14 @@ func (lc *ListCommand) listMultipartUploads(bucket *oss.Bucket, cloudURL CloudUR
 	if directory {
 		del = oss.Delimiter("/")
 	}
+	payer := lc.payerOption
 
 	var i int64
 	for i = 0; ; i++ {
 		if *limitedNum == 0 {
 			break
 		}
-		lmr, err := lc.command.ossListMultipartUploadsRetry(bucket, keyMarker, uploadIdMarker, pre, del)
+		lmr, err := lc.command.ossListMultipartUploadsRetry(bucket, keyMarker, uploadIdMarker, pre, del, payer)
 		if err != nil {
 			return multipartNum, err
 		}

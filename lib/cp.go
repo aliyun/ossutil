@@ -110,9 +110,9 @@ var specChineseCopy = SpecText{
 	paramText: "src_url dest_url [options]",
 
 	syntaxText: ` 
-    ossutil cp file_url cloud_url  [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--snapshot-path=sdir] 
-    ossutil cp cloud_url file_url  [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--range=x-y] 
-    ossutil cp cloud_url cloud_url [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] 
+    ossutil cp file_url cloud_url  [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--snapshot-path=sdir] [--payer requester]
+    ossutil cp cloud_url file_url  [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--range=x-y] [--payer requester]
+    ossutil cp cloud_url cloud_url [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--payer requester]
 `,
 
 	detailHelpText: ` 
@@ -581,9 +581,9 @@ var specEnglishCopy = SpecText{
 	paramText: "src_url dest_url [options]",
 
 	syntaxText: ` 
-    ossutil cp file_url cloud_url  [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--snapshot-path=sdir]
-    ossutil cp cloud_url file_url  [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--range=x-y] 
-    ossutil cp cloud_url cloud_url [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] 
+    ossutil cp file_url cloud_url  [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--snapshot-path=sdir] [--payer requester]
+    ossutil cp cloud_url file_url  [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--range=x-y] [--payer requester]
+    ossutil cp cloud_url cloud_url [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--payer requester]
 `,
 
 	detailHelpText: ` 
@@ -1130,6 +1130,7 @@ var copyCommand = CopyCommand{
 			OptionParallel,
 			OptionSnapshotPath,
 			OptionDisableCRC64,
+			OptionRequestPayer,
 		},
 	},
 }
@@ -1166,6 +1167,7 @@ func (cc *CopyCommand) RunCommand() error {
 	cc.cpOption.encodingType, _ = GetString(OptionEncodingType, cc.command.options)
 	meta, _ := GetString(OptionMeta, cc.command.options)
 	acl, _ := GetString(OptionACL, cc.command.options)
+	payer, _ := GetString(OptionRequestPayer, cc.command.options)
 
 	var res bool
 	res, cc.cpOption.filters = getFilter(os.Args)
@@ -1224,6 +1226,13 @@ func (cc *CopyCommand) RunCommand() error {
 			return err
 		}
 		cc.cpOption.options = append(cc.cpOption.options, oss.ObjectACL(opAcl))
+	}
+
+	if payer != "" {
+		if payer != string(oss.BucketOwner) && payer != string(oss.Requester) {
+			return fmt.Errorf("invalid request payer: %s, please check", payer)
+		}
+		cc.cpOption.options = append(cc.cpOption.options, oss.RequestPayer(oss.PayerType(payer)))
 	}
 
 	// init reporter
