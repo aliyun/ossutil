@@ -367,10 +367,10 @@ func (cmd *Command) ossListMultipartUploadsRetry(bucket *oss.Bucket, options ...
 	}
 }
 
-func (cmd *Command) ossGetObjectStatRetry(bucket *oss.Bucket, object string) (http.Header, error) {
+func (cmd *Command) ossGetObjectStatRetry(bucket *oss.Bucket, object string, options ...oss.Option) (http.Header, error) {
 	retryTimes, _ := GetInt(OptionRetryTimes, cmd.options)
 	for i := 1; ; i++ {
-		props, err := bucket.GetObjectDetailedMeta(object)
+		props, err := bucket.GetObjectDetailedMeta(object, options...)
 		if err == nil {
 			return props, err
 		}
@@ -380,10 +380,10 @@ func (cmd *Command) ossGetObjectStatRetry(bucket *oss.Bucket, object string) (ht
 	}
 }
 
-func (cmd *Command) ossGetObjectMetaRetry(bucket *oss.Bucket, object string) (http.Header, error) {
+func (cmd *Command) ossGetObjectMetaRetry(bucket *oss.Bucket, object string, options ...oss.Option) (http.Header, error) {
 	retryTimes, _ := GetInt(OptionRetryTimes, cmd.options)
 	for i := 1; ; i++ {
-		props, err := bucket.GetObjectMeta(object)
+		props, err := bucket.GetObjectMeta(object, options...)
 		if err == nil {
 			return props, err
 		}
