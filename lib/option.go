@@ -109,7 +109,7 @@ var OptionMap = map[string]Option{
 	OptionHashType: Option{"", "--type", DefaultHashType, OptionTypeAlternative, fmt.Sprintf("%s/%s", DefaultHashType, MD5HashType), "", fmt.Sprintf("计算的类型, 默认值：%s, 取值范围: %s/%s", DefaultHashType, DefaultHashType, MD5HashType),
 		fmt.Sprintf("hash type, Default: %s, value range is: %s/%s", DefaultHashType, DefaultHashType, MD5HashType)},
 	OptionVersion:      Option{"-v", "--version", "", OptionTypeFlagTrue, "", "", fmt.Sprintf("显示ossutil的版本（%s）并退出。", Version), fmt.Sprintf("Show ossutil version (%s) and exit.", Version)},
-	OptionRequestPayer: Option{"", "--payer", string(oss.BucketOwner), OptionTypeAlternative, fmt.Sprintf("%s/%s", string(oss.BucketOwner), string(oss.Requester)), "", "", ""},
+	OptionRequestPayer: Option{"", "--payer", string(oss.BucketOwner), OptionTypeAlternative, fmt.Sprintf("%s/%s", string(oss.BucketOwner), string(oss.Requester)), "", "请求的支付方式", "The payer of the request"},
 }
 
 func (T *Option) getHelp(language string) string {
