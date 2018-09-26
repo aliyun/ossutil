@@ -2091,8 +2091,9 @@ func (cc *CopyCommand) objectStatistic(bucket *oss.Bucket, cloudURL CloudURL) {
 		if strings.HasSuffix(cloudURL.object, "/") {
 			marker = oss.Marker(cloudURL.object)
 		}
+		ossOptions := append(cc.cpOption.options, pre, marker)
 		for {
-			lor, err := cc.command.ossListObjectsRetry(bucket, marker, pre)
+			lor, err := cc.command.ossListObjectsRetry(bucket, ossOptions...)
 			if err != nil {
 				cc.monitor.setScanError(err)
 				return
@@ -2106,6 +2107,7 @@ func (cc *CopyCommand) objectStatistic(bucket *oss.Bucket, cloudURL CloudURL) {
 
 			pre = oss.Prefix(lor.Prefix)
 			marker = oss.Marker(lor.NextMarker)
+			ossOptions = append(cc.cpOption.options, pre, marker)
 			if !lor.IsTruncated {
 				break
 			}
@@ -2186,8 +2188,9 @@ func (cc *CopyCommand) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, chO
 	if strings.HasSuffix(cloudURL.object, "/") {
 		marker = oss.Marker(cloudURL.object)
 	}
+	ossOptions := append(cc.cpOption.options, pre, marker)
 	for {
-		lor, err := cc.command.ossListObjectsRetry(bucket, marker, pre)
+		lor, err := cc.command.ossListObjectsRetry(bucket, ossOptions...)
 		if err != nil {
 			chError <- err
 			break
@@ -2208,6 +2211,7 @@ func (cc *CopyCommand) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, chO
 
 		pre = oss.Prefix(lor.Prefix)
 		marker = oss.Marker(lor.NextMarker)
+		ossOptions = append(cc.cpOption.options, pre, marker)
 		if !lor.IsTruncated {
 			break
 		}
