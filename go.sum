@@ -1,0 +1,17 @@
+github.com/aliyun/aliyun-oss-go-sdk v0.0.0-20180918114345-ddc87ec2145f h1:4iY9zQViTuwFYEiWs58tio/lDw2emX96jT817Xr3rUg=
+github.com/aliyun/aliyun-oss-go-sdk v0.0.0-20180918114345-ddc87ec2145f/go.mod h1:T/Aws4fEfogEE9v+HPhhw+CntffsBHJ8nXQCwKr0/g8=
+github.com/alyu/configparser v0.0.0-20180327070247-c505e6011694 h1:ocQz0cw4FIS9S3YTcEHWbZUOKnKazuJK0YbPTGbwBtE=
+github.com/alyu/configparser v0.0.0-20180327070247-c505e6011694/go.mod h1:AQsRkKr3LShUSgddjIcPP5axBgCGGegOiMu9nHAlqJw=
+github.com/droundy/goopt v0.0.0-20170604162106-0b8effe182da h1:79H+mNJWOObWrQgbkSvvZ3t/D2lKWaTi9mu/v7fNRvg=
+github.com/droundy/goopt v0.0.0-20170604162106-0b8effe182da/go.mod h1:ytRJ64WkuW4kf6/tuYqBATBCRFUP8X9+LDtgcvE+koI=
+github.com/golang/snappy v0.0.0-20180518054509-2e65f85255db h1:woRePGFeVFfLKN/pOkfl+p/TAqKOfFu+7KPlMVpok/w=
+github.com/golang/snappy v0.0.0-20180518054509-2e65f85255db/go.mod h1:/XxbfmMg8lxefKM7IXC3fBNl/7bRcc72aCRzEWrmP2Q=
+github.com/kr/pretty v0.1.0 h1:L/CwN0zerZDmRFUapSPitk6f+Q3+0za1rQkzVuMiMFI=
+github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORNo=
+github.com/kr/pty v1.1.1/go.mod h1:pFQYn66WHrOpPYNljwOMqo10TkYh1fy3cYio2l3bCsQ=
+github.com/kr/text v0.1.0 h1:45sCR5RtlFHMR4UwH9sdQ5TC8v0qDQCHnXt+kaKSTVE=
+github.com/kr/text v0.1.0/go.mod h1:4Jbv+DJW3UT/LiOwJeYQe1efqtUx/iVham/4vfdArNI=
+github.com/syndtr/goleveldb v0.0.0-20180815032940-ae2bd5eed72d h1:4J9HCZVpvDmj2tiKGSTUnb3Ok/9CEQb9oqu9LHKQQpc=
+github.com/syndtr/goleveldb v0.0.0-20180815032940-ae2bd5eed72d/go.mod h1:Z4AUp2Km+PwemOoO/VB5AOx9XSsIItzFjoJlOSiYmn0=
+gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 h1:qIbj1fsPNlZgppZ+VLlY7N33q108Sa+fhmuc+sWQYwY=
+gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
