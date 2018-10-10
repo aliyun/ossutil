@@ -209,7 +209,7 @@ func (s *OssutilCommandSuite) TestGetInvalidSrcURL(c *C) {
 	s.removeBucket(bucketName, true, c)
 }
 
-func (s *OssutilCommandSuite) TestGetSrcURLMissSuffix(c *C) {
+func (s *OssutilCommandSuite) TestGetSrcURLMissDelimiter(c *C) {
 	bucketName := bucketNamePrefix + randLowStr(10)
 	s.putBucket(bucketName, c)
 
@@ -242,9 +242,10 @@ func (s *OssutilCommandSuite) TestPutInvalidSrcURL(c *C) {
 	c.Assert(showElapse, Equals, false)
 
 	s.removeBucket(destBucket, true, c)
+	os.RemoveAll(dir)
 }
 
-func (s *OssutilCommandSuite) TestPutSrcURLMissSuffix(c *C) {
+func (s *OssutilCommandSuite) TestPutSrcURLMissDelimiter(c *C) {
 	destBucket := bucketNamePrefix + randLowStr(10)
 	s.putBucket(destBucket, c)
 	s.createFile(uploadFileName, content, c)
@@ -277,7 +278,7 @@ func (s *OssutilCommandSuite) TestCopyInvalidSrcURL(c *C) {
 	s.removeBucket(destBucket, true, c)
 }
 
-func (s *OssutilCommandSuite) TestCopySrcURLMissSuffix(c *C) {
+func (s *OssutilCommandSuite) TestCopySrcURLMissDelimiter(c *C) {
 	bucketName := bucketNamePrefix + randLowStr(10)
 	s.putBucket(bucketName, c)
 	destBucket := bucketNamePrefix + randLowStr(10)
@@ -296,7 +297,7 @@ func (s *OssutilCommandSuite) TestCopySrcURLMissSuffix(c *C) {
 	s.removeBucket(destBucket, true, c)
 }
 
-func (s *OssutilCommandSuite) TestGetDestURLMissSuffix(c *C) {
+func (s *OssutilCommandSuite) TestGetDestURLMissDelimiter(c *C) {
 	bucketName := bucketNamePrefix + randLowStr(10)
 	s.putBucket(bucketName, c)
 
@@ -315,7 +316,7 @@ func (s *OssutilCommandSuite) TestGetDestURLMissSuffix(c *C) {
 	s.removeBucket(bucketName, true, c)
 }
 
-func (s *OssutilCommandSuite) TestPutDestURLMissSuffix(c *C) {
+func (s *OssutilCommandSuite) TestPutDestURLMissDelimiter(c *C) {
 	destBucket := bucketNamePrefix + randLowStr(10)
 	s.putBucket(destBucket, c)
 
@@ -332,9 +333,10 @@ func (s *OssutilCommandSuite) TestPutDestURLMissSuffix(c *C) {
 	c.Assert(showElapse, Equals, true)
 
 	s.removeBucket(destBucket, true, c)
+	os.Remove(filePath)
 }
 
-func (s *OssutilCommandSuite) TestCopyDestURLMissSuffix(c *C) {
+func (s *OssutilCommandSuite) TestCopyDestURLMissDelimiter(c *C) {
 	bucketName := bucketNamePrefix + randLowStr(10)
 	s.putBucket(bucketName, c)
 	destBucket := bucketNamePrefix + randLowStr(10)
@@ -428,6 +430,7 @@ func (s *OssutilCommandSuite) TestPutMultiLevelSrcURL(c *C) {
 	s.getStat(destBucket, fileName, c)
 
 	s.removeBucket(destBucket, true, c)
+	os.Remove(filePath)
 }
 
 func (s *OssutilCommandSuite) TestCopyMultiLevelSrcURL(c *C) {
@@ -453,7 +456,7 @@ func (s *OssutilCommandSuite) TestCopyMultiLevelSrcURL(c *C) {
 	multiLevelObj = multiLevelDir + "/" + object
 	s.putObject(bucketName, multiLevelObj, uploadFileName, c)
 
-	//get object with --recursive, the src dir is multi-level directory
+	//copy object with --recursive, the src dir is multi-level directory
 	showElapse, err = s.rawCP(CloudURLToString(bucketName, multiLevelDir), CloudURLToString(destBucket, ""), true, true, false, DefaultBigFileThreshold, CheckpointDir)
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
@@ -466,6 +469,81 @@ func (s *OssutilCommandSuite) TestCopyMultiLevelSrcURL(c *C) {
 
 	s.removeBucket(bucketName, true, c)
 	s.removeBucket(destBucket, true, c)
+}
+
+func (s *OssutilCommandSuite) TestPutWithPayer(c *C) {
+	s.createFile(uploadFileName, content, c)
+	bucketName := payerBucket
+
+	//put object, with --payer=requester
+	args := []string{uploadFileName, CloudURLToString(bucketName, "")}
+	showElapse, err := s.rawCPWithPayer(args, false, true, false, DefaultBigFileThreshold, "requester")
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	//put object resumble, with --payer=requester
+	args = []string{uploadFileName, CloudURLToString(bucketName, "")}
+	showElapse, err = s.rawCPWithPayer(args, false, true, false, 1, "requester")
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+}
+
+func (s *OssutilCommandSuite) TestGetWithPayer(c *C) {
+	s.createFile(uploadFileName, content, c)
+	bucketName := payerBucket
+	destObject := randStr(10)
+
+	//at first, put object to bucket for test
+	args := []string{uploadFileName, CloudURLToString(bucketName, destObject)}
+	showElapse, err := s.rawCPWithPayer(args, false, true, false, DefaultBigFileThreshold, "requester")
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	//get object, with --payer=requester
+	args = []string{CloudURLToString(bucketName, destObject), downloadFileName}
+	showElapse, err = s.rawCPWithPayer(args, false, true, false, DefaultBigFileThreshold, "requester")
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	//get object resumble, with --payer=requester
+	showElapse, err = s.rawCPWithPayer(args, false, true, false, 1, "requester")
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+}
+
+func (s *OssutilCommandSuite) TestCopyWithPayer(c *C) {
+	//copy from payer bucket
+	srcBucket := payerBucket
+	destBucket := bucketNamePrefix + randLowStr(5)
+	s.putBucket(destBucket, c)
+	s.createFile(uploadFileName, content, c)
+
+	//at first, put object to bucket for test
+	args := []string{uploadFileName, CloudURLToString(srcBucket, "")}
+	showElapse, err := s.rawCPWithPayer(args, false, true, false, DefaultBigFileThreshold, "requester")
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	args = []string{CloudURLToString(srcBucket, uploadFileName), CloudURLToString(destBucket, "")}
+	showElapse, err = s.rawCPWithPayer(args, false, true, false, DefaultBigFileThreshold, "requester")
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	showElapse, err = s.rawCPWithPayer(args, false, true, false, 1, "requester")
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	//copy to payer bucket
+	srcBucket = destBucket
+	destBucket = payerBucket
+	args = []string{CloudURLToString(srcBucket, uploadFileName), CloudURLToString(destBucket, "")}
+	showElapse, err = s.rawCPWithPayer(args, false, true, false, DefaultBigFileThreshold, "requester")
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	showElapse, err = s.rawCPWithPayer(args, false, true, false, 1, "requester")
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
 }
 
 func (s *OssutilCommandSuite) TestUploadErrSrc(c *C) {

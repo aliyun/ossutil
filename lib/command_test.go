@@ -37,6 +37,7 @@ var (
 	accessKeyID     = "<testAccessKeyID>"
 	accessKeySecret = "<testAccessKeySecret>"
 	stsToken        = "<testSTSToken>"
+	payerBucket     = "<testPayerBucket>"
 )
 
 var (
@@ -92,6 +93,9 @@ func SetUpCredential() {
 	}
 	if accessKeySecret == "<testAccessKeySecret>" {
 		accessKeySecret = os.Getenv("OSS_TEST_ACCESS_KEY_SECRET")
+	}
+	if payerBucket == "<testPayerBucket>" {
+		payerBucket = os.Getenv("OSS_TEST_PAYER_BUCKET")
 	}
 	if ue := os.Getenv("OSS_TEST_UPDATE_ENDPOINT"); ue != "" {
 		vUpdateEndpoint = ue
@@ -199,7 +203,12 @@ func (s *OssutilCommandSuite) removeBuckets(prefix string, c *C) {
 	}
 }
 
-func (s *OssutilCommandSuite) rawList(args []string, cmdline string) (bool, error) {
+type OptionPair struct {
+	Key   string
+	Value string
+}
+
+func (s *OssutilCommandSuite) rawList(args []string, cmdline string, optionPairs ...OptionPair) (bool, error) {
 	array := strings.Split(cmdline, " ")
 	if len(array) < 2 {
 		return false, fmt.Errorf("ls test wrong cmdline given")
@@ -229,6 +238,10 @@ func (s *OssutilCommandSuite) rawList(args []string, cmdline string) (bool, erro
 		"multipart":       &m,
 		"allType":         &a,
 		"limitedNum":      &limitedNum,
+	}
+
+	for _, optionPair := range optionPairs {
+		options[optionPair.Key] = &optionPair.Value
 	}
 	showElapse, err := cm.RunCommand(command, args, options)
 	return showElapse, err
@@ -368,7 +381,6 @@ func (s *OssutilCommandSuite) removeBucket(bucket string, clearObjects bool, c *
 		showElapse, err = s.removeWrapper("rm -arfb", bucket, "", c)
 	}
 	if err != nil {
-		log.Printf("the value of err is %v\n", err)
 		verr := err.(BucketError).err
 		c.Assert(verr.(oss.ServiceError).Code == "NoSuchBucket" || verr.(oss.ServiceError).Code == "BucketNotEmpty", Equals, true)
 		c.Assert(showElapse, Equals, false)
@@ -728,6 +740,32 @@ func (s *OssutilCommandSuite) rawCPWithOutputDir(srcURL, destURL string, recursi
 		"routines":         &routines,
 		"partSize":         &partSize,
 		"outputDir":        &outputDir,
+	}
+	showElapse, err := cm.RunCommand(command, args, options)
+	return showElapse, err
+}
+
+func (s *OssutilCommandSuite) rawCPWithPayer(args []string, recursive, force, update bool, threshold int64, payer string) (bool, error) {
+	command := "cp"
+	str := ""
+	thre := strconv.FormatInt(threshold, 10)
+	routines := strconv.Itoa(Routines)
+	partSize := strconv.FormatInt(DefaultPartSize, 10)
+	cpDir := CheckpointDir
+	options := OptionMapType{
+		"endpoint":         &str,
+		"accessKeyID":      &str,
+		"accessKeySecret":  &str,
+		"stsToken":         &str,
+		"configFile":       &configFile,
+		"recursive":        &recursive,
+		"force":            &force,
+		"update":           &update,
+		"bigfileThreshold": &thre,
+		"checkpointDir":    &cpDir,
+		"routines":         &routines,
+		"partSize":         &partSize,
+		"payer":            &payer,
 	}
 	showElapse, err := cm.RunCommand(command, args, options)
 	return showElapse, err

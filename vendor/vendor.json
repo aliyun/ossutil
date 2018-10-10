@@ -3,10 +3,10 @@
 	"ignore": "test",
 	"package": [
 		{
-			"checksumSHA1": "MI74n6fp+PtogTXwNuRCdTd69Ak=",
+			"checksumSHA1": "bsvoOjnPa4l9VPF5lTriWGtNbzk=",
 			"path": "github.com/aliyun/aliyun-oss-go-sdk/oss",
-			"revision": "61cac5c3293436b17e5a726e6e5c57976c3604e6",
-			"revisionTime": "2018-09-27T12:42:03Z"
+			"revision": "c4975233c0c70c7d97a32929d292bb26a7395aac",
+			"revisionTime": "2018-10-09T13:13:21Z"
 		},
 		{
 			"checksumSHA1": "7Rpfts/QcsB5D1r67ZHj3pUvNHs=",
