@@ -270,8 +270,8 @@ func (s *OssutilCommandSuite) TestListObjectWithPayerInvalidPayer(c *C) {
 	// list buckets with -m
 	args := []string{CloudURLToString(bucketName, "")}
 	showElapse, err := s.rawList(args, "ls - ", OptionPair{Key: "payer", Value: invalidPayer})
-	c.Assert(err, IsNil)
-	c.Assert(showElapse, Equals, true)
+	c.Assert(err, NotNil)
+	c.Assert(showElapse, Equals, false)
 }
 
 func (s *OssutilCommandSuite) TestErrList(c *C) {
