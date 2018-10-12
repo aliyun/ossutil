@@ -496,8 +496,8 @@ func (s *OssutilCommandSuite) TestPutWithPayerInvalidPayer(c *C) {
 	//put object, with --payer=requester
 	args := []string{uploadFileName, CloudURLToString(bucketName, "")}
 	showElapse, err := s.rawCPWithPayer(args, false, true, false, DefaultBigFileThreshold, invalidPayer)
-	c.Assert(err, IsNil)
-	c.Assert(showElapse, Equals, true)
+	c.Assert(err, NotNil)
+	c.Assert(showElapse, Equals, false)
 }
 
 func (s *OssutilCommandSuite) TestGetWithPayer(c *C) {
