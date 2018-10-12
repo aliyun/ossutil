@@ -1230,7 +1230,7 @@ func (cc *CopyCommand) RunCommand() error {
 	}
 
 	if payer != "" {
-		if payer != string(oss.BucketOwner) && payer != string(oss.Requester) {
+		if payer != string(oss.Requester) {
 			return fmt.Errorf("invalid request payer: %s, please check", payer)
 		}
 		cc.cpOption.options = append(cc.cpOption.options, oss.RequestPayer(oss.PayerType(payer)))
@@ -2342,11 +2342,7 @@ func (cc *CopyCommand) copySingleFile(bucket *oss.Bucket, objectInfo objectInfoT
 	msg := fmt.Sprintf("%s %s to %s", opCopy, CloudURLToString(srcURL.bucket, srcObject), CloudURLToString(destURL.bucket, destObject))
 
 	if srcURL.bucket == destURL.bucket && srcObject == destObject {
-		return false, fmt.Errorf("\"%s\" and \"%s\" are the same, copy self will do nothing, set meta please use set-meta command", CloudURLToString(srcURL.bucket, srcObject), CloudURLToString(srcURL.bucket, srcObject)), size, msg
-	}
-
-	if destObject == "" {
-		return false, CopyError{fmt.Errorf("dest object name is empty, try add a prefix to dest_url ==> change dest_url to: oss://dest_bucket/prefix, see naming rules in \"help cp\"")}, size, msg
+		return false, CopyError{fmt.Errorf("\"%s\" and \"%s\" are the same, copy self will do nothing, set meta please use set-meta command", CloudURLToString(srcURL.bucket, srcObject), CloudURLToString(srcURL.bucket, srcObject))}, size, msg
 	}
 
 	//get object size
