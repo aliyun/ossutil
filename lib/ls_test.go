@@ -256,9 +256,20 @@ func (s *OssutilCommandSuite) TestListObjectsWithPayer(c *C) {
 func (s *OssutilCommandSuite) TestListMultipartUploadsWithPayer(c *C) {
 	bucketName := payerBucket
 
-	// list buckets with -d
+	// list buckets with -m
 	args := []string{CloudURLToString(bucketName, "")}
 	showElapse, err := s.rawList(args, "ls -m", OptionPair{Key: "payer", Value: "requester"})
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+}
+
+func (s *OssutilCommandSuite) TestListObjectWithPayerInvalidPayer(c *C) {
+	bucketName := payerBucket
+	invalidPayer := randStr(10)
+
+	// list buckets with -m
+	args := []string{CloudURLToString(bucketName, "")}
+	showElapse, err := s.rawList(args, "ls - ", OptionPair{Key: "payer", Value: invalidPayer})
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
 }

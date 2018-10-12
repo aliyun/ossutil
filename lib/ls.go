@@ -380,7 +380,7 @@ func (lc *ListCommand) RunCommand() error {
 
 	payer, _ := GetString(OptionRequestPayer, lc.command.options)
 	if payer != "" {
-		if payer != string(oss.BucketOwner) && payer != string(oss.Requester) {
+		if payer != string(oss.Requester) {
 			return fmt.Errorf("invalid request payer: %s, please check", payer)
 		}
 	}
