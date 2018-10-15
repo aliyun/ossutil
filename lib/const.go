@@ -86,7 +86,7 @@ const (
 const (
 	Package                 string = "ossutil"
 	ChannelBuf              int    = 1000
-	Version                 string = "1.4.1"
+	Version                 string = "1.4.2"
 	DefaultEndpoint         string = "oss.aliyuncs.com"
 	ChineseLanguage                = "CH"
 	EnglishLanguage                = "EN"
