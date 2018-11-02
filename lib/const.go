@@ -116,7 +116,7 @@ const (
 	MinPartSize             int64  = 1
 	DefaultLimitedNum              = -1
 	MinLimitedNum                  = 0
-	RetryTimes              int    = 3
+	RetryTimes              int    = 10
 	MaxRetryTimes           int64  = 500
 	MinRetryTimes           int64  = 1
 	Routines                int    = 3

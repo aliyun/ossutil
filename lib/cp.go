@@ -39,6 +39,7 @@ type copyOptionType struct {
 	snapshotPath string
 	vrange       string
 	encodingType string
+	meta         string
 	options      []oss.Option
 	filters      []filterOptionType
 	threshold    int64
@@ -396,10 +397,9 @@ var specChineseCopy = SpecText{
 
     3) ossutil cp oss://src_bucket[/src_prefix] oss://dest_bucket[/dest_prefix] [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] 
         该用法在oss间进行object的拷贝。其中src_bucket与dest_bucket可以相同，注意，当src_url与
-    dest_url完全相同时，ossutil不会做任何事情，直接提示退出。设置meta请使用set-meta命令。如果未
-    指定--recursive选项，则认为src_url精确指定了待拷贝的单个object，此时不支持prefix匹配，如果
-    object不存在则报错。如果指定了--recursive选项，ossutil会搜索prefix匹配的objects，批量拷贝这
-    些objects。
+	dest_url完全相同时，ossutil不会做任何事情，直接提示退出（除非指定--meta选项）。如果未指定--recursive选项，则认为
+	src_url精确指定了待拷贝的单个object，此时不支持prefix匹配，如果object不存在则报错。如果指定了--recursive选项，
+	ossutil会搜索prefix匹配的objects，批量拷贝这些objects。
     注意：批量拷贝时，src_url包含dest_url，或dest_url包含src_url是不允许的（dest_url以src_url为
     前缀时，会产生递归拷贝，src_url以dest_url为前缀时，会覆盖待拷贝文件）。单个拷贝时，该情况是
     允许的。
@@ -912,8 +912,8 @@ Usage:
 
     3) ossutil cp oss://src_bucket[/src_prefix] oss://dest_bucket[/dest_prefix] [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] 
         The usage copy objects between oss. The src_bucket can be same with dest_bucket. Pay attention 
-    please, if src_url is the same with dest_url, ossutil will do nothing but exit after prompt. Set meta 
-    please use "set-meta" command. If --recursive option is not specified, ossutil considers src_url exactly 
+	please, if src_url is the same with dest_url, ossutil will do nothing but exit after prompt(expect --meta 
+	option is included ). If --recursive option is not specified, ossutil considers src_url exactly 
     specified the single object you want to copy. If --recursive option is specified, ossutil will search 
     for prefix-matching objects and batch copy those objects. 
 
@@ -1166,7 +1166,7 @@ func (cc *CopyCommand) RunCommand() error {
 	cc.cpOption.snapshotPath, _ = GetString(OptionSnapshotPath, cc.command.options)
 	cc.cpOption.vrange, _ = GetString(OptionRange, cc.command.options)
 	cc.cpOption.encodingType, _ = GetString(OptionEncodingType, cc.command.options)
-	meta, _ := GetString(OptionMeta, cc.command.options)
+	cc.cpOption.meta, _ = GetString(OptionMeta, cc.command.options)
 	acl, _ := GetString(OptionACL, cc.command.options)
 	payer, _ := GetString(OptionRequestPayer, cc.command.options)
 
@@ -1200,12 +1200,12 @@ func (cc *CopyCommand) RunCommand() error {
 	}
 
 	cc.cpOption.options = []oss.Option{}
-	if meta != "" {
+	if cc.cpOption.meta != "" {
 		if opType == operationTypeGet {
 			return fmt.Errorf("No need to set meta for download")
 		}
 
-		headers, err := cc.command.parseHeaders(meta, false)
+		headers, err := cc.command.parseHeaders(cc.cpOption.meta, false)
 		if err != nil {
 			return err
 		}
@@ -1786,14 +1786,15 @@ func (cc *CopyCommand) calcPartSize(fileSize int64) (int64, int64) {
 	partNum := (fileSize-1)/partSize + 1
 
 	for partNum > MaxIdealPartNum && partSize < MaxIdealPartSize {
-		partNum /= 5
+		partNum /= 2
 		partSize = int64(math.Ceil(float64(fileSize) / float64(partNum)))
 	}
 
 	for partSize < MinIdealPartSize && partNum > MinIdealPartNum {
-		partSize *= 5
+		partSize *= 2
 		partNum = (fileSize-1)/partSize + 1
 	}
+
 	return partSize, partNum
 }
 
@@ -2312,9 +2313,10 @@ func (cc *CopyCommand) checkCopyFileArgs(srcURL, destURL CloudURL) error {
 	srcPrefix := srcURL.object
 	destPrefix := destURL.object
 	if srcPrefix == destPrefix {
-		return fmt.Errorf("\"%s\" and \"%s\" are the same, copy self will do nothing, set meta please use set-meta command", srcURL.ToString(), srcURL.ToString())
-	}
-	if cc.cpOption.recursive {
+		if cc.cpOption.meta == "" {
+			return fmt.Errorf("\"%s\" and \"%s\" are the same, copy self will do nothing, set meta please use --meta options", srcURL.ToString(), srcURL.ToString())
+		}
+	} else if cc.cpOption.recursive {
 		if strings.HasPrefix(destPrefix, srcPrefix) {
 			return fmt.Errorf("\"%s\" include \"%s\", it's not allowed, recursivlly copy should be avoided", destURL.ToString(), srcURL.ToString())
 		}
@@ -2340,10 +2342,6 @@ func (cc *CopyCommand) copySingleFile(bucket *oss.Bucket, objectInfo objectInfoT
 	srct := objectInfo.lastModified
 
 	msg := fmt.Sprintf("%s %s to %s", opCopy, CloudURLToString(srcURL.bucket, srcObject), CloudURLToString(destURL.bucket, destObject))
-
-	if srcURL.bucket == destURL.bucket && srcObject == destObject {
-		return false, CopyError{fmt.Errorf("\"%s\" and \"%s\" are the same, copy self will do nothing, set meta please use set-meta command", CloudURLToString(srcURL.bucket, srcObject), CloudURLToString(srcURL.bucket, srcObject))}, size, msg
-	}
 
 	//get object size
 	if size < 0 {

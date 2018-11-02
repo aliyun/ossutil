@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"sync/atomic"
+	"time"
 )
 
 const (
@@ -372,15 +373,17 @@ func (m *RMMonitor) getBucketFinishBar(snap *RMMonitorSnap) string {
 
 // for cp
 type CPMonitorSnap struct {
-	transferSize int64
-	skipSize     int64
-	dealSize     int64
-	fileNum      int64
-	dirNum       int64
-	skipNum      int64
-	errNum       int64
-	okNum        int64
-	dealNum      int64
+	transferSize  int64
+	skipSize      int64
+	dealSize      int64
+	fileNum       int64
+	dirNum        int64
+	skipNum       int64
+	errNum        int64
+	okNum         int64
+	dealNum       int64
+	duration      int64
+	incrementSize int64
 }
 
 /*
@@ -401,7 +404,9 @@ type CPMonitor struct {
 	op             operationType
 	seekAheadEnd   bool
 	finish         bool
-	_              uint32 //Add padding to make sure the next data 64bits alignment
+	//_              uint32 //Add padding to make sure the next data 64bits alignment
+	lastSnapTime time.Time
+	lastSnapSize int64
 }
 
 func (m *CPMonitor) init(op operationType) {
@@ -417,6 +422,8 @@ func (m *CPMonitor) init(op operationType) {
 	m.skipNum = 0
 	m.errNum = 0
 	m.finish = false
+	m.lastSnapSize = 0
+	m.lastSnapTime = time.Now()
 }
 
 func (m *CPMonitor) setScanError(err error) {
@@ -472,6 +479,11 @@ func (m *CPMonitor) getSnapshot() *CPMonitorSnap {
 	snap.errNum = m.errNum
 	snap.okNum = snap.fileNum + snap.dirNum + snap.skipNum
 	snap.dealNum = snap.okNum + snap.errNum
+	now := time.Now()
+	snap.duration = now.Sub(m.lastSnapTime).Nanoseconds()
+	m.lastSnapTime = now
+	snap.incrementSize = m.transferSize - m.lastSnapSize
+	m.lastSnapSize = snap.transferSize
 	return &snap
 }
 
@@ -494,9 +506,9 @@ func (m *CPMonitor) getProgressBar() string {
 
 	if m.seekAheadEnd && m.seekAheadError == nil {
 		if snap.errNum == 0 {
-			return getClearStr(fmt.Sprintf("Total num: %d, size: %s. Dealed num: %d%s%s, Progress: %d%s", m.totalNum, getSizeString(m.totalSize), snap.dealNum, m.getDealNumDetail(snap), m.getDealSizeDetail(snap), m.getPrecent(snap), "%%"))
+			return getClearStr(fmt.Sprintf("Total num: %d, size: %s. Dealed num: %d%s%s, Progress: %.3f%s, Speed: %.2fKB/s", m.totalNum, getSizeString(m.totalSize), snap.dealNum, m.getDealNumDetail(snap), m.getDealSizeDetail(snap), m.getPrecent(snap), "%%", m.getSpeed(snap)))
 		}
-		return getClearStr(fmt.Sprintf("Total num: %d, size: %s. Dealed num: %d%s%s, Progress: %d%s", m.totalNum, getSizeString(m.totalSize), snap.dealNum, m.getDealNumDetail(snap), m.getDealSizeDetail(snap), m.getPrecent(snap), "%%"))
+		return getClearStr(fmt.Sprintf("Total num: %d, size: %s. Dealed num: %d%s%s, Progress: %.3f%s, Speed: %.2fKB/s", m.totalNum, getSizeString(m.totalSize), snap.dealNum, m.getDealNumDetail(snap), m.getDealSizeDetail(snap), m.getPrecent(snap), "%%", m.getSpeed(snap)))
 	}
 	scanNum := max(m.totalNum, snap.dealNum)
 	scanSize := max(m.totalSize, snap.dealSize)
@@ -578,6 +590,10 @@ func (m *CPMonitor) getNumDetail(snap *CPMonitorSnap, hasErr bool) string {
 	return fmt.Sprintf("(%s)", strings.Join(strList, ", "))
 }
 
+func (m *CPMonitor) getSpeed(snap *CPMonitorSnap) float64 {
+	return (float64(snap.incrementSize) / 1024) / (float64(snap.duration) * 1e-9)
+}
+
 func (m *CPMonitor) getOPStr() string {
 	switch m.op {
 	case operationTypePut:
@@ -610,13 +626,13 @@ func (m *CPMonitor) getSizeDetail(snap *CPMonitorSnap) string {
 	return fmt.Sprintf(", OK size: %s(transfer: %s, skip: %s)", getSizeString(snap.transferSize+snap.skipSize), getSizeString(snap.transferSize), getSizeString(snap.skipSize))
 }
 
-func (m *CPMonitor) getPrecent(snap *CPMonitorSnap) int {
+func (m *CPMonitor) getPrecent(snap *CPMonitorSnap) float64 {
 	if m.seekAheadEnd && m.seekAheadError == nil {
 		if m.totalSize != 0 {
-			return int(float64((snap.dealSize)*100.0) / float64(m.totalSize))
+			return float64((snap.dealSize)*100.0) / float64(m.totalSize)
 		}
 		if m.totalNum != 0 {
-			return int(float64((snap.dealNum)*100.0) / float64(m.totalNum))
+			return float64((snap.dealNum)*100.0) / float64(m.totalNum)
 		}
 		return 100
 	}
