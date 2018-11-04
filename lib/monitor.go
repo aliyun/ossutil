@@ -404,9 +404,10 @@ type CPMonitor struct {
 	op             operationType
 	seekAheadEnd   bool
 	finish         bool
-	//_              uint32 //Add padding to make sure the next data 64bits alignment
-	lastSnapTime time.Time
-	lastSnapSize int64
+	_              uint32 //Add padding to make sure the next data 64bits alignment
+	lastSnapSize   int64
+	tickDuration   int64
+	lastSnapTime   time.Time
 }
 
 func (m *CPMonitor) init(op operationType) {
@@ -424,6 +425,7 @@ func (m *CPMonitor) init(op operationType) {
 	m.finish = false
 	m.lastSnapSize = 0
 	m.lastSnapTime = time.Now()
+	m.tickDuration = 1 * int64(time.Second)
 }
 
 func (m *CPMonitor) setScanError(err error) {
@@ -503,18 +505,15 @@ func (m *CPMonitor) getProgressBar() string {
 	defer mu.RUnlock()
 
 	snap := m.getSnapshot()
+	if snap.duration < m.tickDuration {
+		return ""
+	}
 
 	if m.seekAheadEnd && m.seekAheadError == nil {
-		if snap.errNum == 0 {
-			return getClearStr(fmt.Sprintf("Total num: %d, size: %s. Dealed num: %d%s%s, Progress: %.3f%s, Speed: %.2fKB/s", m.totalNum, getSizeString(m.totalSize), snap.dealNum, m.getDealNumDetail(snap), m.getDealSizeDetail(snap), m.getPrecent(snap), "%%", m.getSpeed(snap)))
-		}
 		return getClearStr(fmt.Sprintf("Total num: %d, size: %s. Dealed num: %d%s%s, Progress: %.3f%s, Speed: %.2fKB/s", m.totalNum, getSizeString(m.totalSize), snap.dealNum, m.getDealNumDetail(snap), m.getDealSizeDetail(snap), m.getPrecent(snap), "%%", m.getSpeed(snap)))
 	}
 	scanNum := max(m.totalNum, snap.dealNum)
 	scanSize := max(m.totalSize, snap.dealSize)
-	if snap.errNum == 0 {
-		return getClearStr(fmt.Sprintf("Scanned num: %d, size: %s. Dealed num: %d%s%s.", scanNum, getSizeString(scanSize), snap.dealNum, m.getDealNumDetail(snap), m.getDealSizeDetail(snap)))
-	}
 	return getClearStr(fmt.Sprintf("Scanned num: %d, size: %s. Dealed num: %d%s%s.", scanNum, getSizeString(scanSize), snap.dealNum, m.getDealNumDetail(snap), m.getDealSizeDetail(snap)))
 }
 
