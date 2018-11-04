@@ -397,9 +397,8 @@ var specChineseCopy = SpecText{
 
     3) ossutil cp oss://src_bucket[/src_prefix] oss://dest_bucket[/dest_prefix] [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] 
         该用法在oss间进行object的拷贝。其中src_bucket与dest_bucket可以相同，注意，当src_url与
-	dest_url完全相同时，ossutil不会做任何事情，直接提示退出（除非指定--meta选项）。如果未指定--recursive选项，则认为
-	src_url精确指定了待拷贝的单个object，此时不支持prefix匹配，如果object不存在则报错。如果指定了--recursive选项，
-	ossutil会搜索prefix匹配的objects，批量拷贝这些objects。
+    dest_url完全相同时，ossutil不会做任何事情，直接提示退出（除非指定--meta选项）。如果未指定
+    --recursive选项，则认为ossutil会搜索prefix匹配的objects，批量拷贝这些objects。
     注意：批量拷贝时，src_url包含dest_url，或dest_url包含src_url是不允许的（dest_url以src_url为
     前缀时，会产生递归拷贝，src_url以dest_url为前缀时，会覆盖待拷贝文件）。单个拷贝时，该情况是
     允许的。
@@ -912,8 +911,8 @@ Usage:
 
     3) ossutil cp oss://src_bucket[/src_prefix] oss://dest_bucket[/dest_prefix] [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=file] 
         The usage copy objects between oss. The src_bucket can be same with dest_bucket. Pay attention 
-	please, if src_url is the same with dest_url, ossutil will do nothing but exit after prompt(expect --meta 
-	option is included ). If --recursive option is not specified, ossutil considers src_url exactly 
+    please, if src_url is the same with dest_url, ossutil will do nothing but exit after prompt(expect --meta 
+    option is included ). If --recursive option is not specified, ossutil considers src_url exactly 
     specified the single object you want to copy. If --recursive option is specified, ossutil will search 
     for prefix-matching objects and batch copy those objects. 
 
@@ -1786,12 +1785,12 @@ func (cc *CopyCommand) calcPartSize(fileSize int64) (int64, int64) {
 	partNum := (fileSize-1)/partSize + 1
 
 	for partNum > MaxIdealPartNum && partSize < MaxIdealPartSize {
-		partNum /= 2
+		partNum /= 5
 		partSize = int64(math.Ceil(float64(fileSize) / float64(partNum)))
 	}
 
 	for partSize < MinIdealPartSize && partNum > MinIdealPartNum {
-		partSize *= 2
+		partSize *= 5
 		partNum = (fileSize-1)/partSize + 1
 	}
 
