@@ -400,13 +400,13 @@ type CPMonitor struct {
 	dirNum         int64
 	skipNum        int64
 	errNum         int64
+	lastSnapSize   int64
+	tickDuration   int64
 	seekAheadError error
 	op             operationType
 	seekAheadEnd   bool
 	finish         bool
 	_              uint32 //Add padding to make sure the next data 64bits alignment
-	lastSnapSize   int64
-	tickDuration   int64
 	lastSnapTime   time.Time
 }
 

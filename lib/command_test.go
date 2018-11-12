@@ -14,11 +14,7 @@ import (
 	"testing"
 	"time"
 
-	//"github.com/go-vgo/robotgo"
-
 	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
-	//"github.com/go-vgo/robotgo"
-
 	. "gopkg.in/check.v1"
 )
 
