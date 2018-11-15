@@ -3,9 +3,10 @@ package lib
 import (
 	"errors"
 	"fmt"
-	goopt "github.com/droundy/goopt"
 	"strconv"
 	"strings"
+
+	goopt "github.com/droundy/goopt"
 )
 
 type optionType int
@@ -106,7 +107,8 @@ var OptionMap = map[string]Option{
 		fmt.Sprintf("set the language of ossutil(default: %s), value range is: %s/%s, if you set it to \"%s\", please make sure your system language is UTF-8.", DefaultLanguage, ChineseLanguage, EnglishLanguage, ChineseLanguage)},
 	OptionHashType: Option{"", "--type", DefaultHashType, OptionTypeAlternative, fmt.Sprintf("%s/%s", DefaultHashType, MD5HashType), "", fmt.Sprintf("计算的类型, 默认值：%s, 取值范围: %s/%s", DefaultHashType, DefaultHashType, MD5HashType),
 		fmt.Sprintf("hash type, Default: %s, value range is: %s/%s", DefaultHashType, DefaultHashType, MD5HashType)},
-	OptionVersion: Option{"-v", "--version", "", OptionTypeFlagTrue, "", "", fmt.Sprintf("显示ossutil的版本（%s）并退出。", Version), fmt.Sprintf("Show ossutil version (%s) and exit.", Version)},
+	OptionVersion:      Option{"-v", "--version", "", OptionTypeFlagTrue, "", "", fmt.Sprintf("显示ossutil的版本（%s）并退出。", Version), fmt.Sprintf("Show ossutil version (%s) and exit.", Version)},
+	OptionRequestPayer: Option{"", "--payer", "", OptionTypeString, "", "", "请求的支付方式，如果为请求者付费模式，可以将该值设置成\"requester\"", "The payer of the request. You can set this value to \"requester\" if you want pay for requester"},
 }
 
 func (T *Option) getHelp(language string) string {
@@ -132,6 +134,7 @@ func ParseArgOptions() ([]string, OptionMapType, error) {
 	if err := checkOption(options); err != nil {
 		return nil, nil, err
 	}
+
 	return goopt.Args, options, nil
 }
 

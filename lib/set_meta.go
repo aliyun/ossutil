@@ -2,11 +2,12 @@ package lib
 
 import (
 	"fmt"
-	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"net/http"
 	"os"
 	"strings"
 	"time"
+
+	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
 
 var headerOptionMap = map[string]interface{}{
@@ -19,6 +20,7 @@ var headerOptionMap = map[string]interface{}{
 	oss.HTTPHeaderOssServerSideEncryption: oss.ServerSideEncryption,
 	oss.HTTPHeaderOssObjectACL:            oss.ObjectACL,
 	oss.HTTPHeaderOrigin:                  oss.Origin,
+	oss.HTTPHeaderOssStorageClass:         oss.ObjectStorageClass,
 }
 
 func formatHeaderString(hopMap map[string]interface{}, sep string) string {
@@ -61,6 +63,8 @@ func getOSSOption(hopMap map[string]interface{}, name string, param string) (oss
 				}
 			}
 			return f.(func(time.Time) oss.Option)(val), nil
+		case func(oss.StorageClassType) oss.Option:
+			return f.(func(oss.StorageClassType) oss.Option)(oss.StorageClassType(param)), nil
 		default:
 			return nil, fmt.Errorf("error option type, internal error")
 		}

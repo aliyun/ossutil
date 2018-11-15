@@ -68,6 +68,7 @@ func (s *OssutilCommandSuite) TestUploadProgressBar(c *C) {
 	c.Assert(snap.dealNum, Equals, int64(num))
 	c.Assert(copyCommand.monitor.getPrecent(snap) == 100 || copyCommand.monitor.getPrecent(snap) == 0, Equals, true)
 
+	time.Sleep(time.Second)
 	str = strings.ToLower(copyCommand.monitor.getProgressBar())
 	c.Assert(strings.Contains(str, fmt.Sprintf("num: %d", num)), Equals, true)
 	c.Assert(strings.Contains(str, "error"), Equals, false)
@@ -137,6 +138,7 @@ func (s *OssutilCommandSuite) TestUploadProgressBar(c *C) {
 	c.Assert(snap.dealNum, Equals, int64(num+num1+2))
 	c.Assert(copyCommand.monitor.getPrecent(snap) == 100 || copyCommand.monitor.getPrecent(snap) == 0, Equals, true)
 
+	time.Sleep(time.Second)
 	str = strings.ToLower(copyCommand.monitor.getProgressBar())
 	c.Assert(strings.Contains(str, fmt.Sprintf("num: %d", snap.dealNum)), Equals, true)
 	c.Assert(strings.Contains(str, "error"), Equals, false)
@@ -206,6 +208,7 @@ func (s *OssutilCommandSuite) TestDownloadProgressBar(c *C) {
 	c.Assert(snap.dealNum, Equals, int64(1))
 	c.Assert(copyCommand.monitor.getPrecent(snap) == 100 || copyCommand.monitor.getPrecent(snap) == 0, Equals, true)
 
+	time.Sleep(time.Second)
 	str = strings.ToLower(copyCommand.monitor.getProgressBar())
 	c.Assert(strings.Contains(str, fmt.Sprintf("num: %d", 1)), Equals, true)
 	c.Assert(strings.Contains(str, "error"), Equals, false)
@@ -265,6 +268,7 @@ func (s *OssutilCommandSuite) TestCopyProgressBar(c *C) {
 	c.Assert(snap.dealNum, Equals, int64(2))
 	c.Assert(copyCommand.monitor.getPrecent(snap) == 100 || copyCommand.monitor.getPrecent(snap) == 0, Equals, true)
 
+	time.Sleep(time.Second)
 	str = strings.ToLower(copyCommand.monitor.getProgressBar())
 	c.Assert(strings.Contains(str, fmt.Sprintf("num: %d", 2)), Equals, true)
 	c.Assert(strings.Contains(str, "error"), Equals, false)
@@ -326,6 +330,7 @@ func (s *OssutilCommandSuite) TestProgressBarStatisticErr(c *C) {
 	c.Assert(snap.okNum, Equals, int64(0))
 	c.Assert(snap.dealNum, Equals, int64(0))
 
+	time.Sleep(time.Second)
 	str := strings.ToLower(copyCommand.monitor.getProgressBar())
 	c.Assert(strings.Contains(str, fmt.Sprintf("scanned num: %d", snap.dealNum)), Equals, true)
 	c.Assert(strings.Contains(str, "total"), Equals, false)
@@ -397,6 +402,7 @@ func (s *OssutilCommandSuite) TestProgressBarContinueErr(c *C) {
 	c.Assert(snap.okNum, Equals, int64(0))
 	c.Assert(snap.dealNum, Equals, int64(num))
 
+	time.Sleep(time.Second)
 	str := strings.ToLower(copyCommand.monitor.getProgressBar())
 	c.Assert(strings.Contains(str, fmt.Sprintf("num: %d", snap.dealNum)), Equals, true)
 	c.Assert(strings.Contains(str, "error"), Equals, true)
@@ -440,6 +446,7 @@ func (s *OssutilCommandSuite) TestSingleFileProgress(c *C) {
 		c.Assert(snap.okNum, Equals, int64(0))
 		c.Assert(snap.dealNum, Equals, int64(0))
 
+		time.Sleep(time.Second)
 		str := strings.ToLower(copyCommand.monitor.getProgressBar())
 		c.Assert(strings.Contains(str, "total num"), Equals, false)
 		c.Assert(strings.Contains(str, "scanned"), Equals, true)
@@ -473,6 +480,7 @@ func (s *OssutilCommandSuite) TestSingleFileProgress(c *C) {
 		c.Assert(snap.okNum, Equals, int64(1))
 		c.Assert(snap.dealNum, Equals, int64(1))
 
+		time.Sleep(time.Second)
 		str = strings.ToLower(copyCommand.monitor.getProgressBar())
 		c.Assert(strings.Contains(str, fmt.Sprintf("num: %d", 1)), Equals, true)
 		c.Assert(strings.Contains(str, "error"), Equals, false)
@@ -508,6 +516,7 @@ func (s *OssutilCommandSuite) TestSingleFileProgress(c *C) {
 		c.Assert(snap.okNum, Equals, int64(1))
 		c.Assert(snap.dealNum, Equals, int64(1))
 
+		time.Sleep(time.Second)
 		str = strings.ToLower(copyCommand.monitor.getProgressBar())
 		c.Assert(strings.Contains(str, fmt.Sprintf("num: %d", 1)), Equals, true)
 		c.Assert(strings.Contains(str, "error"), Equals, false)
@@ -543,6 +552,7 @@ func (s *OssutilCommandSuite) TestSingleFileProgress(c *C) {
 		c.Assert(snap.okNum, Equals, int64(1))
 		c.Assert(snap.dealNum, Equals, int64(1))
 
+		time.Sleep(time.Second)
 		str = strings.ToLower(copyCommand.monitor.getProgressBar())
 		c.Assert(strings.Contains(str, fmt.Sprintf("num: %d", 1)), Equals, true)
 		c.Assert(strings.Contains(str, "error"), Equals, false)
@@ -578,6 +588,7 @@ func (s *OssutilCommandSuite) TestSingleFileProgress(c *C) {
 		c.Assert(snap.okNum, Equals, int64(1))
 		c.Assert(snap.dealNum, Equals, int64(1))
 
+		time.Sleep(time.Second)
 		str = strings.ToLower(copyCommand.monitor.getProgressBar())
 		c.Assert(strings.Contains(str, fmt.Sprintf("num: %d", 1)), Equals, true)
 		c.Assert(strings.Contains(str, "error"), Equals, false)

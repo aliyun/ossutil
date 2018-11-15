@@ -236,6 +236,44 @@ func (s *OssutilCommandSuite) TestListObjects(c *C) {
 	s.removeBucket(bucketName, true, c)
 }
 
+func (s *OssutilCommandSuite) TestListObjectsWithPayer(c *C) {
+	s.createFile(uploadFileName, content, c)
+	bucketName := payerBucket
+	objectName := randStr(10)
+
+	//put object, with --payer=requester
+	args := []string{uploadFileName, CloudURLToString(bucketName, objectName)}
+	showElapse, err := s.rawCPWithPayer(args, false, true, false, DefaultBigFileThreshold, "requester")
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	args = []string{CloudURLToString(bucketName, objectName)}
+	showElapse, err = s.rawList(args, "ls - ", OptionPair{Key: "payer", Value: "requester"})
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+}
+
+func (s *OssutilCommandSuite) TestListMultipartUploadsWithPayer(c *C) {
+	bucketName := payerBucket
+
+	// list buckets with -m
+	args := []string{CloudURLToString(bucketName, "")}
+	showElapse, err := s.rawList(args, "ls -m", OptionPair{Key: "payer", Value: "requester"})
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+}
+
+func (s *OssutilCommandSuite) TestListObjectWithPayerInvalidPayer(c *C) {
+	bucketName := payerBucket
+	invalidPayer := randStr(10)
+
+	// list buckets with -m
+	args := []string{CloudURLToString(bucketName, "")}
+	showElapse, err := s.rawList(args, "ls - ", OptionPair{Key: "payer", Value: invalidPayer})
+	c.Assert(err, NotNil)
+	c.Assert(showElapse, Equals, false)
+}
+
 func (s *OssutilCommandSuite) TestErrList(c *C) {
 	showElapse, err := s.rawList([]string{"../"}, "ls -s")
 	c.Assert(err, NotNil)

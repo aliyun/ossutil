@@ -2,7 +2,6 @@ package lib
 
 import (
 	"fmt"
-	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"io/ioutil"
 	"log"
 	"math/rand"
@@ -15,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 	. "gopkg.in/check.v1"
 )
 
@@ -33,6 +33,7 @@ var (
 	accessKeyID     = "<testAccessKeyID>"
 	accessKeySecret = "<testAccessKeySecret>"
 	stsToken        = "<testSTSToken>"
+	payerBucket     = "<testPayerBucket>"
 )
 
 var (
@@ -88,6 +89,9 @@ func SetUpCredential() {
 	}
 	if accessKeySecret == "<testAccessKeySecret>" {
 		accessKeySecret = os.Getenv("OSS_TEST_ACCESS_KEY_SECRET")
+	}
+	if payerBucket == "<testPayerBucket>" {
+		payerBucket = os.Getenv("OSS_TEST_PAYER_BUCKET")
 	}
 	if ue := os.Getenv("OSS_TEST_UPDATE_ENDPOINT"); ue != "" {
 		vUpdateEndpoint = ue
@@ -195,7 +199,12 @@ func (s *OssutilCommandSuite) removeBuckets(prefix string, c *C) {
 	}
 }
 
-func (s *OssutilCommandSuite) rawList(args []string, cmdline string) (bool, error) {
+type OptionPair struct {
+	Key   string
+	Value string
+}
+
+func (s *OssutilCommandSuite) rawList(args []string, cmdline string, optionPairs ...OptionPair) (bool, error) {
 	array := strings.Split(cmdline, " ")
 	if len(array) < 2 {
 		return false, fmt.Errorf("ls test wrong cmdline given")
@@ -225,6 +234,10 @@ func (s *OssutilCommandSuite) rawList(args []string, cmdline string) (bool, erro
 		"multipart":       &m,
 		"allType":         &a,
 		"limitedNum":      &limitedNum,
+	}
+
+	for _, optionPair := range optionPairs {
+		options[optionPair.Key] = &optionPair.Value
 	}
 	showElapse, err := cm.RunCommand(command, args, options)
 	return showElapse, err
@@ -723,6 +736,32 @@ func (s *OssutilCommandSuite) rawCPWithOutputDir(srcURL, destURL string, recursi
 		"routines":         &routines,
 		"partSize":         &partSize,
 		"outputDir":        &outputDir,
+	}
+	showElapse, err := cm.RunCommand(command, args, options)
+	return showElapse, err
+}
+
+func (s *OssutilCommandSuite) rawCPWithPayer(args []string, recursive, force, update bool, threshold int64, payer string) (bool, error) {
+	command := "cp"
+	str := ""
+	thre := strconv.FormatInt(threshold, 10)
+	routines := strconv.Itoa(Routines)
+	partSize := strconv.FormatInt(DefaultPartSize, 10)
+	cpDir := CheckpointDir
+	options := OptionMapType{
+		"endpoint":         &str,
+		"accessKeyID":      &str,
+		"accessKeySecret":  &str,
+		"stsToken":         &str,
+		"configFile":       &configFile,
+		"recursive":        &recursive,
+		"force":            &force,
+		"update":           &update,
+		"bigfileThreshold": &thre,
+		"checkpointDir":    &cpDir,
+		"routines":         &routines,
+		"partSize":         &partSize,
+		"payer":            &payer,
 	}
 	showElapse, err := cm.RunCommand(command, args, options)
 	return showElapse, err
@@ -2293,16 +2332,16 @@ func (s *OssutilCommandSuite) TestDoesSingleObjectMatchPatterns(c *C) {
 
 func (s *OssutilCommandSuite) TestGetObjectsFromChanToArray(c *C) {
 	chObjects := make(chan objectInfoType, ChannelBuf)
-	chObjects <- objectInfoType{"dir1/my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)}
-	chObjects <- objectInfoType{"dir1/testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)}
-	chObjects <- objectInfoType{"testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)}
+	chObjects <- objectInfoType{"dir1/", "my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)}
+	chObjects <- objectInfoType{"dir1/", "testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)}
+	chObjects <- objectInfoType{"", "testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)}
 	close(chObjects)
 
 	files := getObjectsFromChanToArray(chObjects)
 	expect := []objectInfoType{
-		{"dir1/my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)},
-		{"dir1/testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)},
-		{"testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)},
+		{"dir1/", "my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)},
+		{"dir1/", "testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)},
+		{"", "testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)},
 	}
 	same := reflect.DeepEqual(files, expect)
 	c.Assert(same, Equals, true)
@@ -2317,12 +2356,12 @@ func (s *OssutilCommandSuite) TestGetObjectsFromChanToArray(c *C) {
 
 func (s *OssutilCommandSuite) TestFilterObjectsWithInclude(c *C) {
 	objects := []objectInfoType{
-		{"dir1/my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)},
-		{"dir1/testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)},
-		{"testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)},
+		{"dir1/", "my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)},
+		{"dir1/", "testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)},
+		{"", "testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)},
 	}
 
-	expect := []objectInfoType{{"dir1/my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)}}
+	expect := []objectInfoType{{"dir1/", "my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)}}
 	res := filterObjectsWithInclude(objects, "*.rtf")
 	same := reflect.DeepEqual(res, expect)
 	c.Assert(same, Equals, true)
@@ -2333,9 +2372,9 @@ func (s *OssutilCommandSuite) TestFilterObjectsWithInclude(c *C) {
 	c.Assert(same, Equals, true)
 
 	expect = []objectInfoType{
-		{"dir1/my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)},
-		{"dir1/testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)},
-		{"testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)},
+		{"dir1/", "my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)},
+		{"dir1/", "testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)},
+		{"", "testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)},
 	}
 	res = filterObjectsWithInclude(objects, "*")
 	same = reflect.DeepEqual(res, expect)
@@ -2349,14 +2388,14 @@ func (s *OssutilCommandSuite) TestFilterObjectsWithInclude(c *C) {
 
 func (s *OssutilCommandSuite) TestFilterObjectsWithExclude(c *C) {
 	objects := []objectInfoType{
-		{"dir1/my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)},
-		{"dir1/testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)},
-		{"testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)},
+		{"dir1/", "my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)},
+		{"dir1/", "testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)},
+		{"", "testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)},
 	}
 
 	expect := []objectInfoType{
-		{"dir1/testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)},
-		{"testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)},
+		{"dir1/", "testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)},
+		{"", "testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)},
 	}
 	res := filterObjectsWithExclude(objects, "*.rtf")
 	same := reflect.DeepEqual(res, expect)
@@ -2368,9 +2407,9 @@ func (s *OssutilCommandSuite) TestFilterObjectsWithExclude(c *C) {
 	c.Assert(same, Equals, true)
 
 	expect = []objectInfoType{
-		{"dir1/my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)},
-		{"dir1/testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)},
-		{"testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)},
+		{"dir1/", "my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)},
+		{"dir1/", "testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)},
+		{"", "testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)},
 	}
 	res = filterObjectsWithExclude(objects, "")
 	same = reflect.DeepEqual(res, expect)
@@ -2379,17 +2418,17 @@ func (s *OssutilCommandSuite) TestFilterObjectsWithExclude(c *C) {
 
 func (s *OssutilCommandSuite) TestMatchFiltersForObjects(c *C) {
 	objects := []objectInfoType{
-		{"dir1/my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)},
-		{"dir1/testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)},
-		{"testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)},
+		{"dir1/", "my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)},
+		{"dir1/", "testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)},
+		{"", "testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)},
 	}
 
 	fts := []filterOptionType{}
 	res := matchFiltersForObjects(objects, fts)
 	expect := []objectInfoType{
-		{"dir1/my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)},
-		{"dir1/testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)},
-		{"testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)},
+		{"dir1/", "my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)},
+		{"dir1/", "testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)},
+		{"", "testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)},
 	}
 	same := reflect.DeepEqual(res, expect)
 	c.Assert(same, Equals, true)
@@ -2397,8 +2436,8 @@ func (s *OssutilCommandSuite) TestMatchFiltersForObjects(c *C) {
 	fts = []filterOptionType{{"--include", "*.txt"}}
 	res = matchFiltersForObjects(objects, fts)
 	expect = []objectInfoType{
-		{"dir1/testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)},
-		{"testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)},
+		{"dir1/", "testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)},
+		{"", "testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)},
 	}
 	same = reflect.DeepEqual(res, expect)
 	c.Assert(same, Equals, true)
@@ -2406,7 +2445,7 @@ func (s *OssutilCommandSuite) TestMatchFiltersForObjects(c *C) {
 	fts = []filterOptionType{{"--exclude", "*.txt"}}
 	res = matchFiltersForObjects(objects, fts)
 	expect = []objectInfoType{
-		{"dir1/my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)},
+		{"dir1/", "my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)},
 	}
 	same = reflect.DeepEqual(res, expect)
 	c.Assert(same, Equals, true)
@@ -2414,7 +2453,7 @@ func (s *OssutilCommandSuite) TestMatchFiltersForObjects(c *C) {
 	fts = []filterOptionType{{"--include", "*.txt"}, {"--exclude", "*2*"}}
 	res = matchFiltersForObjects(objects, fts)
 	expect = []objectInfoType{
-		{"dir1/testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)},
+		{"dir1/", "testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)},
 	}
 	same = reflect.DeepEqual(res, expect)
 	c.Assert(same, Equals, true)
@@ -2422,9 +2461,9 @@ func (s *OssutilCommandSuite) TestMatchFiltersForObjects(c *C) {
 
 func (s *OssutilCommandSuite) TestMakeObjectChanFromArray(c *C) {
 	objects := []objectInfoType{
-		{"dir1/my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)},
-		{"dir1/testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)},
-		{"testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)},
+		{"dir1/", "my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)},
+		{"dir1/", "testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)},
+		{"", "testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)},
 	}
 	chObjects := make(chan objectInfoType, ChannelBuf)
 	makeObjectChanFromArray(objects, chObjects)
@@ -2440,9 +2479,9 @@ func (s *OssutilCommandSuite) TestMakeObjectChanFromArray(c *C) {
 
 func (s *OssutilCommandSuite) TestFilterObjectFromChanWithPatterns(c *C) {
 	chObjects := make(chan objectInfoType, ChannelBuf)
-	chObjects <- objectInfoType{"dir1/my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)}
-	chObjects <- objectInfoType{"dir1/testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)}
-	chObjects <- objectInfoType{"testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)}
+	chObjects <- objectInfoType{"dir1/", "my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)}
+	chObjects <- objectInfoType{"dir1/", "testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)}
+	chObjects <- objectInfoType{"", "testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)}
 	close(chObjects)
 	fts := []filterOptionType{{"--include", "*.txt"}}
 	dstObjects := make(chan objectInfoType, ChannelBuf)
@@ -2450,9 +2489,9 @@ func (s *OssutilCommandSuite) TestFilterObjectFromChanWithPatterns(c *C) {
 	c.Assert(len(dstObjects), Equals, 2)
 
 	chObjects = make(chan objectInfoType, ChannelBuf)
-	chObjects <- objectInfoType{"dir1/my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)}
-	chObjects <- objectInfoType{"dir1/testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)}
-	chObjects <- objectInfoType{"testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)}
+	chObjects <- objectInfoType{"dir1/", "my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)}
+	chObjects <- objectInfoType{"dir1/", "testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)}
+	chObjects <- objectInfoType{"", "testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)}
 	close(chObjects)
 	fts = []filterOptionType{{"--exclude", "*.txt"}}
 	dstObjects2 := make(chan objectInfoType, ChannelBuf)
@@ -2460,9 +2499,9 @@ func (s *OssutilCommandSuite) TestFilterObjectFromChanWithPatterns(c *C) {
 	c.Assert(len(dstObjects2), Equals, 1)
 
 	chObjects = make(chan objectInfoType, ChannelBuf)
-	chObjects <- objectInfoType{"dir1/my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)}
-	chObjects <- objectInfoType{"dir1/testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)}
-	chObjects <- objectInfoType{"testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)}
+	chObjects <- objectInfoType{"dir1/", "my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)}
+	chObjects <- objectInfoType{"dir1/", "testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)}
+	chObjects <- objectInfoType{"", "testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)}
 	close(chObjects)
 	fts = []filterOptionType{{"--include", "*.txt"}, {"--exclude", "*2*"}}
 	dstObjects3 := make(chan objectInfoType, ChannelBuf)

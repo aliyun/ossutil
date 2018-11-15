@@ -1,8 +1,9 @@
 package lib
 
 import (
-	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"os"
+
+	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
 
 // all supported options of ossutil
@@ -45,6 +46,7 @@ const (
 	OptionInclude                 = "include"
 	OptionExclude                 = "exclude"
 	OptionMeta                    = "meta"
+	OptionRequestPayer            = "payer"
 )
 
 // the elements show in stat object
@@ -84,7 +86,7 @@ const (
 const (
 	Package                 string = "ossutil"
 	ChannelBuf              int    = 1000
-	Version                 string = "1.4.1"
+	Version                 string = "1.4.2"
 	DefaultEndpoint         string = "oss.aliyuncs.com"
 	ChineseLanguage                = "CH"
 	EnglishLanguage                = "EN"
@@ -114,7 +116,7 @@ const (
 	MinPartSize             int64  = 1
 	DefaultLimitedNum              = -1
 	MinLimitedNum                  = 0
-	RetryTimes              int    = 3
+	RetryTimes              int    = 10
 	MaxRetryTimes           int64  = 500
 	MinRetryTimes           int64  = 1
 	Routines                int    = 3
