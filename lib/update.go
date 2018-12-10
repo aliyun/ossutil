@@ -265,9 +265,10 @@ func (uc *UpdateCommand) updateVersion(version, language string) error {
 }
 
 func (uc *UpdateCommand) revertRename(filePath, renameFilePath string) error {
-	if err := os.Remove(filePath); err != nil {
-		return err
+	if _, err := os.Stat(filePath); err == nil {
+		os.Remove(filePath)
 	}
+
 	if err := os.Rename(renameFilePath, filePath); err != nil {
 		return err
 	}
