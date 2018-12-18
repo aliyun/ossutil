@@ -47,6 +47,7 @@ const (
 	OptionExclude                 = "exclude"
 	OptionMeta                    = "meta"
 	OptionRequestPayer            = "payer"
+	OptionHTTPDebug               = "httpdebug"
 )
 
 // the elements show in stat object

@@ -150,6 +150,7 @@ var makeBucketCommand = MakeBucketCommand{
 			OptionSTSToken,
 			OptionRetryTimes,
 			OptionLanguage,
+			OptionHTTPDebug,
 		},
 	},
 }

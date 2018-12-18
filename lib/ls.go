@@ -348,6 +348,7 @@ var listCommand = ListCommand{
 			OptionSTSToken,
 			OptionRetryTimes,
 			OptionRequestPayer,
+			OptionHTTPDebug,
 		},
 	},
 }

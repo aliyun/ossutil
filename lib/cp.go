@@ -1131,6 +1131,7 @@ var copyCommand = CopyCommand{
 			OptionSnapshotPath,
 			OptionDisableCRC64,
 			OptionRequestPayer,
+			OptionHTTPDebug,
 		},
 	},
 }
@@ -1314,7 +1315,7 @@ func (cc *CopyCommand) checkCopyArgs(srcURLList []StorageURLer, destURL StorageU
 	switch opType {
 	case operationTypePut:
 		if destURL.IsFileURL() {
-			return fmt.Errorf("copy files between local file system is not allowed in ossutil, if you want to upload to oss, please make sure dest_url starts with \"%s\"", SchemePrefix)
+			return fmt.Errorf("copy files between local file system is not allowed in ossutil, if you want to upload to oss, please make sure dest_url starts with \"%s\",dest_url:%s", SchemePrefix, destURL.ToString())
 		}
 		for _, url := range srcURLList {
 			if url.IsCloudURL() {

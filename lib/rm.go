@@ -259,6 +259,7 @@ var removeCommand = RemoveCommand{
 			OptionAccessKeySecret,
 			OptionSTSToken,
 			OptionRetryTimes,
+			OptionHTTPDebug,
 		},
 	},
 }
