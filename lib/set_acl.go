@@ -239,7 +239,7 @@ var setACLCommand = SetACLCommand{
 			OptionRetryTimes,
 			OptionRoutines,
 			OptionOutputDir,
-			OptionHTTPDebug,
+			OptionLogLevel,
 		},
 	},
 }

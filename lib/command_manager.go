@@ -11,6 +11,10 @@ import (
 
 var commandLine string
 
+func LogEnd(startT time.Time) {
+	LogNormal("ossutil run end,cost :%d(ms).\n", time.Now().UnixNano()/1000/1000-startT.UnixNano()/1000/1000)
+}
+
 // ParseAndRunCommand parse command line user input, get command and options, then run command
 func ParseAndRunCommand() error {
 	ts := time.Now().UnixNano()
@@ -24,8 +28,18 @@ func ParseAndRunCommand() error {
 		return err
 	}
 
+	level, err := GetInt(OptionLogLevel, options)
+	if err == nil {
+		InitLogger(int(level), logName, maxLogSize)
+	}
+
+	startT := time.Now()
+	LogNormal("ossutil run begin,cmd:%s\n", commandLine)
+	defer LogEnd(startT)
+
 	showElapse, err := RunCommand(args, options)
 	if err != nil {
+		LogError("%s.\n", err.Error())
 		return err
 	}
 	if showElapse {

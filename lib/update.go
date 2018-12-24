@@ -79,6 +79,7 @@ var updateCommand = UpdateCommand{
 			OptionForce,
 			OptionRetryTimes,
 			OptionLanguage,
+			OptionLogLevel,
 		},
 	},
 }

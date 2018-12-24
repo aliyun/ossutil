@@ -95,6 +95,7 @@ var helpCommand = HelpCommand{
 		group:       GroupTypeAdditionalCommand,
 		validOptionNames: []string{
 			OptionLanguage,
+			OptionLogLevel,
 		},
 	},
 }

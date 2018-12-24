@@ -100,7 +100,7 @@ var statCommand = StatCommand{
 			OptionAccessKeySecret,
 			OptionSTSToken,
 			OptionRetryTimes,
-			OptionHTTPDebug,
+			OptionLogLevel,
 		},
 	},
 }

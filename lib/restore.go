@@ -149,7 +149,7 @@ var restoreCommand = RestoreCommand{
 			OptionRetryTimes,
 			OptionRoutines,
 			OptionOutputDir,
-			OptionHTTPDebug,
+			OptionLogLevel,
 		},
 	},
 }
