@@ -104,7 +104,7 @@ var createSymlinkCommand = CreateSymlinkCommand{
 			OptionAccessKeySecret,
 			OptionSTSToken,
 			OptionRetryTimes,
-			OptionHTTPDebug,
+			OptionLogLevel,
 		},
 	},
 }

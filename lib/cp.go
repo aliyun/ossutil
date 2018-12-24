@@ -1131,7 +1131,7 @@ var copyCommand = CopyCommand{
 			OptionSnapshotPath,
 			OptionDisableCRC64,
 			OptionRequestPayer,
-			OptionHTTPDebug,
+			OptionLogLevel,
 		},
 	},
 }
@@ -1173,45 +1173,58 @@ func (cc *CopyCommand) RunCommand() error {
 	var res bool
 	res, cc.cpOption.filters = getFilter(os.Args)
 	if !res {
+		LogError("--include or --exclude does not support format containing dir info.\n")
 		return fmt.Errorf("--include or --exclude does not support format containing dir info")
 	}
 
 	if !cc.cpOption.recursive && len(cc.cpOption.filters) > 0 {
+		LogError("--include or --exclude only work with --recursive.\n")
 		return fmt.Errorf("--include or --exclude only work with --recursive")
+	}
+
+	for k, v := range cc.cpOption.filters {
+		LogNormal("filter %d,name:%s,pattern:%s.\n", k, v.name, v.pattern)
 	}
 
 	//get file list
 	srcURLList, err := cc.getStorageURLs(cc.command.args[0 : len(cc.command.args)-1])
 	if err != nil {
+		LogError("%s.\n", err.Error())
 		return err
 	}
 
 	destURL, err := StorageURLFromString(cc.command.args[len(cc.command.args)-1], cc.cpOption.encodingType)
 	if err != nil {
+		LogError("%s.\n", err.Error())
 		return err
 	}
 
 	opType := cc.getCommandType(srcURLList, destURL)
 	if err := cc.checkCopyArgs(srcURLList, destURL, opType); err != nil {
+		LogError("%s.\n", err.Error())
 		return err
 	}
 	if err := cc.checkCopyOptions(opType); err != nil {
+		LogError("%s.\n", err.Error())
 		return err
 	}
 
 	cc.cpOption.options = []oss.Option{}
 	if cc.cpOption.meta != "" {
 		if opType == operationTypeGet {
+			LogError("No need to set meta for download.\n")
 			return fmt.Errorf("No need to set meta for download")
 		}
 
 		headers, err := cc.command.parseHeaders(cc.cpOption.meta, false)
 		if err != nil {
+			LogError("%s.\n", err.Error())
 			return err
 		}
 
 		topts, err := cc.command.getOSSOptions(headerOptionMap, headers)
 		if err != nil {
+			LogError("%s.\n", err.Error())
 			return err
 		}
 		cc.cpOption.options = append(cc.cpOption.options, topts...)
@@ -1219,11 +1232,13 @@ func (cc *CopyCommand) RunCommand() error {
 
 	if acl != "" {
 		if opType == operationTypeGet {
+			LogError("No need to set ACL for download.\n")
 			return fmt.Errorf("No need to set ACL for download")
 		}
 
 		var opAcl oss.ACLType
 		if opAcl, err = cc.command.checkACL(acl, objectACL); err != nil {
+			LogError("%s.\n", err.Error())
 			return err
 		}
 		cc.cpOption.options = append(cc.cpOption.options, oss.ObjectACL(opAcl))
@@ -1231,6 +1246,7 @@ func (cc *CopyCommand) RunCommand() error {
 
 	if payer != "" {
 		if payer != string(oss.Requester) {
+			LogError("invalid request payer: %s, please check.\n", payer)
 			return fmt.Errorf("invalid request payer: %s, please check", payer)
 		}
 		cc.cpOption.options = append(cc.cpOption.options, oss.RequestPayer(oss.PayerType(payer)))
@@ -1239,17 +1255,20 @@ func (cc *CopyCommand) RunCommand() error {
 
 	// init reporter
 	if cc.cpOption.reporter, err = GetReporter(cc.cpOption.ctnu, outputDir, commandLine); err != nil {
+		LogError("%s.\n", err.Error())
 		return err
 	}
 
 	// create checkpoint dir
 	if err := os.MkdirAll(cc.cpOption.cpDir, 0755); err != nil {
+		LogError("%s.\n", err.Error())
 		return err
 	}
 
 	// load snapshot
 	if cc.cpOption.snapshotPath != "" {
 		if cc.cpOption.snapshotldb, err = leveldb.OpenFile(cc.cpOption.snapshotPath, nil); err != nil {
+			LogError("load snapshot error, reason: %s.\n", err.Error())
 			return fmt.Errorf("load snapshot error, reason: %s", err.Error())
 		}
 		defer cc.cpOption.snapshotldb.Close()
@@ -1262,16 +1281,20 @@ func (cc *CopyCommand) RunCommand() error {
 
 	switch opType {
 	case operationTypePut:
+		LogNormal("begin uploadFiles.\n")
 		err = cc.uploadFiles(srcURLList, destURL.(CloudURL))
 	case operationTypeGet:
+		LogNormal("begin downloadFiles.\n")
 		err = cc.downloadFiles(srcURLList[0].(CloudURL), destURL.(FileURL))
 	default:
+		LogNormal("begin copyFiles.\n")
 		err = cc.copyFiles(srcURLList[0].(CloudURL), destURL.(CloudURL))
 	}
 
 	cc.cpOption.reporter.Clear()
 
 	if err == nil {
+		LogNormal("begin Remove checkpointDir %s.\n", cc.cpOption.cpDir)
 		os.RemoveAll(cc.cpOption.cpDir)
 	}
 	return err
@@ -1385,6 +1408,8 @@ func (cc *CopyCommand) uploadFiles(srcURLList []StorageURLer, destURL CloudURL) 
 	go cc.fileStatistic(srcURLList)
 	go cc.fileProducer(srcURLList, chFiles, chListError)
 
+	LogNormal("upload files,routin count:%d,multi part size threshold:%d.\n",
+		cc.cpOption.routines, cc.cpOption.threshold)
 	for i := 0; int64(i) < cc.cpOption.routines; i++ {
 		go cc.uploadConsumer(bucket, destURL, chFiles, chError)
 	}
@@ -1593,6 +1618,14 @@ func (cc *CopyCommand) filterPath(filePath string, cpDir string) bool {
 
 func (cc *CopyCommand) uploadFileWithReport(bucket *oss.Bucket, destURL CloudURL, file fileInfoType) error {
 	skip, err, isDir, size, msg := cc.uploadFile(bucket, destURL, file)
+	if err != nil {
+		LogInfo("upload file error:%s.\n", file.filePath)
+	} else if skip {
+		LogInfo("upload file skip:%s.\n", file.filePath)
+	} else {
+		LogInfo("upload file success:%s.\n", file.filePath)
+	}
+
 	cc.updateMonitor(skip, err, isDir, size)
 	cc.report(msg, err)
 	return err
@@ -1655,6 +1688,8 @@ func (cc *CopyCommand) uploadFile(bucket *oss.Bucket, destURL CloudURL, file fil
 	//make options for resume multipart upload
 	//part size
 	partSize, rt := cc.preparePartOption(f.Size())
+	LogInfo("multipart upload,file:%s,file size:%d,partSize:%d,routin count:%d.\n",
+		filePath, f.Size(), partSize, rt)
 	cp := oss.CheckpointDir(true, cc.cpOption.cpDir)
 	options := cc.cpOption.options
 	options = append(options, oss.Routines(rt), cp, oss.Progress(listener))
@@ -1724,6 +1759,13 @@ func (cc *CopyCommand) confirm(str string) bool {
 func (cc *CopyCommand) ossPutObjectRetry(bucket *oss.Bucket, objectName string, content string) error {
 	retryTimes, _ := GetInt(OptionRetryTimes, cc.command.options)
 	for i := 1; ; i++ {
+		if i > 1 {
+			time.Sleep(time.Duration(1) * time.Second)
+			if int64(i) >= retryTimes {
+				fmt.Printf("\nretry count:%d:put object:%s.\n", i-1, objectName)
+			}
+		}
+
 		err := bucket.PutObject(objectName, strings.NewReader(content), cc.cpOption.options...)
 		if err == nil {
 			return err
@@ -1737,6 +1779,13 @@ func (cc *CopyCommand) ossPutObjectRetry(bucket *oss.Bucket, objectName string, 
 func (cc *CopyCommand) ossUploadFileRetry(bucket *oss.Bucket, objectName string, filePath string, options ...oss.Option) error {
 	retryTimes, _ := GetInt(OptionRetryTimes, cc.command.options)
 	for i := 1; ; i++ {
+		if i > 1 {
+			time.Sleep(time.Duration(1) * time.Second)
+			if int64(i) >= retryTimes {
+				fmt.Printf("\nretry count:%d:put object from file:%s.\n", i-1, filePath)
+			}
+		}
+
 		err := bucket.PutObjectFromFile(objectName, filePath, options...)
 		if err == nil {
 			return err
@@ -1801,6 +1850,12 @@ func (cc *CopyCommand) calcPartSize(fileSize int64) (int64, int64) {
 func (cc *CopyCommand) ossResumeUploadRetry(bucket *oss.Bucket, objectName string, filePath string, partSize int64, options ...oss.Option) error {
 	retryTimes, _ := GetInt(OptionRetryTimes, cc.command.options)
 	for i := 1; ; i++ {
+		if i > 1 {
+			time.Sleep(time.Duration(1) * time.Second)
+			if int64(i) >= retryTimes {
+				fmt.Printf("\nretry count:%d,mulitpart upload file:%s.\n", i-1, filePath)
+			}
+		}
 		err := bucket.UploadFile(objectName, filePath, partSize, options...)
 		if err == nil {
 			return err
@@ -1871,6 +1926,7 @@ func (cc *CopyCommand) downloadFiles(srcURL CloudURL, destURL FileURL) error {
 		return err
 	}
 
+	LogNormal("downloadFiles,recursive flag:%t.\n", cc.cpOption.recursive)
 	if !cc.cpOption.recursive {
 		if srcURL.object == "" {
 			return fmt.Errorf("copy object invalid url: %v, object empty. If you mean batch copy objects, please use --recursive option", srcURL.ToString())
@@ -1929,6 +1985,15 @@ func (cc *CopyCommand) adjustDestURLForDownload(destURL FileURL) (string, error)
 
 func (cc *CopyCommand) downloadSingleFileWithReport(bucket *oss.Bucket, objectInfo objectInfoType, filePath string) error {
 	skip, err, size, msg := cc.downloadSingleFile(bucket, objectInfo, filePath)
+
+	if err != nil {
+		LogInfo("download error:%s.\n", objectInfo.relativeKey)
+	} else if skip {
+		LogInfo("download skip:%s.\n", objectInfo.relativeKey)
+	} else {
+		LogInfo("download success:%s.\n", objectInfo.relativeKey)
+	}
+
 	cc.updateMonitor(skip, err, false, size)
 	cc.report(msg, err)
 	return err
@@ -2026,10 +2091,18 @@ func (cc *CopyCommand) createParentDirectory(fileName string) error {
 func (cc *CopyCommand) ossDownloadFileRetry(bucket *oss.Bucket, objectName, fileName string, options ...oss.Option) error {
 	retryTimes, _ := GetInt(OptionRetryTimes, cc.command.options)
 	for i := 1; ; i++ {
+		if i > 1 {
+			time.Sleep(time.Duration(1) * time.Second)
+			if int64(i) >= retryTimes {
+				fmt.Printf("\nretry count:%d:get object to file:%s.\n", i-1, fileName)
+			}
+		}
+
 		err := bucket.GetObjectToFile(objectName, fileName, options...)
 		if err == nil {
 			return err
 		}
+
 		if int64(i) >= retryTimes {
 			return ObjectError{err, bucket.BucketName, objectName}
 		}
@@ -2039,6 +2112,13 @@ func (cc *CopyCommand) ossDownloadFileRetry(bucket *oss.Bucket, objectName, file
 func (cc *CopyCommand) ossResumeDownloadRetry(bucket *oss.Bucket, objectName string, filePath string, size, partSize int64, options ...oss.Option) error {
 	retryTimes, _ := GetInt(OptionRetryTimes, cc.command.options)
 	for i := 1; ; i++ {
+		if i > 1 {
+			time.Sleep(time.Duration(1) * time.Second)
+			if int64(i) >= retryTimes {
+				fmt.Printf("\nretry count:%d:mulitpart download file:%s.\n", i-1, objectName)
+			}
+		}
+
 		err := bucket.DownloadFile(objectName, filePath, partSize, options...)
 		if err == nil {
 			return cc.truncateFile(filePath, size)
@@ -2079,6 +2159,7 @@ func (cc *CopyCommand) batchDownloadFiles(bucket *oss.Bucket, srcURL CloudURL, f
 	go cc.objectStatistic(bucket, srcURL)
 	go cc.objectProducer(bucket, srcURL, chObjects, chListError)
 
+	LogNormal("batch down load files,routin count:%d.\n", cc.cpOption.routines)
 	for i := 0; int64(i) < cc.cpOption.routines; i++ {
 		go cc.downloadConsumer(bucket, filePath, chObjects, chError)
 	}
@@ -2411,6 +2492,12 @@ func (cc *CopyCommand) ossCopyObjectRetry(bucket *oss.Bucket, objectName, destBu
 	options := cc.cpOption.options
 	options = append(options, oss.MetadataDirective(oss.MetaReplace))
 	for i := 1; ; i++ {
+		if i > 1 {
+			time.Sleep(time.Duration(1) * time.Second)
+			if int64(i) >= retryTimes {
+				fmt.Printf("\nretry count:%d,copy object:%s.\n", i-1, objectName)
+			}
+		}
 		_, err := bucket.CopyObjectTo(destBucketName, destObjectName, objectName, options...)
 		if err == nil {
 			return err
@@ -2428,6 +2515,13 @@ func (cc *CopyCommand) ossResumeCopyRetry(bucketName, objectName, destBucketName
 	}
 	retryTimes, _ := GetInt(OptionRetryTimes, cc.command.options)
 	for i := 1; ; i++ {
+		if i > 1 {
+			time.Sleep(time.Duration(1) * time.Second)
+			if int64(i) >= retryTimes {
+				fmt.Printf("\nretry count:%d, resume copy object:%s.\n", i-1, objectName)
+			}
+		}
+
 		err := bucket.CopyFile(bucketName, objectName, destObjectName, partSize, options...)
 		if err == nil {
 			return err

@@ -284,7 +284,7 @@ var setMetaCommand = SetMetaCommand{
 			OptionRoutines,
 			OptionLanguage,
 			OptionOutputDir,
-			OptionHTTPDebug,
+			OptionLogLevel,
 		},
 	},
 }
