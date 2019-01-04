@@ -24,21 +24,9 @@ func (utilLog UtilLog) Write(buf []byte) (n int, err error) {
 	lock.Lock()
 	defer lock.Unlock()
 
-	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	f, err := openLogFile()
 	if err != nil {
-		dir = ""
-	}
-	absLogName := dir + string(os.PathSeparator) + logName
-	absLogNameBak := absLogName + ".bak"
-
-	statInfo, err := os.Stat(absLogName)
-	if err == nil && statInfo.Size() >= (maxLogSize) {
-		os.Rename(absLogName, absLogNameBak)
-	}
-
-	f, err := os.OpenFile(absLogName, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0660)
-	if err != nil {
-		fmt.Printf("error,open log file %s error.\n", absLogName)
+		fmt.Printf("error,open log file error:%s.\n", err.Error())
 		return 0, nil
 	}
 	defer f.Close()
@@ -46,7 +34,7 @@ func (utilLog UtilLog) Write(buf []byte) (n int, err error) {
 	return
 }
 
-func writeLog(level int, format string, a ...interface{}) (n int, err error) {
+func openLogFile() (*os.File, error) {
 	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
 		dir = ""
@@ -58,10 +46,14 @@ func writeLog(level int, format string, a ...interface{}) (n int, err error) {
 	if err == nil && statInfo.Size() >= (maxLogSize) {
 		os.Rename(absLogName, absLogNameBak)
 	}
-
 	f, err := os.OpenFile(absLogName, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0660)
+	return f, err
+}
+
+func writeLog(level int, format string, a ...interface{}) (n int, err error) {
+	f, err := openLogFile()
 	if err != nil {
-		fmt.Printf("error,open log file %s error.\n", absLogName)
+		fmt.Printf("error,open log file error:%s.\n", err.Error())
 		return 0, nil
 	}
 	defer f.Close()
