@@ -1173,58 +1173,49 @@ func (cc *CopyCommand) RunCommand() error {
 	var res bool
 	res, cc.cpOption.filters = getFilter(os.Args)
 	if !res {
-		LogError("--include or --exclude does not support format containing dir info.\n")
 		return fmt.Errorf("--include or --exclude does not support format containing dir info")
 	}
 
 	if !cc.cpOption.recursive && len(cc.cpOption.filters) > 0 {
-		LogError("--include or --exclude only work with --recursive.\n")
 		return fmt.Errorf("--include or --exclude only work with --recursive")
 	}
 
 	for k, v := range cc.cpOption.filters {
-		LogNormal("filter %d,name:%s,pattern:%s.\n", k, v.name, v.pattern)
+		LogInfo("filter %d,name:%s,pattern:%s.\n", k, v.name, v.pattern)
 	}
 
 	//get file list
 	srcURLList, err := cc.getStorageURLs(cc.command.args[0 : len(cc.command.args)-1])
 	if err != nil {
-		LogError("%s.\n", err.Error())
 		return err
 	}
 
 	destURL, err := StorageURLFromString(cc.command.args[len(cc.command.args)-1], cc.cpOption.encodingType)
 	if err != nil {
-		LogError("%s.\n", err.Error())
 		return err
 	}
 
 	opType := cc.getCommandType(srcURLList, destURL)
 	if err := cc.checkCopyArgs(srcURLList, destURL, opType); err != nil {
-		LogError("%s.\n", err.Error())
 		return err
 	}
 	if err := cc.checkCopyOptions(opType); err != nil {
-		LogError("%s.\n", err.Error())
 		return err
 	}
 
 	cc.cpOption.options = []oss.Option{}
 	if cc.cpOption.meta != "" {
 		if opType == operationTypeGet {
-			LogError("No need to set meta for download.\n")
 			return fmt.Errorf("No need to set meta for download")
 		}
 
 		headers, err := cc.command.parseHeaders(cc.cpOption.meta, false)
 		if err != nil {
-			LogError("%s.\n", err.Error())
 			return err
 		}
 
 		topts, err := cc.command.getOSSOptions(headerOptionMap, headers)
 		if err != nil {
-			LogError("%s.\n", err.Error())
 			return err
 		}
 		cc.cpOption.options = append(cc.cpOption.options, topts...)
@@ -1232,13 +1223,11 @@ func (cc *CopyCommand) RunCommand() error {
 
 	if acl != "" {
 		if opType == operationTypeGet {
-			LogError("No need to set ACL for download.\n")
 			return fmt.Errorf("No need to set ACL for download")
 		}
 
 		var opAcl oss.ACLType
 		if opAcl, err = cc.command.checkACL(acl, objectACL); err != nil {
-			LogError("%s.\n", err.Error())
 			return err
 		}
 		cc.cpOption.options = append(cc.cpOption.options, oss.ObjectACL(opAcl))
@@ -1246,7 +1235,6 @@ func (cc *CopyCommand) RunCommand() error {
 
 	if payer != "" {
 		if payer != string(oss.Requester) {
-			LogError("invalid request payer: %s, please check.\n", payer)
 			return fmt.Errorf("invalid request payer: %s, please check", payer)
 		}
 		cc.cpOption.options = append(cc.cpOption.options, oss.RequestPayer(oss.PayerType(payer)))
@@ -1255,20 +1243,17 @@ func (cc *CopyCommand) RunCommand() error {
 
 	// init reporter
 	if cc.cpOption.reporter, err = GetReporter(cc.cpOption.ctnu, outputDir, commandLine); err != nil {
-		LogError("%s.\n", err.Error())
 		return err
 	}
 
 	// create checkpoint dir
 	if err := os.MkdirAll(cc.cpOption.cpDir, 0755); err != nil {
-		LogError("%s.\n", err.Error())
 		return err
 	}
 
 	// load snapshot
 	if cc.cpOption.snapshotPath != "" {
 		if cc.cpOption.snapshotldb, err = leveldb.OpenFile(cc.cpOption.snapshotPath, nil); err != nil {
-			LogError("load snapshot error, reason: %s.\n", err.Error())
 			return fmt.Errorf("load snapshot error, reason: %s", err.Error())
 		}
 		defer cc.cpOption.snapshotldb.Close()
@@ -1281,20 +1266,20 @@ func (cc *CopyCommand) RunCommand() error {
 
 	switch opType {
 	case operationTypePut:
-		LogNormal("begin uploadFiles.\n")
+		LogInfo("begin uploadFiles.\n")
 		err = cc.uploadFiles(srcURLList, destURL.(CloudURL))
 	case operationTypeGet:
-		LogNormal("begin downloadFiles.\n")
+		LogInfo("begin downloadFiles.\n")
 		err = cc.downloadFiles(srcURLList[0].(CloudURL), destURL.(FileURL))
 	default:
-		LogNormal("begin copyFiles.\n")
+		LogInfo("begin copyFiles.\n")
 		err = cc.copyFiles(srcURLList[0].(CloudURL), destURL.(CloudURL))
 	}
 
 	cc.cpOption.reporter.Clear()
 
 	if err == nil {
-		LogNormal("begin Remove checkpointDir %s.\n", cc.cpOption.cpDir)
+		LogInfo("begin Remove checkpointDir %s.\n", cc.cpOption.cpDir)
 		os.RemoveAll(cc.cpOption.cpDir)
 	}
 	return err
@@ -1408,7 +1393,7 @@ func (cc *CopyCommand) uploadFiles(srcURLList []StorageURLer, destURL CloudURL) 
 	go cc.fileStatistic(srcURLList)
 	go cc.fileProducer(srcURLList, chFiles, chListError)
 
-	LogNormal("upload files,routin count:%d,multi part size threshold:%d.\n",
+	LogInfo("upload files,routin count:%d,multi part size threshold:%d.\n",
 		cc.cpOption.routines, cc.cpOption.threshold)
 	for i := 0; int64(i) < cc.cpOption.routines; i++ {
 		go cc.uploadConsumer(bucket, destURL, chFiles, chError)
@@ -1926,7 +1911,7 @@ func (cc *CopyCommand) downloadFiles(srcURL CloudURL, destURL FileURL) error {
 		return err
 	}
 
-	LogNormal("downloadFiles,recursive flag:%t.\n", cc.cpOption.recursive)
+	LogInfo("downloadFiles,recursive flag:%t.\n", cc.cpOption.recursive)
 	if !cc.cpOption.recursive {
 		if srcURL.object == "" {
 			return fmt.Errorf("copy object invalid url: %v, object empty. If you mean batch copy objects, please use --recursive option", srcURL.ToString())
@@ -2159,7 +2144,7 @@ func (cc *CopyCommand) batchDownloadFiles(bucket *oss.Bucket, srcURL CloudURL, f
 	go cc.objectStatistic(bucket, srcURL)
 	go cc.objectProducer(bucket, srcURL, chObjects, chListError)
 
-	LogNormal("batch down load files,routin count:%d.\n", cc.cpOption.routines)
+	LogInfo("batch download files,routin count:%d,srcurl:%s,filepath:%s.\n", cc.cpOption.routines, srcURL.ToString(), filePath)
 	for i := 0; int64(i) < cc.cpOption.routines; i++ {
 		go cc.downloadConsumer(bucket, filePath, chObjects, chError)
 	}

@@ -1286,7 +1286,10 @@ func (s *OssutilCommandSuite) TestBatchUploadOutputDir(c *C) {
 
 	os.Remove(configFile)
 	configFile = cfile
-	os.RemoveAll(dir)
+	eError := os.RemoveAll(dir)
+	if eError != nil {
+		fmt.Printf("remove error:%s %s.\n", dir, eError.Error())
+	}
 
 	// NoSuchBucket err copy -> no outputdir
 	showElapse, err = s.rawCPWithOutputDir(udir, CloudURLToString(bucketNameNotExist, udir+"/"), true, true, false, 1, dir)
@@ -2473,7 +2476,10 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithFullExclude(c *C) {
 	for _, filename := range filenames {
 		tname := downdir + "/" + filename
 		_, err := os.Stat(tname)
-		c.Assert(strings.Contains(err.Error(), "no such file or directory"), Equals, true)
+		winErrorFile := strings.Contains(err.Error(), "system cannot find the file specified")
+		winErrorPath := strings.Contains(err.Error(), "system cannot find the path specified")
+		linuxError := strings.Contains(err.Error(), "no such file or directory")
+		c.Assert((winErrorFile || winErrorPath || linuxError), Equals, true)
 	}
 
 	// cleanup
@@ -2636,7 +2642,11 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithMultiFullIncludeExclude(c *C)
 	for _, filename := range filenames {
 		tname := downdir + "/" + filename
 		_, err := os.Stat(tname)
-		c.Assert(strings.Contains(err.Error(), "no such file or directory"), Equals, true)
+
+		winErrorFile := strings.Contains(err.Error(), "system cannot find the file specified")
+		winErrorPath := strings.Contains(err.Error(), "system cannot find the path specified")
+		linuxError := strings.Contains(err.Error(), "no such file or directory")
+		c.Assert((winErrorFile || winErrorPath || linuxError), Equals, true)
 	}
 
 	// cleanup

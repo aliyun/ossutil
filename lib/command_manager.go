@@ -7,12 +7,15 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
 
 var commandLine string
 
 func LogEnd(startT time.Time) {
-	LogNormal("ossutil run end,cost :%d(ms).\n", time.Now().UnixNano()/1000/1000-startT.UnixNano()/1000/1000)
+	LogInfo("ossutil run end,cost :%d(ms).\n", time.Now().UnixNano()/1000/1000-startT.UnixNano()/1000/1000)
+	UnInitLogger()
 }
 
 // ParseAndRunCommand parse command line user input, get command and options, then run command
@@ -28,13 +31,22 @@ func ParseAndRunCommand() error {
 		return err
 	}
 
-	level, err := GetInt(OptionLogLevel, options)
-	if err == nil {
-		InitLogger(int(level), logName, maxLogSize)
+	var level = oss.LogOff
+	strLevel, err := GetString(OptionLogLevel, options)
+	if strLevel == "info" {
+		level = oss.Info
+	} else if strLevel == "debug" {
+		level = oss.Debug
+	} else if len(strLevel) > 0 {
+		return fmt.Errorf("loglevel must be:info|debug")
+	}
+
+	if level > oss.LogOff {
+		InitLogger(level, logName)
 	}
 
 	startT := time.Now()
-	LogNormal("ossutil run begin,cmd:%s\n", commandLine)
+	LogInfo("ossutil run begin,cmd:%s\n", commandLine)
 	defer LogEnd(startT)
 
 	showElapse, err := RunCommand(args, options)

@@ -291,9 +291,10 @@ func (cmd *Command) ossClient(bucket string) (*oss.Client, error) {
 		options = append(options, oss.EnableCRC(true))
 	}
 
-	level, err := GetInt(OptionLogLevel, cmd.options)
-	options = append(options, oss.SetLogLevel(int(level)))
-	options = append(options, oss.SetLogger(utilLog))
+	if logLevel > oss.LogOff {
+		options = append(options, oss.SetLogLevel(logLevel))
+		options = append(options, oss.SetLogger(utilLogger))
+	}
 
 	client, err := oss.New(endpoint, accessKeyID, accessKeySecret, options...)
 	if err != nil {

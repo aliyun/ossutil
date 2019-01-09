@@ -12,6 +12,8 @@ const (
 	errExit
 )
 
+var processTickInterval int64 = 5
+
 var clearStrLen int = 0
 var clearStr string = strings.Repeat(" ", clearStrLen)
 
@@ -425,7 +427,7 @@ func (m *CPMonitor) init(op operationType) {
 	m.finish = false
 	m.lastSnapSize = 0
 	m.lastSnapTime = time.Now()
-	m.tickDuration = 5 * int64(time.Second)
+	m.tickDuration = processTickInterval * int64(time.Second)
 }
 
 func (m *CPMonitor) setScanError(err error) {
@@ -483,9 +485,7 @@ func (m *CPMonitor) getSnapshot() *CPMonitorSnap {
 	snap.dealNum = snap.okNum + snap.errNum
 	now := time.Now()
 	snap.duration = now.Sub(m.lastSnapTime).Nanoseconds()
-	//m.lastSnapTime = now
-	//snap.incrementSize = m.transferSize - m.lastSnapSize
-	//m.lastSnapSize = snap.transferSize
+
 	return &snap
 }
 

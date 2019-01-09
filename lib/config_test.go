@@ -2,7 +2,9 @@ package lib
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
+	"strings"
 
 	. "gopkg.in/check.v1"
 )
@@ -242,4 +244,16 @@ func (s *OssutilConfigSuite) TestConfigInvalidOption(c *C) {
 	showElapse, err := cm.RunCommand(command, args, options)
 	c.Assert(showElapse, Equals, false)
 	c.Assert(err, Equals, CommandError{command: "config", reason: fmt.Sprintf("the command does not support option: \"%s\"", "shortFormat")})
+}
+
+func (s *OssutilConfigSuite) TestConfigNotConfigFile(c *C) {
+	configCommand.runCommandInteractive("", LEnglishLanguage)
+	contents, _ := ioutil.ReadFile(logPath)
+	LogContent := string(contents)
+	c.Assert(strings.Contains(LogContent, "Please enter the config file path"), Equals, true)
+
+	configCommand.runCommandInteractive("", ChineseLanguage)
+	contents, _ = ioutil.ReadFile(logPath)
+	LogContent = string(contents)
+	c.Assert(strings.Contains(LogContent, "请输入配置文件路径"), Equals, true)
 }

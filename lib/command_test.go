@@ -66,6 +66,7 @@ var (
 func (s *OssutilCommandSuite) SetUpSuite(c *C) {
 	os.Stdout = testLogFile
 	os.Stderr = testLogFile
+	processTickInterval = 1
 	testLogger.Println("test command started")
 	SetUpCredential()
 	cm.Init()
@@ -1447,7 +1448,7 @@ func (s *OssutilCommandSuite) TestParseOptions(c *C) {
 
 	// put object
 	object := "中文"
-	v := []string{"", "cp", uploadFileName, CloudURLToString(bucket, object), "-f", "--update", "--bigfile-threshold=1", "--checkpoint-dir=checkpoint_dir", "-c", configFile}
+	v := []string{"", "cp", uploadFileName, CloudURLToString(bucket, object), "-f", "--update", "--bigfile-threshold=1", "--checkpoint-dir=checkpoint_dir", "-c", configFile, "--loglevel=info"}
 	os.Args = v
 	err := ParseAndRunCommand()
 	c.Assert(err, IsNil)
