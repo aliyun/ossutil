@@ -1183,7 +1183,7 @@ func (cc *CopyCommand) RunCommand() error {
 	}
 
 	for k, v := range cc.cpOption.filters {
-		LogNormal("filter %d,name:%s,pattern:%s.\n", k, v.name, v.pattern)
+		LogInfo("filter %d,name:%s,pattern:%s.\n", k, v.name, v.pattern)
 	}
 
 	//get file list
@@ -1281,20 +1281,20 @@ func (cc *CopyCommand) RunCommand() error {
 
 	switch opType {
 	case operationTypePut:
-		LogNormal("begin uploadFiles.\n")
+		LogInfo("begin uploadFiles.\n")
 		err = cc.uploadFiles(srcURLList, destURL.(CloudURL))
 	case operationTypeGet:
-		LogNormal("begin downloadFiles.\n")
+		LogInfo("begin downloadFiles.\n")
 		err = cc.downloadFiles(srcURLList[0].(CloudURL), destURL.(FileURL))
 	default:
-		LogNormal("begin copyFiles.\n")
+		LogInfo("begin copyFiles.\n")
 		err = cc.copyFiles(srcURLList[0].(CloudURL), destURL.(CloudURL))
 	}
 
 	cc.cpOption.reporter.Clear()
 
 	if err == nil {
-		LogNormal("begin Remove checkpointDir %s.\n", cc.cpOption.cpDir)
+		LogInfo("begin Remove checkpointDir %s.\n", cc.cpOption.cpDir)
 		os.RemoveAll(cc.cpOption.cpDir)
 	}
 	return err
@@ -1408,7 +1408,7 @@ func (cc *CopyCommand) uploadFiles(srcURLList []StorageURLer, destURL CloudURL) 
 	go cc.fileStatistic(srcURLList)
 	go cc.fileProducer(srcURLList, chFiles, chListError)
 
-	LogNormal("upload files,routin count:%d,multi part size threshold:%d.\n",
+	LogInfo("upload files,routin count:%d,multi part size threshold:%d.\n",
 		cc.cpOption.routines, cc.cpOption.threshold)
 	for i := 0; int64(i) < cc.cpOption.routines; i++ {
 		go cc.uploadConsumer(bucket, destURL, chFiles, chError)
@@ -1926,7 +1926,7 @@ func (cc *CopyCommand) downloadFiles(srcURL CloudURL, destURL FileURL) error {
 		return err
 	}
 
-	LogNormal("downloadFiles,recursive flag:%t.\n", cc.cpOption.recursive)
+	LogInfo("downloadFiles,recursive flag:%t.\n", cc.cpOption.recursive)
 	if !cc.cpOption.recursive {
 		if srcURL.object == "" {
 			return fmt.Errorf("copy object invalid url: %v, object empty. If you mean batch copy objects, please use --recursive option", srcURL.ToString())
@@ -2159,7 +2159,7 @@ func (cc *CopyCommand) batchDownloadFiles(bucket *oss.Bucket, srcURL CloudURL, f
 	go cc.objectStatistic(bucket, srcURL)
 	go cc.objectProducer(bucket, srcURL, chObjects, chListError)
 
-	LogNormal("batch down load files,routin count:%d.\n", cc.cpOption.routines)
+	LogInfo("batch down load files,routin count:%d.\n", cc.cpOption.routines)
 	for i := 0; int64(i) < cc.cpOption.routines; i++ {
 		go cc.downloadConsumer(bucket, filePath, chObjects, chError)
 	}

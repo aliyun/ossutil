@@ -110,9 +110,9 @@ var OptionMap = map[string]Option{
 		fmt.Sprintf("hash type, Default: %s, value range is: %s/%s", DefaultHashType, DefaultHashType, MD5HashType)},
 	OptionVersion:      Option{"-v", "--version", "", OptionTypeFlagTrue, "", "", fmt.Sprintf("显示ossutil的版本（%s）并退出。", Version), fmt.Sprintf("Show ossutil version (%s) and exit.", Version)},
 	OptionRequestPayer: Option{"", "--payer", "", OptionTypeString, "", "", "请求的支付方式，如果为请求者付费模式，可以将该值设置成\"requester\"", "The payer of the request. You can set this value to \"requester\" if you want pay for requester"},
-	OptionLogLevel: Option{"", "--loglevel", strconv.Itoa(oss.LogOff), OptionTypeInt64, strconv.FormatInt(oss.LogOff, 10), strconv.FormatInt(oss.DebugLevel, 10),
-		fmt.Sprintf("日志级别，默认值:%d(不输出日志文件),取值范围：%d-%d,0 没有日志,1 错误日志,2 正常日志,3 提示日志, 4 调试日志(包括http日志)", oss.LogOff, oss.LogOff, oss.DebugLevel),
-		fmt.Sprintf("log level,default: %d(no log file),value range is: %d-%d,0 no log,1 error log,2 normal log,3 info log,4 debug log(include http log)", oss.LogOff, oss.LogOff, oss.DebugLevel)},
+	OptionLogLevel: Option{"", "--loglevel", strconv.Itoa(oss.LogOff), OptionTypeInt64, strconv.FormatInt(oss.LogOff, 10), strconv.FormatInt(oss.Debug, 10),
+		fmt.Sprintf("日志级别，默认值:%d(不输出日志文件),取值范围：%d-%d,0 没有日志,1 错误日志,2 告警日志,3 提示日志, 4 调试日志(包括http日志)", oss.LogOff, oss.LogOff, oss.Debug),
+		fmt.Sprintf("log level,default: %d(log off),value range is: %d-%d,0 log off,1 error log,2 warn log,3 info log,4 debug log(include http log)", oss.LogOff, oss.LogOff, oss.Debug)},
 }
 
 func (T *Option) getHelp(language string) string {

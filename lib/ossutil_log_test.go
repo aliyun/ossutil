@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -11,7 +12,6 @@ import (
 )
 
 type OssUtilLogSuite struct {
-	testLogSize  int64
 	testLogName  string
 	testLogLevel int
 }
@@ -29,7 +29,6 @@ func (s *OssUtilLogSuite) TearDownSuite(c *C) {
 
 // Run after each test or benchmark runs
 func (s *OssUtilLogSuite) SetUpTest(c *C) {
-	s.testLogSize = maxLogSize
 	s.testLogName = logName
 	s.testLogLevel = logLevel
 
@@ -43,7 +42,6 @@ func (s *OssUtilLogSuite) SetUpTest(c *C) {
 
 // Run once after all tests or benchmarks have finished running
 func (s *OssUtilLogSuite) TearDownTest(c *C) {
-	maxLogSize = s.testLogSize
 	logName = s.testLogName
 	logLevel = s.testLogLevel
 
@@ -63,155 +61,95 @@ func (s *OssUtilLogSuite) TestLogLevel(c *C) {
 	}
 	absLogName := dir + string(os.PathSeparator) + logName
 
+	fmt.Printf("absLogName:%s.\n", absLogName)
+
 	// nologLevel
 	logLevel = oss.LogOff
+	InitLogger(logLevel, logName)
+
 	errorContext := "i am error log.\n"
 	LogError(errorContext)
-	LogNormal(errorContext)
+	LogWarn(errorContext)
 	LogInfo(errorContext)
 	LogDebug(errorContext)
 
 	contents, err := ioutil.ReadFile(absLogName)
 	LogContent := string(contents)
 	c.Assert(strings.Contains(LogContent, "[error]"+errorContext), Equals, false)
-	c.Assert(strings.Contains(LogContent, "[normal]"+errorContext), Equals, false)
+	c.Assert(strings.Contains(LogContent, "[warn]"+errorContext), Equals, false)
 	c.Assert(strings.Contains(LogContent, "[info]"+errorContext), Equals, false)
 	c.Assert(strings.Contains(LogContent, "[debug]"+errorContext), Equals, false)
+	UnInitLogger()
 	os.Remove(absLogName)
 
 	// errorLevel
-	logLevel = oss.ErrorLevel
+	logLevel = oss.Error
+	InitLogger(logLevel, logName)
 	LogError(errorContext)
-	LogNormal(errorContext)
+	LogWarn(errorContext)
 	LogInfo(errorContext)
 	LogDebug(errorContext)
 
 	contents, err = ioutil.ReadFile(absLogName)
 	LogContent = string(contents)
 	c.Assert(strings.Contains(LogContent, "[error]"+errorContext), Equals, true)
-	c.Assert(strings.Contains(LogContent, "[normal]"+errorContext), Equals, false)
+	c.Assert(strings.Contains(LogContent, "[warn]"+errorContext), Equals, false)
 	c.Assert(strings.Contains(LogContent, "[info]"+errorContext), Equals, false)
 	c.Assert(strings.Contains(LogContent, "[debug]"+errorContext), Equals, false)
+	UnInitLogger()
 	os.Remove(absLogName)
 
 	// normalLevel
-	logLevel = oss.NormalLevel
+	logLevel = oss.Warn
+	InitLogger(logLevel, logName)
 	normalContext := "i am normal log.\n"
 	LogError(normalContext)
-	LogNormal(normalContext)
+	LogWarn(normalContext)
 	LogInfo(normalContext)
 	LogDebug(normalContext)
 
 	contents, err = ioutil.ReadFile(absLogName)
 	LogContent = string(contents)
 	c.Assert(strings.Contains(LogContent, "[error]"+normalContext), Equals, true)
-	c.Assert(strings.Contains(LogContent, "[normal]"+normalContext), Equals, true)
+	c.Assert(strings.Contains(LogContent, "[warn]"+normalContext), Equals, true)
 	c.Assert(strings.Contains(LogContent, "[info]"+normalContext), Equals, false)
 	c.Assert(strings.Contains(LogContent, "[debug]"+normalContext), Equals, false)
+	UnInitLogger()
 	os.Remove(absLogName)
 
 	// infolevel
-	logLevel = oss.InfoLevel
+	logLevel = oss.Info
+	InitLogger(logLevel, logName)
 	infoContext := "i am info log.\n"
 	LogError(infoContext)
-	LogNormal(infoContext)
+	LogWarn(infoContext)
 	LogInfo(infoContext)
 	LogDebug(infoContext)
 
 	contents, err = ioutil.ReadFile(absLogName)
 	LogContent = string(contents)
 	c.Assert(strings.Contains(LogContent, "[error]"+infoContext), Equals, true)
-	c.Assert(strings.Contains(LogContent, "[normal]"+infoContext), Equals, true)
+	c.Assert(strings.Contains(LogContent, "[warn]"+infoContext), Equals, true)
 	c.Assert(strings.Contains(LogContent, "[info]"+infoContext), Equals, true)
 	c.Assert(strings.Contains(LogContent, "[debug]"+infoContext), Equals, false)
+	UnInitLogger()
 	os.Remove(absLogName)
 
 	// debuglevel
-	logLevel = oss.DebugLevel
+	logLevel = oss.Debug
+	InitLogger(logLevel, logName)
 	debugContext := "i am debug log.\n"
 	LogError(debugContext)
-	LogNormal(debugContext)
+	LogWarn(debugContext)
 	LogInfo(debugContext)
 	LogDebug(debugContext)
 
 	contents, err = ioutil.ReadFile(absLogName)
 	LogContent = string(contents)
 	c.Assert(strings.Contains(LogContent, "[error]"+debugContext), Equals, true)
-	c.Assert(strings.Contains(LogContent, "[normal]"+debugContext), Equals, true)
+	c.Assert(strings.Contains(LogContent, "[warn]"+debugContext), Equals, true)
 	c.Assert(strings.Contains(LogContent, "[info]"+debugContext), Equals, true)
 	c.Assert(strings.Contains(LogContent, "[debug]"+debugContext), Equals, true)
+	UnInitLogger()
 	os.Remove(absLogName)
-}
-
-func (s *OssUtilLogSuite) TestLogFileSwitch(c *C) {
-	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
-	if err != nil {
-		dir = ""
-	}
-	absLogName := dir + string(os.PathSeparator) + logName
-	absLogNameBak := absLogName + ".bak"
-
-	os.Remove(absLogName)
-	os.Remove(absLogNameBak)
-
-	maxLogSize = 5 * 1024
-
-	// debuglevel
-	logLevel = oss.DebugLevel
-	debugContext := "i am debug log.\n"
-
-	for i := 1; i < 1024; i++ {
-		LogDebug(debugContext)
-	}
-
-	f, err := os.Stat(absLogNameBak)
-	bLarge := (f.Size() >= maxLogSize)
-	c.Assert(bLarge, Equals, true)
-
-	f, err = os.Stat(absLogName)
-	c.Assert(err, IsNil)
-
-	contents, err := ioutil.ReadFile(absLogName)
-	LogContent := string(contents)
-	c.Assert(strings.Contains(LogContent, "[debug]"+debugContext), Equals, true)
-
-	os.Remove(absLogName)
-	os.Remove(absLogNameBak)
-}
-
-func (s *OssUtilLogSuite) TestLogWriterSwitch(c *C) {
-	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
-	if err != nil {
-		dir = ""
-	}
-	absLogName := dir + string(os.PathSeparator) + logName
-	absLogNameBak := absLogName + ".bak"
-
-	os.Remove(absLogName)
-	os.Remove(absLogNameBak)
-
-	maxLogSize = 5 * 1024
-
-	// debuglevel
-	logLevel = oss.DebugLevel
-	debugContext := "i am debug log.\n"
-
-	for i := 1; i < 1024; i++ {
-		utilLog.Write([]byte(debugContext))
-	}
-
-	f, err := os.Stat(absLogNameBak)
-	bLarge := (f.Size() >= maxLogSize)
-	c.Assert(bLarge, Equals, true)
-
-	f, err = os.Stat(absLogName)
-	c.Assert(err, IsNil)
-
-	contents, err := ioutil.ReadFile(absLogName)
-	LogContent := string(contents)
-	c.Assert(strings.Contains(LogContent, debugContext), Equals, true)
-	c.Assert(strings.Contains(LogContent, "[debug]"), Equals, false)
-
-	os.Remove(absLogName)
-	os.Remove(absLogNameBak)
 }
