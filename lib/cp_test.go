@@ -2792,6 +2792,143 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithInvalidIncExc(c *C) {
 	s.removeBucket(bucketName, true, c)
 }
 
+// Test: --exclude='*' --include="*"
+func (s *OssutilCommandSuite) TestBatchCPObjectWithMultiFullExcludeIncludeEqual(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	bucketStr := CloudURLToString(bucketName, "")
+
+	dir := "testdir-inc-exc3" + randLowStr(5)
+	subdir := "dir1" + randLowStr(5)
+	contents := map[string]string{}
+	filenames := s.createTestFiles(dir, subdir, c, contents)
+
+	// upload files
+	// e.g., ossutil cp testdir-inc-exc/ oss://tempb4 -rf --exclude='*' --include="*"
+	args := []string{dir, bucketStr}
+	cmdline := []string{"ossutil", "cp", dir, bucketStr, "-rf", "--exclude=*", "--include=*"}
+	showElapse, err := s.rawCPWithFilter(args, true, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	time.Sleep(1 * time.Second)
+
+	// download all above files for verification
+	// e.g., ossutil cp oss://tempb4/ testdownload/ -rf
+	downdir := "testdownload-inc-exc3" + randLowStr(5)
+	args = []string{bucketStr, downdir}
+	cmdline = []string{"ossutil", "cp", bucketStr, downdir, "-rf", "--exclude=*", "--include=*"}
+	showElapse, err = s.rawCPWithFilter(args, true, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	time.Sleep(1 * time.Second)
+
+	// Get uploaded files (with above conditions: --include "*.txt" --exclude "*2*") and use these for verification
+	fts := []filterOptionType{{"--exclude", "*"}, {"--include", "*"}}
+	files := matchFiltersForStrs(filenames, fts)
+	c.Assert(len(files), Equals, len(filenames))
+
+	// Verify
+	_, err = os.Stat(downdir)
+	c.Assert(err, IsNil)
+
+	for _, filename := range files {
+		tname := downdir + "/" + filename
+		_, err := os.Stat(tname)
+		c.Assert(err, IsNil)
+
+		content := s.readFile(tname, c)
+		c.Assert(content, Equals, contents[filename])
+	}
+
+	// cleanup
+	os.RemoveAll(dir)
+	os.RemoveAll(downdir)
+	s.removeBucket(bucketName, true, c)
+}
+
+// Nagetive test
+func (s *OssutilCommandSuite) TestBatchCPObjectWithInvalidIncExcEqual(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	bucketStr := CloudURLToString(bucketName, "")
+
+	//0. Create dirs
+	dir := "testdir-invalid" + randLowStr(5)
+	err := os.MkdirAll(dir, 0755)
+	c.Assert(err, IsNil)
+
+	// testdir-invalid/dir1
+	subdir := "dir1" + randLowStr(5)
+	err = os.MkdirAll(dir+string(os.PathSeparator)+subdir, 0755)
+	c.Assert(err, IsNil)
+
+	// upload files
+	// e.g., ossutil cp testdir-invalid/ oss://tempb4 -f --exclude='*.txt'
+	args := []string{dir, bucketStr}
+	cmdline := []string{"ossutil", "cp", dir, bucketStr, "-f", "--exclude=*.txt"}
+	showElapse, err := s.rawCPWithFilter(args, false, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
+	c.Assert(showElapse, Equals, false)
+	c.Assert(err.Error() == "--include or --exclude only work with --recursive", Equals, true)
+
+	// e.g., ossutil cp testdir-invalid/ oss://tempb4 -rf --include=*.txt --exclude=*2*
+	cmdline = []string{"ossutil", "cp", dir, bucketStr, "-f", "--include=*.txt", "--exclude=*2*"}
+	showElapse, err = s.rawCPWithFilter(args, false, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
+	c.Assert(showElapse, Equals, false)
+	c.Assert(err.Error() == "--include or --exclude only work with --recursive", Equals, true)
+
+	cmdline = []string{"ossutil", "cp", dir, bucketStr, "-f", "--include=/*.txt", "--exclude=*2*"}
+	showElapse, err = s.rawCPWithFilter(args, false, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
+	c.Assert(showElapse, Equals, false)
+	c.Assert(err.Error() == "--include or --exclude does not support format containing dir info", Equals, true)
+
+	// download
+	// e.g., ossutil cp oss://tempb4/ testdownload/ -f --exclude "*.txt"
+	downdir := "testdownload-invalid"
+	args = []string{bucketStr, downdir}
+	cmdline = []string{"ossutil", "cp", bucketStr, downdir, "-f", "--exclude=*.txt"}
+	showElapse, err = s.rawCPWithFilter(args, false, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
+	c.Assert(showElapse, Equals, false)
+	c.Assert(err.Error() == "--include or --exclude only work with --recursive", Equals, true)
+
+	cmdline = []string{"ossutil", "cp", bucketStr, downdir, "-f", "--include=*.txt", "--exclude=*2*"}
+	showElapse, err = s.rawCPWithFilter(args, false, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
+	c.Assert(showElapse, Equals, false)
+	c.Assert(err.Error() == "--include or --exclude only work with --recursive", Equals, true)
+
+	cmdline = []string{"ossutil", "cp", dir, bucketStr, "-f", "--include=*.txt", "--exclude=/usr/*/*2*"}
+	showElapse, err = s.rawCPWithFilter(args, false, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
+	c.Assert(showElapse, Equals, false)
+	c.Assert(err.Error() == "--include or --exclude does not support format containing dir info", Equals, true)
+
+	// download test with --meta, --acl
+	cmdline = []string{"ossutil", "cp", bucketStr, downdir, "-rf", "--meta", "Cache-Control:no-cache"}
+	showElapse, err = s.rawCPWithFilter(args, true, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "Cache-Control:no-cache", "")
+	c.Assert(showElapse, Equals, false)
+	c.Assert(err.Error() == "No need to set meta for download", Equals, true)
+
+	cmdline = []string{"ossutil", "cp", bucketStr, downdir, "-rf", "--acl", "public-read"}
+	showElapse, err = s.rawCPWithFilter(args, true, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "public-read")
+	c.Assert(showElapse, Equals, false)
+	c.Assert(err.Error() == "No need to set ACL for download", Equals, true)
+
+	cmdline = []string{"ossutil", "cp", bucketStr, downdir, "-f", "--meta", "Cache-Control:no-cache"}
+	showElapse, err = s.rawCPWithFilter(args, false, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "Cache-Control:no-cache", "")
+	c.Assert(showElapse, Equals, false)
+	c.Assert(err.Error() == "No need to set meta for download", Equals, true)
+
+	cmdline = []string{"ossutil", "cp", bucketStr, downdir, "-f", "--acl", "public-read"}
+	showElapse, err = s.rawCPWithFilter(args, false, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "public-read")
+	c.Assert(showElapse, Equals, false)
+	c.Assert(err.Error() == "No need to set ACL for download", Equals, true)
+
+	// cleanup
+	os.RemoveAll(dir)
+	os.RemoveAll(downdir)
+	s.removeBucket(bucketName, true, c)
+}
+
 // Test for --meta, --acl testing
 func (s *OssutilCommandSuite) TestBatchCPObjectWithMetaAcl(c *C) {
 	bucketName := bucketNamePrefix + randLowStr(10)

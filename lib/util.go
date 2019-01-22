@@ -175,11 +175,30 @@ func filterObjectsFromChanWithPattern(srcCh <-chan string, pattern string, dstCh
 func getFilter(cmdline []string) (bool, []filterOptionType) {
 	filters := make([]filterOptionType, 0)
 	for i, item := range cmdline {
-		if item == IncludePrompt || item == ExcludePrompt {
+		var strTag = ""
+		if strings.Index(item, IncludePrompt) == 0 {
+			strTag = IncludePrompt
+		} else if strings.Index(item, ExcludePrompt) == 0 {
+			strTag = ExcludePrompt
+		}
+
+		if strTag != "" {
 			var filter filterOptionType
-			filter.name = item
+			var strArg string
+
+			filter.name = strTag
+			if item == strTag {
+				strArg = cmdline[i+1]
+			} else if item[len(strTag)] == '=' {
+				strArg = item[len(strTag)+1:]
+			}
+
+			if strArg == "" {
+				continue
+			}
+
 			// To support standard glob
-			filter.pattern = strings.Replace(cmdline[i+1], "[!", "[^", -1)
+			filter.pattern = strings.Replace(strArg, "[!", "[^", -1)
 
 			dir, _ := filepath.Split(filter.pattern)
 			if dir != "" {
