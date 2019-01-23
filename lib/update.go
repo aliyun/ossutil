@@ -276,26 +276,33 @@ func (uc *UpdateCommand) revertRename(filePath, renameFilePath string) error {
 	return nil
 }
 
-func (uc *UpdateCommand) getBinary(filePath, version string) error {
+func (uc *UpdateCommand) getBinaryName() string {
 	// get os type
 	var object string
 	switch runtime.GOOS {
 	case "darwin":
 		object = updateBinaryMac64
+		if runtime.GOARCH == "386" {
+			object = updateBinaryMac32
+		}
 	case "windows":
 		object = updateBinaryWindow64
 		if runtime.GOARCH == "386" {
 			object = updateBinaryWindow32
 		}
 	default:
-		object = updateBinaryLinux
+		object = updateBinaryLinux64
+		if runtime.GOARCH == "386" {
+			object = updateBinaryLinux32
+		}
 	}
+	return object
+}
 
-	object = version + "/" + object
-
+func (uc *UpdateCommand) getBinary(filePath, version string) error {
+	object := version + "/" + uc.getBinaryName()
 	if err := uc.anonymousGetToFileRetry(vUpdateBucket, object, filePath); err != nil {
 		return err
 	}
-
 	return nil
 }
