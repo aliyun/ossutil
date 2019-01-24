@@ -181,7 +181,7 @@ func (s *OssutilCommandSuite) TestExpire(c *C) {
 	c.Assert(err, IsNil)
 
 	err = bucket.GetObjectToFileWithURL(str, downloadFileName)
-	c.Assert(strings.Contains(err.Error(), "ErrorMessage=Request has expired"), Equals, true)
+	c.Assert(strings.Contains(err.Error(), "Request has expired"), Equals, true)
 }
 
 func (s *OssutilCommandSuite) TestSignurlErr(c *C) {

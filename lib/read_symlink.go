@@ -100,6 +100,7 @@ var readSymlinkCommand = ReadSymlinkCommand{
 			OptionAccessKeySecret,
 			OptionSTSToken,
 			OptionRetryTimes,
+			OptionLogLevel,
 		},
 	},
 }

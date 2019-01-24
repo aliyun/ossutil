@@ -93,6 +93,7 @@ var signURLCommand = SignurlCommand{
 			OptionAccessKeyID,
 			OptionAccessKeySecret,
 			OptionSTSToken,
+			OptionLogLevel,
 		},
 	},
 }

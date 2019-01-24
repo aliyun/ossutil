@@ -47,6 +47,7 @@ const (
 	OptionExclude                 = "exclude"
 	OptionMeta                    = "meta"
 	OptionRequestPayer            = "payer"
+	OptionLogLevel                = "loglevel"
 )
 
 // the elements show in stat object
@@ -86,7 +87,7 @@ const (
 const (
 	Package                 string = "ossutil"
 	ChannelBuf              int    = 1000
-	Version                 string = "1.4.2"
+	Version                 string = "1.4.3"
 	DefaultEndpoint         string = "oss.aliyuncs.com"
 	ChineseLanguage                = "CH"
 	EnglishLanguage                = "EN"

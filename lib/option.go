@@ -109,6 +109,9 @@ var OptionMap = map[string]Option{
 		fmt.Sprintf("hash type, Default: %s, value range is: %s/%s", DefaultHashType, DefaultHashType, MD5HashType)},
 	OptionVersion:      Option{"-v", "--version", "", OptionTypeFlagTrue, "", "", fmt.Sprintf("显示ossutil的版本（%s）并退出。", Version), fmt.Sprintf("Show ossutil version (%s) and exit.", Version)},
 	OptionRequestPayer: Option{"", "--payer", "", OptionTypeString, "", "", "请求的支付方式，如果为请求者付费模式，可以将该值设置成\"requester\"", "The payer of the request. You can set this value to \"requester\" if you want pay for requester"},
+	OptionLogLevel: Option{"", "--loglevel", "", OptionTypeString, "", "",
+		"日志级别，默认为空,表示不输出日志文件,取值:info|debug,info输出提示信息日志,debug输出详细信息日志(包括http请求和响应信息)",
+		"log level,default is empty(no log file output),value is:info|debug,info will output information logs,debug will output detail logs(including http request and response logs)"},
 }
 
 func (T *Option) getHelp(language string) string {
