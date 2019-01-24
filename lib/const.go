@@ -49,6 +49,13 @@ const (
 	OptionRequestPayer            = "payer"
 	OptionLogLevel                = "loglevel"
 	OptionMaxUpSpeed              = "maxupspeed"
+	OptionUpload                  = "upload"
+	OptionDownload                = "download"
+	OptionUrl                     = "url"
+	OptionBucketName              = "bucketname"
+	OptionObject                  = "object"
+	OptionAddr                    = "addr"
+	OptionUpMode                  = "upmode"
 )
 
 // the elements show in stat object
@@ -90,7 +97,7 @@ const (
 const (
 	Package                 string = "ossutil"
 	ChannelBuf              int    = 1000
-	Version                 string = "1.4.4"
+	Version                 string = "1.5.0"
 	DefaultEndpoint         string = "oss.aliyuncs.com"
 	ChineseLanguage                = "CH"
 	EnglishLanguage                = "EN"
