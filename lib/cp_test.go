@@ -2713,7 +2713,7 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithMultiFullExcludeInclude(c *C)
 }
 
 // Nagetive test
-func (s *OssutilCommandSuite) TestBatchCPObjectWithInvalidIncExc(c *C) {
+func (s *OssutilCommandSuite) TestBatchCPObjectWithInvalidIncludeExclude(c *C) {
 	bucketName := bucketNamePrefix + randLowStr(10)
 	s.putBucket(bucketName, c)
 	bucketStr := CloudURLToString(bucketName, "")
@@ -2850,7 +2850,7 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithMultiFullExcludeIncludeEqual(
 }
 
 // Nagetive test
-func (s *OssutilCommandSuite) TestBatchCPObjectWithInvalidIncExcEqual(c *C) {
+func (s *OssutilCommandSuite) TestBatchCPObjectWithInvalidIncludeExcludeEqual(c *C) {
 	bucketName := bucketNamePrefix + randLowStr(10)
 	s.putBucket(bucketName, c)
 	bucketStr := CloudURLToString(bucketName, "")
@@ -2923,6 +2923,217 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithInvalidIncExcEqual(c *C) {
 	showElapse, err = s.rawCPWithFilter(args, false, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "public-read")
 	c.Assert(showElapse, Equals, false)
 	c.Assert(err.Error() == "No need to set ACL for download", Equals, true)
+
+	// cleanup
+	os.RemoveAll(dir)
+	os.RemoveAll(downdir)
+	s.removeBucket(bucketName, true, c)
+}
+
+// Test: only --include="*.txt"
+func (s *OssutilCommandSuite) TestBatchCPObjectWithMultiNormalOnlyIncludeEqual(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	bucketStr := CloudURLToString(bucketName, "")
+
+	dir := "testdir-inc-exc1"
+	subdir := "dir1"
+	contents := map[string]string{}
+	filenames := s.createTestFiles(dir, subdir, c, contents)
+
+	// upload files
+	// e.g., ossutil cp testdir-inc-exc/ oss://tempb4 -rf --include='*.txt'
+	args := []string{dir, bucketStr}
+	cmdline := []string{"ossutil", "cp", dir, bucketStr, "-rf", "--include=*.txt"}
+	showElapse, err := s.rawCPWithFilter(args, true, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	time.Sleep(1 * time.Second)
+
+	// download all above files for verification
+	// e.g., ossutil cp oss://tempb4/ testdownload/ -rf
+	downdir := "testdownload-inc-exc1"
+	args = []string{bucketStr, downdir}
+	cmdline = []string{"ossutil", "cp", bucketStr, downdir, "-rf"}
+	showElapse, err = s.rawCPWithFilter(args, true, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	time.Sleep(1 * time.Second)
+
+	// Get uploaded files (with above conditions: --include="*.txt") and use these for verification
+	fts := []filterOptionType{{"--include", "*.txt"}}
+	files := matchFiltersForStrs(filenames, fts)
+
+	ftsJpg := []filterOptionType{{"--include", "*.jpg"}}
+	filesJpg := matchFiltersForStrs(filenames, ftsJpg)
+	c.Assert(len(filesJpg), Equals, 0)
+
+	// Verify
+	_, err = os.Stat(downdir)
+	c.Assert(err, IsNil)
+
+	for _, filename := range files {
+		tname := downdir + "/" + filename
+		_, err := os.Stat(tname)
+		c.Assert(err, IsNil)
+
+		content := s.readFile(tname, c)
+		c.Assert(content, Equals, contents[filename])
+	}
+
+	// cleanup
+	os.RemoveAll(dir)
+	os.RemoveAll(downdir)
+	s.removeBucket(bucketName, true, c)
+}
+
+// Test: only --exclude="*.txt"
+func (s *OssutilCommandSuite) TestBatchCPObjectWithMultiNormalOnlyExcludeEqual(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	bucketStr := CloudURLToString(bucketName, "")
+
+	dir := "testdir-inc-exc1"
+	subdir := "dir1"
+	contents := map[string]string{}
+	filenames := s.createTestFiles(dir, subdir, c, contents)
+
+	// upload files
+	// e.g., ossutil cp testdir-inc-exc/ oss://tempb4 -rf --exclude='*.txt'
+	args := []string{dir, bucketStr}
+	cmdline := []string{"ossutil", "cp", dir, bucketStr, "-rf", "--exclude=*.txt"}
+	showElapse, err := s.rawCPWithFilter(args, true, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	time.Sleep(1 * time.Second)
+
+	// download all above files for verification
+	// e.g., ossutil cp oss://tempb4/ testdownload/ -rf
+	downdir := "testdownload-inc-exc1"
+	args = []string{bucketStr, downdir}
+	cmdline = []string{"ossutil", "cp", bucketStr, downdir, "-rf"}
+	showElapse, err = s.rawCPWithFilter(args, true, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	time.Sleep(1 * time.Second)
+
+	ftsTxt := []filterOptionType{{"--include", "*.txt"}}
+	filesTxt := matchFiltersForStrs(filenames, ftsTxt)
+
+	ftsJpg := []filterOptionType{{"--include", "*.jpg"}}
+	filesJpg := matchFiltersForStrs(filenames, ftsJpg)
+	c.Assert(len(filesJpg) > 0, Equals, true)
+
+	ftsRtf := []filterOptionType{{"--include", "*.rtf"}}
+	filesRtf := matchFiltersForStrs(filenames, ftsRtf)
+	c.Assert(len(filesRtf) > 0, Equals, true)
+
+	existFiles := make([]string, 0)
+	existFiles = append(existFiles, filesJpg...)
+	existFiles = append(existFiles, filesRtf...)
+	c.Assert(len(existFiles), Equals, len(filesJpg)+len(filesRtf))
+
+	// Verify
+	_, err = os.Stat(downdir)
+	c.Assert(err, IsNil)
+
+	// exist file check
+	for _, filename := range existFiles {
+		tname := downdir + "/" + filename
+		_, err := os.Stat(tname)
+		c.Assert(err, IsNil)
+
+		content := s.readFile(tname, c)
+		c.Assert(content, Equals, contents[filename])
+	}
+
+	// not exist file check
+	for _, filename := range filesTxt {
+		tname := downdir + "/" + filename
+		_, err := os.Stat(tname)
+		c.Assert(err, NotNil)
+	}
+
+	// cleanup
+	os.RemoveAll(dir)
+	os.RemoveAll(downdir)
+	s.removeBucket(bucketName, true, c)
+}
+
+// Test: only --include "*.jpg" --exclude="*.txt"
+func (s *OssutilCommandSuite) TestBatchCPObjectWithMultiNormalIncludeMixtureExcludeEqual(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	bucketStr := CloudURLToString(bucketName, "")
+
+	dir := "testdir-inc-exc1"
+	subdir := "dir1"
+	contents := map[string]string{}
+	filenames := s.createTestFiles(dir, subdir, c, contents)
+
+	// upload files
+	// e.g., ossutil cp testdir-inc-exc/ oss://tempb4 -rf --include "*.jpg" --exclude='*.txt'
+	args := []string{dir, bucketStr}
+	cmdline := []string{"ossutil", "cp", dir, bucketStr, "-rf", "--include", "*.jpg", "--exclude=*.txt"}
+	showElapse, err := s.rawCPWithFilter(args, true, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	time.Sleep(1 * time.Second)
+
+	// download all above files for verification
+	// e.g., ossutil cp oss://tempb4/ testdownload/ -rf
+	downdir := "testdownload-inc-exc1"
+	args = []string{bucketStr, downdir}
+	cmdline = []string{"ossutil", "cp", bucketStr, downdir, "-rf"}
+	showElapse, err = s.rawCPWithFilter(args, true, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	time.Sleep(1 * time.Second)
+
+	ftsTxt := []filterOptionType{{"--include", "*.txt"}}
+	filesTxt := matchFiltersForStrs(filenames, ftsTxt)
+
+	ftsJpg := []filterOptionType{{"--include", "*.jpg"}}
+	filesJpg := matchFiltersForStrs(filenames, ftsJpg)
+	c.Assert(len(filesJpg) > 0, Equals, true)
+
+	ftsRtf := []filterOptionType{{"--include", "*.rtf"}}
+	filesRtf := matchFiltersForStrs(filenames, ftsRtf)
+	c.Assert(len(filesRtf) > 0, Equals, true)
+
+	// Verify
+	_, err = os.Stat(downdir)
+	c.Assert(err, IsNil)
+
+	// exist file check
+	for _, filename := range filesJpg {
+		tname := downdir + "/" + filename
+		_, err := os.Stat(tname)
+		c.Assert(err, IsNil)
+
+		content := s.readFile(tname, c)
+		c.Assert(content, Equals, contents[filename])
+	}
+
+	// not exist file check
+	for _, filename := range filesTxt {
+		tname := downdir + "/" + filename
+		_, err := os.Stat(tname)
+		c.Assert(err, NotNil)
+	}
+
+	// not exist file check
+	for _, filename := range filesRtf {
+		tname := downdir + "/" + filename
+		_, err := os.Stat(tname)
+		c.Assert(err, NotNil)
+	}
 
 	// cleanup
 	os.RemoveAll(dir)

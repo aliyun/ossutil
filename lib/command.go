@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
@@ -301,13 +302,20 @@ func (cmd *Command) ossClient(bucket string) (*oss.Client, error) {
 		return nil, err
 	}
 
-	maxUpSpeed, err := GetInt(OptionMaxUpSpeed, cmd.options)
-	if maxUpSpeed > 0 && err == nil {
-		err = client.LimitUploadSpeed(int(maxUpSpeed))
-		if err != nil {
-			return nil, err
+	maxUpSpeed, errUp := GetInt(OptionMaxUpSpeed, cmd.options)
+	if errUp == nil {
+		if maxUpSpeed >= 0 {
+			errUp = client.LimitUploadSpeed(int(maxUpSpeed))
+			if errUp != nil {
+				return nil, errUp
+			} else {
+				LogInfo("set maxupspeed success,value is %d(KB/s)\n", maxUpSpeed)
+			}
+		} else {
+			return nil, fmt.Errorf("invalid value,maxupspeed %d less than 0", maxUpSpeed)
 		}
 	}
+
 	return client, nil
 }
 
@@ -388,9 +396,16 @@ func (cmd *Command) ossGetObjectStatRetry(bucket *oss.Bucket, object string, opt
 		if err == nil {
 			return props, err
 		}
-		if int64(i) >= retryTimes {
+
+		// http 4XX 、5XX error no need to retry
+		// only network error need to retry
+		_, noNeedRetry := err.(oss.ServiceError)
+		if int64(i) >= retryTimes || noNeedRetry {
 			return props, ObjectError{err, bucket.BucketName, object}
 		}
+
+		// wait 1 second
+		time.Sleep(time.Duration(1) * time.Second)
 	}
 }
 
@@ -401,9 +416,16 @@ func (cmd *Command) ossGetObjectMetaRetry(bucket *oss.Bucket, object string, opt
 		if err == nil {
 			return props, err
 		}
-		if int64(i) >= retryTimes {
+
+		// http 4XX 、5XX error no need to retry
+		// only network error need to retry
+		_, noNeedRetry := err.(oss.ServiceError)
+		if int64(i) >= retryTimes || noNeedRetry {
 			return props, ObjectError{err, bucket.BucketName, object}
 		}
+
+		// wait 1 second
+		time.Sleep(time.Duration(1) * time.Second)
 	}
 }
 
@@ -533,5 +555,6 @@ func GetAllCommands() []interface{} {
 		&signURLCommand,
 		&hashCommand,
 		&updateCommand,
+		&probeCommand,
 	}
 }
