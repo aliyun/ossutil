@@ -9,6 +9,7 @@ install:
 - go get github.com/alyu/configparser
 - go get github.com/aliyun/aliyun-oss-go-sdk/oss
 - go get github.com/syndtr/goleveldb/leveldb
+- go get github.com/satori/go.uuid
 script:
 - cd lib
 - travis_wait 120 go test -v -timeout 120m -covermode=count -coverprofile=coverage.out
