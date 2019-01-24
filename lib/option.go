@@ -112,6 +112,9 @@ var OptionMap = map[string]Option{
 	OptionLogLevel: Option{"", "--loglevel", "", OptionTypeString, "", "",
 		"日志级别，默认为空,表示不输出日志文件,取值:info|debug,info输出提示信息日志,debug输出详细信息日志(包括http请求和响应信息)",
 		"log level,default is empty(no log file output),value is:info|debug,info will output information logs,debug will output detail logs(including http request and response logs)"},
+	OptionMaxUpSpeed: Option{"", "--maxupspeed", "", OptionTypeInt64, "", "",
+		"最大上传速度,单位:KB/s,缺省值为0(不受限制)",
+		"max upload speed,the unit is:KB/s,default value is 0(unlimited)"},
 }
 
 func (T *Option) getHelp(language string) string {

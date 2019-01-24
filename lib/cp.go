@@ -1132,6 +1132,7 @@ var copyCommand = CopyCommand{
 			OptionDisableCRC64,
 			OptionRequestPayer,
 			OptionLogLevel,
+			OptionMaxUpSpeed,
 		},
 	},
 }

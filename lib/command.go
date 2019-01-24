@@ -300,6 +300,14 @@ func (cmd *Command) ossClient(bucket string) (*oss.Client, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	maxUpSpeed, err := GetInt(OptionMaxUpSpeed, cmd.options)
+	if maxUpSpeed > 0 && err == nil {
+		err = client.LimitUploadSpeed(int(maxUpSpeed))
+		if err != nil {
+			return nil, err
+		}
+	}
 	return client, nil
 }
 

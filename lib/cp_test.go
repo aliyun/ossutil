@@ -2,6 +2,7 @@ package lib
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net/url"
 	"os"
 	"strconv"
@@ -3058,5 +3059,133 @@ func (s *OssutilCommandSuite) TestBatchCPObjectBetweenOssWithMetaAcl(c *C) {
 	// cleanup
 	os.RemoveAll(dir)
 	os.RemoveAll(downdir)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestCPObjectLimitSpeed(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	// prepare file and object
+	maxUpSpeed := int64(2) // 2KB/s
+	upSecond := 5
+	objectContext := randLowStr(int(maxUpSpeed) * upSecond * 1024)
+	fileName := "ossutil_test." + randLowStr(12)
+	s.createFile(fileName, objectContext, c)
+
+	object := randLowStr(12)
+	cpArgs := []string{fileName, CloudURLToString(bucketName, object)}
+
+	str := ""
+	cpDir := CheckpointDir
+	routines := strconv.Itoa(Routines)
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+		"checkpointDir":   &cpDir,
+		"routines":        &routines,
+		"maxupspeed":      &maxUpSpeed,
+	}
+
+	// calculate time
+	startT := time.Now()
+	_, err := cm.RunCommand("cp", cpArgs, options)
+	c.Assert(err, IsNil)
+	endT := time.Now()
+	costSecond := endT.UnixNano()/1000/1000 - startT.UnixNano()/1000/1000
+	c.Assert(costSecond >= int64(upSecond)*1000, Equals, true)
+
+	//down object
+	downFileName := fileName + "-down"
+	dwArgs := []string{CloudURLToString(bucketName, object), downFileName}
+	_, err = cm.RunCommand("cp", dwArgs, options)
+	c.Assert(err, IsNil)
+
+	//compare content
+	fileBody, err := ioutil.ReadFile(downFileName)
+	c.Assert(err, IsNil)
+	c.Assert(objectContext, Equals, string(fileBody))
+
+	os.Remove(downFileName)
+	os.Remove(fileName)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestCPDirLimitSpeed(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(12)
+	s.putBucket(bucketName, c)
+
+	// single dir
+	udir := "ossutil_test_" + randStr(5)
+	os.RemoveAll(udir)
+	err := os.MkdirAll(udir, 0755)
+	c.Assert(err, IsNil)
+
+	// prepare upload parameter
+	maxUpSpeed := int64(2) // 2KB/s
+	upSecond := 5
+	objectContext := randLowStr(int(maxUpSpeed) * upSecond * 1024)
+
+	// prepare two file
+	fileCount := 2
+	objectFirst := randStr(5) + "1"
+	objectSecond := randStr(5) + "2"
+	s.createFile(udir+string(os.PathSeparator)+objectFirst, objectContext, c)
+	s.createFile(udir+string(os.PathSeparator)+objectSecond, objectContext, c)
+
+	// begin cp dir
+	cpArgs := []string{udir, CloudURLToString(bucketName, "")}
+	str := ""
+	cpDir := CheckpointDir
+	routines := strconv.Itoa(Routines)
+	recursive := true
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+		"checkpointDir":   &cpDir,
+		"routines":        &routines,
+		"recursive":       &recursive,
+		"maxupspeed":      &maxUpSpeed,
+	}
+
+	// calculate time
+	startT := time.Now()
+	_, err = cm.RunCommand("cp", cpArgs, options)
+	c.Assert(err, IsNil)
+	endT := time.Now()
+	costSecond := endT.UnixNano()/1000/1000 - startT.UnixNano()/1000/1000
+	c.Assert(costSecond >= int64(upSecond)*1000*int64(fileCount), Equals, true)
+
+	//down object 1
+	delete(options, "recursive")
+	downFileName := objectFirst
+	dwArgs := []string{CloudURLToString(bucketName, objectFirst), downFileName}
+	_, err = cm.RunCommand("cp", dwArgs, options)
+	c.Assert(err, IsNil)
+
+	//compare content
+	fileBody, err := ioutil.ReadFile(downFileName)
+	c.Assert(err, IsNil)
+	c.Assert(objectContext, Equals, string(fileBody))
+
+	//down object 2
+	downFileName = objectSecond
+	dwArgs = []string{CloudURLToString(bucketName, objectSecond), downFileName}
+	_, err = cm.RunCommand("cp", dwArgs, options)
+	c.Assert(err, IsNil)
+
+	// compare content
+	fileBody, err = ioutil.ReadFile(downFileName)
+	c.Assert(err, IsNil)
+	c.Assert(objectContext, Equals, string(fileBody))
+
+	os.Remove(downFileName)
+	err = os.Remove(udir + string(os.PathSeparator) + objectFirst)
+	err = os.Remove(udir + string(os.PathSeparator) + objectSecond)
+	err = os.RemoveAll(udir)
 	s.removeBucket(bucketName, true, c)
 }

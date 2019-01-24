@@ -48,6 +48,7 @@ const (
 	OptionMeta                    = "meta"
 	OptionRequestPayer            = "payer"
 	OptionLogLevel                = "loglevel"
+	OptionMaxUpSpeed              = "maxupspeed"
 )
 
 // the elements show in stat object
