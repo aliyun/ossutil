@@ -25,7 +25,7 @@ func openLogFile() (*os.File, error) {
 	if err != nil {
 		fmt.Printf("open %s error,info:%s.\n", absLogName, err.Error())
 	} else {
-		fmt.Printf("log file:%s.\n", absLogName)
+		fmt.Printf("log file is %s\n", absLogName)
 	}
 	return f, err
 }
