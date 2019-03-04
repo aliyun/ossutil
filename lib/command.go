@@ -558,5 +558,6 @@ func GetAllCommands() []interface{} {
 		&probeCommand,
 		&mkdirCommand,
 		&corsCommand,
+		&bucketLogCommand,
 	}
 }
