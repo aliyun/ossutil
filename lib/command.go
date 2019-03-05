@@ -559,5 +559,6 @@ func GetAllCommands() []interface{} {
 		&mkdirCommand,
 		&corsCommand,
 		&bucketLogCommand,
+		&bucketRefererCommand,
 	}
 }
