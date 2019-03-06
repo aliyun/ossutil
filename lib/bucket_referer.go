@@ -88,7 +88,7 @@ func (brc *BucketRefererCommand) CheckBucketUrl(strlUrl string) (*CloudURL, erro
 	}
 
 	if !bucketUrL.IsCloudURL() {
-		return nil, fmt.Errorf("the second parameter is not a cloud url,url is %s", bucketUrL.ToString())
+		return nil, fmt.Errorf("parameter is not a cloud url,url is %s", bucketUrL.ToString())
 	}
 
 	cloudUrl := bucketUrL.(CloudURL)

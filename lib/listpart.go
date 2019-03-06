@@ -83,7 +83,7 @@ func (lpc *ListPartCommand) CheckBucketUrl(strlUrl, encodingType string) (*Cloud
 	}
 
 	if !bucketUrL.IsCloudURL() {
-		return nil, fmt.Errorf("the first parameter is not a cloud url,url is %s", bucketUrL.ToString())
+		return nil, fmt.Errorf("parameter is not a cloud url,url is %s", bucketUrL.ToString())
 	}
 
 	cloudUrl := bucketUrL.(CloudURL)

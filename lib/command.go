@@ -561,5 +561,6 @@ func GetAllCommands() []interface{} {
 		&bucketLogCommand,
 		&bucketRefererCommand,
 		&listPartCommand,
+		&allPartSizeCommand,
 	}
 }

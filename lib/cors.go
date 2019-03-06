@@ -70,7 +70,7 @@ func (corsc *CorsCommand) RunCommand() error {
 	}
 
 	if !bucketUrL.IsCloudURL() {
-		return fmt.Errorf("the second parameter is not a cloud url,url is %s", bucketUrL.ToString())
+		return fmt.Errorf("parameter is not a cloud url,url is %s", bucketUrL.ToString())
 	}
 
 	cloudUrl := bucketUrL.(CloudURL)
