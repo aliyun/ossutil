@@ -137,8 +137,8 @@ var OptionMap = map[string]Option{
 		"表示上传模式,缺省值为normal,取值为:normal|append|multipart,分别表示正常上传、追加上传、分块上传,主要在命令probe中使用",
 		"specifies the upload mode,default value is normal,value is:normal|append|multipart, which means normal upload、append upload and multipart upload,it is primarily used in probe command."},
 	OptionDisableEmptyReferer: Option{"", "--disable-empty-referer", "", OptionTypeFlagTrue, "", "",
-		"表示不允许refer字段为空,主要在refer命令中使用",
-		"specifies that the refer field is not allowed to be empty, mainly used in the refer command"},
+		"表示不允许referer字段为空,主要在referer命令中使用",
+		"specifies that the referer field is not allowed to be empty, mainly used in the referer command"},
 }
 
 func (T *Option) getHelp(language string) string {

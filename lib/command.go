@@ -560,5 +560,6 @@ func GetAllCommands() []interface{} {
 		&corsCommand,
 		&bucketLogCommand,
 		&bucketRefererCommand,
+		&listPartCommand,
 	}
 }
