@@ -563,5 +563,6 @@ func GetAllCommands() []interface{} {
 		&listPartCommand,
 		&allPartSizeCommand,
 		&appendFileCommand,
+		&catCommand,
 	}
 }

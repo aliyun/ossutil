@@ -63,7 +63,7 @@ func (brc *BucketRefererCommand) RunCommand() error {
 		return fmt.Errorf("%s is not in the optional value:put|get|delete", strMethod)
 	}
 
-	srcBucketUrL, err := brc.CheckBucketUrl(brc.command.args[1])
+	srcBucketUrL, err := brc.CheckBucketUrl(brc.command.args[1], "")
 	if err != nil {
 		return err
 	}
@@ -81,8 +81,8 @@ func (brc *BucketRefererCommand) RunCommand() error {
 	return err
 }
 
-func (brc *BucketRefererCommand) CheckBucketUrl(strlUrl string) (*CloudURL, error) {
-	bucketUrL, err := StorageURLFromString(strlUrl, "")
+func (brc *BucketRefererCommand) CheckBucketUrl(strlUrl, encodingType string) (*CloudURL, error) {
+	bucketUrL, err := StorageURLFromString(strlUrl, encodingType)
 	if err != nil {
 		return nil, err
 	}

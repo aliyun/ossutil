@@ -63,7 +63,7 @@ func (blc *BucketLogCommand) RunCommand() error {
 		return fmt.Errorf("%s is not in the optional value:put|get|delete", strMethod)
 	}
 
-	srcBucketUrL, err := blc.CheckBucketUrl(blc.command.args[1])
+	srcBucketUrL, err := blc.CheckBucketUrl(blc.command.args[1], "")
 	if err != nil {
 		return err
 	}
@@ -80,8 +80,8 @@ func (blc *BucketLogCommand) RunCommand() error {
 	return err
 }
 
-func (blc *BucketLogCommand) CheckBucketUrl(strlUrl string) (*CloudURL, error) {
-	bucketUrL, err := StorageURLFromString(strlUrl, "")
+func (blc *BucketLogCommand) CheckBucketUrl(strlUrl, encodingType string) (*CloudURL, error) {
+	bucketUrL, err := StorageURLFromString(strlUrl, encodingType)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +102,7 @@ func (blc *BucketLogCommand) PutBucketLog() error {
 		return fmt.Errorf("put bucket log need 3 parameters,the target bucket is empty")
 	}
 
-	destBucketUrL, err := blc.CheckBucketUrl(blc.command.args[2])
+	destBucketUrL, err := blc.CheckBucketUrl(blc.command.args[2], "")
 	if err != nil {
 		return err
 	}

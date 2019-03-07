@@ -139,6 +139,12 @@ var OptionMap = map[string]Option{
 	OptionDisableEmptyReferer: Option{"", "--disable-empty-referer", "", OptionTypeFlagTrue, "", "",
 		"表示不允许referer字段为空,主要在referer命令中使用",
 		"specifies that the referer field is not allowed to be empty, mainly used in the referer command"},
+	OptionMethod: Option{"", "--method", "", OptionTypeString, "", "",
+		"表示http的请求类型,取值为PUT、GET等",
+		"specifies the http method,value is PUT,GET..."},
+	OptionOrigin: Option{"", "--origin", "", OptionTypeString, "", "",
+		"表示http请求头origin字段的值",
+		"specifies the value of origin field in http header"},
 }
 
 func (T *Option) getHelp(language string) string {

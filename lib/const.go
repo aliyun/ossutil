@@ -57,6 +57,8 @@ const (
 	OptionAddr                       = "addr"
 	OptionUpMode                     = "upmode"
 	OptionDisableEmptyReferer        = "disableEmptyReferer"
+	OptionMethod                     = "method"
+	OptionOrigin                     = "origin"
 )
 
 // the elements show in stat object

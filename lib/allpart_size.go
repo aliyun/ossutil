@@ -66,7 +66,7 @@ func (apc *AllPartSizeCommand) Init(args []string, options OptionMapType) error 
 
 // RunCommand simulate inheritance, and polymorphism
 func (apc *AllPartSizeCommand) RunCommand() error {
-	srcBucketUrL, err := apc.CheckBucketUrl(apc.command.args[0])
+	srcBucketUrL, err := apc.CheckBucketUrl(apc.command.args[0], "")
 	if err != nil {
 		return err
 	}
@@ -109,8 +109,8 @@ func (apc *AllPartSizeCommand) RunCommand() error {
 
 }
 
-func (apc *AllPartSizeCommand) CheckBucketUrl(strlUrl string) (*CloudURL, error) {
-	bucketUrL, err := StorageURLFromString(strlUrl, "")
+func (apc *AllPartSizeCommand) CheckBucketUrl(strlUrl, encodingType string) (*CloudURL, error) {
+	bucketUrL, err := StorageURLFromString(strlUrl, encodingType)
 	if err != nil {
 		return nil, err
 	}

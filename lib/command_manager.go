@@ -57,7 +57,7 @@ func ParseAndRunCommand() error {
 	}
 	if showElapse {
 		te := time.Now().UnixNano()
-		fmt.Printf("%.6f(s) elapsed\n", float64(te-ts)/1e9)
+		fmt.Printf("\n%.6f(s) elapsed\n", float64(te-ts)/1e9)
 		return nil
 	}
 	return nil
