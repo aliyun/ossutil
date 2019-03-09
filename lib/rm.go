@@ -755,6 +755,9 @@ func (rc *RemoveCommand) ossDeleteBucketRetry(client *oss.Client, bucket string)
 			return err
 		}
 		if int64(i) >= retryTimes {
+			if strings.Contains(err.Error(), "bucket you tried to delete is not empty") {
+				fmt.Printf("\nWhether new objects were uploaded during the deletion?\n\n")
+			}
 			return BucketError{err, bucket}
 		}
 	}

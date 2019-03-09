@@ -48,6 +48,14 @@ const (
 	OptionMeta                    = "meta"
 	OptionRequestPayer            = "payer"
 	OptionLogLevel                = "loglevel"
+	OptionMaxUpSpeed              = "maxupspeed"
+	OptionUpload                  = "upload"
+	OptionDownload                = "download"
+	OptionUrl                     = "url"
+	OptionBucketName              = "bucketname"
+	OptionObject                  = "object"
+	OptionAddr                    = "addr"
+	OptionUpMode                  = "upmode"
 )
 
 // the elements show in stat object
@@ -76,9 +84,11 @@ const (
 	updateEndpoint       string = "oss-cn-hangzhou.aliyuncs.com"
 	updateBucket                = "ossutil-version-update"
 	updateVersionObject         = "ossutilversion"
-	updateBinaryLinux           = "ossutil"
+	updateBinaryLinux32         = "ossutil32"
+	updateBinaryLinux64         = "ossutil64"
 	updateBinaryWindow32        = "ossutil32.exe"
 	updateBinaryWindow64        = "ossutil64.exe"
+	updateBinaryMac32           = "ossutilmac32"
 	updateBinaryMac64           = "ossutilmac64"
 	updateTmpVersionFile        = ".ossutil_tmp_vsersion"
 )
@@ -87,7 +97,7 @@ const (
 const (
 	Package                 string = "ossutil"
 	ChannelBuf              int    = 1000
-	Version                 string = "1.4.3"
+	Version                 string = "1.5.0"
 	DefaultEndpoint         string = "oss.aliyuncs.com"
 	ChineseLanguage                = "CH"
 	EnglishLanguage                = "EN"
