@@ -99,13 +99,13 @@ var specChineseProbe = SpecText{
 
 	sampleText: ` 
 	1) 下载指定url
-        ossutil probe --download "http://bucket-name.oss-cn-shenzhen.aliyuncs.com/object_name"
+        ossutil probe --download --url "http://bucket-name.oss-cn-shenzhen.aliyuncs.com/object_name"
 	
     2) 下载指定Url到指定文件
-        ossutil probe --download "http://bucket-name.oss-cn-shenzhen.aliyuncs.com/object_name"  file_name
+        ossutil probe --download --url "http://bucket-name.oss-cn-shenzhen.aliyuncs.com/object_name"  file_name
 	
     3) 下载指定url到指定文件、并检测指定地址网络状况
-        ossutil probe  --download "http://bucket-name.oss-cn-shenzhen.aliyuncs.com/object_name"  file_name --addr www.aliyun.com
+        ossutil probe  --download --url "http://bucket-name.oss-cn-shenzhen.aliyuncs.com/object_name"  file_name --addr www.aliyun.com
 
     4) 下载bucket临时文件
         ossutil probe --download --bucketname bucket-name
@@ -214,13 +214,13 @@ Usage:
 
 	sampleText: ` 
 	1) downloads specified url
-        ossutil probe --download "http://bucket-name.oss-cn-shenzhen.aliyuncs.com/object_name"
+        ossutil probe --download --url "http://bucket-name.oss-cn-shenzhen.aliyuncs.com/object_name"
 	
     2) downloads specified url to specified file
-        ossutil probe --download "http://bucket-name.oss-cn-shenzhen.aliyuncs.com/object_name"  file_name
+        ossutil probe --download --url "http://bucket-name.oss-cn-shenzhen.aliyuncs.com/object_name"  file_name
 	
     3) downloads specified url to specified file,and ping domain
-        ossutil probe  --download "http://bucket-name.oss-cn-shenzhen.aliyuncs.com/object_name"  file_name --addr www.aliyun.com
+        ossutil probe  --download --url "http://bucket-name.oss-cn-shenzhen.aliyuncs.com/object_name"  file_name --addr www.aliyun.com
 
     4) downloads temporary file from specified bucket
         ossutil probe --download --bucketname bucket-name
