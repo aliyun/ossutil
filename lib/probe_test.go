@@ -75,6 +75,8 @@ func (s *OssutilCommandSuite) probeDownloadUrl(c *C, downloadFile string, repeat
 }
 
 func (s *OssutilCommandSuite) TestProbeDownloadUrl(c *C) {
+	probeCommand.pbOption.disableNetDetect = true
+
 	// empty file name
 	s.probeDownloadUrl(c, "", true)
 
@@ -94,7 +96,15 @@ func (s *OssutilCommandSuite) TestProbeDownloadUrl(c *C) {
 	os.Remove(dirName)
 }
 
+func (s *OssutilCommandSuite) TestProbeDownloadUrlEnableNetDetect(c *C) {
+	probeCommand.pbOption.disableNetDetect = false
+	// empty file name
+	s.probeDownloadUrl(c, "", true)
+}
+
 func (s *OssutilCommandSuite) probeDownloadWithParameter(c *C, object string, downloadFile string, repeatDown bool) {
+	probeCommand.pbOption.disableNetDetect = true
+
 	// create a bucket
 	bucketName := bucketNamePrefix + randLowStr(12)
 	s.putBucket(bucketName, c)
@@ -165,6 +175,7 @@ func (s *OssutilCommandSuite) probeDownloadWithParameter(c *C, object string, do
 }
 
 func (s *OssutilCommandSuite) TestProbeDownloadWithParameter(c *C) {
+	probeCommand.pbOption.disableNetDetect = true
 	s.probeDownloadWithParameter(c, "", "", false)
 	s.probeDownloadWithParameter(c, "", randLowStr(12), false)
 	s.probeDownloadWithParameter(c, randLowStr(12), "", false)
@@ -172,6 +183,7 @@ func (s *OssutilCommandSuite) TestProbeDownloadWithParameter(c *C) {
 }
 
 func (s *OssutilCommandSuite) probeUploadObject(c *C, object string, uploadFileName string, upMode string) {
+	probeCommand.pbOption.disableNetDetect = true
 	// create a bucket
 	bucketName := bucketNamePrefix + randLowStr(12)
 	s.putBucket(bucketName, c)
@@ -222,6 +234,7 @@ func (s *OssutilCommandSuite) probeUploadObject(c *C, object string, uploadFileN
 }
 
 func (s *OssutilCommandSuite) TestProbeUploadObject(c *C) {
+	probeCommand.pbOption.disableNetDetect = true
 	s.probeUploadObject(c, "", "", "")
 	s.probeUploadObject(c, "", randLowStr(12), "")
 	s.probeUploadObject(c, "", randLowStr(12), "append")
@@ -230,6 +243,7 @@ func (s *OssutilCommandSuite) TestProbeUploadObject(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestProbeCaseError(c *C) {
+	probeCommand.pbOption.disableNetDetect = true
 	bucketName := randLowStr(12)
 	testFileName := randLowStr(12)
 	upload := true
@@ -273,6 +287,7 @@ func (s *OssutilCommandSuite) TestProbeCaseError(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestProbeDownObjectError(c *C) {
+	probeCommand.pbOption.disableNetDetect = true
 	// create a bucket
 	bucketName := bucketNamePrefix + randLowStr(12)
 	s.putBucket(bucketName, c)
@@ -298,6 +313,7 @@ func (s *OssutilCommandSuite) TestProbeDownObjectError(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestProbeDownUrlError(c *C) {
+	probeCommand.pbOption.disableNetDetect = true
 	// create a bucket
 	bucketName := bucketNamePrefix + randLowStr(12)
 	_, err := s.putBucketWithACL(bucketName, "public-read")
@@ -336,6 +352,7 @@ func (s *OssutilCommandSuite) TestProbeDownUrlError(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestProbeUploadObjectBucketInvalid(c *C) {
+	probeCommand.pbOption.disableNetDetect = true
 	bucketName := bucketNamePrefix + randLowStr(12)
 
 	uploadFileName := randLowStr(12)
@@ -365,6 +382,7 @@ func (s *OssutilCommandSuite) TestProbeUploadObjectBucketInvalid(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestProbeDownUrlInvalidParameter(c *C) {
+	probeCommand.pbOption.disableNetDetect = true
 	{
 		probeCommand.pbOption.fromUrl = "http://test.jpg"
 		err := probeCommand.downloadWithHttpUrl()
@@ -399,6 +417,7 @@ func (s *OssutilCommandSuite) TestProbeDownUrlInvalidParameter(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestProbeUploadInvalidParameter(c *C) {
+	probeCommand.pbOption.disableNetDetect = true
 	{
 		probeCommand.pbOption.upMode = "unkown"
 		err := probeCommand.probeUpload()
@@ -523,6 +542,8 @@ func (s *OssutilCommandSuite) TestProbeUploadInvalidParameter(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestProbeUploadObjectRepeat(c *C) {
+	probeCommand.pbOption.disableNetDetect = true
+
 	// create a bucket
 	bucketName := bucketNamePrefix + randLowStr(12)
 	s.putBucket(bucketName, c)
@@ -559,6 +580,7 @@ func (s *OssutilCommandSuite) TestProbeUploadObjectRepeat(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestProbeDownloadInvalidParameter(c *C) {
+	probeCommand.pbOption.disableNetDetect = true
 	{
 		probeCommand.pbOption.fromUrl = "http/////"
 		err := probeCommand.probeDownload()
@@ -582,6 +604,7 @@ func (s *OssutilCommandSuite) TestProbeDownloadInvalidParameter(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestProbeDownloadObjectInvalidParameter(c *C) {
+	probeCommand.pbOption.disableNetDetect = true
 	{
 		probeCommand.command.args = []string{}
 		probeCommand.command.args = append(probeCommand.command.args, "oss://test-probe/file.txt")

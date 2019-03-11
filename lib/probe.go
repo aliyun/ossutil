@@ -99,13 +99,13 @@ var specChineseProbe = SpecText{
 
 	sampleText: ` 
 	1) 下载指定url
-        ossutil probe --download http://bucket-name.oss-cn-shenzhen.aliyuncs.com/object_name
+        ossutil probe --download --url "http://bucket-name.oss-cn-shenzhen.aliyuncs.com/object_name"
 	
     2) 下载指定Url到指定文件
-        ossutil probe --download http://bucket-name.oss-cn-shenzhen.aliyuncs.com/object_name  file_name
+        ossutil probe --download --url "http://bucket-name.oss-cn-shenzhen.aliyuncs.com/object_name"  file_name
 	
     3) 下载指定url到指定文件、并检测指定地址网络状况
-        ossutil probe  --download http://bucket-name.oss-cn-shenzhen.aliyuncs.com/object_name  file_name --addr www.aliyun.com
+        ossutil probe  --download --url "http://bucket-name.oss-cn-shenzhen.aliyuncs.com/object_name"  file_name --addr www.aliyun.com
 
     4) 下载bucket临时文件
         ossutil probe --download --bucketname bucket-name
@@ -214,13 +214,13 @@ Usage:
 
 	sampleText: ` 
 	1) downloads specified url
-        ossutil probe --download http://bucket-name.oss-cn-shenzhen.aliyuncs.com/object_name
+        ossutil probe --download --url "http://bucket-name.oss-cn-shenzhen.aliyuncs.com/object_name"
 	
     2) downloads specified url to specified file
-        ossutil probe --download http://bucket-name.oss-cn-shenzhen.aliyuncs.com/object_name  file_name
+        ossutil probe --download --url "http://bucket-name.oss-cn-shenzhen.aliyuncs.com/object_name"  file_name
 	
     3) downloads specified url to specified file,and ping domain
-        ossutil probe  --download http://bucket-name.oss-cn-shenzhen.aliyuncs.com/object_name  file_name --addr www.aliyun.com
+        ossutil probe  --download --url "http://bucket-name.oss-cn-shenzhen.aliyuncs.com/object_name"  file_name --addr www.aliyun.com
 
     4) downloads temporary file from specified bucket
         ossutil probe --download --bucketname bucket-name
@@ -252,18 +252,19 @@ Usage:
 }
 
 type probeOptionType struct {
-	opUpload   bool
-	opDownload bool
-	fromUrl    string
-	bucketName string
-	objectName string
-	netAddr    string
-	upMode     string
-	logFile    *os.File
-	logName    string
-	dlFileSize int64
-	dlFilePath string
-	ulObject   string
+	disableNetDetect bool
+	opUpload         bool
+	opDownload       bool
+	fromUrl          string
+	bucketName       string
+	objectName       string
+	netAddr          string
+	upMode           string
+	logFile          *os.File
+	logName          string
+	dlFileSize       int64
+	dlFilePath       string
+	ulObject         string
 }
 
 type ProbeCommand struct {
@@ -631,6 +632,9 @@ func (pc *ProbeCommand) deleteObject(objectName string) error {
 }
 
 func (pc *ProbeCommand) ossNetDetection(pingPath string) {
+	if pc.pbOption.disableNetDetect {
+		return // for test:reduce test time
+	}
 
 	var netAddr = "www.aliyun.com"
 
@@ -656,6 +660,12 @@ func prepareLocalFileName(srcName string, destName string) (absDestFileName stri
 	absDestFileName = ""
 	err = nil
 
+	keyName := srcName
+	urlSplits := strings.Split(srcName, "/")
+	if len(urlSplits) > 1 {
+		keyName = urlSplits[len(urlSplits)-1]
+	}
+
 	// it is absolute path
 	currentDir, err := os.Getwd()
 	if err != nil {
@@ -663,7 +673,7 @@ func prepareLocalFileName(srcName string, destName string) (absDestFileName stri
 	}
 
 	if destName == "" {
-		absDestFileName = currentDir + string(os.PathSeparator) + srcName
+		absDestFileName = currentDir + string(os.PathSeparator) + keyName
 		return
 	}
 
@@ -678,11 +688,11 @@ func prepareLocalFileName(srcName string, destName string) (absDestFileName stri
 		if err != nil {
 			return
 		}
-		absDestFileName = absDestFileName + string(os.PathSeparator) + srcName
+		absDestFileName = absDestFileName + string(os.PathSeparator) + keyName
 	} else {
 		f, serr := os.Stat(absDestFileName)
 		if serr == nil && f.IsDir() {
-			absDestFileName = absDestFileName + string(os.PathSeparator) + srcName
+			absDestFileName = absDestFileName + string(os.PathSeparator) + keyName
 		} else {
 			err = os.MkdirAll(filepath.Dir(absDestFileName), 0755)
 		}
