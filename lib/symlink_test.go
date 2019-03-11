@@ -9,7 +9,7 @@ import (
 
 func (s *OssutilCommandSuite) TestCreateSymlink(c *C) {
 	bucketName := bucketNamePrefix + randLowStr(10)
-	notExistBucketName := bucketNamePrefix + randLowStr(10)
+	notExistBucketName := bucketName + "notexist"
 
 	symObject := bucketNamePrefix + randStr(5) + "符号链接"
 	targetObject := bucketNamePrefix + randStr(5) + "符号链接目标"

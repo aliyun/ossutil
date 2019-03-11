@@ -17,6 +17,7 @@ var token = stsToken
 
 // Run once when the suite starts running
 func (s *OssutilConfigSuite) SetUpSuite(c *C) {
+	fmt.Printf("set up OssutilConfigSuite\n")
 	os.Stdout = testLogFile
 	os.Stderr = testLogFile
 	testLogger.Println("test config started")
@@ -26,6 +27,7 @@ func (s *OssutilConfigSuite) SetUpSuite(c *C) {
 
 // Run before each test or benchmark starts running
 func (s *OssutilConfigSuite) TearDownSuite(c *C) {
+	fmt.Printf("tear down OssutilConfigSuite\n")
 	testLogger.Println("test config completed")
 	os.Stdout = out
 	os.Stderr = errout
@@ -33,6 +35,7 @@ func (s *OssutilConfigSuite) TearDownSuite(c *C) {
 
 // Run after each test or benchmark runs
 func (s *OssutilConfigSuite) SetUpTest(c *C) {
+	fmt.Printf("set up test:%s\n", c.TestName())
 	if stsToken == "" {
 		stsToken = "ststoken"
 	}
@@ -41,6 +44,7 @@ func (s *OssutilConfigSuite) SetUpTest(c *C) {
 
 // Run once after all tests or benchmarks have finished running
 func (s *OssutilConfigSuite) TearDownTest(c *C) {
+	fmt.Printf("tear down test:%s\n", c.TestName())
 	stsToken = token
 	os.Remove(configFile)
 }

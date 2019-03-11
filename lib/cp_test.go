@@ -686,7 +686,7 @@ func (s *OssutilCommandSuite) TestBatchCPObject(c *C) {
 	showElapse, err = s.rawCP(CloudURLToString(bucketName, ""), CloudURLToString(destBucket, "123"), true, true, false, DefaultBigFileThreshold, CheckpointDir)
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
-	time.Sleep(1* time.Second)
+	time.Sleep(1 * time.Second)
 
 	for _, filePath := range filePaths {
 		s.getStat(destBucket, "123/"+filePath, c)
@@ -710,7 +710,7 @@ func (s *OssutilCommandSuite) TestCPObjectUpdate(c *C) {
 	newData := "new data"
 	newFile := "newFile" + randStr(5)
 	s.createFile(oldFile, oldData, c)
-	time.Sleep(1* time.Second)
+	time.Sleep(1 * time.Second)
 	s.createFile(newFile, newData, c)
 
 	// put newer object
@@ -726,7 +726,7 @@ func (s *OssutilCommandSuite) TestCPObjectUpdate(c *C) {
 	showElapse, err := s.rawCP(oldFile, CloudURLToString(bucketName, object), false, false, true, DefaultBigFileThreshold, CheckpointDir)
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
-	time.Sleep(1* time.Second)
+	time.Sleep(1 * time.Second)
 
 	s.getObject(bucketName, object, downloadFileName, c)
 	str = s.readFile(downloadFileName, c)
@@ -1491,8 +1491,8 @@ func (s *OssutilCommandSuite) TestBatchCopyOutputDir(c *C) {
 func (s *OssutilCommandSuite) TestConfigOutputDir(c *C) {
 	// test default outputdir
 	edir := ""
-	dir := randStr(10)
-	dir1 := randStr(10)
+	dir := randStr(10) + "testconfigoutputdir"
+	dir1 := dir + "another"
 	os.RemoveAll(DefaultOutputDir)
 	os.RemoveAll(dir)
 	os.RemoveAll(dir1)
@@ -1541,8 +1541,11 @@ func (s *OssutilCommandSuite) TestConfigOutputDir(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(len(fileList), Equals, 1)
 
-	os.RemoveAll(dir)
-	os.RemoveAll(DefaultOutputDir)
+	err = os.RemoveAll(dir)
+	c.Assert(err, IsNil)
+
+	err = os.RemoveAll(DefaultOutputDir)
+	c.Assert(err, IsNil)
 
 	// option and config
 	showElapse, err = s.rawCPWithOutputDir(ufile, CloudURLToString(bucketName, object), true, true, false, 1, dir1)
@@ -3211,7 +3214,7 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithMetaAcl(c *C) {
 // Test for copy objects, with --include, --exclude, --meta, --acl testing
 func (s *OssutilCommandSuite) TestBatchCPObjectBetweenOssWithMetaAcl(c *C) {
 	bucketName := bucketNamePrefix + randLowStr(10)
-	dstBucketName :=bucketName + "-dest" 
+	dstBucketName := bucketName + "-dest"
 	s.putBucket(bucketName, c)
 	bucketStr := CloudURLToString(bucketName, "")
 	s.putBucket(dstBucketName, c)

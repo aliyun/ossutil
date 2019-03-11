@@ -20,14 +20,17 @@ var _ = Suite(&OssUtilLogSuite{})
 
 // Run once when the suite starts running
 func (s *OssUtilLogSuite) SetUpSuite(c *C) {
+	fmt.Printf("set up suite OssUtilLogSuite\n")
 }
 
 // Run before each test or benchmark starts running
 func (s *OssUtilLogSuite) TearDownSuite(c *C) {
+	fmt.Printf("tear down OssUtilLogSuite\n")
 }
 
 // Run after each test or benchmark runs
 func (s *OssUtilLogSuite) SetUpTest(c *C) {
+	fmt.Printf("set up test:%s\n", c.TestName())
 	s.testLogName = logName
 	s.testLogLevel = logLevel
 
@@ -41,6 +44,7 @@ func (s *OssUtilLogSuite) SetUpTest(c *C) {
 
 // Run once after all tests or benchmarks have finished running
 func (s *OssUtilLogSuite) TearDownTest(c *C) {
+	fmt.Printf("tear down test:%s\n", c.TestName())
 	logName = s.testLogName
 	logLevel = s.testLogLevel
 
