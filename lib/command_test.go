@@ -9,7 +9,6 @@ import (
 	"os/user"
 	"path/filepath"
 	"reflect"
-	"runtime"
 	"strconv"
 	"strings"
 	"testing"
@@ -24,8 +23,8 @@ func Test(t *testing.T) {
 	TestingT(t)
 }
 
-type OssutilCommandSuite struct{
-	startT time.Time 
+type OssutilCommandSuite struct {
+	startT time.Time
 }
 
 var _ = Suite(&OssutilCommandSuite{})
@@ -145,9 +144,9 @@ func (s *OssutilCommandSuite) SetUpTest(c *C) {
 
 // Run once after all tests or benchmarks have finished running
 func (s *OssutilCommandSuite) TearDownTest(c *C) {
-	endT:= time.Now()
-	cost:= endT.UnixNano() / 1000 / 1000 - s.startT.UnixNano() / 1000 / 1000
-	fmt.Printf("tear down test:%s,cost:%d(ms)\n", c.TestName(),cost)
+	endT := time.Now()
+	cost := endT.UnixNano()/1000/1000 - s.startT.UnixNano()/1000/1000
+	fmt.Printf("tear down test:%s,cost:%d(ms)\n", c.TestName(), cost)
 }
 
 var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")

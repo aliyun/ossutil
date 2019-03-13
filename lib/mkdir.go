@@ -5,9 +5,51 @@ import (
 	"strings"
 )
 
-var specChineseMkdir = SpecText{}
+var specChineseMkdir = SpecText{
+	synopsisText: "创建一个目录,在oss中目录名字有后缀字符'/'",
 
-var specEnglishMkdir = SpecText{}
+	paramText: "dir_name [options]",
+
+	syntaxText: ` 
+	ossutil mkdir dir_name
+`,
+
+	detailHelpText: ` 
+    1) 如果输入的参数没有以后缀字符'/'结尾，工具会自动添加
+    2) 如果目录已经存在,会提示报错
+    3) 如果输入的参数包含多级目录,只会创建最后的那一个目录
+`,
+
+	sampleText: ` 
+	1) 创建一个目录
+	    ossutil mkdir oss://mybucket/dir
+	
+    2) 创建一个多级目录
+	    ossutil mkdir oss://mybucket/dir1/dir2
+`,
+}
+
+var specEnglishMkdir = SpecText{
+	synopsisText: "Create a oss directory whose object name has the suffix character '/'",
+
+	paramText: "dir_name [options]",
+
+	syntaxText: ` 
+	ossutil mkdir dir_name
+`,
+	detailHelpText: ` 
+    1) If the input parameter does not end with the suffix character '/', the tool will automatically add
+    2) If the directory already exists, you will be prompted with an error.
+    3) If the input parameter contains multiple levels of directories, only the last directory will be created.
+`,
+	sampleText: ` 
+    1) create a diretory
+	    ossutil mkdir oss://mybucket/dir
+
+    2) create a multi-level directory
+	    ossutil mkdir oss://mybucket/dir1/dir2
+`,
+}
 
 type mkOptionType struct {
 	encodingType string
@@ -59,7 +101,7 @@ func (mkc *MkdirCommand) RunCommand() error {
 
 	dirUrL, err := StorageURLFromString(mkc.command.args[0], mkc.mkOption.encodingType)
 	if err != nil {
-		return err
+		return fmt.Errorf("StorageURLFromString error")
 	}
 
 	if !dirUrL.IsCloudURL() {
@@ -89,11 +131,11 @@ func (mkc *MkdirCommand) MkBucketDir(dirUrl CloudURL) error {
 		return err
 	}
 
-    bExist, err := bucket.IsObjectExist(dirUrl.object)
-    if err != nil {
-        return err
-    }
-    
+	bExist, err := bucket.IsObjectExist(dirUrl.object)
+	if err != nil {
+		return err
+	}
+
 	if bExist {
 		return fmt.Errorf("%s already exists", dirUrl.object)
 	}

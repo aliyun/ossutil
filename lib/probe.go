@@ -33,13 +33,13 @@ var specChineseProbe = SpecText{
 	paramText: "file_name [options]",
 
 	syntaxText: ` 
-	ossutil probe --download --url http_url [--addr=domain_name] [file_name]
+    ossutil probe --download --url http_url [--addr=domain_name] [file_name]
     ossutil probe --download --bucketname bucket-name  [--object=object_name] [--addr=domain_name] [file_name]
     ossutil probe --upload [file_name] --bucketname bucket-name [--object=object_name] [--addr=domain_name] 
 `,
 
 	detailHelpText: ` 
-	下载探测(--download表示)分两种情况
+    下载探测(--download表示)分两种情况
       1、利用--url直接输入一个url网络地址，工具会下载该链接地址到本地
       2、利用--bucketname指定某个bucket下载
         如果输入--object，则下载指定bucket的指定object
@@ -59,15 +59,15 @@ var specChineseProbe = SpecText{
 
 --bucketname
 
-   oss中bucket的名称
+    oss中bucket的名称
 
 --object
 
-   oss中object的名称
+    oss中object的名称
 
 --addr选项
 
-	需要网络探测的域名，工具会对该域名进行ping等操作，默认值为www.aliyun.com
+    需要网络探测的域名，工具会对该域名进行ping等操作，默认值为www.aliyun.com
 
 --upmode选项
 
@@ -87,14 +87,14 @@ var specChineseProbe = SpecText{
         该用法下载bucket中的object，并输出探测报告;指定--object则会下载bucket-name中
     的object_name;不指定--object，则工具会生成一个临时文件上传到oss后再将其下载，下载结束后
     会将临时文件和临时object删除
-	    如果输入--addr，工具会探测domain_name, 默认探测 www.aliyun.com
+        如果输入--addr，工具会探测domain_name, 默认探测 www.aliyun.com
 
     3) ossutil probe --upload [file_name] --bucketname bucket-name [--object=object_name] [--addr=domain_name] 
         该用法是上传探测,会输出探测报告;如果指定file_name,则将该file_name文件上传到oss;不指定
 	file_name,则工具会生成一个临时文件上传，探测结束后将临时文件删除;如果输入--object，则oss
     中object名称为object_name;如果不输入--object，则oss中object名称为工具自动生成，探测结束
     后会将该临时object删除
-	    如果输入--addr，工具会探测domain_name, 默认探测 www.aliyun.com
+        如果输入--addr，工具会探测domain_name, 默认探测 www.aliyun.com
 `,
 
 	sampleText: ` 
@@ -176,7 +176,7 @@ var specEnglishProbe = SpecText{
 
 --addr option
     
-	Specifies a domain name which will be probed by ossutil,the default value is www.aliyun.com
+    Specifies a domain name which will be probed by ossutil,the default value is www.aliyun.com
 
 --upmode option
 
