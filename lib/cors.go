@@ -10,9 +10,112 @@ import (
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
 
-var specChineseCors = SpecText{}
+var specChineseCors = SpecText{
+	synopsisText: "设置、查询或者删除bucket的cors配置",
 
-var specEnglishCors = SpecText{}
+	paramText: "bucket_url [local_xml_file] [options]",
+
+	syntaxText: ` 
+    ossutil cors --method put oss://bucket  local_xml_file
+    ossutil cors --method get oss://bucket  [local_xml_file]
+    ossuitl cors --method delete oss://bucket
+`,
+	detailHelpText: ` 
+    cors命令通过设置method选项值为put、get、delete,可以设置、查询或者删除bucket的cors配置
+
+用法:
+    该命令有三种用法:
+	
+    1) ossutil cors --method put oss://bucket  local_xml_file
+	   
+        这个命令从配置文件local_xml_file中读取cors配置，然后设置bucket的cors规则
+        配置文件是一个xml格式的文件，举例如下
+	   
+        <?xml version="1.0" encoding="UTF-8"?>
+          <CORSConfiguration>
+            <CORSRule>
+                <AllowedOrigin>www.aliyun.com</AllowedOrigin>
+                <AllowedMethod>PUT</AllowedMethod>
+                <MaxAgeSeconds>10000</MaxAgeSeconds>
+            </CORSRule>
+        </CORSConfiguration>
+	
+    2) ossutil cors --method get oss://bucket  [local_xml_file]
+        这个命令查询bucket的cors配置
+        如果输入参数local_xml_file，cors配置将输出到该文件，否则输出到屏幕上
+	
+    3)  ossutil cors --method delete oss://bucket
+        这个命令删除bucket的配置
+`,
+	sampleText: ` 
+    1) put cors
+       ossutil cors --method put oss://bucket  local_xml_file
+
+    2) get cors to stdout
+       ossutil cors --method get oss://bucket
+	
+    3) get cors to local file
+       ossutil cors --method get oss://bucket  local_xml_file
+	
+    4) delete cors
+       ossutil cors --method delete oss://bucket
+`,
+}
+
+var specEnglishCors = SpecText{
+	synopsisText: "Set, get or delete the cors configuration of the oss bucket",
+
+	paramText: "bucket_url [local_xml_file] [options]",
+
+	syntaxText: ` 
+    ossutil cors --method put oss://bucket  local_xml_file
+    ossutil cors --method get oss://bucket  [local_xml_file]
+    ossuitl cors --method delete oss://bucket
+`,
+	detailHelpText: ` 
+    cors command can set、get and delete the cors configuration of the oss bucket by
+    set method option value to put, get,delete
+
+Usage:
+    There are three usages for this command:
+	
+    1) ossutil cors --method put oss://bucket  local_xml_file
+	   
+        The command set the cors configuration of bucket from local file local_xml_file
+    the local_xml_file is xml format
+        The following is an example of the contents of local_xml_file
+	   
+        <?xml version="1.0" encoding="UTF-8"?>
+          <CORSConfiguration>
+            <CORSRule>
+                <AllowedOrigin>www.aliyun.com</AllowedOrigin>
+                <AllowedMethod>PUT</AllowedMethod>
+                <MaxAgeSeconds>10000</MaxAgeSeconds>
+            </CORSRule>
+        </CORSConfiguration>
+	
+    2) ossutil cors --method get oss://bucket  [local_xml_file]
+        The command get the cors configuration of bucket
+        if you input parameter local_xml_file,the configuration will be output to local_xml_file
+        if you don't input parameter local_xml_file,the configuration will be output to stdout
+	
+    3)  ossutil cors --method delete oss://bucket
+        The command delete the cors configuration of bucket
+`,
+	sampleText: ` 
+    1) put cors
+       ossutil cors --method put oss://bucket  local_xml_file
+
+    2) get cors to stdout
+       ossutil cors --method get oss://bucket
+	
+    3) get cors to local file
+       ossutil cors --method get oss://bucket  local_xml_file
+	
+    4) delete cors
+       ossutil cors --method delete oss://bucket
+`,
+}
 
 type corsOptionType struct {
 	bucketName string
@@ -27,8 +130,8 @@ var corsCommand = CorsCommand{
 	command: Command{
 		name:        "cors",
 		nameAlias:   []string{"cors"},
-		minArgc:     2,
-		maxArgc:     3,
+		minArgc:     1,
+		maxArgc:     2,
 		specChinese: specChineseCors,
 		specEnglish: specEnglishCors,
 		group:       GroupTypeNormalCommand,
@@ -38,6 +141,7 @@ var corsCommand = CorsCommand{
 			OptionAccessKeyID,
 			OptionAccessKeySecret,
 			OptionSTSToken,
+			OptionMethod,
 			OptionLogLevel,
 		},
 	},
@@ -59,12 +163,16 @@ func (corsc *CorsCommand) Init(args []string, options OptionMapType) error {
 
 // RunCommand simulate inheritance, and polymorphism
 func (corsc *CorsCommand) RunCommand() error {
-	strMethod := corsc.command.args[0]
+	strMethod, _ := GetString(OptionMethod, corsc.command.options)
+	if strMethod == "" {
+		return fmt.Errorf("--method value is empty")
+	}
+	strMethod = strings.ToLower(strMethod)
 	if strMethod != "put" && strMethod != "get" && strMethod != "delete" {
-		return fmt.Errorf("%s is not in the optional value:put|get|delete", strMethod)
+		return fmt.Errorf("--method value is not in the optional value:put|get|delete")
 	}
 
-	bucketUrL, err := StorageURLFromString(corsc.command.args[1], "")
+	bucketUrL, err := StorageURLFromString(corsc.command.args[0], "")
 	if err != nil {
 		return err
 	}
@@ -87,15 +195,18 @@ func (corsc *CorsCommand) RunCommand() error {
 	} else if strMethod == "delete" {
 		err = corsc.DeleteBucketCors()
 	}
+	if err != nil {
+		fmt.Printf("error:%s\n", err.Error())
+	}
 	return err
 }
 
 func (corsc *CorsCommand) PutBucketCors() error {
-	if len(corsc.command.args) < 3 {
-		return fmt.Errorf("put bucket cors need 3 parameters,the cors config file is empty")
+	if len(corsc.command.args) < 2 {
+		return fmt.Errorf("missing parameters,the local cors config file is empty")
 	}
 
-	corsFile := corsc.command.args[2]
+	corsFile := corsc.command.args[1]
 	fileInfo, err := os.Stat(corsFile)
 	if err != nil {
 		return err
@@ -160,8 +271,8 @@ func (corsc *CorsCommand) GetBucketCors() error {
 	}
 
 	var outFile *os.File
-	if len(corsc.command.args) >= 3 {
-		fileName := corsc.command.args[2]
+	if len(corsc.command.args) >= 2 {
+		fileName := corsc.command.args[1]
 		_, err = os.Stat(fileName)
 		if err == nil {
 			bConitnue := corsc.confirm(fileName)
