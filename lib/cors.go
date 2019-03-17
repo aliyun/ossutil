@@ -27,7 +27,6 @@ var specChineseCors = SpecText{
     该命令有三种用法:
 	
     1) ossutil cors --method put oss://bucket  local_xml_file
-	   
         这个命令从配置文件local_xml_file中读取cors配置，然后设置bucket的cors规则
         配置文件是一个xml格式的文件，举例如下
 	   
@@ -45,19 +44,19 @@ var specChineseCors = SpecText{
         如果输入参数local_xml_file，cors配置将输出到该文件，否则输出到屏幕上
 	
     3)  ossutil cors --method delete oss://bucket
-        这个命令删除bucket的配置
+        这个命令删除bucket的cors配置
 `,
 	sampleText: ` 
-    1) put cors
+    1) 设置bucket的cors配置
        ossutil cors --method put oss://bucket  local_xml_file
 
-    2) get cors to stdout
+    2) 查询bucket的cors配置，结果输出到标准输出
        ossutil cors --method get oss://bucket
 	
-    3) get cors to local file
+    3) 查询bucket的cors配置，结果输出到本地文件
        ossutil cors --method get oss://bucket  local_xml_file
 	
-    4) delete cors
+    4) 删除bucket的cors配置
        ossutil cors --method delete oss://bucket
 `,
 }
@@ -81,7 +80,7 @@ Usage:
 	
     1) ossutil cors --method put oss://bucket  local_xml_file
 	   
-        The command set the cors configuration of bucket from local file local_xml_file
+        The command sets the cors configuration of bucket from local file local_xml_file
     the local_xml_file is xml format
         The following is an example of the contents of local_xml_file
 	   
@@ -95,24 +94,24 @@ Usage:
         </CORSConfiguration>
 	
     2) ossutil cors --method get oss://bucket  [local_xml_file]
-        The command get the cors configuration of bucket
+        The command gets the cors configuration of bucket
         if you input parameter local_xml_file,the configuration will be output to local_xml_file
         if you don't input parameter local_xml_file,the configuration will be output to stdout
 	
     3)  ossutil cors --method delete oss://bucket
-        The command delete the cors configuration of bucket
+        The command deletes the cors configuration of bucket
 `,
 	sampleText: ` 
-    1) put cors
+    1) put cors configuration
        ossutil cors --method put oss://bucket  local_xml_file
 
-    2) get cors to stdout
+    2) get cors configuration to stdout
        ossutil cors --method get oss://bucket
 	
-    3) get cors to local file
+    3) get cors configuration to local file
        ossutil cors --method get oss://bucket  local_xml_file
 	
-    4) delete cors
+    4) delete cors configuration
        ossutil cors --method delete oss://bucket
 `,
 }

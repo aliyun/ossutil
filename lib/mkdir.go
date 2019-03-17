@@ -11,7 +11,7 @@ var specChineseMkdir = SpecText{
 	paramText: "dir_name [options]",
 
 	syntaxText: ` 
-	ossutil mkdir dir_name
+	ossutil mkdir oss://bucket/dir_name
 `,
 
 	detailHelpText: ` 
@@ -22,10 +22,10 @@ var specChineseMkdir = SpecText{
 
 	sampleText: ` 
 	1) 创建一个目录
-	    ossutil mkdir oss://mybucket/dir
+      ossutil mkdir oss://bucket/dir
 	
     2) 创建一个多级目录
-	    ossutil mkdir oss://mybucket/dir1/dir2
+      ossutil mkdir oss://bucket/dir1/dir2
 `,
 }
 
@@ -35,7 +35,7 @@ var specEnglishMkdir = SpecText{
 	paramText: "dir_name [options]",
 
 	syntaxText: ` 
-	ossutil mkdir dir_name
+	ossutil mkdir oss://bucket/dir_name
 `,
 	detailHelpText: ` 
     1) If the input parameter does not end with the suffix character '/', the tool will automatically add
@@ -44,10 +44,10 @@ var specEnglishMkdir = SpecText{
 `,
 	sampleText: ` 
     1) create a diretory
-	    ossutil mkdir oss://mybucket/dir
+       ossutil mkdir oss://bucket/dir
 
     2) create a multi-level directory
-	    ossutil mkdir oss://mybucket/dir1/dir2
+       ossutil mkdir oss://bucket/dir1/dir2
 `,
 }
 
