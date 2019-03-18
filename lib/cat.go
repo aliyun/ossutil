@@ -6,9 +6,52 @@ import (
 	"os"
 )
 
-var specChineseCat = SpecText{}
+var specChineseCat = SpecText{
+	synopsisText: "将文件内容输出到标准输出",
 
-var specEnglishCat = SpecText{}
+	paramText: "object [options]",
+
+	syntaxText: ` 
+	ossutil cat oss://bucket/object 
+`,
+	detailHelpText: ` 
+    cat命令可以将oss的object内容输出到标准输出,object内容最好是文本格式
+
+用法:
+    该命令仅有一种用法:
+	
+    1) ossutil cat oss://bucket/object
+       将object内容输出到标准输出
+`,
+	sampleText: ` 
+    1) 将object内容输出到标准输出
+       ossutil cat oss://bucket/object
+`,
+}
+
+var specEnglishCat = SpecText{
+	synopsisText: "Output object content to standard output",
+
+	paramText: "object [options]",
+
+	syntaxText: ` 
+	ossutil cat oss://bucket/object 
+`,
+	detailHelpText: ` 
+	The cat command can output the object content of oss to standard output
+    The object content is preferably text format
+
+Usage:
+    There is only one usage for this command:
+	
+    1) ossutil cat oss://bucket/object
+       The command output object content to standard output
+`,
+	sampleText: ` 
+    1) output object content to standard output
+       ossutil cat oss://bucket/object
+`,
+}
 
 type catOptionType struct {
 	bucketName   string
@@ -59,7 +102,7 @@ func (catc *CatCommand) Init(args []string, options OptionMapType) error {
 // RunCommand simulate inheritance, and polymorphism
 func (catc *CatCommand) RunCommand() error {
 	catc.catOption.encodingType, _ = GetString(OptionEncodingType, catc.command.options)
-	srcBucketUrL, err := catc.CheckBucketUrl(catc.command.args[0], catc.catOption.encodingType)
+	srcBucketUrL, err := GetCloudUrl(catc.command.args[0], catc.catOption.encodingType)
 	if err != nil {
 		return err
 	}
@@ -101,21 +144,4 @@ func (catc *CatCommand) RunCommand() error {
 	fmt.Printf("\n")
 
 	return err
-}
-
-func (catc *CatCommand) CheckBucketUrl(strlUrl, encodingType string) (*CloudURL, error) {
-	bucketUrL, err := StorageURLFromString(strlUrl, encodingType)
-	if err != nil {
-		return nil, err
-	}
-
-	if !bucketUrL.IsCloudURL() {
-		return nil, fmt.Errorf("parameter is not a cloud url,url is %s", bucketUrL.ToString())
-	}
-
-	cloudUrl := bucketUrL.(CloudURL)
-	if cloudUrl.bucket == "" {
-		return nil, fmt.Errorf("bucket name is empty,url is %s", bucketUrL.ToString())
-	}
-	return &cloudUrl, nil
 }
