@@ -164,6 +164,19 @@ func randLowStr(n int) string {
 	return strings.ToLower(randStr(n))
 }
 
+func (s *OssutilCommandSuite) PutObject(bucketName string, object string, body string, c *C) {
+	// create client and bucket
+	client, err := oss.New(endpoint, accessKeyID, accessKeySecret)
+	c.Assert(err, IsNil)
+
+	bucket, err := client.Bucket(bucketName)
+	c.Assert(err, IsNil)
+
+	err = bucket.PutObject(object, strings.NewReader(body))
+
+	c.Assert(err, IsNil)
+}
+
 func (s *OssutilCommandSuite) configNonInteractive(c *C) {
 	command := "config"
 	var args []string

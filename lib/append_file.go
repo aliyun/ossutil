@@ -9,9 +9,71 @@ import (
 	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
 
-var specChineseAppendFile = SpecText{}
+var specChineseAppendFile = SpecText{
+	synopsisText: "将本地文件内容以append上传方式上传到oss中的object",
 
-var specEnglishAppendFile = SpecText{}
+	paramText: "local_file_name oss_object [options]",
+
+	syntaxText: ` 
+	ossutil appendfromfile local_file_name oss://bucket/object [options]
+`,
+
+	detailHelpText: ` 
+	1) 如果object不存在，可以通过--meta设置object的meta信息，比如输入 --meta "X-Oss-Meta-Author:chanju"
+       可以设置X-Oss-Meta-Author的值为chanju
+    2) 如果object已经存在，不可以输入--meta信息,因为oss不支持在已经存在的append object上设置meta
+
+用法：
+
+    该命令只有一种用法：
+
+    1) ossutil appendfromfile local_file_name oss://bucket/object [--meta=meta-value]
+      将local_file_name内容以append方式上传到object
+      如果输入--meta选项，可以设置object的meta信息
+`,
+
+	sampleText: ` 
+	1) append上传文件内容，不设置meta信息
+       ossutil appendfromfile local_file_name oss://bucket/object
+	
+    2) append上传文件内容，设置meta信息
+       ossutil appendfromfile local_file_name oss://bucket/object --meta "X-Oss-Meta-Author:chanju"
+`,
+}
+
+var specEnglishAppendFile = SpecText{
+	synopsisText: "Upload the contents of the local file to the oss object by append upload mode",
+
+	paramText: "local_file_name oss_object [options]",
+
+	syntaxText: ` 
+	ossutil appendfromfile local_file_name oss://bucket/object [options]
+`,
+
+	detailHelpText: ` 
+	1) If the object does not exist, you can set the meta information of the object with --meta
+      for example:
+      inputting --meta "X-Oss-Meta-Author:chanju" can set the value of X-Oss-Meta-Author to chanju
+    2) If the object already exists, you can't input the --meta option,
+      oss does not support setting the meta on the exist append object.
+
+Usages：
+
+    There is only one usage for this command:：
+
+    1) ossutil appendfromfile local_file_name oss://bucket/object [--meta=meta-value]
+      Upload the local_file_name content to the object by append mode
+      If you input the --meta option, you can set the meta value of the object
+`,
+
+	sampleText: ` 
+	1) Uploads file content by append mode without setting meta value
+       ossutil appendfromfile local_file_name oss://bucket/object
+	
+    2) Uploads file content by append mode with setting meta value
+       ossutil appendfromfile local_file_name oss://bucket/object --meta "X-Oss-Meta-Author:chanju"
+`,
+}
 
 type AppendProgressListener struct {
 	lastMs   int64
@@ -98,7 +160,7 @@ func (afc *AppendFileCommand) RunCommand() error {
 	afc.afOption.encodingType, _ = GetString(OptionEncodingType, afc.command.options)
 	afc.afOption.ossMeta, _ = GetString(OptionMeta, afc.command.options)
 
-	srcBucketUrL, err := afc.CheckBucketUrl(afc.command.args[0], afc.afOption.encodingType)
+	srcBucketUrL, err := GetCloudUrl(afc.command.args[1], afc.afOption.encodingType)
 	if err != nil {
 		return err
 	}
@@ -111,7 +173,7 @@ func (afc *AppendFileCommand) RunCommand() error {
 	afc.afOption.objectName = srcBucketUrL.object
 
 	// check input file
-	fileName := afc.command.args[1]
+	fileName := afc.command.args[0]
 	stat, err := os.Stat(fileName)
 	if err != nil {
 		return err
@@ -165,23 +227,6 @@ func (afc *AppendFileCommand) RunCommand() error {
 	err = afc.AppendFromFile(bucket, position)
 
 	return err
-}
-
-func (afc *AppendFileCommand) CheckBucketUrl(strlUrl, encodingType string) (*CloudURL, error) {
-	bucketUrL, err := StorageURLFromString(strlUrl, encodingType)
-	if err != nil {
-		return nil, err
-	}
-
-	if !bucketUrL.IsCloudURL() {
-		return nil, fmt.Errorf("parameter is not a cloud url,url is %s", bucketUrL.ToString())
-	}
-
-	cloudUrl := bucketUrL.(CloudURL)
-	if cloudUrl.bucket == "" {
-		return nil, fmt.Errorf("bucket name is empty,url is %s", bucketUrL.ToString())
-	}
-	return &cloudUrl, nil
 }
 
 func (afc *AppendFileCommand) AppendFromFile(bucket *oss.Bucket, position int64) error {
