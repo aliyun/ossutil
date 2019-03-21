@@ -7,9 +7,61 @@ import (
 	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
 
-var specChineseListPart = SpecText{}
+var specChineseListPart = SpecText{
+	synopsisText: "列出没有完成分块上传的object的分块信息",
 
-var specEnglishListPart = SpecText{}
+	paramText: "oss_object uploadid [options]",
+
+	syntaxText: ` 
+	ossutil listpart oss://bucket/object uploadid [options]
+`,
+
+	detailHelpText: ` 
+	可以通过ls命令查看bucket的object和uploadid信息，在用本命令查看详细信息
+  
+
+用法：
+
+    该命令只有一种用法：
+
+    1) ossutil listpart oss://bucket/object uploadid [options]
+      根据object和uploadid查询块信息
+`,
+
+	sampleText: ` 
+	1) 根据object和uploadid查询块信息
+       ossutil listpart oss://bucket/object 8A1912289A705A5F0503FCA71DABFD5A
+`,
+}
+
+var specEnglishListPart = SpecText{
+	synopsisText: "List parts information of uncompleted multipart object",
+
+	paramText: "oss_object uploadid [options]",
+
+	syntaxText: ` 
+	ossutil listpart oss://bucket/object uploadid [options]
+`,
+
+	detailHelpText: ` 
+	You can use the ls command to view the object and uploadid information of a bucket.
+    Then Use this command to view detailed part information.
+
+Usages：
+
+    There is only one usage for this command:：
+
+    1) ossutil listpart oss://bucket/object uploadid [options]
+
+      Query parts information according to object and uploadid
+`,
+
+	sampleText: ` 
+	1) Query parts information according to object and uploadid
+
+      ossutil listpart oss://bucket/object 8A1912289A705A5F0503FCA71DABFD5A
+`,
+}
 
 type listPartOptionType struct {
 	cloudUrl     CloudURL
@@ -60,7 +112,7 @@ func (lpc *ListPartCommand) Init(args []string, options OptionMapType) error {
 // RunCommand simulate inheritance, and polymorphism
 func (lpc *ListPartCommand) RunCommand() error {
 	lpc.lpOption.encodingType, _ = GetString(OptionEncodingType, lpc.command.options)
-	srcBucketUrL, err := lpc.CheckBucketUrl(lpc.command.args[0], lpc.lpOption.encodingType)
+	srcBucketUrL, err := GetCloudUrl(lpc.command.args[0], lpc.lpOption.encodingType)
 	if err != nil {
 		return err
 	}
@@ -73,24 +125,6 @@ func (lpc *ListPartCommand) RunCommand() error {
 	lpc.lpOption.uploadId = lpc.command.args[1]
 
 	return lpc.ListPart()
-
-}
-
-func (lpc *ListPartCommand) CheckBucketUrl(strlUrl, encodingType string) (*CloudURL, error) {
-	bucketUrL, err := StorageURLFromString(strlUrl, encodingType)
-	if err != nil {
-		return nil, err
-	}
-
-	if !bucketUrL.IsCloudURL() {
-		return nil, fmt.Errorf("parameter is not a cloud url,url is %s", bucketUrL.ToString())
-	}
-
-	cloudUrl := bucketUrL.(CloudURL)
-	if cloudUrl.bucket == "" {
-		return nil, fmt.Errorf("bucket name is empty,url is %s", bucketUrL.ToString())
-	}
-	return &cloudUrl, nil
 }
 
 func (lpc *ListPartCommand) ListPart() error {

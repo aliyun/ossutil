@@ -1612,6 +1612,10 @@ func (cc *CopyCommand) uploadFileWithReport(bucket *oss.Bucket, destURL CloudURL
 	} else if skip {
 		LogInfo("upload file skip:%s.\n", file.filePath)
 	} else {
+		if file.dir == "" {
+			// fix panic
+			file.dir = "."
+		}
 		absPath := file.dir + string(os.PathSeparator) + file.filePath
 		fileInfo, errF := os.Stat(absPath)
 		speed := 0.0
@@ -2062,6 +2066,8 @@ func (cc *CopyCommand) downloadSingleFile(bucket *oss.Bucket, objectInfo objectI
 
 	partSize, rt := cc.preparePartOption(size)
 	cp := oss.CheckpointDir(true, cc.cpOption.cpDir)
+	LogInfo("multipart download,object %s,file size:%d,partSize %d,routin count:%d,checkpoint dir:%s\n",
+		object, size, partSize, rt, cc.cpOption.cpDir)
 	downloadOptions = append(downloadOptions, oss.Routines(rt), cp)
 	return false, cc.ossResumeDownloadRetry(bucket, object, fileName, size, partSize, downloadOptions...), 0, msg
 }
