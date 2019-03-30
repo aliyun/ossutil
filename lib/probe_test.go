@@ -99,7 +99,7 @@ func (s *OssutilCommandSuite) TestProbeDownloadUrl(c *C) {
 func (s *OssutilCommandSuite) TestProbeDownloadUrlEnableNetDetect(c *C) {
 	probeCommand.pbOption.disableNetDetect = false
 	// empty file name
-	s.probeDownloadUrl(c, "", true)
+	s.probeDownloadUrl(c, "", false)
 }
 
 func (s *OssutilCommandSuite) probeDownloadWithParameter(c *C, object string, downloadFile string, repeatDown bool) {

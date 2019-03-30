@@ -31,7 +31,6 @@ func (s *OssutilCommandSuite) TestCPObject(c *C) {
 	// modify the content of the file
 	data := "欢迎使用ossutil"
 	s.createFile(uploadFileName, data, c)
-	time.Sleep(sleepTime)
 	// overwrite the object
 	s.putObject(bucketName, object, uploadFileName, c)
 	// get object
@@ -103,7 +102,6 @@ func (s *OssutilCommandSuite) TestCPObject(c *C) {
 	// copy single object in directory, verify the path of dest object
 	srcObject := "a/b/c/d/e"
 	s.putObject(bucketName, srcObject, uploadFileName, c)
-	time.Sleep(time.Second)
 	s.copyObject(bucketName, srcObject, destBucket, "", c)
 	s.getObject(destBucket, "e", filePath, c)
 	str = s.readFile(filePath, c)
@@ -644,8 +642,6 @@ func (s *OssutilCommandSuite) TestBatchCPObject(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
 
-	time.Sleep(2 * time.Second)
-
 	// get files
 	downDir := "下载目录"
 	showElapse, err = s.rawCP(CloudURLToString(bucketName, ""), downDir, true, true, false, DefaultBigFileThreshold, CheckpointDir)
@@ -686,7 +682,6 @@ func (s *OssutilCommandSuite) TestBatchCPObject(c *C) {
 	showElapse, err = s.rawCP(CloudURLToString(bucketName, ""), CloudURLToString(destBucket, "123"), true, true, false, DefaultBigFileThreshold, CheckpointDir)
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
-	time.Sleep(1 * time.Second)
 
 	for _, filePath := range filePaths {
 		s.getStat(destBucket, "123/"+filePath, c)
@@ -710,7 +705,6 @@ func (s *OssutilCommandSuite) TestCPObjectUpdate(c *C) {
 	newData := "new data"
 	newFile := "newFile" + randStr(5)
 	s.createFile(oldFile, oldData, c)
-	time.Sleep(1 * time.Second)
 	s.createFile(newFile, newData, c)
 
 	// put newer object
@@ -726,7 +720,6 @@ func (s *OssutilCommandSuite) TestCPObjectUpdate(c *C) {
 	showElapse, err := s.rawCP(oldFile, CloudURLToString(bucketName, object), false, false, true, DefaultBigFileThreshold, CheckpointDir)
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
-	time.Sleep(1 * time.Second)
 
 	s.getObject(bucketName, object, downloadFileName, c)
 	str = s.readFile(downloadFileName, c)
@@ -1755,8 +1748,6 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithNormalInclude(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
 
-	time.Sleep(1 * time.Second)
-
 	// download above files with --include uploaded
 	// e.g., ossutil cp oss://tempb4/ testdownload/ -rf --include "*.txt"
 	downdir := "testdownload-inc1" + randLowStr(5)
@@ -1765,8 +1756,6 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithNormalInclude(c *C) {
 	showElapse, err = s.rawCPWithFilter(args, true, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
-
-	time.Sleep(1 * time.Second)
 
 	// Get uploaded files (with above conditions: --include "*.txt") and use these for verification
 	files := filterStrsWithInclude(filenames, "*.txt")
@@ -1809,8 +1798,6 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithMarkInclude(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
 
-	time.Sleep(1 * time.Second)
-
 	// download above files with --include uploaded
 	// e.g., ossutil cp oss://tempb4/ testdownload/ -rf --include "*2??txt"
 	downdir := "testdownload-inc2" + randLowStr(5)
@@ -1819,8 +1806,6 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithMarkInclude(c *C) {
 	showElapse, err = s.rawCPWithFilter(args, true, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
-
-	time.Sleep(1 * time.Second)
 
 	// Get uploaded files (with above conditions: --include "*2??txt") and use these for verification
 	files := filterStrsWithInclude(filenames, "*2??txt")
@@ -1863,8 +1848,6 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithSequenceInclude(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
 
-	time.Sleep(1 * time.Second)
-
 	// download above files with --include uploaded
 	// e.g., ossutil cp oss://tempb4/ testdownload/ -rf --include "*2??txt"
 	downdir := "testdownload-inc3" + randLowStr(5)
@@ -1873,8 +1856,6 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithSequenceInclude(c *C) {
 	showElapse, err = s.rawCPWithFilter(args, true, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
-
-	time.Sleep(1 * time.Second)
 
 	// Get uploaded files (with above conditions: --include "*[0-9]?jpg") and use these for verification
 	files := filterStrsWithInclude(filenames, "*[0-9]?jpg")
@@ -1917,8 +1898,6 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithNonSequenceInclude(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
 
-	time.Sleep(1 * time.Second)
-
 	// download above files with --include uploaded
 	// e.g., ossutil cp oss://tempb4/ testdownload/ -rf --include "*[^0-3]?txt""
 	downdir := "testdownload-inc4" + randLowStr(5)
@@ -1927,8 +1906,6 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithNonSequenceInclude(c *C) {
 	showElapse, err = s.rawCPWithFilter(args, true, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
-
-	time.Sleep(1 * time.Second)
 
 	// Get uploaded files (with above conditions: --include "*[0-9]?jpg") and use these for verification
 	files := filterStrsWithInclude(filenames, "*[^0-3]?txt")
@@ -1970,8 +1947,6 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithNonSequenceIncludeEx(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
 
-	time.Sleep(1 * time.Second)
-
 	// download above files with --include uploaded
 	// e.g., ossutil cp oss://tempb4/ testdownload/ -rf --include "*[!0-3]?txt""
 	downdir := "testdownload-inc4-ex" + randLowStr(5)
@@ -1980,8 +1955,6 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithNonSequenceIncludeEx(c *C) {
 	showElapse, err = s.rawCPWithFilter(args, true, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
-
-	time.Sleep(1 * time.Second)
 
 	res, filters := getFilter(cmdline)
 	c.Assert(res, Equals, true)
@@ -2026,8 +1999,6 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithRepeatedInclude(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
 
-	time.Sleep(1 * time.Second)
-
 	// download above files with --include uploaded
 	// e.g., ossutil cp oss://tempb4/ testdownload/ -rf --include "*.jpg" --include "*.jpg"
 	downdir := "testdownload-inc5" + randLowStr(5)
@@ -2036,8 +2007,6 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithRepeatedInclude(c *C) {
 	showElapse, err = s.rawCPWithFilter(args, true, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
-
-	time.Sleep(1 * time.Second)
 
 	// Get uploaded files (with above conditions: --include "*.jpg" --include "*.jpg") and use these for verification
 	files := filterStrsWithInclude(filenames, "*.jpg")
@@ -2080,8 +2049,6 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithFullInclude(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
 
-	time.Sleep(1 * time.Second)
-
 	// download above files with --include uploaded
 	// e.g., ossutil cp oss://tempb4/ testdownload/ -rf --include "*"
 	downdir := "testdownload-inc6" + randLowStr(5)
@@ -2090,8 +2057,6 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithFullInclude(c *C) {
 	showElapse, err = s.rawCPWithFilter(args, true, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
-
-	time.Sleep(1 * time.Second)
 
 	// Verify
 	_, err = os.Stat(downdir)
@@ -2131,8 +2096,6 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithNormalExclude(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
 
-	time.Sleep(1 * time.Second)
-
 	// download above files with --exclude uploaded
 	// e.g., ossutil cp oss://tempb4/ testdownload/ -rf --exclude "*.txt"
 	downdir := "testdownload-exc1" + randLowStr(5)
@@ -2141,8 +2104,6 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithNormalExclude(c *C) {
 	showElapse, err = s.rawCPWithFilter(args, true, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
-
-	time.Sleep(1 * time.Second)
 
 	// Get uploaded files (with above conditions: --exclude "*.txt") and use these for verification
 	files := filterStrsWithExclude(filenames, "*.txt")
@@ -2185,8 +2146,6 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithMarkExclude(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
 
-	time.Sleep(1 * time.Second)
-
 	// download above files with --exclude uploaded
 	// e.g., ossutil cp oss://tempb4/ testdownload/ -rf --exclude "*2??txt"
 	downdir := "testdownload-exc2" + randLowStr(5)
@@ -2195,8 +2154,6 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithMarkExclude(c *C) {
 	showElapse, err = s.rawCPWithFilter(args, true, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
-
-	time.Sleep(1 * time.Second)
 
 	// Get uploaded files (with above conditions: --exclude "*2??txt") and use these for verification
 	files := filterStrsWithExclude(filenames, "*2??txt")
@@ -2239,8 +2196,6 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithSequenceExclude(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
 
-	time.Sleep(1 * time.Second)
-
 	// download above files with --exclude uploaded
 	// e.g., ossutil cp oss://tempb4/ testdownload/ -rf --exclude "*2??txt"
 	downdir := "testdownload-exc3" + randLowStr(5)
@@ -2249,8 +2204,6 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithSequenceExclude(c *C) {
 	showElapse, err = s.rawCPWithFilter(args, true, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
-
-	time.Sleep(1 * time.Second)
 
 	// Get uploaded files (with above conditions: --exclude "*[0-9]?jpg") and use these for verification
 	files := filterStrsWithExclude(filenames, "*[0-9]?jpg")
@@ -2293,8 +2246,6 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithNonSequenceExclude(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
 
-	time.Sleep(1 * time.Second)
-
 	// download above files with --exclude uploaded
 	// e.g., ossutil cp oss://tempb4/ testdownload/ -rf --exclude "*2??txt"
 	downdir := "testdownload-exc4" + randLowStr(5)
@@ -2303,8 +2254,6 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithNonSequenceExclude(c *C) {
 	showElapse, err = s.rawCPWithFilter(args, true, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
-
-	time.Sleep(1 * time.Second)
 
 	// Get uploaded files (with above conditions: --exclude "*[^0-3]?txt") and use these for verification
 	files := filterStrsWithExclude(filenames, "*[^0-3]?txt")
@@ -2347,8 +2296,6 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithNonSequenceExcludeEx(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
 
-	time.Sleep(1 * time.Second)
-
 	// download above files with --exclude uploaded
 	downdir := "testdownload-exc4" + randLowStr(5)
 	args = []string{bucketStr, downdir}
@@ -2356,8 +2303,6 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithNonSequenceExcludeEx(c *C) {
 	showElapse, err = s.rawCPWithFilter(args, true, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
-
-	time.Sleep(1 * time.Second)
 
 	// Get uploaded files (with above conditions: --exclude "*[^0-3]?txt") and use these for verification
 	res, filters := getFilter(cmdline)
@@ -2402,8 +2347,6 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithRepeatedExclude(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
 
-	time.Sleep(1 * time.Second)
-
 	// download above files with --include uploaded
 	// e.g., ossutil cp oss://tempb4/ testdownload/ -rf --exclude "*.jpg" --exclude "*.jpg"
 	downdir := "testdownload-exc5" + randLowStr(5)
@@ -2412,8 +2355,6 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithRepeatedExclude(c *C) {
 	showElapse, err = s.rawCPWithFilter(args, true, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
-
-	time.Sleep(1 * time.Second)
 
 	// Get uploaded files (with above conditions: --exclude "*.jpg" --exclude "*.jpg") and use these for verification
 	files := filterStrsWithExclude(filenames, "*.jpg")
@@ -2456,8 +2397,6 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithFullExclude(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
 
-	time.Sleep(1 * time.Second)
-
 	// download above files with --include uploaded
 	// e.g., ossutil cp oss://tempb4/ testdownload/ -rf --exclude "*"
 	downdir := "testdownload-exc6" + randLowStr(5)
@@ -2466,8 +2405,6 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithFullExclude(c *C) {
 	showElapse, err = s.rawCPWithFilter(args, true, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
-
-	time.Sleep(1 * time.Second)
 
 	// Get uploaded files (with above conditions: --exclude "*[^0-3]?txt") and use these for verification
 	files := filterStrsWithExclude(filenames, "*")
@@ -2511,8 +2448,6 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithMultiNormalIncludeExclude(c *
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
 
-	time.Sleep(1 * time.Second)
-
 	// download all above files for verification
 	// e.g., ossutil cp oss://tempb4/ testdownload/ -rf
 	downdir := "testdownload-inc-exc1" + randLowStr(5)
@@ -2521,8 +2456,6 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithMultiNormalIncludeExclude(c *
 	showElapse, err = s.rawCPWithFilter(args, true, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
-
-	time.Sleep(1 * time.Second)
 
 	// Get uploaded files (with above conditions: --include "*.txt" --exclude "*2*") and use these for verification
 	fts := []filterOptionType{{"--include", "*.txt"}, {"--exclude", "*2*"}}
@@ -2566,8 +2499,6 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithMultiRepeatedIncludeExclude(c
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
 
-	time.Sleep(1 * time.Second)
-
 	// download all above files for verification
 	// e.g., ossutil cp oss://tempb4/ testdownload/ -rf
 	downdir := "testdownload-inc-exc-repeated" + randLowStr(5)
@@ -2576,8 +2507,6 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithMultiRepeatedIncludeExclude(c
 	showElapse, err = s.rawCPWithFilter(args, true, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
-
-	time.Sleep(1 * time.Second)
 
 	// Get uploaded files (with above conditions: --include "*.txt" --exclude "*2*") and use these for verification
 	fts := []filterOptionType{{"--include", "*.txt"}, {"--exclude", "*2*"}, {"--include", "*.txt"}, {"--exclude", "*2*"}}
@@ -2621,8 +2550,6 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithMultiFullIncludeExclude(c *C)
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
 
-	time.Sleep(1 * time.Second)
-
 	// download all above files for verification
 	// e.g., ossutil cp oss://tempb4/ testdownload/ -rf
 	downdir := "testdownload-inc-exc2" + randLowStr(5)
@@ -2631,8 +2558,6 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithMultiFullIncludeExclude(c *C)
 	showElapse, err = s.rawCPWithFilter(args, true, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
-
-	time.Sleep(1 * time.Second)
 
 	// Get uploaded files (with above conditions: --include "*.txt" --exclude "*2*") and use these for verification
 	fts := []filterOptionType{{"--include", "*"}, {"--exclude", "*"}}
@@ -2678,8 +2603,6 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithMultiFullExcludeInclude(c *C)
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
 
-	time.Sleep(1 * time.Second)
-
 	// download all above files for verification
 	// e.g., ossutil cp oss://tempb4/ testdownload/ -rf
 	downdir := "testdownload-inc-exc3" + randLowStr(5)
@@ -2688,8 +2611,6 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithMultiFullExcludeInclude(c *C)
 	showElapse, err = s.rawCPWithFilter(args, true, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
-
-	time.Sleep(1 * time.Second)
 
 	// Get uploaded files (with above conditions: --include "*.txt" --exclude "*2*") and use these for verification
 	fts := []filterOptionType{{"--exclude", "*"}, {"--include", "*"}}
@@ -2815,8 +2736,6 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithMultiFullExcludeIncludeEqual(
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
 
-	time.Sleep(1 * time.Second)
-
 	// download all above files for verification
 	// e.g., ossutil cp oss://tempb4/ testdownload/ -rf
 	downdir := "testdownload-inc-exc3" + randLowStr(5)
@@ -2825,8 +2744,6 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithMultiFullExcludeIncludeEqual(
 	showElapse, err = s.rawCPWithFilter(args, true, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
-
-	time.Sleep(1 * time.Second)
 
 	// Get uploaded files (with above conditions: --include "*.txt" --exclude "*2*") and use these for verification
 	fts := []filterOptionType{{"--exclude", "*"}, {"--include", "*"}}
@@ -2952,8 +2869,6 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithMultiNormalOnlyIncludeEqual(c
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
 
-	time.Sleep(1 * time.Second)
-
 	// download all above files for verification
 	// e.g., ossutil cp oss://tempb4/ testdownload/ -rf
 	downdir := "testdownload-inc-exc1" + randLowStr(5)
@@ -2962,8 +2877,6 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithMultiNormalOnlyIncludeEqual(c
 	showElapse, err = s.rawCPWithFilter(args, true, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
-
-	time.Sleep(1 * time.Second)
 
 	// Get uploaded files (with above conditions: --include="*.txt") and use these for verification
 	fts := []filterOptionType{{"--include", "*.txt"}}
@@ -3018,8 +2931,6 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithMultiNormalOnlyExcludeEqual(c
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
 
-	time.Sleep(1 * time.Second)
-
 	// download all above files for verification
 	// e.g., ossutil cp oss://tempb4/ testdownload/ -rf
 	downdir := "testdownload-inc-exc1" + randLowStr(5)
@@ -3028,8 +2939,6 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithMultiNormalOnlyExcludeEqual(c
 	showElapse, err = s.rawCPWithFilter(args, true, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
-
-	time.Sleep(1 * time.Second)
 
 	ftsTxt := []filterOptionType{{"--include", "*.txt"}}
 	filesTxt := matchFiltersForStrs(filenames, ftsTxt)
@@ -3093,8 +3002,6 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithMultiNormalIncludeMixtureExcl
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
 
-	time.Sleep(1 * time.Second)
-
 	// download all above files for verification
 	// e.g., ossutil cp oss://tempb4/ testdownload/ -rf
 	downdir := "testdownload-inc-exc1" + randLowStr(5)
@@ -3103,8 +3010,6 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithMultiNormalIncludeMixtureExcl
 	showElapse, err = s.rawCPWithFilter(args, true, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
-
-	time.Sleep(1 * time.Second)
 
 	ftsTxt := []filterOptionType{{"--include", "*.txt"}}
 	filesTxt := matchFiltersForStrs(filenames, ftsTxt)
@@ -3170,8 +3075,6 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithMetaAcl(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
 
-	time.Sleep(1 * time.Second)
-
 	// download all above files for verification
 	// e.g., ossutil cp oss://tempb4/ testdownload/ -rf
 	downdir := "testdownload-meta"
@@ -3180,8 +3083,6 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithMetaAcl(c *C) {
 	showElapse, err = s.rawCPWithFilter(args, true, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
-
-	time.Sleep(1 * time.Second)
 
 	// Get uploaded files (with above conditions: --include "*.txt" --include "*.jpg" --exclude "*2*") and use these for verification
 	fts := []filterOptionType{{"--include", "*.txt"}, {"--include", "*.jpg"}, {"--exclude", "*2*"}}
@@ -3233,16 +3134,12 @@ func (s *OssutilCommandSuite) TestBatchCPObjectBetweenOssWithMetaAcl(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
 
-	time.Sleep(1 * time.Second)
-
 	// Copy between 2 buckets
 	args = []string{bucketStr, dstBucketStr}
 	cmdline = []string{"ossutil", "cp", bucketStr, dstBucketStr, "-rf", "--include", "*", "--exclude", "*10*"}
 	showElapse, err = s.rawCPWithFilter(args, true, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "Cache-Control:no-cache-ok#X-Oss-Meta-Test-Copy-Oss:copy-between-oss", "public-read")
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
-
-	time.Sleep(1 * time.Second)
 
 	// download all above files for verification
 	// e.g., ossutil cp oss://tempb4/ testdownload/ -rf
@@ -3256,8 +3153,6 @@ func (s *OssutilCommandSuite) TestBatchCPObjectBetweenOssWithMetaAcl(c *C) {
 	// Get files (with above conditions: --include "*" --exclude "*10*") and use these for verification
 	fts := []filterOptionType{{"--include", "*"}, {"--exclude", "*10*"}}
 	files := matchFiltersForStrs(filenames, fts)
-
-	time.Sleep(1 * time.Second)
 
 	// Verify
 	_, err = os.Stat(downdir)

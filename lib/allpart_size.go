@@ -8,9 +8,59 @@ import (
 	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
 
-var specChineseAllPartSize = SpecText{}
+var specChineseAllPartSize = SpecText{
+	synopsisText: "获取bucket所有未完成上传的object的分块大小以及总和",
 
-var specEnglishAllPartSize = SpecText{}
+	paramText: "bucket_url [options]",
+
+	syntaxText: ` 
+	ossutil getallpartsize oss://bucket [options]
+`,
+
+	detailHelpText: ` 
+	该命令会获取bucket所有未完成上传的object的分块大小以及总和
+  
+
+用法：
+
+    该命令只有一种用法：
+
+    1) ossutil getallpartsize oss://bucket [options]
+      查询bucket的所有未完成上传的object的块大小信息以及总和
+`,
+
+	sampleText: ` 
+	1) 根据bucket查询所有未完成object的块大小信息以及总和
+       ossutil getallpartsize oss://bucket
+`,
+}
+
+var specEnglishAllPartSize = SpecText{
+	synopsisText: "Get bucket all uncompleted objects parts size and sum size",
+
+	paramText: "bucket_url [options]",
+
+	syntaxText: ` 
+	ossutil getallpartsize oss://bucket [options]
+`,
+
+	detailHelpText: ` 
+	This command will list every part size and sum size
+  
+
+Usages：
+
+    There is only one usage for this command:
+
+    1) ossutil getallpartsize oss://bucket [options]
+       Get bucket all uncompleted objects parts size and sum size
+`,
+
+	sampleText: ` 
+	1)  Get bucket all uncompleted objects parts size and sum size
+       ossutil getallpartsize oss://bucket
+`,
+}
 
 type allPartSizeOptionType struct {
 	bucketName     string
@@ -66,7 +116,7 @@ func (apc *AllPartSizeCommand) Init(args []string, options OptionMapType) error 
 
 // RunCommand simulate inheritance, and polymorphism
 func (apc *AllPartSizeCommand) RunCommand() error {
-	srcBucketUrL, err := apc.CheckBucketUrl(apc.command.args[0], "")
+	srcBucketUrL, err := GetCloudUrl(apc.command.args[0], "")
 	if err != nil {
 		return err
 	}
@@ -106,24 +156,6 @@ func (apc *AllPartSizeCommand) RunCommand() error {
 	}
 
 	return nil
-
-}
-
-func (apc *AllPartSizeCommand) CheckBucketUrl(strlUrl, encodingType string) (*CloudURL, error) {
-	bucketUrL, err := StorageURLFromString(strlUrl, encodingType)
-	if err != nil {
-		return nil, err
-	}
-
-	if !bucketUrL.IsCloudURL() {
-		return nil, fmt.Errorf("parameter is not a cloud url,url is %s", bucketUrL.ToString())
-	}
-
-	cloudUrl := bucketUrL.(CloudURL)
-	if cloudUrl.bucket == "" {
-		return nil, fmt.Errorf("bucket name is empty,url is %s", bucketUrL.ToString())
-	}
-	return &cloudUrl, nil
 }
 
 func (apc *AllPartSizeCommand) GetAllStatInfo() error {

@@ -49,7 +49,7 @@ var specEnglishListPart = SpecText{
 
 Usages：
 
-    There is only one usage for this command:：
+    There is only one usage for this command:
 
     1) ossutil listpart oss://bucket/object uploadid [options]
 

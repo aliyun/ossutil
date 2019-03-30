@@ -47,7 +47,8 @@ func ParseAndRunCommand() error {
 
 	startT := time.Now()
 	LogInfo("ossutil run begin,cmd:%s\n", commandLine)
-	LogInfo("go sdk version is %s\n", oss.Version)
+	LogInfo("oss go sdk version is %s\n", oss.Version)
+	LogInfo("go version is %s\n", runtime.Version())
 	LogInfo("runtime.NumCPU %d\n", runtime.NumCPU())
 
 	defer LogEnd(startT)
