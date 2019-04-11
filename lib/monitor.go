@@ -518,7 +518,7 @@ func (m *CPMonitor) getProgressBar() string {
 	}
 	scanNum := max(m.totalNum, snap.dealNum)
 	scanSize := max(m.totalSize, snap.dealSize)
-	return getClearStr(fmt.Sprintf("Scanned num: %d, size: %s. Dealed num: %d%s%s.", scanNum, getSizeString(scanSize), snap.dealNum, m.getDealNumDetail(snap), m.getDealSizeDetail(snap)))
+	return getClearStr(fmt.Sprintf("Scanned num: %d, size: %s. Dealed num: %d%s%s, Speed: %.2fKB/s.", scanNum, getSizeString(scanSize), snap.dealNum, m.getDealNumDetail(snap), m.getDealSizeDetail(snap), m.getSpeed(snap)))
 }
 
 func (m *CPMonitor) getFinishBar(exitStat int) string {
