@@ -400,7 +400,6 @@ func (s *OssutilCommandSuite) rawRemove(args []string, recursive, force, bucket 
 		"bucket":          &bucket,
 	}
 	showElapse, err := cm.RunCommand(command, args, options)
-	time.Sleep(sleepTime)
 	return showElapse, err
 }
 
@@ -444,7 +443,6 @@ func (s *OssutilCommandSuite) removeWrapper(cmdline string, bucket string, objec
 		"encodingType":    &encodingType,
 	}
 	showElapse, err := cm.RunCommand(command, args, options)
-	time.Sleep(sleepTime)
 	return showElapse, err
 }
 
@@ -580,7 +578,6 @@ func (s *OssutilCommandSuite) putBucket(bucket string, c *C) {
 	showElapse, err := cm.RunCommand(command, args, options)
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
-	time.Sleep(sleepTime)
 }
 
 func (s *OssutilCommandSuite) putBucketWithStorageClass(bucket string, storageClass string, c *C) error {
@@ -850,7 +847,6 @@ func (s *OssutilCommandSuite) putObject(bucket, object, fileName string, c *C) {
 	showElapse, err := s.rawCPWithArgs(args, false, true, false, DefaultBigFileThreshold, CheckpointDir)
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
-	time.Sleep(sleepTime)
 }
 
 func (s *OssutilCommandSuite) getObject(bucket, object, fileName string, c *C) {
