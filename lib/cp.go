@@ -2,6 +2,7 @@ package lib
 
 import (
 	"fmt"
+	"hash/fnv"
 	"math"
 	"net/http"
 	"os"
@@ -35,22 +36,25 @@ const (
  * Please guarantee the alignment if you add new filed
  */
 type copyOptionType struct {
-	cpDir        string
-	snapshotPath string
-	vrange       string
-	encodingType string
-	meta         string
-	options      []oss.Option
-	filters      []filterOptionType
-	threshold    int64
-	routines     int64
-	reporter     *Reporter
-	snapshotldb  *leveldb.DB
-	recursive    bool
-	force        bool
-	update       bool
-	ctnu         bool
-	payerOptions []oss.Option
+	cpDir             string
+	snapshotPath      string
+	vrange            string
+	encodingType      string
+	meta              string
+	options           []oss.Option
+	filters           []filterOptionType
+	threshold         int64
+	routines          int64
+	reporter          *Reporter
+	snapshotldb       *leveldb.DB
+	recursive         bool
+	force             bool
+	update            bool
+	ctnu              bool
+	payerOptions      []oss.Option
+	multiInstanceInfo string
+	instanceIndex     int
+	instanceCount     int
 }
 
 type filterOptionType struct {
@@ -1133,6 +1137,7 @@ var copyCommand = CopyCommand{
 			OptionRequestPayer,
 			OptionLogLevel,
 			OptionMaxUpSpeed,
+			OptionMultiInstance,
 		},
 	},
 }
@@ -1170,6 +1175,7 @@ func (cc *CopyCommand) RunCommand() error {
 	cc.cpOption.meta, _ = GetString(OptionMeta, cc.command.options)
 	acl, _ := GetString(OptionACL, cc.command.options)
 	payer, _ := GetString(OptionRequestPayer, cc.command.options)
+	cc.cpOption.multiInstanceInfo, _ = GetString(OptionMultiInstance, cc.command.options)
 
 	var res bool
 	res, cc.cpOption.filters = getFilter(os.Args)
@@ -1258,6 +1264,24 @@ func (cc *CopyCommand) RunCommand() error {
 			return fmt.Errorf("load snapshot error, reason: %s", err.Error())
 		}
 		defer cc.cpOption.snapshotldb.Close()
+	}
+
+	if opType == operationTypeGet && cc.cpOption.multiInstanceInfo != "" {
+		sliceInfo := strings.Split(cc.cpOption.multiInstanceInfo, ":")
+		if len(sliceInfo) == 2 {
+			insIndex, err1 := strconv.Atoi(sliceInfo[0])
+			insCount, err2 := strconv.Atoi(sliceInfo[1])
+			if err1 != nil || err2 != nil {
+				return fmt.Errorf("parsar OptionMultiInstance error,value is:%s", cc.cpOption.multiInstanceInfo)
+			}
+			if insIndex < 1 || insCount < 1 || insIndex > insCount {
+				return fmt.Errorf("parsar OptionMultiInstance error,value is:%s", cc.cpOption.multiInstanceInfo)
+			}
+			cc.cpOption.instanceIndex = insIndex
+			cc.cpOption.instanceCount = insCount
+		} else {
+			return fmt.Errorf("parsar OptionMultiInstance error,value is:%s", cc.cpOption.multiInstanceInfo)
+		}
 	}
 
 	cc.monitor.init(opType)
@@ -1973,7 +1997,7 @@ func (cc *CopyCommand) downloadSingleFileWithReport(bucket *oss.Bucket, objectIn
 	skip, err, size, msg := cc.downloadSingleFile(bucket, objectInfo, filePath)
 
 	if err != nil {
-		LogInfo("download error:%s.\n", objectInfo.relativeKey)
+		LogInfo("download error:%s %s.\n", objectInfo.relativeKey, err.Error())
 	} else if skip {
 		LogInfo("download skip:%s.\n", objectInfo.relativeKey)
 	} else {
@@ -2170,7 +2194,15 @@ func (cc *CopyCommand) objectStatistic(bucket *oss.Bucket, cloudURL CloudURL) {
 
 			for _, object := range lor.Objects {
 				if doesSingleObjectMatchPatterns(object.Key, cc.cpOption.filters) {
-					cc.monitor.updateScanSizeNum(cc.getRangeSize(object.Size), 1)
+					if cc.cpOption.instanceIndex > 0 {
+						fnvIns := fnv.New64()
+						fnvIns.Write([]byte(object.Key))
+						if fnvIns.Sum64()%uint64(cc.cpOption.instanceCount) == uint64(cc.cpOption.instanceIndex-1) {
+							cc.monitor.updateScanSizeNum(cc.getRangeSize(object.Size), 1)
+						}
+					} else {
+						cc.monitor.updateScanSizeNum(cc.getRangeSize(object.Size), 1)
+					}
 				}
 			}
 
@@ -2273,8 +2305,17 @@ func (cc *CopyCommand) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, chO
 				prefix = object.Key[:index+1]
 				relativeKey = object.Key[index+1:]
 			}
+
 			if doesSingleObjectMatchPatterns(object.Key, cc.cpOption.filters) {
-				chObjects <- objectInfoType{prefix, relativeKey, int64(object.Size), object.LastModified}
+				if cc.cpOption.instanceIndex > 0 {
+					fnvIns := fnv.New64()
+					fnvIns.Write([]byte(object.Key))
+					if fnvIns.Sum64()%uint64(cc.cpOption.instanceCount) == uint64(cc.cpOption.instanceIndex-1) {
+						chObjects <- objectInfoType{prefix, relativeKey, int64(object.Size), object.LastModified}
+					}
+				} else {
+					chObjects <- objectInfoType{prefix, relativeKey, int64(object.Size), object.LastModified}
+				}
 			}
 		}
 

@@ -136,6 +136,9 @@ var OptionMap = map[string]Option{
 	OptionUpMode: Option{"", "--upmode", "", OptionTypeString, "", "",
 		"表示上传模式,缺省值为normal,取值为:normal|append|multipart,分别表示正常上传、追加上传、分块上传,主要在命令probe中使用",
 		"specifies the upload mode,default value is normal,value is:normal|append|multipart, which means normal upload、append upload and multipart upload,it is primarily used in probe command."},
+	OptionMultiInstance: Option{"", "--multi-instance", "", OptionTypeString, "", "",
+		"多ossutil实例下载使用,其值格式为\"实例编号:总实例个数\",比如1:5,表示当前ossutil实例编号为1,总共有5个实例下载;实例从1开始编号",
+		"the option is used in multi-instance download mode, the value format is \"instance number:total number of instances\",such as 1:5, indicating that the current ossutil instance number is 1,total instance count is 5; the instance is numbered from 1."},
 }
 
 func (T *Option) getHelp(language string) string {
