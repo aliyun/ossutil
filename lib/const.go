@@ -56,6 +56,7 @@ const (
 	OptionObject                  = "object"
 	OptionAddr                    = "addr"
 	OptionUpMode                  = "upmode"
+	OptionMultiInstance           = "multiInstance"
 )
 
 // the elements show in stat object
@@ -97,7 +98,7 @@ const (
 const (
 	Package                 string = "ossutil"
 	ChannelBuf              int    = 1000
-	Version                 string = "1.5.1"
+	Version                 string = "1.5.3"
 	DefaultEndpoint         string = "oss.aliyuncs.com"
 	ChineseLanguage                = "CH"
 	EnglishLanguage                = "EN"

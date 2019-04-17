@@ -2,6 +2,7 @@ package lib
 
 import (
 	"fmt"
+	"hash/fnv"
 	"io/ioutil"
 	"net/url"
 	"os"
@@ -686,8 +687,8 @@ func (s *OssutilCommandSuite) TestBatchCPObject(c *C) {
 	showElapse, err = s.rawCP(CloudURLToString(bucketName, ""), CloudURLToString(destBucket, "123"), true, true, false, DefaultBigFileThreshold, CheckpointDir)
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
-	time.Sleep(1* time.Second)
 
+	time.Sleep(1 * time.Second)
 	for _, filePath := range filePaths {
 		s.getStat(destBucket, "123/"+filePath, c)
 	}
@@ -710,7 +711,7 @@ func (s *OssutilCommandSuite) TestCPObjectUpdate(c *C) {
 	newData := "new data"
 	newFile := "newFile" + randStr(5)
 	s.createFile(oldFile, oldData, c)
-	time.Sleep(1* time.Second)
+	time.Sleep(1 * time.Second)
 	s.createFile(newFile, newData, c)
 
 	// put newer object
@@ -726,7 +727,6 @@ func (s *OssutilCommandSuite) TestCPObjectUpdate(c *C) {
 	showElapse, err := s.rawCP(oldFile, CloudURLToString(bucketName, object), false, false, true, DefaultBigFileThreshold, CheckpointDir)
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
-	time.Sleep(1* time.Second)
 
 	s.getObject(bucketName, object, downloadFileName, c)
 	str = s.readFile(downloadFileName, c)
@@ -3211,7 +3211,7 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithMetaAcl(c *C) {
 // Test for copy objects, with --include, --exclude, --meta, --acl testing
 func (s *OssutilCommandSuite) TestBatchCPObjectBetweenOssWithMetaAcl(c *C) {
 	bucketName := bucketNamePrefix + randLowStr(10)
-	dstBucketName :=bucketName + "-dest" 
+	dstBucketName := bucketName + "-dest"
 	s.putBucket(bucketName, c)
 	bucketStr := CloudURLToString(bucketName, "")
 	s.putBucket(dstBucketName, c)
@@ -3406,4 +3406,145 @@ func (s *OssutilCommandSuite) TestCPDirLimitSpeed(c *C) {
 	err = os.Remove(udir + string(os.PathSeparator) + objectSecond)
 	err = os.RemoveAll(udir)
 	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestCPMulitInstanceDownloadSuccess(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	fileName := randLowStr(10)
+	content := randLowStr(10)
+	s.createFile(fileName, content, c)
+
+	objectFirst := ""
+	objectSecond := ""
+	for {
+		tempStr := randStr(12)
+		fnvIns := fnv.New64()
+		fnvIns.Write([]byte(tempStr))
+		if fnvIns.Sum64()%2 == 0 {
+			objectFirst = tempStr
+		} else {
+			objectSecond = tempStr
+		}
+		if objectFirst != "" && objectSecond != "" {
+			break
+		} else {
+			time.Sleep(10 * time.Millisecond)
+		}
+	}
+	s.putObject(bucketName, objectFirst, fileName, c)
+	s.putObject(bucketName, objectSecond, fileName, c)
+
+	downloadPath := "." + string(os.PathSeparator) + randLowStr(10)
+	err := os.MkdirAll(downloadPath, 0755)
+	c.Assert(err, IsNil)
+
+	// download objectFirst
+	command := "cp"
+	str := ""
+	cpDir := CheckpointDir
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &ConfigFile,
+		"checkpointDir":   &cpDir,
+	}
+	srcUrl := CloudURLToString(bucketName, objectFirst)
+	args := []string{srcUrl, downloadPath}
+
+	os.Args = []string{"ossutil", "cp", srcUrl, downloadPath, "-r", "--multi-instance=1:2"}
+	_, err = cm.RunCommand(command, args, options)
+	c.Assert(err, IsNil)
+	os.Args = []string{}
+
+	// checkfile objectFirst success
+	fileInfo, err := os.Stat(downloadPath + string(os.PathSeparator) + objectFirst)
+	c.Assert(err, IsNil)
+	c.Assert(fileInfo.Size(), Equals, int64(len(content)))
+
+	// checkfile objectSecond Error
+	fileInfo, err = os.Stat(downloadPath + string(os.PathSeparator) + objectSecond)
+	c.Assert(err, NotNil)
+
+	os.RemoveAll(downloadPath)
+	err = os.MkdirAll(downloadPath, 0755)
+	c.Assert(err, IsNil)
+
+	// download objectSecond
+	os.Args = []string{"ossutil", "cp", srcUrl, downloadPath, "-r", "--multi-instance=2:2"}
+	srcUrl = CloudURLToString(bucketName, objectSecond)
+	args = []string{srcUrl, downloadPath}
+	_, err = cm.RunCommand(command, args, options)
+	c.Assert(err, IsNil)
+	os.Args = []string{}
+
+	// checkfile objectFirst error
+	fileInfo, err = os.Stat(downloadPath + string(os.PathSeparator) + objectFirst)
+	c.Assert(err, NotNil)
+
+	// checkfile objectSecond success
+	fileInfo, err = os.Stat(downloadPath + string(os.PathSeparator) + objectSecond)
+	c.Assert(err, IsNil)
+	c.Assert(fileInfo.Size(), Equals, int64(len(content)))
+
+	os.RemoveAll(fileName)
+	os.RemoveAll(downloadPath)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestCPMulitInstanceDownloadParameterError(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	objectFirst := randStr(12)
+	downloadPath := "." + string(os.PathSeparator) + randLowStr(10)
+
+	command := "cp"
+	str := ""
+	cpDir := CheckpointDir
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &ConfigFile,
+		"checkpointDir":   &cpDir,
+	}
+	srcUrl := CloudURLToString(bucketName, objectFirst)
+	args := []string{srcUrl, downloadPath}
+
+	// error 1
+	os.Args = []string{"ossutil", "cp", srcUrl, downloadPath, "-r", "--multi-instance=-1:2"}
+	_, err := cm.RunCommand(command, args, options)
+	c.Assert(err, NotNil)
+
+	// error 2
+	os.Args = []string{"ossutil", "cp", srcUrl, downloadPath, "-r", "--multi-instance=2:1"}
+	_, err = cm.RunCommand(command, args, options)
+	c.Assert(err, NotNil)
+
+	// error 3
+	os.Args = []string{"ossutil", "cp", srcUrl, downloadPath, "-r", "--multi-instance=abc:1"}
+	_, err = cm.RunCommand(command, args, options)
+	c.Assert(err, NotNil)
+
+	// error 4
+	os.Args = []string{"ossutil", "cp", srcUrl, downloadPath, "-r", "--multi-instance=1:abc"}
+	_, err = cm.RunCommand(command, args, options)
+	c.Assert(err, NotNil)
+
+	// error 5
+	os.Args = []string{"ossutil", "cp", srcUrl, downloadPath, "-r", "--multi-instance=1:2:3"}
+	_, err = cm.RunCommand(command, args, options)
+	c.Assert(err, NotNil)
+
+	// error 6
+	os.Args = []string{"ossutil", "cp", srcUrl, downloadPath, "-r", "--multi-instance"}
+	_, err = cm.RunCommand(command, args, options)
+
+	// error7
+	os.Args = []string{"ossutil", "cp", downloadPath, srcUrl, "-r", "--multi-instance=1:2"}
+	_, err = cm.RunCommand(command, args, options)
+
+	os.Args = []string{}
+
 }
