@@ -36,25 +36,25 @@ const (
  * Please guarantee the alignment if you add new filed
  */
 type copyOptionType struct {
-	cpDir             string
-	snapshotPath      string
-	vrange            string
-	encodingType      string
-	meta              string
-	options           []oss.Option
-	filters           []filterOptionType
-	threshold         int64
-	routines          int64
-	reporter          *Reporter
-	snapshotldb       *leveldb.DB
-	recursive         bool
-	force             bool
-	update            bool
-	ctnu              bool
-	payerOptions      []oss.Option
-	multiInstanceInfo string
-	instanceIndex     int
-	instanceCount     int
+	cpDir          string
+	snapshotPath   string
+	vrange         string
+	encodingType   string
+	meta           string
+	options        []oss.Option
+	filters        []filterOptionType
+	threshold      int64
+	routines       int64
+	reporter       *Reporter
+	snapshotldb    *leveldb.DB
+	recursive      bool
+	force          bool
+	update         bool
+	ctnu           bool
+	payerOptions   []oss.Option
+	partitionInfo  string
+	partitionIndex int
+	partitionCount int
 }
 
 type filterOptionType struct {
@@ -1137,7 +1137,7 @@ var copyCommand = CopyCommand{
 			OptionRequestPayer,
 			OptionLogLevel,
 			OptionMaxUpSpeed,
-			OptionMultiInstance,
+			OptionPartitionDownload,
 		},
 	},
 }
@@ -1175,7 +1175,7 @@ func (cc *CopyCommand) RunCommand() error {
 	cc.cpOption.meta, _ = GetString(OptionMeta, cc.command.options)
 	acl, _ := GetString(OptionACL, cc.command.options)
 	payer, _ := GetString(OptionRequestPayer, cc.command.options)
-	cc.cpOption.multiInstanceInfo, _ = GetString(OptionMultiInstance, cc.command.options)
+	cc.cpOption.partitionInfo, _ = GetString(OptionPartitionDownload, cc.command.options)
 
 	var res bool
 	res, cc.cpOption.filters = getFilter(os.Args)
@@ -1266,26 +1266,29 @@ func (cc *CopyCommand) RunCommand() error {
 		defer cc.cpOption.snapshotldb.Close()
 	}
 
-	if cc.cpOption.multiInstanceInfo != "" {
+	if cc.cpOption.partitionInfo != "" {
 		if opType == operationTypeGet {
-			sliceInfo := strings.Split(cc.cpOption.multiInstanceInfo, ":")
+			sliceInfo := strings.Split(cc.cpOption.partitionInfo, ":")
 			if len(sliceInfo) == 2 {
-				insIndex, err1 := strconv.Atoi(sliceInfo[0])
-				insCount, err2 := strconv.Atoi(sliceInfo[1])
+				partitionIndex, err1 := strconv.Atoi(sliceInfo[0])
+				partitionCount, err2 := strconv.Atoi(sliceInfo[1])
 				if err1 != nil || err2 != nil {
-					return fmt.Errorf("parsar OptionMultiInstance error,value is:%s", cc.cpOption.multiInstanceInfo)
+					return fmt.Errorf("parsar OptionPartitionDownload error,value is:%s", cc.cpOption.partitionInfo)
 				}
-				if insIndex < 1 || insCount < 1 || insIndex > insCount {
-					return fmt.Errorf("parsar OptionMultiInstance error,value is:%s", cc.cpOption.multiInstanceInfo)
+				if partitionIndex < 1 || partitionCount < 1 || partitionIndex > partitionCount {
+					return fmt.Errorf("parsar OptionPartitionDownload error,value is:%s", cc.cpOption.partitionInfo)
 				}
-				cc.cpOption.instanceIndex = insIndex
-				cc.cpOption.instanceCount = insCount
+				cc.cpOption.partitionIndex = partitionIndex
+				cc.cpOption.partitionCount = partitionCount
 			} else {
-				return fmt.Errorf("parsar OptionMultiInstance error,value is:%s", cc.cpOption.multiInstanceInfo)
+				return fmt.Errorf("parsar OptionPartitionDownload error,value is:%s", cc.cpOption.partitionInfo)
 			}
 		} else {
-			return fmt.Errorf("PutObject or CopyObject doesn't support option OptionMultiInstance")
+			return fmt.Errorf("PutObject or CopyObject doesn't support option OptionPartitionDownload")
 		}
+	} else {
+		cc.cpOption.partitionIndex = 0
+		cc.cpOption.partitionCount = 0
 	}
 
 	cc.monitor.init(opType)
@@ -2189,6 +2192,7 @@ func (cc *CopyCommand) objectStatistic(bucket *oss.Bucket, cloudURL CloudURL) {
 			marker = oss.Marker(cloudURL.object)
 		}
 		listOptions := append(cc.cpOption.payerOptions, pre, marker)
+		fnvIns := fnv.New64()
 		for {
 			lor, err := cc.command.ossListObjectsRetry(bucket, listOptions...)
 			if err != nil {
@@ -2198,18 +2202,11 @@ func (cc *CopyCommand) objectStatistic(bucket *oss.Bucket, cloudURL CloudURL) {
 
 			for _, object := range lor.Objects {
 				if doesSingleObjectMatchPatterns(object.Key, cc.cpOption.filters) {
-					if cc.cpOption.instanceIndex > 0 {
-						fnvIns := fnv.New64()
-						fnvIns.Write([]byte(object.Key))
-						if fnvIns.Sum64()%uint64(cc.cpOption.instanceCount) == uint64(cc.cpOption.instanceIndex-1) {
-							cc.monitor.updateScanSizeNum(cc.getRangeSize(object.Size), 1)
-						}
-					} else {
+					if cc.cpOption.partitionIndex == 0 || (cc.cpOption.partitionIndex > 0 && matchHash(fnvIns, object.Key, cc.cpOption.partitionIndex-1, cc.cpOption.partitionCount)) {
 						cc.monitor.updateScanSizeNum(cc.getRangeSize(object.Size), 1)
 					}
 				}
 			}
-
 			pre = oss.Prefix(lor.Prefix)
 			marker = oss.Marker(lor.NextMarker)
 			listOptions = append(cc.cpOption.payerOptions, pre, marker)
@@ -2301,6 +2298,7 @@ func (cc *CopyCommand) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, chO
 			break
 		}
 
+		fnvIns := fnv.New64()
 		for _, object := range lor.Objects {
 			prefix := ""
 			relativeKey := object.Key
@@ -2311,13 +2309,7 @@ func (cc *CopyCommand) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, chO
 			}
 
 			if doesSingleObjectMatchPatterns(object.Key, cc.cpOption.filters) {
-				if cc.cpOption.instanceIndex > 0 {
-					fnvIns := fnv.New64()
-					fnvIns.Write([]byte(object.Key))
-					if fnvIns.Sum64()%uint64(cc.cpOption.instanceCount) == uint64(cc.cpOption.instanceIndex-1) {
-						chObjects <- objectInfoType{prefix, relativeKey, int64(object.Size), object.LastModified}
-					}
-				} else {
+				if cc.cpOption.partitionIndex == 0 || (cc.cpOption.partitionIndex > 0 && matchHash(fnvIns, object.Key, cc.cpOption.partitionIndex-1, cc.cpOption.partitionCount)) {
 					chObjects <- objectInfoType{prefix, relativeKey, int64(object.Size), object.LastModified}
 				}
 			}

@@ -1176,8 +1176,6 @@ func (s *OssutilCommandSuite) createTestObjects(dir, subdir, bucketStr string, c
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
 
-	time.Sleep(1 * time.Second)
-
 	return objs
 }
 
