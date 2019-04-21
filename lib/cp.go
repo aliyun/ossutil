@@ -2,6 +2,7 @@ package lib
 
 import (
 	"fmt"
+	"hash/fnv"
 	"math"
 	"net/http"
 	"os"
@@ -35,22 +36,25 @@ const (
  * Please guarantee the alignment if you add new filed
  */
 type copyOptionType struct {
-	cpDir        string
-	snapshotPath string
-	vrange       string
-	encodingType string
-	meta         string
-	options      []oss.Option
-	filters      []filterOptionType
-	threshold    int64
-	routines     int64
-	reporter     *Reporter
-	snapshotldb  *leveldb.DB
-	recursive    bool
-	force        bool
-	update       bool
-	ctnu         bool
-	payerOptions []oss.Option
+	cpDir          string
+	snapshotPath   string
+	vrange         string
+	encodingType   string
+	meta           string
+	options        []oss.Option
+	filters        []filterOptionType
+	threshold      int64
+	routines       int64
+	reporter       *Reporter
+	snapshotldb    *leveldb.DB
+	recursive      bool
+	force          bool
+	update         bool
+	ctnu           bool
+	payerOptions   []oss.Option
+	partitionInfo  string
+	partitionIndex int
+	partitionCount int
 }
 
 type filterOptionType struct {
@@ -1133,6 +1137,7 @@ var copyCommand = CopyCommand{
 			OptionRequestPayer,
 			OptionLogLevel,
 			OptionMaxUpSpeed,
+			OptionPartitionDownload,
 		},
 	},
 }
@@ -1170,6 +1175,7 @@ func (cc *CopyCommand) RunCommand() error {
 	cc.cpOption.meta, _ = GetString(OptionMeta, cc.command.options)
 	acl, _ := GetString(OptionACL, cc.command.options)
 	payer, _ := GetString(OptionRequestPayer, cc.command.options)
+	cc.cpOption.partitionInfo, _ = GetString(OptionPartitionDownload, cc.command.options)
 
 	var res bool
 	res, cc.cpOption.filters = getFilter(os.Args)
@@ -1258,6 +1264,31 @@ func (cc *CopyCommand) RunCommand() error {
 			return fmt.Errorf("load snapshot error, reason: %s", err.Error())
 		}
 		defer cc.cpOption.snapshotldb.Close()
+	}
+
+	if cc.cpOption.partitionInfo != "" {
+		if opType == operationTypeGet {
+			sliceInfo := strings.Split(cc.cpOption.partitionInfo, ":")
+			if len(sliceInfo) == 2 {
+				partitionIndex, err1 := strconv.Atoi(sliceInfo[0])
+				partitionCount, err2 := strconv.Atoi(sliceInfo[1])
+				if err1 != nil || err2 != nil {
+					return fmt.Errorf("parsar OptionPartitionDownload error,value is:%s", cc.cpOption.partitionInfo)
+				}
+				if partitionIndex < 1 || partitionCount < 1 || partitionIndex > partitionCount {
+					return fmt.Errorf("parsar OptionPartitionDownload error,value is:%s", cc.cpOption.partitionInfo)
+				}
+				cc.cpOption.partitionIndex = partitionIndex
+				cc.cpOption.partitionCount = partitionCount
+			} else {
+				return fmt.Errorf("parsar OptionPartitionDownload error,value is:%s", cc.cpOption.partitionInfo)
+			}
+		} else {
+			return fmt.Errorf("PutObject or CopyObject doesn't support option OptionPartitionDownload")
+		}
+	} else {
+		cc.cpOption.partitionIndex = 0
+		cc.cpOption.partitionCount = 0
 	}
 
 	cc.monitor.init(opType)
@@ -1973,7 +2004,7 @@ func (cc *CopyCommand) downloadSingleFileWithReport(bucket *oss.Bucket, objectIn
 	skip, err, size, msg := cc.downloadSingleFile(bucket, objectInfo, filePath)
 
 	if err != nil {
-		LogInfo("download error:%s.\n", objectInfo.relativeKey)
+		LogInfo("download error:%s %s.\n", objectInfo.relativeKey, err.Error())
 	} else if skip {
 		LogInfo("download skip:%s.\n", objectInfo.relativeKey)
 	} else {
@@ -2161,6 +2192,7 @@ func (cc *CopyCommand) objectStatistic(bucket *oss.Bucket, cloudURL CloudURL) {
 			marker = oss.Marker(cloudURL.object)
 		}
 		listOptions := append(cc.cpOption.payerOptions, pre, marker)
+		fnvIns := fnv.New64()
 		for {
 			lor, err := cc.command.ossListObjectsRetry(bucket, listOptions...)
 			if err != nil {
@@ -2170,10 +2202,11 @@ func (cc *CopyCommand) objectStatistic(bucket *oss.Bucket, cloudURL CloudURL) {
 
 			for _, object := range lor.Objects {
 				if doesSingleObjectMatchPatterns(object.Key, cc.cpOption.filters) {
-					cc.monitor.updateScanSizeNum(cc.getRangeSize(object.Size), 1)
+					if cc.cpOption.partitionIndex == 0 || (cc.cpOption.partitionIndex > 0 && matchHash(fnvIns, object.Key, cc.cpOption.partitionIndex-1, cc.cpOption.partitionCount)) {
+						cc.monitor.updateScanSizeNum(cc.getRangeSize(object.Size), 1)
+					}
 				}
 			}
-
 			pre = oss.Prefix(lor.Prefix)
 			marker = oss.Marker(lor.NextMarker)
 			listOptions = append(cc.cpOption.payerOptions, pre, marker)
@@ -2265,6 +2298,7 @@ func (cc *CopyCommand) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, chO
 			break
 		}
 
+		fnvIns := fnv.New64()
 		for _, object := range lor.Objects {
 			prefix := ""
 			relativeKey := object.Key
@@ -2273,8 +2307,11 @@ func (cc *CopyCommand) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, chO
 				prefix = object.Key[:index+1]
 				relativeKey = object.Key[index+1:]
 			}
+
 			if doesSingleObjectMatchPatterns(object.Key, cc.cpOption.filters) {
-				chObjects <- objectInfoType{prefix, relativeKey, int64(object.Size), object.LastModified}
+				if cc.cpOption.partitionIndex == 0 || (cc.cpOption.partitionIndex > 0 && matchHash(fnvIns, object.Key, cc.cpOption.partitionIndex-1, cc.cpOption.partitionCount)) {
+					chObjects <- objectInfoType{prefix, relativeKey, int64(object.Size), object.LastModified}
+				}
 			}
 		}
 

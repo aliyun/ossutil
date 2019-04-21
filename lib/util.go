@@ -3,6 +3,7 @@ package lib
 import (
 	"bytes"
 	"fmt"
+	"hash"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -457,4 +458,13 @@ func filterObjectsFromChanWithPatterns(chObjects <-chan objectInfoType, filters 
 	vsf := matchFiltersForObjects(objects, filters)
 	makeObjectChanFromArray(vsf, dstObjs)
 	defer close(dstObjs)
+}
+
+func matchHash(fnvIns hash.Hash64, key string, modeValue int, countValue int) bool {
+	fnvIns.Reset()
+	fnvIns.Write([]byte(key))
+	if fnvIns.Sum64()%uint64(countValue) == uint64(modeValue) {
+		return true
+	}
+	return false
 }
