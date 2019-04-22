@@ -9,7 +9,7 @@ import (
 )
 
 var specChineseAllPartSize = SpecText{
-	synopsisText: "获取bucket所有未完成上传的object的分块大小以及总和",
+	synopsisText: "获取bucket所有未完成上传的multipart object的分块大小以及总和",
 
 	paramText: "bucket_url [options]",
 
@@ -18,7 +18,7 @@ var specChineseAllPartSize = SpecText{
 `,
 
 	detailHelpText: ` 
-	该命令会获取bucket所有未完成上传的object的分块大小以及总和
+	该命令会获取bucket所有未完成上传的multipart object的分块大小以及总和
   
 
 用法：
@@ -26,17 +26,17 @@ var specChineseAllPartSize = SpecText{
     该命令只有一种用法：
 
     1) ossutil getallpartsize oss://bucket [options]
-      查询bucket的所有未完成上传的object的块大小信息以及总和
+      查询bucket的所有未完成上传的multipart object的块大小信息以及总和
 `,
 
 	sampleText: ` 
-	1) 根据bucket查询所有未完成object的块大小信息以及总和
+	1) 根据bucket查询所有未完成上传的multipart object的块大小信息以及总和
        ossutil getallpartsize oss://bucket
 `,
 }
 
 var specEnglishAllPartSize = SpecText{
-	synopsisText: "Get bucket all uncompleted objects parts size and sum size",
+	synopsisText: "Get bucket all uncompleted multipart objects's parts size and sum size",
 
 	paramText: "bucket_url [options]",
 
@@ -45,7 +45,7 @@ var specEnglishAllPartSize = SpecText{
 `,
 
 	detailHelpText: ` 
-	This command will list every part size and sum size
+	This command will list every uncompleted multipart objects's part size and sum size
   
 
 Usages：
@@ -53,11 +53,11 @@ Usages：
     There is only one usage for this command:
 
     1) ossutil getallpartsize oss://bucket [options]
-       Get bucket all uncompleted objects parts size and sum size
+       Get bucket all uncompleted mulitpart objects's parts size and sum size
 `,
 
 	sampleText: ` 
-	1)  Get bucket all uncompleted objects parts size and sum size
+	1)  Get bucket all uncompleted multipart objects's parts size and sum size
        ossutil getallpartsize oss://bucket
 `,
 }
@@ -65,7 +65,7 @@ Usages：
 type allPartSizeOptionType struct {
 	bucketName     string
 	encodingType   string
-	hasOutHeadLine bool
+	headLineShowed bool
 	statList       []StatPartInfo
 }
 
@@ -219,9 +219,9 @@ func (apc *AllPartSizeCommand) GetObjectPartsSize(bucket *oss.Bucket, statInfo S
 			return 0, 0, err
 		} else {
 			totalPartCount += int64(len(lpRes.UploadedParts))
-			if !apc.apOption.hasOutHeadLine && len(lpRes.UploadedParts) > 0 {
+			if !apc.apOption.headLineShowed && len(lpRes.UploadedParts) > 0 {
 				fmt.Printf("%-10s\t%-32s\t%-10s\t%s\n", "PartNumber", "UploadId", "Size(Byte)", "Path")
-				apc.apOption.hasOutHeadLine = true
+				apc.apOption.headLineShowed = true
 			}
 		}
 

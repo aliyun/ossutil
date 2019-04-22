@@ -83,7 +83,7 @@ func (s *OssutilCommandSuite) TestAppendFileSuccessWithMeta(c *C) {
 
 	// begin append
 	var str string
-	strMeta := "X-Oss-Meta-Author:chanju"
+	strMeta := "x-oss-meta-author:luxun"
 	options := OptionMapType{
 		"endpoint":        &str,
 		"accessKeyID":     &str,
@@ -131,8 +131,8 @@ func (s *OssutilCommandSuite) TestAppendFileSuccessWithMeta(c *C) {
 	props, err := bucket.GetObjectDetailedMeta(objectName)
 	c.Assert(err, IsNil)
 
-	author := props.Get("X-Oss-Meta-Author")
-	c.Assert(author, Equals, "chanju")
+	author := props.Get("x-oss-meta-author")
+	c.Assert(author, Equals, "luxun")
 	c.Assert(err, IsNil)
 
 	os.Remove(fileName)
@@ -168,7 +168,7 @@ func (s *OssutilCommandSuite) TestAppendFileError(c *C) {
 	_, err := cm.RunCommand("appendfromfile", appendArgs, options)
 	c.Assert(err, NotNil)
 
-	// object is empy,error
+	// object parameter is empy,error
 	appendArgs = []string{fileName, CloudURLToString(bucketName, "")}
 	_, err = cm.RunCommand("appendfromfile", appendArgs, options)
 	c.Assert(err, NotNil)
@@ -185,6 +185,12 @@ func (s *OssutilCommandSuite) TestAppendFileError(c *C) {
 	_, err = cm.RunCommand("appendfromfile", appendArgs, options)
 	c.Assert(err, NotNil)
 	os.Remove(dirName)
+
+	// append to a exist normal object
+	s.PutObject(bucketName, objectName, strText, c)
+	appendArgs = []string{fileName, CloudURLToString(bucketName, objectName)}
+	_, err = cm.RunCommand("appendfromfile", appendArgs, options)
+	c.Assert(err, NotNil)
 
 	os.Remove(fileName)
 	s.removeBucket(bucketName, true, c)
@@ -245,11 +251,11 @@ func (s *OssutilCommandSuite) TestAppendFileObjectExistMetaError(c *C) {
 
 	// put object
 	objectName := "test-ossutil-object-" + randLowStr(10)
-	s.PutObject(bucketName, objectName, strText, c)
+	s.AppendObject(bucketName, objectName, strText, 0, c)
 
 	// begin append
 	var str string
-	strMeta := "x-oss-meta-author:chanju"
+	strMeta := "x-oss-meta-author:luxun"
 	options := OptionMapType{
 		"endpoint":        &str,
 		"accessKeyID":     &str,
@@ -282,7 +288,7 @@ func (s *OssutilCommandSuite) TestAppendFileParserMetaError(c *C) {
 
 	// begin append
 	var str string
-	strMeta := "x-oss-meta-author#chanju"
+	strMeta := "x-oss-meta-author#luxun"
 	options := OptionMapType{
 		"endpoint":        &str,
 		"accessKeyID":     &str,

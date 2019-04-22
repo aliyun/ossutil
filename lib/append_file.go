@@ -10,7 +10,7 @@ import (
 )
 
 var specChineseAppendFile = SpecText{
-	synopsisText: "将本地文件内容以append上传方式上传到oss中的object",
+	synopsisText: "将本地文件内容以append上传方式上传到oss中的appendable object中",
 
 	paramText: "local_file_name oss_object [options]",
 
@@ -19,8 +19,8 @@ var specChineseAppendFile = SpecText{
 `,
 
 	detailHelpText: ` 
-	1) 如果object不存在，可以通过--meta设置object的meta信息，比如输入 --meta "X-Oss-Meta-Author:chanju"
-       可以设置X-Oss-Meta-Author的值为chanju
+	1) 如果object不存在，可以通过--meta设置object的meta信息，比如输入 --meta "x-oss-meta-author:luxun"
+       可以设置x-oss-meta-author的值为luxun
     2) 如果object已经存在，不可以输入--meta信息,因为oss不支持在已经存在的append object上设置meta
 
 用法：
@@ -28,7 +28,7 @@ var specChineseAppendFile = SpecText{
     该命令只有一种用法：
 
     1) ossutil appendfromfile local_file_name oss://bucket/object [--meta=meta-value]
-      将local_file_name内容以append方式上传到object
+      将local_file_name内容以append方式上传到可追加的object
       如果输入--meta选项，可以设置object的meta信息
 `,
 
@@ -37,12 +37,12 @@ var specChineseAppendFile = SpecText{
        ossutil appendfromfile local_file_name oss://bucket/object
 	
     2) append上传文件内容，设置meta信息
-       ossutil appendfromfile local_file_name oss://bucket/object --meta "X-Oss-Meta-Author:chanju"
+       ossutil appendfromfile local_file_name oss://bucket/object --meta "x-oss-meta-author:luxun"
 `,
 }
 
 var specEnglishAppendFile = SpecText{
-	synopsisText: "Upload the contents of the local file to the oss object by append upload mode",
+	synopsisText: "Upload the contents of the local file to the oss appendable object by append upload mode",
 
 	paramText: "local_file_name oss_object [options]",
 
@@ -53,9 +53,9 @@ var specEnglishAppendFile = SpecText{
 	detailHelpText: ` 
 	1) If the object does not exist, you can set the meta information of the object with --meta
       for example:
-      inputting --meta "X-Oss-Meta-Author:chanju" can set the value of X-Oss-Meta-Author to chanju
+      inputting --meta "x-oss-meta-author:luxun" can set the value of x-oss-meta-author to luxun
     2) If the object already exists, you can't input the --meta option,
-      oss does not support setting the meta on the exist append object.
+      oss does not support setting the meta on the exist appendable object.
 
 Usages：
 
@@ -71,32 +71,32 @@ Usages：
        ossutil appendfromfile local_file_name oss://bucket/object
 	
     2) Uploads file content by append mode with setting meta value
-       ossutil appendfromfile local_file_name oss://bucket/object --meta "X-Oss-Meta-Author:chanju"
+       ossutil appendfromfile local_file_name oss://bucket/object --meta "x-oss-meta-author:luxun"
 `,
 }
 
 type AppendProgressListener struct {
-	lastMs   int64
-	lastSize int64
-	currSize int64
+	lastMilliSecond int64
+	lastSize        int64
+	currSize        int64
 }
 
 // ProgressChanged handle progress event
 func (l *AppendProgressListener) ProgressChanged(event *oss.ProgressEvent) {
 	if event.EventType == oss.TransferDataEvent || event.EventType == oss.TransferCompletedEvent {
-		if l.lastMs == 0 {
+		if l.lastMilliSecond == 0 {
 			l.lastSize = l.currSize
 			l.currSize = event.ConsumedBytes
-			l.lastMs = time.Now().UnixNano() / 1000 / 1000
+			l.lastMilliSecond = time.Now().UnixNano() / 1000 / 1000
 		} else {
 			now := time.Now()
-			cost := now.UnixNano()/1000/1000 - l.lastMs
+			cost := now.UnixNano()/1000/1000 - l.lastMilliSecond
 			if cost > 1000 || event.EventType == oss.TransferCompletedEvent {
 				l.lastSize = l.currSize
 				l.currSize = event.ConsumedBytes
-				l.lastMs = now.UnixNano() / 1000 / 1000
+				l.lastMilliSecond = now.UnixNano() / 1000 / 1000
 
-				speed := float64(l.currSize-l.lastSize) / float64(cost)
+				speed := (float64(l.currSize-l.lastSize) / 1024) / (float64(cost) / 1000)
 				rate := float64(l.currSize) * 100 / float64(event.TotalBytes)
 				fmt.Printf("\rtotal append %d(%.2f%%) byte,speed is %.2f(KB/s)", event.ConsumedBytes, rate, speed)
 			}
@@ -184,7 +184,7 @@ func (afc *AppendFileCommand) RunCommand() error {
 	}
 
 	if stat.Size() > MaxAppendObjectSize {
-		return fmt.Errorf("locafile:%s is bigger than %d, it is not support by append", fileName, MaxAppendObjectSize)
+		return fmt.Errorf("locafile:%s is bigger than %d, it is not supported by append", fileName, MaxAppendObjectSize)
 	}
 
 	afc.afOption.fileName = fileName

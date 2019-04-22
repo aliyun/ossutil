@@ -177,6 +177,18 @@ func (s *OssutilCommandSuite) PutObject(bucketName string, object string, body s
 	c.Assert(err, IsNil)
 }
 
+func (s *OssutilCommandSuite) AppendObject(bucketName string, object string, body string, position int64, c *C) {
+	// create client and bucket
+	client, err := oss.New(endpoint, accessKeyID, accessKeySecret)
+	c.Assert(err, IsNil)
+
+	bucket, err := client.Bucket(bucketName)
+	c.Assert(err, IsNil)
+
+	_, err = bucket.AppendObject(object, strings.NewReader(body), position)
+	c.Assert(err, IsNil)
+}
+
 func (s *OssutilCommandSuite) configNonInteractive(c *C) {
 	command := "config"
 	var args []string
