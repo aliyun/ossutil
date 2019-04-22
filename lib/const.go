@@ -59,6 +59,7 @@ const (
 	OptionDisableEmptyReferer        = "disableEmptyReferer"
 	OptionMethod                     = "method"
 	OptionOrigin                     = "origin"
+	OptionPartitionDownload          = "partitionDownload"
 )
 
 // the elements show in stat object

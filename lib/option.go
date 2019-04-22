@@ -145,6 +145,9 @@ var OptionMap = map[string]Option{
 	OptionOrigin: Option{"", "--origin", "", OptionTypeString, "", "",
 		"表示http请求头origin字段的值",
 		"specifies the value of origin field in http header"},
+	OptionPartitionDownload: Option{"", "--partition-download", "", OptionTypeString, "", "",
+		"分区下载使用,一个ossutil命令下载一个分区,其值格式为\"分区编号:总分区数\",比如1:5,表示当前ossutil下载分区1,总共有5个分区;分区号从1开始编号,objects的分区规则由工具内部算法决定;利用该选项,待下载的objects分成多个区,可以由多个ossutil命令一起下载完成,每个ossutil命令下载各自的分区,多个ossutil命令可以并行在不同机器上执行",
+		"the option is used in partition download mode, one command to download one partition,the value format is \"partition number:total count of partitions\",such as 1:5, indicating that the command downloads partition 1,total partition count is 5; the partition number is numbered from 1, and the partitioning rules for objects are determined by ossutil; with this option, the objects to be downloaded are divided into multiple partitions, which can be downloaded by multiple ossutil commands,each ossutil command can download its own partition,multiple ossutil commands can be executed on different machines in parallel."},
 }
 
 func (T *Option) getHelp(language string) string {

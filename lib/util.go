@@ -3,6 +3,7 @@ package lib
 import (
 	"bytes"
 	"fmt"
+	"hash"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -474,4 +475,13 @@ func GetCloudUrl(strlUrl, encodingType string) (*CloudURL, error) {
 		return nil, fmt.Errorf("bucket name is empty,url is %s", bucketUrL.ToString())
 	}
 	return &cloudUrl, nil
+}
+
+func matchHash(fnvIns hash.Hash64, key string, modeValue int, countValue int) bool {
+	fnvIns.Reset()
+	fnvIns.Write([]byte(key))
+	if fnvIns.Sum64()%uint64(countValue) == uint64(modeValue) {
+		return true
+	}
+	return false
 }
