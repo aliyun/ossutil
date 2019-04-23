@@ -399,8 +399,8 @@ func (cmd *Command) ossGetObjectStatRetry(bucket *oss.Bucket, object string, opt
 
 		// http 4XX 、5XX error no need to retry
 		// only network error need to retry
-		_, noNeedRetry := err.(oss.ServiceError)
-		if int64(i) >= retryTimes || noNeedRetry {
+		serviceError, noNeedRetry := err.(oss.ServiceError)
+		if int64(i) >= retryTimes || (noNeedRetry && serviceError.StatusCode < 500) {
 			return props, ObjectError{err, bucket.BucketName, object}
 		}
 
@@ -419,8 +419,8 @@ func (cmd *Command) ossGetObjectMetaRetry(bucket *oss.Bucket, object string, opt
 
 		// http 4XX 、5XX error no need to retry
 		// only network error need to retry
-		_, noNeedRetry := err.(oss.ServiceError)
-		if int64(i) >= retryTimes || noNeedRetry {
+		serviceError, noNeedRetry := err.(oss.ServiceError)
+		if int64(i) >= retryTimes || (noNeedRetry && serviceError.StatusCode < 500) {
 			return props, ObjectError{err, bucket.BucketName, object}
 		}
 
@@ -556,5 +556,13 @@ func GetAllCommands() []interface{} {
 		&hashCommand,
 		&updateCommand,
 		&probeCommand,
+		&mkdirCommand,
+		&corsCommand,
+		&bucketLogCommand,
+		&bucketRefererCommand,
+		&listPartCommand,
+		&allPartSizeCommand,
+		&appendFileCommand,
+		&catCommand,
 	}
 }

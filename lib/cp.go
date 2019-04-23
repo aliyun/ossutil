@@ -1634,13 +1634,26 @@ func (cc *CopyCommand) filterPath(filePath string, cpDir string) bool {
 }
 
 func (cc *CopyCommand) uploadFileWithReport(bucket *oss.Bucket, destURL CloudURL, file fileInfoType) error {
+	startT := time.Now()
 	skip, err, isDir, size, msg := cc.uploadFile(bucket, destURL, file)
+	cost := time.Now().UnixNano()/1000/1000 - startT.UnixNano()/1000/1000
+
 	if err != nil {
-		LogInfo("upload file error:%s.\n", file.filePath)
+		LogError("upload file error,file:%s,cost:%d(ms),error info:%s\n", file.filePath, cost, err.Error())
 	} else if skip {
 		LogInfo("upload file skip:%s.\n", file.filePath)
 	} else {
-		LogInfo("upload file success:%s.\n", file.filePath)
+		if file.dir == "" {
+			// fix panic
+			file.dir = "."
+		}
+		absPath := file.dir + string(os.PathSeparator) + file.filePath
+		fileInfo, errF := os.Stat(absPath)
+		speed := 0.0
+		if cost > 0 && errF == nil {
+			speed = float64(fileInfo.Size()) / float64(cost)
+		}
+		LogInfo("upload file success,file:%s,size:%d,speed:%.2f(KB/s),cost:%d(ms)\n", file.filePath, fileInfo.Size(), speed, cost)
 	}
 
 	cc.updateMonitor(skip, err, isDir, size)
@@ -1799,14 +1812,21 @@ func (cc *CopyCommand) ossUploadFileRetry(bucket *oss.Bucket, objectName string,
 		if i > 1 {
 			time.Sleep(time.Duration(1) * time.Second)
 			if int64(i) >= retryTimes {
-				fmt.Printf("\nretry count:%d:put object from file:%s.\n", i-1, filePath)
+				fmt.Printf("\nretry count:%d:upload file:%s.\n", i-1, filePath)
 			}
 		}
 
+		startT := time.Now()
 		err := bucket.PutObjectFromFile(objectName, filePath, options...)
+		cost := time.Now().UnixNano()/1000/1000 - startT.UnixNano()/1000/1000
+
 		if err == nil {
+			LogDebug("try count:%d,upload file sucess %s,cost:%d(ms)\n", i, filePath, cost)
 			return err
+		} else {
+			LogError("try count:%d,upload file error %s,cost:%d(ms),error:%s\n", i, filePath, cost, err.Error())
 		}
+
 		if int64(i) >= retryTimes {
 			return FileError{err, filePath}
 		}
@@ -1870,12 +1890,18 @@ func (cc *CopyCommand) ossResumeUploadRetry(bucket *oss.Bucket, objectName strin
 		if i > 1 {
 			time.Sleep(time.Duration(1) * time.Second)
 			if int64(i) >= retryTimes {
-				fmt.Printf("\nretry count:%d,mulitpart upload file:%s.\n", i-1, filePath)
+				fmt.Printf("\nretry count:%d,multipart upload file:%s.\n", i-1, filePath)
 			}
 		}
+		startT := time.Now()
 		err := bucket.UploadFile(objectName, filePath, partSize, options...)
+		cost := time.Now().UnixNano()/1000/1000 - startT.UnixNano()/1000/1000
+
 		if err == nil {
+			LogDebug("try count:%d,multipart upload file sucess %s,cost:%d(ms)\n", i, filePath, cost)
 			return err
+		} else {
+			LogError("try count:%d,multipart upload file error %s,cost:%d(ms),error:%s\n", i, filePath, cost, err.Error())
 		}
 		if int64(i) >= retryTimes {
 			return FileError{err, filePath}
@@ -2001,14 +2027,20 @@ func (cc *CopyCommand) adjustDestURLForDownload(destURL FileURL) (string, error)
 }
 
 func (cc *CopyCommand) downloadSingleFileWithReport(bucket *oss.Bucket, objectInfo objectInfoType, filePath string) error {
+	startT := time.Now()
 	skip, err, size, msg := cc.downloadSingleFile(bucket, objectInfo, filePath)
+	cost := time.Now().UnixNano()/1000/1000 - startT.UnixNano()/1000/1000
 
 	if err != nil {
-		LogInfo("download error:%s %s.\n", objectInfo.relativeKey, err.Error())
+		LogError("download error,file:%s,cost:%d(ms),error info:%s\n", objectInfo.relativeKey, cost, err.Error())
 	} else if skip {
 		LogInfo("download skip:%s.\n", objectInfo.relativeKey)
 	} else {
-		LogInfo("download success:%s.\n", objectInfo.relativeKey)
+		speed := 0.0
+		if cost > 0 {
+			speed = float64(objectInfo.size) / float64(cost)
+		}
+		LogInfo("download success,file:%s,size:%d,speed:%.2f(KB/s),cost:%d(ms)\n", objectInfo.relativeKey, objectInfo.size, speed, cost)
 	}
 
 	cc.updateMonitor(skip, err, false, size)
@@ -2065,6 +2097,8 @@ func (cc *CopyCommand) downloadSingleFile(bucket *oss.Bucket, objectInfo objectI
 
 	partSize, rt := cc.preparePartOption(size)
 	cp := oss.CheckpointDir(true, cc.cpOption.cpDir)
+	LogInfo("multipart download,object %s,file size:%d,partSize %d,routin count:%d,checkpoint dir:%s\n",
+		object, size, partSize, rt, cc.cpOption.cpDir)
 	downloadOptions = append(downloadOptions, oss.Routines(rt), cp)
 	return false, cc.ossResumeDownloadRetry(bucket, object, fileName, size, partSize, downloadOptions...), 0, msg
 }
@@ -2115,9 +2149,15 @@ func (cc *CopyCommand) ossDownloadFileRetry(bucket *oss.Bucket, objectName, file
 			}
 		}
 
+		startT := time.Now()
 		err := bucket.GetObjectToFile(objectName, fileName, options...)
+		cost := time.Now().UnixNano()/1000/1000 - startT.UnixNano()/1000/1000
+
 		if err == nil {
+			LogDebug("try count:%d,GetObjectToFile sucess %s,cost:%d(ms)\n", i, fileName, cost)
 			return err
+		} else {
+			LogError("try count:%d,GetObjectToFile error %s,cost:%d(ms),error:%s\n", i, fileName, cost, err.Error())
 		}
 
 		if int64(i) >= retryTimes {

@@ -47,6 +47,10 @@ func ParseAndRunCommand() error {
 
 	startT := time.Now()
 	LogInfo("ossutil run begin,cmd:%s\n", commandLine)
+	LogInfo("oss go sdk version is %s\n", oss.Version)
+	LogInfo("go version is %s\n", runtime.Version())
+	LogInfo("runtime.NumCPU %d\n", runtime.NumCPU())
+
 	defer LogEnd(startT)
 
 	showElapse, err := RunCommand(args, options)
@@ -56,7 +60,7 @@ func ParseAndRunCommand() error {
 	}
 	if showElapse {
 		te := time.Now().UnixNano()
-		fmt.Printf("%.6f(s) elapsed\n", float64(te-ts)/1e9)
+		fmt.Printf("\n%.6f(s) elapsed\n", float64(te-ts)/1e9)
 		return nil
 	}
 	return nil

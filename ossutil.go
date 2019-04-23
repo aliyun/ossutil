@@ -10,7 +10,7 @@ import (
 
 func main() {
 	if err := lib.ParseAndRunCommand(); err != nil {
-		fmt.Printf("Error: %s!\n", err)
+		fmt.Printf("Error: %s\n", err)
 		if strings.Contains(err.Error(), "ErrorCode=NoSuchUpload") {
 			fmt.Printf("Will remove checkpoint dir '%s' automatically. Please try again.\n", lib.CheckpointDir)
 			os.RemoveAll(lib.CheckpointDir)

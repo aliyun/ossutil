@@ -18,7 +18,7 @@ func (s *OssutilCommandSuite) TestCPObject(c *C) {
 	bucketName := bucketNamePrefix + randLowStr(10)
 	s.putBucket(bucketName, c)
 	// dest bucket is not exist
-	destBucket := bucketNamePrefix + randLowStr(10)
+	destBucket := bucketName + "-dest"
 
 	// put object
 	s.createFile(uploadFileName, content, c)
@@ -32,7 +32,6 @@ func (s *OssutilCommandSuite) TestCPObject(c *C) {
 	// modify the content of the file
 	data := "欢迎使用ossutil"
 	s.createFile(uploadFileName, data, c)
-
 	// overwrite the object
 	s.putObject(bucketName, object, uploadFileName, c)
 	// get object
@@ -1490,8 +1489,8 @@ func (s *OssutilCommandSuite) TestBatchCopyOutputDir(c *C) {
 func (s *OssutilCommandSuite) TestConfigOutputDir(c *C) {
 	// test default outputdir
 	edir := ""
-	dir := randStr(10)
-	dir1 := randStr(10)
+	dir := randStr(10) + "testconfigoutputdir"
+	dir1 := dir + "another"
 	os.RemoveAll(DefaultOutputDir)
 	os.RemoveAll(dir)
 	os.RemoveAll(dir1)
@@ -1540,8 +1539,11 @@ func (s *OssutilCommandSuite) TestConfigOutputDir(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(len(fileList), Equals, 1)
 
-	os.RemoveAll(dir)
-	os.RemoveAll(DefaultOutputDir)
+	err = os.RemoveAll(dir)
+	c.Assert(err, IsNil)
+
+	err = os.RemoveAll(DefaultOutputDir)
+	c.Assert(err, IsNil)
 
 	// option and config
 	showElapse, err = s.rawCPWithOutputDir(ufile, CloudURLToString(bucketName, object), true, true, false, 1, dir1)

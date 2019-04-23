@@ -23,7 +23,9 @@ func Test(t *testing.T) {
 	TestingT(t)
 }
 
-type OssutilCommandSuite struct{}
+type OssutilCommandSuite struct {
+	startT time.Time
+}
 
 var _ = Suite(&OssutilCommandSuite{})
 
@@ -64,6 +66,7 @@ var (
 
 // Run once when the suite starts running
 func (s *OssutilCommandSuite) SetUpSuite(c *C) {
+	fmt.Printf("set up OssutilCommandSuite\n")
 	os.Stdout = testLogFile
 	os.Stderr = testLogFile
 	processTickInterval = 1
@@ -116,6 +119,7 @@ func (s *OssutilCommandSuite) SetUpBucketEnv(c *C) {
 
 // Run before each test or benchmark starts running
 func (s *OssutilCommandSuite) TearDownSuite(c *C) {
+	fmt.Printf("tear down OssutilCommandSuite\n")
 	s.removeBuckets(bucketNamePrefix, c)
 	s.removeBucket(bucketNameExist, true, c)
 	s.removeBucket(bucketNameDest, true, c)
@@ -133,11 +137,16 @@ func (s *OssutilCommandSuite) TearDownSuite(c *C) {
 
 // Run after each test or benchmark runs
 func (s *OssutilCommandSuite) SetUpTest(c *C) {
+	fmt.Printf("set up test:%s\n", c.TestName())
+	s.startT = time.Now()
 	configFile = ConfigFile
 }
 
 // Run once after all tests or benchmarks have finished running
 func (s *OssutilCommandSuite) TearDownTest(c *C) {
+	endT := time.Now()
+	cost := endT.UnixNano()/1000/1000 - s.startT.UnixNano()/1000/1000
+	fmt.Printf("tear down test:%s,cost:%d(ms)\n", c.TestName(), cost)
 }
 
 var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
@@ -153,6 +162,31 @@ func randStr(n int) string {
 
 func randLowStr(n int) string {
 	return strings.ToLower(randStr(n))
+}
+
+func (s *OssutilCommandSuite) PutObject(bucketName string, object string, body string, c *C) {
+	// create client and bucket
+	client, err := oss.New(endpoint, accessKeyID, accessKeySecret)
+	c.Assert(err, IsNil)
+
+	bucket, err := client.Bucket(bucketName)
+	c.Assert(err, IsNil)
+
+	err = bucket.PutObject(object, strings.NewReader(body))
+
+	c.Assert(err, IsNil)
+}
+
+func (s *OssutilCommandSuite) AppendObject(bucketName string, object string, body string, position int64, c *C) {
+	// create client and bucket
+	client, err := oss.New(endpoint, accessKeyID, accessKeySecret)
+	c.Assert(err, IsNil)
+
+	bucket, err := client.Bucket(bucketName)
+	c.Assert(err, IsNil)
+
+	_, err = bucket.AppendObject(object, strings.NewReader(body), position)
+	c.Assert(err, IsNil)
 }
 
 func (s *OssutilCommandSuite) configNonInteractive(c *C) {
@@ -1466,7 +1500,7 @@ func (s *OssutilCommandSuite) TestDecideConfigFile(c *C) {
 	usr, _ := user.Current()
 	file := DecideConfigFile("")
 	c.Assert(file, Equals, strings.Replace(DefaultConfigFile, "~", usr.HomeDir, 1))
-	input := "~/a"
+	input := "~" + string(os.PathSeparator) + "a"
 	file = DecideConfigFile(input)
 	c.Assert(file, Equals, strings.Replace(input, "~", usr.HomeDir, 1))
 }
@@ -1568,7 +1602,7 @@ func (s *OssutilCommandSuite) TestStorageURL(c *C) {
 
 	usr, _ := user.Current()
 	dir := usr.HomeDir
-	url := "~/test"
+	url := "~" + string(os.PathSeparator) + "test"
 	var fileURL FileURL
 	fileURL.Init(url, "")
 	c.Assert(fileURL.urlStr, Equals, strings.Replace(url, "~", dir, 1))

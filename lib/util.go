@@ -460,6 +460,23 @@ func filterObjectsFromChanWithPatterns(chObjects <-chan objectInfoType, filters 
 	defer close(dstObjs)
 }
 
+func GetCloudUrl(strlUrl, encodingType string) (*CloudURL, error) {
+	bucketUrL, err := StorageURLFromString(strlUrl, encodingType)
+	if err != nil {
+		return nil, err
+	}
+
+	if !bucketUrL.IsCloudURL() {
+		return nil, fmt.Errorf("parameter is not a cloud url,url is %s", bucketUrL.ToString())
+	}
+
+	cloudUrl := bucketUrL.(CloudURL)
+	if cloudUrl.bucket == "" {
+		return nil, fmt.Errorf("bucket name is empty,url is %s", bucketUrL.ToString())
+	}
+	return &cloudUrl, nil
+}
+
 func matchHash(fnvIns hash.Hash64, key string, modeValue int, countValue int) bool {
 	fnvIns.Reset()
 	fnvIns.Write([]byte(key))
