@@ -36,7 +36,7 @@ var specChineseBucketLog = SpecText{
 `,
 	sampleText: ` 
     1) 设置bucket的日志配置
-       ossutil logging --method put oss://bucket local_xml_file
+       ossutil logging --method put oss://bucket oss://target-bucket/
 
     2) 查询bucket的日志配置，结果输出到标准输出
        ossutil logging --method get oss://bucket
@@ -80,7 +80,7 @@ Usage:
 `,
 	sampleText: ` 
     1) put bucket log configuration  
-       ossutil logging --method put oss://bucket  local_xml_file
+       ossutil logging --method put oss://bucket  oss://target-bucket/
 
     2) get bucket log configuration to stdout
        ossutil logging --method get oss://bucket
