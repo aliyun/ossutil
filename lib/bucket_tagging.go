@@ -62,7 +62,7 @@ var specEnglishBucketTag = SpecText{
     bucket-tagging command can set、get and delete the tag configuration of the oss bucket by set method option value to put, get,delete
     the key and value of each tag must be separated by the character ":", you can enter up to 10 tag parameters.
 Usage:
-    There are three usages for this command::
+    There are three usages for this command:
 	
     1) ossutil bucket-tagging --method put oss://bucket tagkey:tagvalue
         The command sets the tag configuration of the bucket. The key and value are tagkey and tagvalue

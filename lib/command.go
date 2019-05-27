@@ -565,5 +565,6 @@ func GetAllCommands() []interface{} {
 		&appendFileCommand,
 		&catCommand,
 		&bucketTagCommand,
+		&bucketEncryptionCommand,
 	}
 }

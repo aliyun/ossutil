@@ -60,6 +60,8 @@ const (
 	OptionMethod                     = "method"
 	OptionOrigin                     = "origin"
 	OptionPartitionDownload          = "partitionDownload"
+	OptionSSEAlgorithm               = "SSEAlgorithm"
+	OptionKMSMasterKeyID             = "KMSMasterKeyID"
 )
 
 // the elements show in stat object
