@@ -13,18 +13,18 @@ var specChineseBucketTag = SpecText{
 	paramText: "bucket_url [tag_parameter] [options]",
 
 	syntaxText: ` 
-	ossutil bucket-tagging --method put oss://bucket key:value
+    ossutil bucket-tagging --method put oss://bucket key#value
     ossutil bucket-tagging --method get oss://bucket 
     ossuitl bucket-tagging --method delete oss://bucket
 `,
 	detailHelpText: ` 
     bucket-tagging命令通过设置method选项值为put、get、delete,可以设置、查询或者删除bucket的tag配置
-    每个tag的key和value必须以字符":"分隔,最多可以连续输入10个tag信息
+    每个tag的key和value必须以字符'#'分隔,最多可以连续输入20个tag信息
 
 用法:
     该命令有三种用法:
 	
-    1) ossutil bucket-tagging --method put oss://bucket  tagkey:tagvalue
+    1) ossutil bucket-tagging --method put oss://bucket  tagkey#tagvalue
         这个命令设置bucket的tag配置,key和value分别为tagkey、tagvalue
 	
     2) ossutil bucket-tagging --method get oss://bucket 
@@ -35,10 +35,10 @@ var specChineseBucketTag = SpecText{
 `,
 	sampleText: ` 
     1) 设置bucket的tag配置
-       ossutil bucket-tagging --method put oss://bucket  tagkey:tagvalue
+       ossutil bucket-tagging --method put oss://bucket  tagkey#tagvalue
     
     2) 设置bucket的多个tag配置
-       ossutil bucket-tagging --method put oss://bucket  tagkey1:tagvalue1 tagkey2:tagvalue2
+       ossutil bucket-tagging --method put oss://bucket  tagkey1#tagvalue1 tagkey2#tagvalue2
 	
     3) 查询bucket的tag配置
        ossutil bucket-tagging --method get oss://bucket
@@ -49,22 +49,22 @@ var specChineseBucketTag = SpecText{
 }
 
 var specEnglishBucketTag = SpecText{
-	synopsisText: "Set、get or delete bucket tag configuration",
+	synopsisText: "Set, get or delete bucket tag configuration",
 
 	paramText: "bucket_url [tag_parameter] [options]",
 
 	syntaxText: ` 
-    ossutil bucket-tagging --method put oss://bucket key:value
+    ossutil bucket-tagging --method put oss://bucket key#value
     ossutil bucket-tagging --method get oss://bucket 
     ossuitl bucket-tagging --method delete oss://bucket
 `,
 	detailHelpText: ` 
-    bucket-tagging command can set、get and delete the tag configuration of the oss bucket by set method option value to put, get,delete
-    the key and value of each tag must be separated by the character ":", you can enter up to 10 tag parameters.
+    bucket-tagging command can set, get and delete the tag configuration of the oss bucket by set method option value to put, get, delete
+    the key and value of each tag must be separated by the character '#', you can enter up to 20 tag parameters.
 Usage:
     There are three usages for this command:
 	
-    1) ossutil bucket-tagging --method put oss://bucket tagkey:tagvalue
+    1) ossutil bucket-tagging --method put oss://bucket tagkey#tagvalue
         The command sets the tag configuration of the bucket. The key and value are tagkey and tagvalue
 	
     2) ossutil bucket-tagging --method get oss://bucket 
@@ -75,10 +75,10 @@ Usage:
 `,
 	sampleText: ` 
     1) set bucket tag configuration with one tag   
-       ossutil bucket-tagging --method put oss://bucket tagkey:tagvalue
+       ossutil bucket-tagging --method put oss://bucket tagkey#tagvalue
     
     2) set bucket tag configuration with serveral tags
-       ossutil bucket-tagging --method put oss://bucket tagkey1:tagvalue1 tagkey2:tagvalue2 
+       ossutil bucket-tagging --method put oss://bucket tagkey1#tagvalue1 tagkey2#tagvalue2 
 
     3) get bucket tag configuration
        ossutil bucket-tagging --method get oss://bucket
@@ -91,6 +91,7 @@ Usage:
 type BucketTagCommand struct {
 	command    Command
 	bucketName string
+	tagResult  oss.GetBucketTaggingResult
 }
 
 var bucketTagCommand = BucketTagCommand{
@@ -98,7 +99,7 @@ var bucketTagCommand = BucketTagCommand{
 		name:        "bucket-tagging",
 		nameAlias:   []string{"bucket-tagging"},
 		minArgc:     1,
-		maxArgc:     11,
+		maxArgc:     21,
 		specChinese: specChineseBucketTag,
 		specEnglish: specEnglishBucketTag,
 		group:       GroupTypeNormalCommand,
@@ -165,9 +166,9 @@ func (btc *BucketTagCommand) PutBucketTag() error {
 	var tagging oss.Tagging
 	tagList := btc.command.args[1:len(btc.command.args)]
 	for _, tag := range tagList {
-		pSlice := strings.Split(tag, ":")
+		pSlice := strings.Split(tag, "#")
 		if len(pSlice) != 2 {
-			return fmt.Errorf("%s error,tag name and tag value must be separated by :", tag)
+			return fmt.Errorf("%s error,tag name and tag value must be separated by #", tag)
 		}
 		tagging.Tags = append(tagging.Tags, oss.Tag{Key: pSlice[0], Value: pSlice[1]})
 	}
@@ -187,18 +188,18 @@ func (btc *BucketTagCommand) GetBucketTag() error {
 		return err
 	}
 
-	tagRes, err := client.GetBucketTagging(btc.bucketName)
+	btc.tagResult, err = client.GetBucketTagging(btc.bucketName)
 	if err != nil {
 		return err
 	}
 
-	if len(tagRes.Tags) > 0 {
-		fmt.Printf("%-10s\t%-32s\n", "index", "tag info")
+	if len(btc.tagResult.Tags) > 0 {
+		fmt.Printf("%-10s%s\t\t%s\n", "index", "tag key", "tag value")
 		fmt.Printf("---------------------------------------------------\n")
 	}
 
-	for index, tag := range tagRes.Tags {
-		fmt.Printf("%-10d\t%s:%s\n", index, tag.Key, tag.Value)
+	for index, tag := range btc.tagResult.Tags {
+		fmt.Printf("%-10d\"%s\"\t\t\"%s\"\n", index, tag.Key, tag.Value)
 	}
 
 	fmt.Printf("\n\n")

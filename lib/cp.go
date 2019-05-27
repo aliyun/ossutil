@@ -1741,13 +1741,13 @@ func (cc *CopyCommand) makeObjectName(destURL CloudURL, file fileInfoType) strin
 	return destURL.object
 }
 
-func (cc *CopyCommand) skipUpload(spath string, bucket *oss.Bucket, objectName string, destURL CloudURL, srct int64) (bool, error) {
+func (cc *CopyCommand) skipUpload(spath string, bucket *oss.Bucket, objectName string, destURL CloudURL, srcModifiedTime int64) (bool, error) {
 	if cc.cpOption.snapshotPath != "" || cc.cpOption.update {
 		if cc.cpOption.snapshotPath != "" {
 			tstr, err := cc.cpOption.snapshotldb.Get([]byte(spath), nil)
 			if err == nil {
 				t, _ := strconv.ParseInt(string(tstr), 10, 64)
-				if t == srct {
+				if t == srcModifiedTime {
 					return true, nil
 				}
 			}
@@ -1755,7 +1755,7 @@ func (cc *CopyCommand) skipUpload(spath string, bucket *oss.Bucket, objectName s
 		if cc.cpOption.update {
 			if props, err := cc.command.ossGetObjectStatRetry(bucket, objectName, cc.cpOption.payerOptions...); err == nil {
 				destt, err := time.Parse(http.TimeFormat, props.Get(oss.HTTPHeaderLastModified))
-				if err == nil && destt.Unix() >= srct {
+				if err == nil && destt.Unix() >= srcModifiedTime {
 					return true, nil
 				}
 			}
@@ -2112,13 +2112,13 @@ func (cc *CopyCommand) makeFileName(relativeObject, filePath string) string {
 	return filePath
 }
 
-func (cc *CopyCommand) skipDownload(fileName string, srct time.Time, object string) bool {
+func (cc *CopyCommand) skipDownload(fileName string, srcModifiedTime time.Time, object string) bool {
 	if cc.cpOption.snapshotPath != "" || cc.cpOption.update {
 		if cc.cpOption.snapshotPath != "" {
 			tstr, err := cc.cpOption.snapshotldb.Get([]byte(object), nil)
 			if err == nil {
 				t, _ := strconv.ParseInt(string(tstr), 10, 64)
-				if t == srct.Unix() {
+				if t == srcModifiedTime.Unix() {
 					return true
 				}
 			}
@@ -2126,7 +2126,7 @@ func (cc *CopyCommand) skipDownload(fileName string, srct time.Time, object stri
 
 		if f, err := os.Stat(fileName); err == nil {
 			destt := f.ModTime()
-			if destt.Unix() >= srct.Unix() {
+			if destt.Unix() >= srcModifiedTime.Unix() {
 				return true
 			}
 		}

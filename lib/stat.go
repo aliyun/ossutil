@@ -157,6 +157,13 @@ func (sc *StatCommand) bucketStat(bucket *oss.Bucket, cloudURL CloudURL) error {
 	fmt.Printf("%-18s: %s\n", StatACL, gbar.BucketInfo.ACL)
 	fmt.Printf("%-18s: %s\n", StatOwner, gbar.BucketInfo.Owner.ID)
 	fmt.Printf("%-18s: %s\n", StatStorageClass, gbar.BucketInfo.StorageClass)
+	if len(gbar.BucketInfo.SseRule.SSEAlgorithm) > 0 {
+		fmt.Printf("%-18s: %s\n", StatSSEAlgorithm, gbar.BucketInfo.SseRule.SSEAlgorithm)
+	}
+	if len(gbar.BucketInfo.SseRule.KMSMasterKeyID) > 0 {
+		fmt.Printf("%-18s: %s\n", StatKMSMasterKeyID, gbar.BucketInfo.SseRule.KMSMasterKeyID)
+	}
+
 	return nil
 }
 

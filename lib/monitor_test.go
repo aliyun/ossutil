@@ -1414,13 +1414,13 @@ func (s *OssutilCommandSuite) TestSnapshot(c *C) {
 	c.Assert(copyCommand.monitor.skipNum, Equals, int64(0))
 	c.Assert(copyCommand.monitor.errNum, Equals, int64(0))
 
-	// download with snapshot
+	// download with snapshot:success
 	err = s.initCopyWithSnapshot(CloudURLToString(bucketName, object), downloadFileName, false, false, false, DefaultBigFileThreshold, spath)
 	c.Assert(err, IsNil)
 	err = copyCommand.RunCommand()
-	c.Assert(err, NotNil)
+	c.Assert(err, IsNil)
 
-	// copy with snapshot
+	// copy with snapshot:error
 	err = s.initCopyWithSnapshot(CloudURLToString(bucketName, object), CloudURLToString(bucketNameDest, object), false, false, false, DefaultBigFileThreshold, spath)
 	c.Assert(err, IsNil)
 	err = copyCommand.RunCommand()
