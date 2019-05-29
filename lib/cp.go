@@ -1378,8 +1378,8 @@ func (cc *CopyCommand) checkCopyArgs(srcURLList []StorageURLer, destURL StorageU
 }
 
 func (cc *CopyCommand) checkCopyOptions(opType operationType) error {
-	if operationTypePut != opType && cc.cpOption.snapshotPath != "" {
-		msg := fmt.Sprintf("only upload support option: \"%s\"", OptionSnapshotPath)
+	if operationTypeCopy == opType && cc.cpOption.snapshotPath != "" {
+		msg := fmt.Sprintf("CopyObject doesn't support option: \"%s\"", OptionSnapshotPath)
 		return CommandError{cc.command.name, msg}
 	}
 	if operationTypeGet != opType && cc.cpOption.vrange != "" {
@@ -1741,13 +1741,13 @@ func (cc *CopyCommand) makeObjectName(destURL CloudURL, file fileInfoType) strin
 	return destURL.object
 }
 
-func (cc *CopyCommand) skipUpload(spath string, bucket *oss.Bucket, objectName string, destURL CloudURL, srct int64) (bool, error) {
+func (cc *CopyCommand) skipUpload(spath string, bucket *oss.Bucket, objectName string, destURL CloudURL, srcModifiedTime int64) (bool, error) {
 	if cc.cpOption.snapshotPath != "" || cc.cpOption.update {
 		if cc.cpOption.snapshotPath != "" {
 			tstr, err := cc.cpOption.snapshotldb.Get([]byte(spath), nil)
 			if err == nil {
 				t, _ := strconv.ParseInt(string(tstr), 10, 64)
-				if t == srct {
+				if t == srcModifiedTime {
 					return true, nil
 				}
 			}
@@ -1755,7 +1755,7 @@ func (cc *CopyCommand) skipUpload(spath string, bucket *oss.Bucket, objectName s
 		if cc.cpOption.update {
 			if props, err := cc.command.ossGetObjectStatRetry(bucket, objectName, cc.cpOption.payerOptions...); err == nil {
 				destt, err := time.Parse(http.TimeFormat, props.Get(oss.HTTPHeaderLastModified))
-				if err == nil && destt.Unix() >= srct {
+				if err == nil && destt.Unix() >= srcModifiedTime {
 					return true, nil
 				}
 			}
@@ -2040,7 +2040,9 @@ func (cc *CopyCommand) downloadSingleFileWithReport(bucket *oss.Bucket, objectIn
 		if cost > 0 {
 			speed = float64(objectInfo.size) / float64(cost)
 		}
-		LogInfo("download success,file:%s,size:%d,speed:%.2f(KB/s),cost:%d(ms)\n", objectInfo.relativeKey, objectInfo.size, speed, cost)
+		objectKey := objectInfo.prefix + objectInfo.relativeKey
+		LogInfo("download success,object:%s,size:%d,speed:%.2f(KB/s),cost:%d(ms)\n", objectKey, objectInfo.size, speed, cost)
+		cc.updateSnapshot(nil, objectKey, objectInfo.lastModified.Unix())
 	}
 
 	cc.updateMonitor(skip, err, false, size)
@@ -2072,7 +2074,7 @@ func (cc *CopyCommand) downloadSingleFile(bucket *oss.Bucket, objectInfo objectI
 	}
 
 	rsize := cc.getRangeSize(size)
-	if cc.skipDownload(fileName, srct) {
+	if cc.skipDownload(fileName, srct, object) {
 		return true, nil, rsize, msg
 	}
 
@@ -2110,11 +2112,21 @@ func (cc *CopyCommand) makeFileName(relativeObject, filePath string) string {
 	return filePath
 }
 
-func (cc *CopyCommand) skipDownload(fileName string, srct time.Time) bool {
-	if cc.cpOption.update {
+func (cc *CopyCommand) skipDownload(fileName string, srcModifiedTime time.Time, object string) bool {
+	if cc.cpOption.snapshotPath != "" || cc.cpOption.update {
+		if cc.cpOption.snapshotPath != "" {
+			tstr, err := cc.cpOption.snapshotldb.Get([]byte(object), nil)
+			if err == nil {
+				t, _ := strconv.ParseInt(string(tstr), 10, 64)
+				if t == srcModifiedTime.Unix() {
+					return true
+				}
+			}
+		}
+
 		if f, err := os.Stat(fileName); err == nil {
 			destt := f.ModTime()
-			if destt.Unix() >= srct.Unix() {
+			if destt.Unix() >= srcModifiedTime.Unix() {
 				return true
 			}
 		}

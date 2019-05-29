@@ -564,5 +564,7 @@ func GetAllCommands() []interface{} {
 		&allPartSizeCommand,
 		&appendFileCommand,
 		&catCommand,
+		&bucketTagCommand,
+		&bucketEncryptionCommand,
 	}
 }

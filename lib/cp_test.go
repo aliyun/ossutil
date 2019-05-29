@@ -3458,3 +3458,92 @@ func (s *OssutilCommandSuite) TestCPPartitionDownloadParameterError(c *C) {
 	_, err = cm.RunCommand(command, args, options)
 	c.Assert(err, NotNil)
 }
+
+func (s *OssutilCommandSuite) TestCPDownloadSnapshot(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(12)
+	s.putBucket(bucketName, c)
+
+	//download snapshot dir
+	testSnapshotDir := "ossutil_test_snapshot" + randStr(5)
+	os.RemoveAll(testSnapshotDir)
+
+	// download object dir
+	downloadDir := "ossutil_test_" + randStr(5)
+	os.RemoveAll(downloadDir)
+	err := os.MkdirAll(downloadDir, 0755)
+	c.Assert(err, IsNil)
+
+	// put object1
+	testUploadFileName := "ossutil_test_uploadfile" + randStr(5)
+	data := "test"
+	object1 := "ossutil_test_object1" + randStr(5)
+	s.createFile(testUploadFileName, data, c)
+	s.putObject(bucketName, object1, testUploadFileName, c)
+
+	// download with snapshot
+	cpArgs := []string{CloudURLToString(bucketName, ""), downloadDir}
+	str := ""
+	cpDir := CheckpointDir
+	routines := strconv.Itoa(Routines)
+	recursive := true
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+		"checkpointDir":   &cpDir,
+		"routines":        &routines,
+		"recursive":       &recursive,
+		"snapshotPath":    &testSnapshotDir,
+	}
+
+	_, err = cm.RunCommand("cp", cpArgs, options)
+	c.Assert(err, IsNil)
+
+	//check download file object1
+	fileInfo, err := os.Stat(downloadDir + string(os.PathSeparator) + object1)
+	c.Assert(err, IsNil)
+	c.Assert(fileInfo.Size(), Equals, int64(len(data)))
+
+	//remove downloadfile and check
+	err = os.Remove(downloadDir + string(os.PathSeparator) + object1)
+	c.Assert(err, IsNil)
+	fileInfo, err = os.Stat(downloadDir + string(os.PathSeparator) + object1)
+	c.Assert(err, NotNil)
+
+	// put object2
+	object2 := "ossutil_test_object2" + randStr(5)
+	s.putObject(bucketName, object2, testUploadFileName, c)
+
+	// download with cp download snapshot
+	_, err = cm.RunCommand("cp", cpArgs, options)
+	c.Assert(err, IsNil)
+
+	//check download file object2
+	fileInfo, err = os.Stat(downloadDir + string(os.PathSeparator) + object2)
+	c.Assert(err, IsNil)
+	c.Assert(fileInfo.Size(), Equals, int64(len(data)))
+
+	// check download file object1 error
+	fileInfo, err = os.Stat(downloadDir + string(os.PathSeparator) + object1)
+	c.Assert(err, NotNil)
+
+	//remove snapshot file
+	err = os.RemoveAll(testSnapshotDir)
+	c.Assert(err, IsNil)
+
+	// download again
+	ok := true
+	options["update"] = &ok
+	_, err = cm.RunCommand("cp", cpArgs, options)
+	c.Assert(err, IsNil)
+
+	// check download file object1 success
+	fileInfo, err = os.Stat(downloadDir + string(os.PathSeparator) + object1)
+	c.Assert(fileInfo.Size(), Equals, int64(len(data)))
+
+	os.Remove(testUploadFileName)
+	err = os.RemoveAll(downloadDir)
+	err = os.RemoveAll(testSnapshotDir)
+	s.removeBucket(bucketName, true, c)
+}
