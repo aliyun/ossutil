@@ -1,8 +1,10 @@
 package lib
 
 import (
+	"bufio"
 	"fmt"
 	"os"
+	"runtime"
 	"strings"
 
 	configparser "github.com/alyu/configparser"
@@ -453,7 +455,18 @@ func (cc *ConfigCommand) configInteractive(configFile, language string) error {
 			}
 			fmt.Printf("请输入%s%s：", name, str)
 		}
-		if _, err := fmt.Scanln(&val); err == nil {
+
+		// fmt.Scanln have 256 length limit on windows platform,so use Reader
+		val = ""
+		valueReader := bufio.NewReader(os.Stdin)
+		val, _ = valueReader.ReadString('\n') // Need to pass '\n' as char (byte)
+		if runtime.GOOS == "windows" {
+			val = strings.TrimSuffix(val, "\r\n")
+		} else {
+			val = strings.TrimSuffix(val, "\n")
+		}
+
+		if len(val) > 0 {
 			section.Add(name, val)
 		} else if OptionMap[name].def != "" {
 			section.Add(name, OptionMap[name].def)
