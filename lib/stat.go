@@ -17,7 +17,7 @@ var specChineseStat = SpecText{
 	paramText: "cloud_url [options]",
 
 	syntaxText: ` 
-    ossutil stat oss://bucket[/object] [--encoding-type url] [-c file] 
+    ossutil stat oss://bucket[/object] [--encoding-type url] [--version-id versionId] [-c file] 
 `,
 
 	detailHelpText: ` 
@@ -32,7 +32,7 @@ var specChineseStat = SpecText{
         ossutil显示指定bucket的信息，包括创建时间，location，访问的外网域名，内网域名，拥
     有者，acl信息。
 
-    2) ossutil stat oss://bucket/object [--encoding-type url]
+    2) ossutil stat oss://bucket/object [--encoding-type url] [--version-id versionId]
         ossutil显示指定object的元信息，包括文件大小，最新更新时间，etag，文件类型，acl，文
     件的自定义meta等信息。
 `,
@@ -40,6 +40,7 @@ var specChineseStat = SpecText{
 	sampleText: ` 
     ossutil stat oss://bucket1
     ossutil stat oss://bucket1/object  
+    ossutil stat oss://bucket1/object --version-id versionId
     ossutil stat oss://bucket1/%e4%b8%ad%e6%96%87 --encoding-type url
 `,
 }
@@ -51,7 +52,7 @@ var specEnglishStat = SpecText{
 	paramText: "cloud_url [options]",
 
 	syntaxText: ` 
-    ossutil stat oss://bucket[/object] [--encoding-type url] [-c file] 
+    ossutil stat oss://bucket[/object] [--encoding-type url]  [--version-id versionId] [-c file] 
 `,
 
 	detailHelpText: ` 
@@ -66,14 +67,15 @@ Usage：
         ossutil display bucket meta info, include creation date, location, extranet endpoint, 
     intranet endpoint, Owner and acl info.
 
-    2) ossutil stat oss://bucket/object [--encoding-type url]
+    2) ossutil stat oss://bucket/object [--encoding-type url] [--version-id versionId]
         ossutil display object meta info, include file size, last modify time, etag, content-type, 
     user meta etc.
 `,
 
 	sampleText: ` 
     ossutil stat oss://bucket1
-    ossutil stat oss://bucket1/object  
+    ossutil stat oss://bucket1/object
+    ossutil stat oss://bucket1/object --version-id versionId  
     ossutil stat oss://bucket1/%e4%b8%ad%e6%96%87 --encoding-type url
 `,
 }
@@ -82,7 +84,6 @@ Usage：
 type StatCommand struct {
 	command   Command
 	versionId string
-	options   []oss.Option
 }
 
 var statCommand = StatCommand{
@@ -125,9 +126,6 @@ func (sc *StatCommand) Init(args []string, options OptionMapType) error {
 // RunCommand simulate inheritance, and polymorphism
 func (sc *StatCommand) RunCommand() error {
 	sc.versionId, _ = GetString(OptionVersionId, sc.command.options)
-	if sc.versionId != "" {
-		sc.options = append(sc.options, oss.VersionId(sc.versionId))
-	}
 	encodingType, _ := GetString(OptionEncodingType, sc.command.options)
 	cloudURL, err := CloudURLFromString(sc.command.args[0], encodingType)
 	if err != nil {
@@ -195,7 +193,12 @@ func (sc *StatCommand) objectStat(bucket *oss.Bucket, cloudURL CloudURL) error {
 	}
 
 	// normal info
-	props, err := sc.command.ossGetObjectStatRetry(bucket, cloudURL.object, sc.options...)
+	statOptions := []oss.Option{}
+	if len(sc.versionId) > 0 {
+		statOptions = append(statOptions, oss.VersionId(sc.versionId))
+	}
+
+	props, err := sc.command.ossGetObjectStatRetry(bucket, cloudURL.object, statOptions...)
 	if err != nil {
 		return err
 	}
@@ -236,8 +239,13 @@ func (sc *StatCommand) objectStat(bucket *oss.Bucket, cloudURL CloudURL) error {
 
 func (sc *StatCommand) ossGetObjectACLRetry(bucket *oss.Bucket, object string) (oss.GetObjectACLResult, error) {
 	retryTimes, _ := GetInt(OptionRetryTimes, sc.command.options)
+	aclOptions := []oss.Option{}
+	if len(sc.versionId) > 0 {
+		aclOptions = append(aclOptions, oss.VersionId(sc.versionId))
+	}
+
 	for i := 1; ; i++ {
-		goar, err := bucket.GetObjectACL(object, sc.options...)
+		goar, err := bucket.GetObjectACL(object, aclOptions...)
 		if err == nil {
 			return goar, err
 		}

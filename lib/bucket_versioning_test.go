@@ -7,14 +7,13 @@ import (
 	. "gopkg.in/check.v1"
 )
 
-func (s *OssutilCommandSuite) TestBucketTaggingPutSuccess(c *C) {
-	// put tagging
+func (s *OssutilCommandSuite) TestBucketVersioningPutSuccess(c *C) {
 	bucketName := bucketNamePrefix + randLowStr(12)
 	s.putBucket(bucketName, c)
 
-	// tagging command test
+	// versioning command test
 	var str string
-	strMethod := "put"
+	strMethod := "get"
 	options := OptionMapType{
 		"endpoint":        &str,
 		"accessKeyID":     &str,
@@ -24,73 +23,45 @@ func (s *OssutilCommandSuite) TestBucketTaggingPutSuccess(c *C) {
 		"method":          &strMethod,
 	}
 
-	tagInfo := "key1#value1"
-	tagArgs := []string{CloudURLToString(bucketName, ""), tagInfo}
-	_, err := cm.RunCommand("bucket-tagging", tagArgs, options)
+	versioningArgs := []string{CloudURLToString(bucketName, "")}
+	_, err := cm.RunCommand("bucket-versioning", versioningArgs, options)
+	c.Assert(err, IsNil)
+	c.Assert(bucketVersioningCommand.versioningResult.Status, Equals, "null")
+
+	// set bucket versioning enabled
+	strMethod = "put"
+	versioningArgs = []string{CloudURLToString(bucketName, ""), "enabled"}
+	_, err = cm.RunCommand("bucket-versioning", versioningArgs, options)
 	c.Assert(err, IsNil)
 
-	// check,get tag
+	// check
 	strMethod = "get"
-	tagArgs = []string{CloudURLToString(bucketName, "")}
-	_, err = cm.RunCommand("bucket-tagging", tagArgs, options)
+	versioningArgs = []string{CloudURLToString(bucketName, "")}
+	_, err = cm.RunCommand("bucket-versioning", versioningArgs, options)
 	c.Assert(err, IsNil)
-	c.Assert(len(bucketTagCommand.tagResult.Tags), Equals, 1)
-	c.Assert(bucketTagCommand.tagResult.Tags[0].Key, Equals, "key1")
-	c.Assert(bucketTagCommand.tagResult.Tags[0].Value, Equals, "value1")
+	c.Assert(bucketVersioningCommand.versioningResult.Status, Equals, "Enabled")
+
+	// set bucket versioning suspend
+	strMethod = "put"
+	versioningArgs = []string{CloudURLToString(bucketName, ""), "suspended"}
+	_, err = cm.RunCommand("bucket-versioning", versioningArgs, options)
+	c.Assert(err, IsNil)
+
+	// check
+	strMethod = "get"
+	versioningArgs = []string{CloudURLToString(bucketName, "")}
+	_, err = cm.RunCommand("bucket-versioning", versioningArgs, options)
+	c.Assert(err, IsNil)
+	c.Assert(bucketVersioningCommand.versioningResult.Status, Equals, "Suspended")
 
 	s.removeBucket(bucketName, true, c)
 }
 
-func (s *OssutilCommandSuite) TestBucketTaggingDeleteSuccess(c *C) {
-	// put tagging
+func (s *OssutilCommandSuite) TestBucketVersioningError(c *C) {
 	bucketName := bucketNamePrefix + randLowStr(12)
 	s.putBucket(bucketName, c)
 
-	// tagging command test
-	var str string
-	strMethod := "put"
-	options := OptionMapType{
-		"endpoint":        &str,
-		"accessKeyID":     &str,
-		"accessKeySecret": &str,
-		"stsToken":        &str,
-		"configFile":      &configFile,
-		"method":          &strMethod,
-	}
-
-	tagInfo := "key1#value1"
-	tagArgs := []string{CloudURLToString(bucketName, ""), tagInfo}
-	_, err := cm.RunCommand("bucket-tagging", tagArgs, options)
-	c.Assert(err, IsNil)
-
-	// check,get tag
-	strMethod = "get"
-	tagArgs = []string{CloudURLToString(bucketName, "")}
-	_, err = cm.RunCommand("bucket-tagging", tagArgs, options)
-	c.Assert(err, IsNil)
-	c.Assert(len(bucketTagCommand.tagResult.Tags), Equals, 1)
-	c.Assert(bucketTagCommand.tagResult.Tags[0].Key, Equals, "key1")
-	c.Assert(bucketTagCommand.tagResult.Tags[0].Value, Equals, "value1")
-
-	// delete bucket tagging
-	strMethod = "delete"
-	_, err = cm.RunCommand("bucket-tagging", tagArgs, options)
-	c.Assert(err, IsNil)
-
-	// get bucket tagging again:error
-	strMethod = "get"
-	_, err = cm.RunCommand("bucket-tagging", tagArgs, options)
-	c.Assert(err, IsNil)
-	c.Assert(len(bucketTagCommand.tagResult.Tags), Equals, 0)
-
-	s.removeBucket(bucketName, true, c)
-}
-
-func (s *OssutilCommandSuite) TestBucketTaggingError(c *C) {
-	bucketName := bucketNamePrefix + randLowStr(12)
-	s.putBucket(bucketName, c)
-
-	// bucket-tagging command test
+	// bucket-versioning command test
 	var str string
 	options := OptionMapType{
 		"endpoint":        &str,
@@ -101,38 +72,35 @@ func (s *OssutilCommandSuite) TestBucketTaggingError(c *C) {
 	}
 
 	// method is empty
-	tagInfo := "key1#value1"
-	tagArgs := []string{CloudURLToString(bucketName, ""), tagInfo}
-	_, err := cm.RunCommand("bucket-tagging", tagArgs, options)
+	versioningArgs := []string{CloudURLToString(bucketName, "")}
+	_, err := cm.RunCommand("bucket-versioning", versioningArgs, options)
 	c.Assert(err, NotNil)
 
 	// method is error
 	strMethod := "puttt"
 	options["method"] = &strMethod
-	_, err = cm.RunCommand("bucket-tagging", tagArgs, options)
+	_, err = cm.RunCommand("bucket-versioning", versioningArgs, options)
 	c.Assert(err, NotNil)
 
 	// args is empty
 	strMethod = "put"
-	tagArgs = []string{CloudURLToString(bucketName, "")}
-	_, err = cm.RunCommand("bucket-tagging", tagArgs, options)
+	versioningArgs = []string{CloudURLToString(bucketName, "")}
+	_, err = cm.RunCommand("bucket-versioning", versioningArgs, options)
 	c.Assert(err, NotNil)
 
 	//value is error
-	tagInfo = "key1:value1"
-	tagArgs = []string{CloudURLToString(bucketName, ""), tagInfo}
-	_, err = cm.RunCommand("bucket-tagging", tagArgs, options)
+	versioningArgs = []string{CloudURLToString(bucketName, ""), "disabled"}
+	_, err = cm.RunCommand("bucket-versioning", versioningArgs, options)
 	c.Assert(err, NotNil)
 
 	s.removeBucket(bucketName, true, c)
-
 }
 
-func (s *OssutilCommandSuite) TestBucketTaggingPutEmptyEndpoint(c *C) {
+func (s *OssutilCommandSuite) TestBucketVersioningPutEmptyEndpoint(c *C) {
 	bucketName := bucketNamePrefix + randLowStr(12)
 	s.putBucket(bucketName, c)
 
-	// bucket-tagging command test
+	// bucket-versioing command test
 	var str string
 	strMethod := "put"
 	options := OptionMapType{
@@ -153,9 +121,8 @@ func (s *OssutilCommandSuite) TestBucketTaggingPutEmptyEndpoint(c *C) {
 	fd.WriteString(configStr)
 	fd.Close()
 
-	tagInfo := "key1#value1"
-	tagArgs := []string{CloudURLToString(bucketName, ""), tagInfo}
-	_, err = cm.RunCommand("bucket-tagging", tagArgs, options)
+	versioningArgs := []string{CloudURLToString(bucketName, ""), "enabled"}
+	_, err = cm.RunCommand("bucket-versioning", versioningArgs, options)
 	c.Assert(err, NotNil)
 
 	err = ioutil.WriteFile(configFile, []byte(oldConfigStr), 0664)
@@ -164,7 +131,7 @@ func (s *OssutilCommandSuite) TestBucketTaggingPutEmptyEndpoint(c *C) {
 	s.removeBucket(bucketName, true, c)
 }
 
-func (s *OssutilCommandSuite) TestBucketTaggingGetEmptyEndpoint(c *C) {
+func (s *OssutilCommandSuite) TestBucketVersioningGetEmptyEndpoint(c *C) {
 	bucketName := bucketNamePrefix + randLowStr(12)
 	s.putBucket(bucketName, c)
 
@@ -188,8 +155,8 @@ func (s *OssutilCommandSuite) TestBucketTaggingGetEmptyEndpoint(c *C) {
 	fd.WriteString(configStr)
 	fd.Close()
 
-	tagArgs := []string{CloudURLToString(bucketName, "")}
-	_, err = cm.RunCommand("bucket-tagging", tagArgs, options)
+	versioingArgs := []string{CloudURLToString(bucketName, "")}
+	_, err = cm.RunCommand("bucket-versioing", versioingArgs, options)
 	c.Assert(err, NotNil)
 
 	err = ioutil.WriteFile(configFile, []byte(oldConfigStr), 0664)
@@ -198,10 +165,10 @@ func (s *OssutilCommandSuite) TestBucketTaggingGetEmptyEndpoint(c *C) {
 	s.removeBucket(bucketName, true, c)
 }
 
-func (s *OssutilCommandSuite) TestBucketTaggingHelpInfo(c *C) {
+func (s *OssutilCommandSuite) TestBucketVersioningHelpInfo(c *C) {
 	options := OptionMapType{}
 
-	mkArgs := []string{"bucket-tagging"}
+	mkArgs := []string{"bucket-versioning"}
 	_, err := cm.RunCommand("help", mkArgs, options)
 	c.Assert(err, IsNil)
 

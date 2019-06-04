@@ -31,11 +31,12 @@ var _ = Suite(&OssutilCommandSuite{})
 
 var (
 	// Update before running test
-	endpoint        = ""
-	accessKeyID     = ""
-	accessKeySecret = ""
-	stsToken        = ""
-	payerBucket     = ""
+	endpoint            = ""
+	accessKeyID         = ""
+	accessKeySecret     = ""
+	stsToken            = ""
+	payerBucket         = ""
+	payerBucketEndPoint = ""
 )
 
 var (
@@ -58,7 +59,8 @@ var (
 )
 
 var (
-	bucketNamePrefix   = "ossutil-test-" + randLowStr(6)
+	commonNamePrefix   = "ossutil-test-"
+	bucketNamePrefix   = commonNamePrefix + randLowStr(6)
 	bucketNameExist    = "special-" + bucketNamePrefix + "existbucket"
 	bucketNameDest     = "special-" + bucketNamePrefix + "destbucket"
 	bucketNameNotExist = "nodelete-ossutil-test-notexist"
@@ -109,10 +111,19 @@ func SetUpCredential() {
 	if strings.HasPrefix(vUpdateEndpoint, "http://") {
 		vUpdateEndpoint = vUpdateEndpoint[7:]
 	}
+	if payerBucketEndPoint == "" {
+		payerBucketEndPoint = os.Getenv("OSS_TEST_PAYER_ENDPOINT")
+		if strings.HasPrefix(payerBucketEndPoint, "https://") {
+			payerBucketEndPoint = payerBucketEndPoint[8:]
+		}
+		if strings.HasPrefix(payerBucketEndPoint, "http://") {
+			payerBucketEndPoint = payerBucketEndPoint[7:]
+		}
+	}
 }
 
 func (s *OssutilCommandSuite) SetUpBucketEnv(c *C) {
-	s.removeBuckets(bucketNamePrefix, c)
+	s.removeBuckets(commonNamePrefix, c)
 	s.putBucket(bucketNameExist, c)
 	s.putBucket(bucketNameDest, c)
 }
@@ -120,7 +131,7 @@ func (s *OssutilCommandSuite) SetUpBucketEnv(c *C) {
 // Run before each test or benchmark starts running
 func (s *OssutilCommandSuite) TearDownSuite(c *C) {
 	fmt.Printf("tear down OssutilCommandSuite\n")
-	s.removeBuckets(bucketNamePrefix, c)
+	s.removeBuckets(commonNamePrefix, c)
 	s.removeBucket(bucketNameExist, true, c)
 	s.removeBucket(bucketNameDest, true, c)
 	testLogger.Println("test command completed")
@@ -228,7 +239,7 @@ func (s *OssutilCommandSuite) readFile(fileName string, c *C) string {
 func (s *OssutilCommandSuite) removeBuckets(prefix string, c *C) {
 	buckets := s.listBuckets(false, c)
 	for _, bucket := range buckets {
-		if strings.HasPrefix(bucket, prefix) {
+		if strings.Contains(bucket, prefix) {
 			s.removeBucket(bucket, true, c)
 		}
 	}
@@ -271,8 +282,8 @@ func (s *OssutilCommandSuite) rawList(args []string, cmdline string, optionPairs
 		"limitedNum":      &limitedNum,
 	}
 
-	for _, optionPair := range optionPairs {
-		options[optionPair.Key] = &optionPair.Value
+	for k, _ := range optionPairs {
+		options[optionPairs[k].Key] = &optionPairs[k].Value
 	}
 	showElapse, err := cm.RunCommand(command, args, options)
 	return showElapse, err
@@ -351,7 +362,7 @@ func (s *OssutilCommandSuite) listBuckets(shortFormat bool, c *C) []string {
 	out := os.Stdout
 	testResultFile, _ = os.OpenFile(resultPath, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
 	os.Stdout = testResultFile
-	showElapse, err := s.rawList(args, "ls -s")
+	showElapse, err := s.rawList(args, "ls -a")
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
 	os.Stdout = out
@@ -366,9 +377,10 @@ func (s *OssutilCommandSuite) getBucketResults(c *C) []string {
 	result := s.getResult(c)
 	c.Assert(len(result) >= 1, Equals, true)
 	buckets := []string{}
+	shortEndpoint := strings.TrimRight(endpoint, ".aliyuncs.com")
 	for _, str := range result {
 		pos := strings.Index(str, SchemePrefix)
-		if pos != -1 {
+		if pos != -1 && strings.Contains(str, shortEndpoint) {
 			buckets = append(buckets, str[pos+len(SchemePrefix):])
 		}
 	}
@@ -409,6 +421,7 @@ func (s *OssutilCommandSuite) removeBucket(bucket string, clearObjects bool, c *
 	if !clearObjects {
 		showElapse, err = s.rawRemove(args, false, true, true)
 	} else {
+		s.removeBucketObjectVersions(bucket, c)
 		showElapse, err = s.removeWrapper("rm -arfb", bucket, "", c)
 	}
 	if err != nil {
@@ -434,6 +447,27 @@ func (s *OssutilCommandSuite) rawRemove(args []string, recursive, force, bucket 
 		"bucket":          &bucket,
 	}
 	showElapse, err := cm.RunCommand(command, args, options)
+	return showElapse, err
+}
+
+func (s *OssutilCommandSuite) removeBucketObjectVersions(bucket string, c *C) (bool, error) {
+	allVersions := true
+	recursive := true
+	force := true
+
+	args := []string{CloudURLToString(bucket, "")}
+	str := ""
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"stsToken":        &str,
+		"configFile":      &configFile,
+		"recursive":       &recursive,
+		"force":           &force,
+		"allVersions":     &allVersions,
+	}
+	showElapse, err := cm.RunCommand("rm", args, options)
 	return showElapse, err
 }
 
@@ -614,6 +648,40 @@ func (s *OssutilCommandSuite) putBucket(bucket string, c *C) {
 	c.Assert(showElapse, Equals, true)
 }
 
+func (s *OssutilCommandSuite) putBucketWithEndPoint(bucket string, strEndPoint string, c *C) {
+	command := "mb"
+	args := []string{CloudURLToString(bucket, "")}
+	str := ""
+	options := OptionMapType{
+		"endpoint":        &strEndPoint,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"stsToken":        &str,
+		"configFile":      &configFile,
+	}
+	showElapse, err := cm.RunCommand(command, args, options)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+}
+
+func (s *OssutilCommandSuite) putBucketVersioning(bucket string, status string, c *C) {
+	command := "bucket-versioning"
+	args := []string{CloudURLToString(bucket, ""), status}
+	str := ""
+	strMethod := "put"
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"stsToken":        &str,
+		"configFile":      &configFile,
+		"method":          &strMethod,
+	}
+	showElapse, err := cm.RunCommand(command, args, options)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+}
+
 func (s *OssutilCommandSuite) putBucketWithStorageClass(bucket string, storageClass string, c *C) error {
 	args := []string{CloudURLToString(bucket, "")}
 	err := s.initPutBucketWithStorageClass(args, storageClass)
@@ -781,7 +849,7 @@ func (s *OssutilCommandSuite) rawCPWithPayer(args []string, recursive, force, up
 	partSize := strconv.FormatInt(DefaultPartSize, 10)
 	cpDir := CheckpointDir
 	options := OptionMapType{
-		"endpoint":         &str,
+		"endpoint":         &payerBucketEndPoint,
 		"accessKeyID":      &str,
 		"accessKeySecret":  &str,
 		"stsToken":         &str,

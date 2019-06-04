@@ -2,9 +2,9 @@ package lib
 
 import (
 	"fmt"
+	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"io"
 	"os"
-	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
 
 var specChineseCat = SpecText{
@@ -13,7 +13,7 @@ var specChineseCat = SpecText{
 	paramText: "object [options]",
 
 	syntaxText: ` 
-	ossutil cat oss://bucket/object 
+	ossutil cat oss://bucket/object [--version-id versionId]
 `,
 	detailHelpText: ` 
     cat命令可以将oss的object内容输出到标准输出,object内容最好是文本格式
@@ -21,12 +21,13 @@ var specChineseCat = SpecText{
 用法:
     该命令仅有一种用法:
 	
-    1) ossutil cat oss://bucket/object
+    1) ossutil cat oss://bucket/object [--version-id versionId]
        将object内容输出到标准输出
 `,
 	sampleText: ` 
     1) 将object内容输出到标准输出
        ossutil cat oss://bucket/object
+       ossutil cat oss://bucket/object --version-id versionId
 `,
 }
 
@@ -36,7 +37,7 @@ var specEnglishCat = SpecText{
 	paramText: "object [options]",
 
 	syntaxText: ` 
-	ossutil cat oss://bucket/object 
+	ossutil cat oss://bucket/object [--version-id versionId]
 `,
 	detailHelpText: ` 
 	The cat command can output the object content of oss to standard output
@@ -45,12 +46,13 @@ var specEnglishCat = SpecText{
 Usage:
     There is only one usage for this command:
 	
-    1) ossutil cat oss://bucket/object
+    1) ossutil cat oss://bucket/object [--version-id versionId]
        The command output object content to standard output
 `,
 	sampleText: ` 
     1) output object content to standard output
        ossutil cat oss://bucket/object
+       ossutil cat oss://bucket/object --version-id versionId
 `,
 }
 
@@ -128,10 +130,10 @@ func (catc *CatCommand) RunCommand() error {
 	}
 
 	var options []oss.Option
-	versionid, _ := GetString(OptionVersionId, catc.command.options)
+	versionId, _ := GetString(OptionVersionId, catc.command.options)
 
-	if len(versionid) > 0 {
-		options = append(options, oss.VersionId(versionid))
+	if len(versionId) > 0 {
+		options = append(options, oss.VersionId(versionId))
 	} else {
 		isExist, err := bucket.IsObjectExist(catc.catOption.objectName)
 		if err != nil {
