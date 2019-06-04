@@ -190,6 +190,10 @@ func (bvc *BucketVersioningCommand) GetBucketVersioning() error {
 		return err
 	}
 
+	if bvc.versioningResult.Status == "" {
+		bvc.versioningResult.Status = "null"
+	}
+
 	fmt.Printf("\nbucket versioning status:%s\n", bvc.versioningResult.Status)
 
 	return nil

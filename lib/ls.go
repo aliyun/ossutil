@@ -40,7 +40,7 @@ var specChineseList = SpecText{
     并列举该身份凭证下的所有buckets，并显示每个bucket的最新更新时间，位置，存储方式等信息。
     如果指定了--short-format选项则只输出bucket名称。该用法不支持--directory选项。
 
-    2) ossutil ls oss://bucket[/prefix] [-s] [-d] [-m] [-a] [--limited-num num] [--marker marker] [--upload-id-marker umarker]
+    2) ossutil ls oss://bucket[/prefix] [-s] [-d] [-m] [-a] [--limited-num num] [--marker marker] [--upload-id-marker umarker]  [--version-id-marker id_marker] [--all-versions]
         如果未指定--multipart和--all-type选项，则ossutil列举指定bucket下的objects（如果指定
     了前缀，则列举拥有该前缀的objects）。并同时展示object大小，最新更新时间和etag，但是如果
     指定了--short-format选项则只输出object名称。如果指定了--directory选项，则返回指定bucket
@@ -156,6 +156,7 @@ var specChineseList = SpecText{
         2017-03-17 17:34:40 +0800 CST      8345742      Standard   BBCC8C0954B869B4A6B34D9404C5BCFD      oss://bucket1/中文
         Object Number is: 1
         0.066567(s) elapsed
+    14) ossutil ls oss://bucket --all-versions
 `,
 }
 
@@ -196,7 +197,7 @@ Usage:
     will ignore last modified time and location. The usage do not support --directory 
     option.
 
-    2) ossutil ls oss://bucket[/prefix] [-s] [-d] [-m] [-a] [--limited-num num] [--marker marker] [--upload-id-marker umarker]
+    2) ossutil ls oss://bucket[/prefix] [-s] [-d] [-m] [-a] [--limited-num num] [--marker marker] [--upload-id-marker umarker] [--version-id-marker id_marker] [--all-versions]
         If you list without --multipart and --all-type option, ossutil will list objects 
     in the specified bucket(with the prefix if you specified), with object size, last 
     modified time and etag in addition, --short-format option ignores all the additional 
@@ -314,6 +315,7 @@ Usage:
         2017-03-17 17:34:40 +0800 CST      8345742      Standard   BBCC8C0954B869B4A6B34D9404C5BCFD      oss://bucket1/中文
         Object Number is: 1
         0.066567(s) elapsed
+    14) ossutil ls oss://bucket[/prefix] --all-versions
 `,
 }
 
@@ -601,8 +603,8 @@ func (lc *ListCommand) listObjectVersions(bucket *oss.Bucket, cloudURL CloudURL,
 			return num, err
 		}
 		pre = oss.Prefix(lor.Prefix)
-		marker = oss.Marker(lor.NextKeyMarker)
-		versionIdMarker = oss.Marker(lor.NextVersionIdMarker)
+		marker = oss.KeyMarker(lor.NextKeyMarker)
+		versionIdMarker = oss.VersionIdMarker(lor.NextVersionIdMarker)
 		num += lc.displayObjectVersionsResult(lor, cloudURL.bucket, shortFormat, directory, i, limitedNum)
 		if !lor.IsTruncated {
 			break

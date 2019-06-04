@@ -61,7 +61,7 @@ var specChineseSetACL = SpecText{
 	paramText: "cloud_url [acl] [options]",
 
 	syntaxText: ` 
-    ossutil set-acl oss://bucket[/prefix] [acl] [-r] [-b] [-f] [-c file] 
+    ossutil set-acl oss://bucket[/prefix] [acl] [-r] [-b] [-f] [-c file] [--version-id versionId]
 `,
 
 	detailHelpText: ` 
@@ -96,7 +96,7 @@ ACL：
     确保输入的cloud_url精确匹配想要设置acl的bucket，无论--force选项是否指定，都不会进行询问提示。
     如果用户在命令行中缺失acl信息，会进入交互模式，询问用户的acl信息。 
 
-    2) ossutil set-acl oss://bucket/object [acl] [-c file]
+    2) ossutil set-acl oss://bucket/object [acl] [-c file] [--version-id versionId]
         该用法设置指定单个object的acl，当指定object不存在时，ossutil会提示错误，此时请确保指定的
     cloud_url精确匹配需要设置acl的object，并且不要指定--recursive选项（否则ossutil会进行前缀匹配，
     设置多个objects的acl），无论--force选项是否指定，都不会进行询问提示。如果用户在命令行中缺失
@@ -123,6 +123,8 @@ ACL：
        ossutil set-acl oss://bucket1/obj default -r --exclude "*.jpg"
 
     (4)ossutil set-acl oss://bucket1/%e4%b8%ad%e6%96%87 default --encoding-type url
+
+    (5)ossutil set-acl oss://bucket1/obj1 private --version-id versionId
 `,
 }
 
@@ -133,7 +135,7 @@ var specEnglishSetACL = SpecText{
 	paramText: "cloud_url [acl] [options]",
 
 	syntaxText: ` 
-    ossutil set-acl oss://bucket[/prefix] [acl] [-r] [-b] [-f] [-c file] 
+    ossutil set-acl oss://bucket[/prefix] [acl] [-r] [-b] [-f] [-c file] [--version-id versionId]
 `,
 
 	detailHelpText: ` 
@@ -172,7 +174,7 @@ Usage：
     or not, ossutil will not show prompt question. If acl information is missed, ossutil 
     will enter interactive mode and ask you for it. 
 
-    2) ossutil set-acl oss://bucket/object [acl] [-c file]
+    2) ossutil set-acl oss://bucket/object [acl] [-c file] [--version-id versionId]
         The usage set acl on single object, if object not exist, error occurs. In the 
     usage, please make sure cloud_url exactly specified the object you want to set acl 
     on, and --recursive option is not specified(or ossutil will search for prefix-matching 
@@ -204,6 +206,8 @@ Usage：
        ossutil set-acl oss://bucket1/obj default -r --exclude "*.jpg"
 
     (4)ossutil set-acl oss://bucket1/%e4%b8%ad%e6%96%87 default --encoding-type url
+
+    (5)ossutil set-acl oss://bucket1/obj1 private --version-id versionId
 `,
 }
 
@@ -268,7 +272,7 @@ func (sc *SetACLCommand) RunCommand() error {
 	force, _ := GetBool(OptionForce, sc.command.options)
 	routines, _ := GetInt(OptionRoutines, sc.command.options)
 	encodingType, _ := GetString(OptionEncodingType, sc.command.options)
-	versionid, _ := GetString(OptionVersionId, sc.command.options)
+	versionId, _ := GetString(OptionVersionId, sc.command.options)
 
 	var res bool
 	res, sc.filters = getFilter(os.Args)
@@ -280,7 +284,7 @@ func (sc *SetACLCommand) RunCommand() error {
 		return fmt.Errorf("--include or --exclude only work with --recursive")
 	}
 
-	if recursive && len(versionid) > 0 {
+	if recursive && len(versionId) > 0 {
 		return fmt.Errorf("--version-id only work on single object")
 	}
 
@@ -302,7 +306,7 @@ func (sc *SetACLCommand) RunCommand() error {
 		return sc.setBucketACL(&bucket.Client, cloudURL, recursive)
 	}
 	if !recursive {
-		return sc.setObjectACL(bucket, cloudURL, versionid)
+		return sc.setObjectACL(bucket, cloudURL, versionId)
 	}
 	return sc.batchSetObjectACL(bucket, cloudURL, force, routines)
 }
@@ -377,7 +381,7 @@ func (sc *SetACLCommand) ossSetBucketACLRetry(client *oss.Client, bucket string,
 	}
 }
 
-func (sc *SetACLCommand) setObjectACL(bucket *oss.Bucket, cloudURL CloudURL, versionid string) error {
+func (sc *SetACLCommand) setObjectACL(bucket *oss.Bucket, cloudURL CloudURL, versionId string) error {
 	if cloudURL.object == "" {
 		return fmt.Errorf("set object acl invalid url: %s, object empty, if you mean set bucket acl, you should use --bucket option", sc.command.args[0])
 	}
@@ -387,15 +391,15 @@ func (sc *SetACLCommand) setObjectACL(bucket *oss.Bucket, cloudURL CloudURL, ver
 		return err
 	}
 
-	return sc.ossSetObjectACLRetry(bucket, cloudURL.object, acl, versionid)
+	return sc.ossSetObjectACLRetry(bucket, cloudURL.object, acl, versionId)
 }
 
-func (sc *SetACLCommand) ossSetObjectACLRetry(bucket *oss.Bucket, object string, acl oss.ACLType, versionid string) error {
+func (sc *SetACLCommand) ossSetObjectACLRetry(bucket *oss.Bucket, object string, acl oss.ACLType, versionId string) error {
 	retryTimes, _ := GetInt(OptionRetryTimes, sc.command.options)
 	for i := 1; ; i++ {
 		var options []oss.Option
-		if len(versionid) > 0 {
-			options = append(options, oss.VersionId(versionid))
+		if len(versionId) > 0 {
+			options = append(options, oss.VersionId(versionId))
 		}
 		err := bucket.SetObjectACL(object, acl, options...)
 		if err == nil {

@@ -531,7 +531,7 @@ func (s *OssutilCommandSuite) TestCopyWithPayer(c *C) {
 	//copy from payer bucket
 	srcBucket := payerBucket
 	destBucket := bucketNamePrefix + randLowStr(5)
-	s.putBucket(destBucket, c)
+	s.putBucketWithEndPoint(destBucket, payerBucketEndPoint, c)
 	s.createFile(uploadFileName, content, c)
 
 	//at first, put object to bucket for test
@@ -3545,5 +3545,145 @@ func (s *OssutilCommandSuite) TestCPDownloadSnapshot(c *C) {
 	os.Remove(testUploadFileName)
 	err = os.RemoveAll(downloadDir)
 	err = os.RemoveAll(testSnapshotDir)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestCPVersioingParameterError(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(12)
+	cpTestDir := "ossutil_test_" + randStr(5)
+
+	// error:upload with version-id
+	cpArgs := []string{cpTestDir, CloudURLToString(bucketName, "")}
+	str := ""
+	cpDir := CheckpointDir
+	routines := strconv.Itoa(Routines)
+	versionId := "123"
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+		"checkpointDir":   &cpDir,
+		"routines":        &routines,
+		"versionId":       &versionId,
+	}
+	_, err := cm.RunCommand("cp", cpArgs, options)
+	c.Assert(err, NotNil)
+
+	//error:download with -r
+	recursive := true
+	options["recursive"] = &recursive
+	cpArgs = []string{CloudURLToString(bucketName, ""), cpTestDir}
+	c.Assert(err, NotNil)
+}
+
+// down load with versionId
+func (s *OssutilCommandSuite) TestCPVersioingDownloadSuccess(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(12)
+	s.putBucket(bucketName, c)
+	s.putBucketVersioning(bucketName, string(oss.VersionEnabled), c)
+
+	// put object
+	objectName := "ossutil_test_object" + randStr(5)
+	testFileName := "ossutil_test_file" + randStr(5)
+	data := randStr(100)
+	s.createFile(testFileName, data, c)
+	s.putObject(bucketName, objectName, testFileName, c)
+
+	// get versionID
+	objectStat := s.getStat(bucketName, objectName, c)
+	versionId := objectStat["X-Oss-Version-Id"]
+	c.Assert(len(versionId) > 0, Equals, true)
+
+	// overwrite object
+	s.createFile(testFileName, randStr(200), c)
+	s.putObject(bucketName, objectName, testFileName, c)
+
+	downFileName := "ossutil_test_" + randStr(5)
+
+	//download with version-id
+	cpArgs := []string{CloudURLToString(bucketName, objectName), downFileName}
+	str := ""
+	cpDir := CheckpointDir
+	routines := strconv.Itoa(Routines)
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+		"checkpointDir":   &cpDir,
+		"routines":        &routines,
+		"versionId":       &versionId,
+	}
+	_, err := cm.RunCommand("cp", cpArgs, options)
+	c.Assert(err, IsNil)
+
+	// check download file
+	fileBody, err := ioutil.ReadFile(downFileName)
+	c.Assert(err, IsNil)
+	c.Assert(data, Equals, string(fileBody))
+
+	os.Remove(testFileName)
+	os.RemoveAll(downFileName)
+	s.removeBucket(bucketName, true, c)
+}
+
+// down load with versionId
+func (s *OssutilCommandSuite) TestCPVersioingCopySuccess(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(12)
+	s.putBucket(bucketName, c)
+	s.putBucketVersioning(bucketName, string(oss.VersionEnabled), c)
+
+	// put object
+	objectName := "ossutil_test_object" + randStr(5)
+	testFileName := "ossutil_test_file" + randStr(5)
+	data := randStr(100)
+	s.createFile(testFileName, data, c)
+	s.putObject(bucketName, objectName, testFileName, c)
+
+	// get versionID
+	objectStat := s.getStat(bucketName, objectName, c)
+	versionId := objectStat["X-Oss-Version-Id"]
+	c.Assert(len(versionId) > 0, Equals, true)
+
+	// overwrite object
+	s.createFile(testFileName, randStr(200), c)
+	s.putObject(bucketName, objectName, testFileName, c)
+
+	// copy object
+	objectTarget := objectName + "-target"
+
+	//copy object
+	cpArgs := []string{CloudURLToString(bucketName, objectName), CloudURLToString(bucketName, objectTarget)}
+	str := ""
+	cpDir := CheckpointDir
+	routines := strconv.Itoa(Routines)
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+		"checkpointDir":   &cpDir,
+		"routines":        &routines,
+		"versionId":       &versionId,
+	}
+	_, err := cm.RunCommand("cp", cpArgs, options)
+	c.Assert(err, IsNil)
+
+	// download target object
+	// delete versionId
+	delete(options, "versionId")
+	downFileName := "ossutil_test_" + randStr(5)
+	cpArgs = []string{CloudURLToString(bucketName, objectTarget), downFileName}
+	_, err = cm.RunCommand("cp", cpArgs, options)
+	c.Assert(err, IsNil)
+
+	// check download file
+	fileBody, err := ioutil.ReadFile(downFileName)
+	c.Assert(err, IsNil)
+	c.Assert(data, Equals, string(fileBody))
+
+	os.Remove(testFileName)
+	os.RemoveAll(downFileName)
 	s.removeBucket(bucketName, true, c)
 }
