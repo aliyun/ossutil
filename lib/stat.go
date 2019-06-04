@@ -80,7 +80,9 @@ Usage：
 
 // StatCommand is the command get bucket's or objects' meta information
 type StatCommand struct {
-	command Command
+	command   Command
+	versionId string
+	options   []oss.Option
 }
 
 var statCommand = StatCommand{
@@ -101,6 +103,7 @@ var statCommand = StatCommand{
 			OptionSTSToken,
 			OptionRetryTimes,
 			OptionLogLevel,
+			OptionVersionId,
 		},
 	},
 }
@@ -121,6 +124,10 @@ func (sc *StatCommand) Init(args []string, options OptionMapType) error {
 
 // RunCommand simulate inheritance, and polymorphism
 func (sc *StatCommand) RunCommand() error {
+	sc.versionId, _ = GetString(OptionVersionId, sc.command.options)
+	if sc.versionId != "" {
+		sc.options = append(sc.options, oss.VersionId(sc.versionId))
+	}
 	encodingType, _ := GetString(OptionEncodingType, sc.command.options)
 	cloudURL, err := CloudURLFromString(sc.command.args[0], encodingType)
 	if err != nil {
@@ -188,7 +195,7 @@ func (sc *StatCommand) objectStat(bucket *oss.Bucket, cloudURL CloudURL) error {
 	}
 
 	// normal info
-	props, err := sc.command.ossGetObjectStatRetry(bucket, cloudURL.object)
+	props, err := sc.command.ossGetObjectStatRetry(bucket, cloudURL.object, sc.options...)
 	if err != nil {
 		return err
 	}
@@ -230,7 +237,7 @@ func (sc *StatCommand) objectStat(bucket *oss.Bucket, cloudURL CloudURL) error {
 func (sc *StatCommand) ossGetObjectACLRetry(bucket *oss.Bucket, object string) (oss.GetObjectACLResult, error) {
 	retryTimes, _ := GetInt(OptionRetryTimes, sc.command.options)
 	for i := 1; ; i++ {
-		goar, err := bucket.GetObjectACL(object)
+		goar, err := bucket.GetObjectACL(object, sc.options...)
 		if err == nil {
 			return goar, err
 		}

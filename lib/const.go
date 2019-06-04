@@ -64,6 +64,9 @@ const (
 	OptionKMSMasterKeyID             = "KMSMasterKeyID"
 	OptionAcrHeaders                 = "acrHeaders"
 	OptionAcrMethod                  = "acrMethod"
+	OptionVersionId                  = "versionId"
+	OptionAllversions                = "allVersions"
+	OptionVersionIdMarker            = "versionIdMarker"
 )
 
 // the elements show in stat object

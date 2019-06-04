@@ -240,6 +240,7 @@ var setACLCommand = SetACLCommand{
 			OptionRoutines,
 			OptionOutputDir,
 			OptionLogLevel,
+			OptionVersionId,
 		},
 	},
 }
@@ -267,6 +268,7 @@ func (sc *SetACLCommand) RunCommand() error {
 	force, _ := GetBool(OptionForce, sc.command.options)
 	routines, _ := GetInt(OptionRoutines, sc.command.options)
 	encodingType, _ := GetString(OptionEncodingType, sc.command.options)
+	versionid, _ := GetString(OptionVersionId, sc.command.options)
 
 	var res bool
 	res, sc.filters = getFilter(os.Args)
@@ -276,6 +278,10 @@ func (sc *SetACLCommand) RunCommand() error {
 
 	if !recursive && len(sc.filters) > 0 {
 		return fmt.Errorf("--include or --exclude only work with --recursive")
+	}
+
+	if recursive && len(versionid) > 0 {
+		return fmt.Errorf("--version-id only work on single object")
 	}
 
 	cloudURL, err := CloudURLFromString(sc.command.args[0], encodingType)
@@ -296,7 +302,7 @@ func (sc *SetACLCommand) RunCommand() error {
 		return sc.setBucketACL(&bucket.Client, cloudURL, recursive)
 	}
 	if !recursive {
-		return sc.setObjectACL(bucket, cloudURL)
+		return sc.setObjectACL(bucket, cloudURL, versionid)
 	}
 	return sc.batchSetObjectACL(bucket, cloudURL, force, routines)
 }
@@ -371,7 +377,7 @@ func (sc *SetACLCommand) ossSetBucketACLRetry(client *oss.Client, bucket string,
 	}
 }
 
-func (sc *SetACLCommand) setObjectACL(bucket *oss.Bucket, cloudURL CloudURL) error {
+func (sc *SetACLCommand) setObjectACL(bucket *oss.Bucket, cloudURL CloudURL, versionid string) error {
 	if cloudURL.object == "" {
 		return fmt.Errorf("set object acl invalid url: %s, object empty, if you mean set bucket acl, you should use --bucket option", sc.command.args[0])
 	}
@@ -381,13 +387,17 @@ func (sc *SetACLCommand) setObjectACL(bucket *oss.Bucket, cloudURL CloudURL) err
 		return err
 	}
 
-	return sc.ossSetObjectACLRetry(bucket, cloudURL.object, acl)
+	return sc.ossSetObjectACLRetry(bucket, cloudURL.object, acl, versionid)
 }
 
-func (sc *SetACLCommand) ossSetObjectACLRetry(bucket *oss.Bucket, object string, acl oss.ACLType) error {
+func (sc *SetACLCommand) ossSetObjectACLRetry(bucket *oss.Bucket, object string, acl oss.ACLType, versionid string) error {
 	retryTimes, _ := GetInt(OptionRetryTimes, sc.command.options)
 	for i := 1; ; i++ {
-		err := bucket.SetObjectACL(object, acl)
+		var options []oss.Option
+		if len(versionid) > 0 {
+			options = append(options, oss.VersionId(versionid))
+		}
+		err := bucket.SetObjectACL(object, acl, options...)
 		if err == nil {
 			return err
 		}
@@ -455,7 +465,7 @@ func (sc *SetACLCommand) setObjectACLConsumer(bucket *oss.Bucket, acl oss.ACLTyp
 }
 
 func (sc *SetACLCommand) setObjectACLWithReport(bucket *oss.Bucket, object string, acl oss.ACLType) error {
-	err := sc.ossSetObjectACLRetry(bucket, object, acl)
+	err := sc.ossSetObjectACLRetry(bucket, object, acl, "")
 	sc.command.updateMonitor(err, &sc.monitor)
 	msg := fmt.Sprintf("set acl on %s", CloudURLToString(bucket.BucketName, object))
 	sc.command.report(msg, err, &sc.saOption)
