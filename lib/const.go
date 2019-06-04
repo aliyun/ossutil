@@ -62,6 +62,9 @@ const (
 	OptionPartitionDownload          = "partitionDownload"
 	OptionSSEAlgorithm               = "SSEAlgorithm"
 	OptionKMSMasterKeyID             = "KMSMasterKeyID"
+	OptionVersionId                  = "versionId"
+	OptionAllversions                = "allVersions"
+	OptionVersionIdMarker            = "versionIdMarker"
 )
 
 // the elements show in stat object
@@ -76,9 +79,9 @@ const (
 	StatLastModified            = "Last-Modified"
 	StatContentMD5              = "Content-Md5"
 	StatCRC64                   = "X-Oss-Hash-Crc64ecma"
-    StatStorageClass            = "StorageClass"
-    StatSSEAlgorithm            = "SSEAlgorithm"
-    StatKMSMasterKeyID          = "KMSMasterKeyID"
+	StatStorageClass            = "StorageClass"
+	StatSSEAlgorithm            = "SSEAlgorithm"
+	StatKMSMasterKeyID          = "KMSMasterKeyID"
 )
 
 // the elements show in hash file

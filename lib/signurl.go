@@ -94,6 +94,7 @@ var signURLCommand = SignurlCommand{
 			OptionAccessKeySecret,
 			OptionSTSToken,
 			OptionLogLevel,
+			OptionVersionId,
 		},
 	},
 }
@@ -121,13 +122,19 @@ func (sc *SignurlCommand) RunCommand() error {
 	}
 
 	timeout, _ := GetInt(OptionTimeout, sc.command.options)
+	versionid, _ := GetString(OptionVersionId, sc.command.options)
 
 	bucket, err := sc.command.ossBucket(cloudURL.bucket)
 	if err != nil {
 		return err
 	}
 
-	str, err := sc.ossSign(bucket, cloudURL.object, timeout)
+	var options []oss.Option
+	if len(versionid) > 0 {
+		options = append(options, oss.VersionId(versionid))
+	}
+
+	str, err := sc.ossSign(bucket, cloudURL.object, timeout, options...)
 	if err != nil {
 		return err
 	}

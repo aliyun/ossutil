@@ -285,6 +285,7 @@ var setMetaCommand = SetMetaCommand{
 			OptionLanguage,
 			OptionOutputDir,
 			OptionLogLevel,
+			OptionVersionId,
 		},
 	},
 }
@@ -315,6 +316,7 @@ func (sc *SetMetaCommand) RunCommand() error {
 	language, _ := GetString(OptionLanguage, sc.command.options)
 	language = strings.ToLower(language)
 	encodingType, _ := GetString(OptionEncodingType, sc.command.options)
+	versionid, _ := GetString(OptionVersionId, sc.command.options)
 
 	var res bool
 	res, sc.filters = getFilter(os.Args)
@@ -324,6 +326,10 @@ func (sc *SetMetaCommand) RunCommand() error {
 
 	if !recursive && len(sc.filters) > 0 {
 		return fmt.Errorf("--include or --exclude only work with --recursive")
+	}
+
+	if recursive && len(versionid) > 0 {
+		return fmt.Errorf("--version-id only work on single object")
 	}
 
 	cloudURL, err := CloudURLFromString(sc.command.args[0], encodingType)
@@ -359,7 +365,7 @@ func (sc *SetMetaCommand) RunCommand() error {
 	}
 
 	if !recursive {
-		return sc.setObjectMeta(bucket, cloudURL.object, headers, isUpdate, isDelete)
+		return sc.setObjectMeta(bucket, cloudURL.object, headers, isUpdate, isDelete, versionid)
 	}
 	return sc.batchSetObjectMeta(bucket, cloudURL, headers, isUpdate, isDelete, force, routines)
 }
@@ -463,10 +469,14 @@ func (cmd *Command) parseHeaders(str string, isDelete bool) (map[string]string, 
 	return headers, nil
 }
 
-func (sc *SetMetaCommand) setObjectMeta(bucket *oss.Bucket, object string, headers map[string]string, isUpdate, isDelete bool) error {
+func (sc *SetMetaCommand) setObjectMeta(bucket *oss.Bucket, object string, headers map[string]string, isUpdate, isDelete bool, versionid string) error {
 	allheaders := headers
 	if isUpdate || isDelete {
-		props, err := sc.command.ossGetObjectStatRetry(bucket, object)
+		var options []oss.Option
+		if len(versionid) > 0 {
+			options = append(options, oss.VersionId(versionid))
+		}
+		props, err := sc.command.ossGetObjectStatRetry(bucket, object, options...)
 		if err != nil {
 			return err
 		}
@@ -477,7 +487,9 @@ func (sc *SetMetaCommand) setObjectMeta(bucket *oss.Bucket, object string, heade
 	if err != nil {
 		return err
 	}
-
+	if len(versionid) > 0 {
+		options = append(options, oss.VersionId(versionid))
+	}
 	return sc.ossSetObjectMetaRetry(bucket, object, options...)
 }
 
@@ -563,7 +575,7 @@ func (sc *SetMetaCommand) setObjectMetaConsumer(bucket *oss.Bucket, headers map[
 }
 
 func (sc *SetMetaCommand) setObjectMetaWithReport(bucket *oss.Bucket, object string, headers map[string]string, isUpdate, isDelete bool) error {
-	err := sc.setObjectMeta(bucket, object, headers, isUpdate, isDelete)
+	err := sc.setObjectMeta(bucket, object, headers, isUpdate, isDelete, "")
 	sc.command.updateMonitor(err, &sc.monitor)
 	msg := fmt.Sprintf("set meta on %s", CloudURLToString(bucket.BucketName, object))
 	sc.command.report(msg, err, &sc.smOption)

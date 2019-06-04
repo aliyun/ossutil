@@ -55,6 +55,7 @@ type copyOptionType struct {
 	partitionInfo  string
 	partitionIndex int
 	partitionCount int
+	versionId      string
 }
 
 type filterOptionType struct {
@@ -1138,6 +1139,7 @@ var copyCommand = CopyCommand{
 			OptionLogLevel,
 			OptionMaxUpSpeed,
 			OptionPartitionDownload,
+			OptionVersionId,
 		},
 	},
 }
@@ -1176,6 +1178,7 @@ func (cc *CopyCommand) RunCommand() error {
 	acl, _ := GetString(OptionACL, cc.command.options)
 	payer, _ := GetString(OptionRequestPayer, cc.command.options)
 	cc.cpOption.partitionInfo, _ = GetString(OptionPartitionDownload, cc.command.options)
+	cc.cpOption.versionId, _ = GetString(OptionVersionId, cc.command.options)
 
 	var res bool
 	res, cc.cpOption.filters = getFilter(os.Args)
@@ -1238,6 +1241,10 @@ func (cc *CopyCommand) RunCommand() error {
 			return err
 		}
 		cc.cpOption.options = append(cc.cpOption.options, oss.ObjectACL(opAcl))
+	}
+
+	if cc.cpOption.versionId != "" {
+		cc.cpOption.options = append(cc.cpOption.options, oss.VersionId(cc.cpOption.versionId))
 	}
 
 	if payer != "" {
@@ -1385,6 +1392,16 @@ func (cc *CopyCommand) checkCopyOptions(opType operationType) error {
 	if operationTypeGet != opType && cc.cpOption.vrange != "" {
 		msg := fmt.Sprintf("only download support option: \"%s\"", OptionRange)
 		return CommandError{cc.command.name, msg}
+	}
+	if cc.cpOption.versionId != "" {
+		if operationTypePut == opType {
+			msg := fmt.Sprintf("upload doesn't support option: \"%s\"", OptionVersionId)
+			return CommandError{cc.command.name, msg}
+		}
+		if cc.cpOption.recursive {
+			msg := fmt.Sprintf("option %s can't be used with option: \"%s\"", OptionVersionId, OptionRecursion)
+			return CommandError{cc.command.name, msg}
+		}
 	}
 	return nil
 }
@@ -2060,7 +2077,11 @@ func (cc *CopyCommand) downloadSingleFile(bucket *oss.Bucket, objectInfo objectI
 	msg := fmt.Sprintf("%s %s to %s", opDownload, CloudURLToString(bucket.BucketName, object), fileName)
 
 	if size < 0 {
-		props, err := cc.command.ossGetObjectStatRetry(bucket, object, cc.cpOption.payerOptions...)
+		statOptions := cc.cpOption.payerOptions
+		if cc.cpOption.versionId != "" {
+			statOptions = append(statOptions, oss.VersionId(cc.cpOption.versionId))
+		}
+		props, err := cc.command.ossGetObjectStatRetry(bucket, object, statOptions...)
 		if err != nil {
 			return false, err, size, msg
 		}
@@ -2267,11 +2288,17 @@ func (cc *CopyCommand) objectStatistic(bucket *oss.Bucket, cloudURL CloudURL) {
 			}
 		}
 	} else {
-		props, err := cc.command.ossGetObjectStatRetry(bucket, cloudURL.object, cc.cpOption.payerOptions...)
+		statOptions := cc.cpOption.payerOptions
+		if cc.cpOption.versionId != "" {
+			statOptions = append(statOptions, oss.VersionId(cc.cpOption.versionId))
+		}
+
+		props, err := cc.command.ossGetObjectStatRetry(bucket, cloudURL.object, statOptions...)
 		if err != nil {
 			cc.monitor.setScanError(err)
 			return
 		}
+
 		size, err := strconv.ParseInt(props.Get(oss.HTTPHeaderContentLength), 10, 64)
 		if err != nil {
 			cc.monitor.setScanError(err)
@@ -2501,7 +2528,12 @@ func (cc *CopyCommand) copySingleFile(bucket *oss.Bucket, objectInfo objectInfoT
 
 	//get object size
 	if size < 0 {
-		props, err := cc.command.ossGetObjectStatRetry(bucket, srcObject, cc.cpOption.payerOptions...)
+		statOptions := cc.cpOption.payerOptions
+		if cc.cpOption.versionId != "" {
+			statOptions = append(statOptions, oss.VersionId(cc.cpOption.versionId))
+		}
+
+		props, err := cc.command.ossGetObjectStatRetry(bucket, srcObject, statOptions...)
 		if err != nil {
 			return false, err, size, msg
 		}

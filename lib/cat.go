@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
 
 var specChineseCat = SpecText{
@@ -81,6 +82,7 @@ var catCommand = CatCommand{
 			OptionSTSToken,
 			OptionEncodingType,
 			OptionLogLevel,
+			OptionVersionId,
 		},
 	},
 }
@@ -125,16 +127,23 @@ func (catc *CatCommand) RunCommand() error {
 		return err
 	}
 
-	isExist, err := bucket.IsObjectExist(catc.catOption.objectName)
-	if err != nil {
-		return err
+	var options []oss.Option
+	versionid, _ := GetString(OptionVersionId, catc.command.options)
+
+	if len(versionid) > 0 {
+		options = append(options, oss.VersionId(versionid))
+	} else {
+		isExist, err := bucket.IsObjectExist(catc.catOption.objectName)
+		if err != nil {
+			return err
+		}
+
+		if !isExist {
+			return fmt.Errorf("oss object is not exist")
+		}
 	}
 
-	if !isExist {
-		return fmt.Errorf("oss object is not exist")
-	}
-
-	body, err := bucket.GetObject(catc.catOption.objectName)
+	body, err := bucket.GetObject(catc.catOption.objectName, options...)
 	if err != nil {
 		return err
 	}
