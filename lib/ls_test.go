@@ -2,10 +2,12 @@ package lib
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net/url"
 	"os"
 	"sort"
 	"strconv"
+	"strings"
 
 	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 	. "gopkg.in/check.v1"
@@ -248,7 +250,7 @@ func (s *OssutilCommandSuite) TestListObjectsWithPayer(c *C) {
 	c.Assert(showElapse, Equals, true)
 
 	args = []string{CloudURLToString(bucketName, objectName)}
-	showElapse, err = s.rawList(args, "ls - ", OptionPair{Key: "payer", Value: "requester"})
+	showElapse, err = s.rawList(args, "ls - ", OptionPair{Key: "payer", Value: "requester"}, OptionPair{Key: "endpoint", Value: payerBucketEndPoint})
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
 }
@@ -258,7 +260,7 @@ func (s *OssutilCommandSuite) TestListMultipartUploadsWithPayer(c *C) {
 
 	// list buckets with -m
 	args := []string{CloudURLToString(bucketName, "")}
-	showElapse, err := s.rawList(args, "ls -m", OptionPair{Key: "payer", Value: "requester"})
+	showElapse, err := s.rawList(args, "ls -m", OptionPair{Key: "payer", Value: "requester"}, OptionPair{Key: "endpoint", Value: payerBucketEndPoint})
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
 }
@@ -705,5 +707,204 @@ func (s *OssutilCommandSuite) TestListURLEncoding(c *C) {
 	_, err = s.rawListLimitedMarker([]string{"oss://" + bucketName}, "ls --encoding-type url", -1, "", "")
 	c.Assert(err, IsNil)
 
+	s.removeBucket(bucketName, true, c)
+}
+
+// list objects versions
+func (s *OssutilCommandSuite) TestListObjectVersionsNormal(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	s.putBucketVersioning(bucketName, string(oss.VersionEnabled), c)
+
+	fileName := "test-ossutil-file-" + randLowStr(10)
+	content := randLowStr(10)
+	s.createFile(fileName, content, c)
+
+	// put 3 objects
+	numObject := 3
+	for i := 0; i < numObject; i++ {
+		object := fmt.Sprintf("lstest:#%d", i)
+		s.putObject(bucketName, object, fileName, c)
+	}
+
+	// put 1 object
+	numObject++
+	object := "another_object" + randLowStr(5)
+	s.putObject(bucketName, object, fileName, c)
+
+	//put 2 directories
+	numDir := 2
+	for i := 0; i < numDir; i++ {
+		object := fmt.Sprintf("lstest:#%d/", i)
+		s.putObject(bucketName, object, fileName, c)
+	}
+
+	allVersions := true
+	limitedNum := strconv.FormatInt(-1, 10)
+	lsArgs := []string{CloudURLToString(bucketName, "")}
+	str := ""
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+		"allVersions":     &allVersions,
+		"limitedNum":      &limitedNum,
+	}
+
+	testOutFileName := "ossutil-test-outfile-" + randLowStr(5)
+	testOutFile, _ := os.OpenFile(testOutFileName, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
+	oldStdout := os.Stdout
+	os.Stdout = testOutFile
+	_, err := cm.RunCommand("ls", lsArgs, options)
+	c.Assert(err, IsNil)
+	testOutFile.Close()
+
+	fileBody, err := ioutil.ReadFile(testOutFileName)
+	c.Assert(err, IsNil)
+	c.Assert(strings.Contains(string(fileBody), "VERSIONID"), Equals, true)
+	c.Assert(strings.Contains(string(fileBody), "COMMON-PREFIX"), Equals, false)
+
+	strTotal := fmt.Sprintf("Object Number is: %d", numObject+numDir)
+	c.Assert(strings.Contains(string(fileBody), strTotal), Equals, true)
+
+	// ls oss://bucket -d
+	directory := true
+	options["directory"] = &directory
+	testOutFile, _ = os.OpenFile(testOutFileName, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
+	os.Stdout = testOutFile
+	_, err = cm.RunCommand("ls", lsArgs, options)
+	c.Assert(err, IsNil)
+	testOutFile.Close()
+
+	fileBody, err = ioutil.ReadFile(testOutFileName)
+	c.Assert(err, IsNil)
+	c.Assert(strings.Contains(string(fileBody), "VERSIONID"), Equals, true)
+	c.Assert(strings.Contains(string(fileBody), "COMMON-PREFIX"), Equals, true)
+
+	// rm all object
+	recursive := true
+	force := true
+	deleteOptions := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"stsToken":        &str,
+		"configFile":      &configFile,
+		"recursive":       &recursive,
+		"force":           &force,
+	}
+	rmArgs := []string{CloudURLToString(bucketName, "")}
+	_, err = cm.RunCommand("rm", rmArgs, deleteOptions)
+	c.Assert(err, IsNil)
+
+	// list object again
+	delete(options, "directory")
+	testOutFile, _ = os.OpenFile(testOutFileName, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
+	os.Stdout = testOutFile
+	_, err = cm.RunCommand("ls", lsArgs, options)
+	c.Assert(err, IsNil)
+	testOutFile.Close()
+
+	os.Stdout = oldStdout
+
+	fileBody, err = ioutil.ReadFile(testOutFileName)
+	strTotal = fmt.Sprintf("Object Number is: %d", (numObject+numDir)*2)
+	c.Assert(strings.Contains(string(fileBody), strTotal), Equals, true)
+
+	os.Remove(fileName)
+	os.Remove(testOutFileName)
+	s.removeBucket(bucketName, true, c)
+}
+
+// list objects versions
+func (s *OssutilCommandSuite) TestListObjectVersionsMarker(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	s.putBucketVersioning(bucketName, string(oss.VersionEnabled), c)
+
+	fileName := "test-ossutil-file-" + randLowStr(10)
+	content := randLowStr(10)
+	s.createFile(fileName, content, c)
+
+	object := "test-ossutil-object" + randLowStr(10)
+
+	// default max-key 100
+	numObject := 200
+	for i := 0; i < numObject; i++ {
+		s.putObject(bucketName, object, fileName, c)
+	}
+
+	allVersions := true
+	limitedNum := strconv.FormatInt(-1, 10)
+	lsArgs := []string{CloudURLToString(bucketName, "")}
+	str := ""
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+		"allVersions":     &allVersions,
+		"limitedNum":      &limitedNum,
+	}
+
+	testOutFileName := "ossutil-test-outfile-" + randLowStr(5)
+	testOutFile, _ := os.OpenFile(testOutFileName, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
+	oldStdout := os.Stdout
+	os.Stdout = testOutFile
+	_, err := cm.RunCommand("ls", lsArgs, options)
+	c.Assert(err, IsNil)
+	testOutFile.Close()
+
+	fileBody, err := ioutil.ReadFile(testOutFileName)
+	c.Assert(err, IsNil)
+	c.Assert(strings.Contains(string(fileBody), "VERSIONID"), Equals, true)
+	c.Assert(strings.Contains(string(fileBody), "COMMON-PREFIX"), Equals, false)
+
+	strTotal := fmt.Sprintf("Object Number is: %d", numObject)
+	c.Assert(strings.Contains(string(fileBody), strTotal), Equals, true)
+
+	// test for limit num
+	limitNum := 50
+	options["limitedNum"] = &limitNum
+	testOutFile, _ = os.OpenFile(testOutFileName, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
+	os.Stdout = testOutFile
+	_, err = cm.RunCommand("ls", lsArgs, options)
+	c.Assert(err, IsNil)
+	testOutFile.Close()
+
+	fileBody, err = ioutil.ReadFile(testOutFileName)
+	c.Assert(err, IsNil)
+	strTotal = fmt.Sprintf("Object Number is: %d", limitNum)
+	c.Assert(strings.Contains(string(fileBody), strTotal), Equals, true)
+
+	//get all versions info
+	bucket, err := listCommand.command.ossBucket(bucketName)
+	c.Assert(err, IsNil)
+
+	listResult, err := listCommand.command.ossListObjectVersionsRetry(bucket)
+	c.Assert(len(listResult.ObjectVersions), Equals, numObject)
+
+	selectVersionId := listResult.ObjectVersions[limitNum].VersionId
+
+	// test for key-marker version-id-mark
+	delete(options, "limitedNum")
+	options["marker"] = &object
+	options["versionIdMarker"] = &selectVersionId
+
+	testOutFile, _ = os.OpenFile(testOutFileName, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
+	os.Stdout = testOutFile
+	_, err = cm.RunCommand("ls", lsArgs, options)
+	c.Assert(err, IsNil)
+	testOutFile.Close()
+
+	os.Stdout = oldStdout
+
+	fileBody, err = ioutil.ReadFile(testOutFileName)
+	strTotal = fmt.Sprintf("Object Number is: %d", numObject-limitNum-1)
+	c.Assert(strings.Contains(string(fileBody), strTotal), Equals, true)
+
+	os.Remove(fileName)
+	os.Remove(testOutFileName)
 	s.removeBucket(bucketName, true, c)
 }

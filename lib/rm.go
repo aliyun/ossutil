@@ -16,6 +16,10 @@ type removeOptionType struct {
 	recursive bool
 	force     bool
 	typeSet   int64
+
+	//version
+	versionId   string
+	allVersions bool
 }
 
 var specChineseRemove = SpecText{
@@ -25,7 +29,7 @@ var specChineseRemove = SpecText{
 	paramText: "cloud_url [options]",
 
 	syntaxText: ` 
-    ossutil rm oss://bucket[/prefix] [-r] [-b] [-f] [-c file] 
+    ossutil rm oss://bucket[/prefix] [-r] [-b] [-f] [-c file] [--version-id versionId | --all-versions]
 `,
 
 	detailHelpText: ` 
@@ -59,13 +63,15 @@ var specChineseRemove = SpecText{
 
     该命令有四种用法：
 
-    1) ossutil rm oss://bucket/object [-m] [-a] 
+    1) ossutil rm oss://bucket/object [-m] [-a] [--version-id versionId | --all-versions]
         （删除单个object）
         如果未指定--recursive和--bucket选项，删除指定的单个object，此时请确保cloud_url
     精确指定了待删除的object，ossutil不会进行前缀匹配。无论是否指定--force选项，ossutil
     都不会进行询问提示。如果此时指定了--bucket选项，将会报错，单独删除bucket参考用法4)。
         如果指定了--multipart选项, 删除指定object下未complete的Multipart Upload事件。
         如果指定了--all-type选项, 删除指定object以及其下未complete的Multipart Upload事件。
+        如果指定了--version-id选项, 删除指定版本的object。
+        如果指定了--all-versions选项, 删除所有版本的object。
 
     2) ossutil rm oss://bucket -b [-f]
         （删除bucket，不删除objects）
@@ -73,7 +79,7 @@ var specChineseRemove = SpecText{
     删除该bucket下的objects。此时请确保cloud_url精确匹配待删除的bucket，并且指定的bucket
     内容为空，否则会报错。如果指定了--force选项，则删除前不会进行询问提示。
 
-    3) ossutil rm oss://bucket[/prefix] -r [-m] [-a] [-f]
+    3) ossutil rm oss://bucket[/prefix] -r [-m] [-a] [-f] [--all-versions]
         （删除objects，不删除bucket）
         如果指定了--recursive选项，未指定--bucket选项。则可以进行objects的批量删除。该用
     法查找与指定cloud_url前缀匹配的所有objects（prefix为空代表bucket下的所有objects），删
@@ -83,8 +89,9 @@ var specChineseRemove = SpecText{
     Upload任务。
         如果指定了--all-type，删除以指定prefix开头的所有object，以及其下的所有未complete
     的Multipart Upload任务。
+	    如果指定了--all-versions，删除以指定prefix开头的所有版本的所有object。
 
-    4) ossutil rm oss://bucket[/prefix] -r -b [-m] [-a] [-f]
+    4) ossutil rm oss://bucket[/prefix] -r -b [-m] [-a] [-f] [--all-versions]
         （删除bucket和objects）
         如果同时指定了--bucket和--recursive选项，ossutil进行批量删除后会尝试去一并删除
     bucket。当用户想要删除某个bucket连同其中的所有objects时，可采用该操作。如果指定了
@@ -93,7 +100,7 @@ var specChineseRemove = SpecText{
     Upload任务。
         如果指定了--all-type, 删除以指定prefix开头的所有object，以及其下的所有未complete
     的Multipart Upload任务。
-
+	    如果指定了--all-versions，删除以指定prefix开头的所有版本的所有object。
     
     不支持的用法：
     1) ossutil rm oss://bucket/object -m -b [-f]
@@ -113,6 +120,10 @@ var specChineseRemove = SpecText{
     ossutil rm oss://bucket2 -r -b -f
     ossutil rm oss://bucket2 -a -r -b -f
     ossutil rm oss://bucket2/%e4%b8%ad%e6%96%87 --encoding-type url
+    ossutil rm oss://bucket1/obj1 --version-id versionId
+    ossutil rm oss://bucket1/obj1 --all-versions
+    ossutil rm oss://bucket1/objdir -r  --all-versions
+    ossutil rm oss://bucket1 -r -b --all-versions
 `,
 }
 
@@ -123,7 +134,7 @@ var specEnglishRemove = SpecText{
 	paramText: "cloud_url [options]",
 
 	syntaxText: ` 
-    ossutil rm oss://bucket[/prefix] [-r] [-b] [-f] [-c file]
+    ossutil rm oss://bucket[/prefix] [-r] [-b] [-f] [-c file] [--version-id versionId | --all-versions]
 `,
 
 	detailHelpText: ` 
@@ -164,7 +175,7 @@ Usage:
 
     There are four usages:
 
-    1) ossutil rm oss://bucket/object
+    1) ossutil rm oss://bucket/object [-m] [-a] [--version-id versionId | --all-versions]
         (Remove single object)
         If you remove without --recursive and --bucket option, ossutil remove the single 
     object specified in cloud_url. In the usage, please make sure cloud_url exactly specified 
@@ -175,15 +186,17 @@ Usage:
     of the specified object.
         If --all-type option is specified, ossutil will remove the specified object along 
     with the multipart upload tasks of the specified object. 
+        If --version-id is specified, ossutil will remove a specific version of object. 
+        If --all-versions option is specified, ossutil will remove all the versions of object. 
 
-    2) ossutil rm oss://bucket -b [-f]
+    2) ossutil rm oss://bucket -b [-f] 
         (Remove bucket, don't remove objects inside)
         If you remove with --bucket option, without --recursive option, ossutil try to 
     remove the bucket, if the bucket is not empty, error occurs. In the usage, please make 
     sure cloud_url exactly specified the bucket you want to remove, or error occurs. If --force 
     option is specified, ossutil will not show prompt question. 
 
-    3) ossutil rm oss://bucket[/prefix] -r [-m] [-a] [-f]
+    3) ossutil rm oss://bucket[/prefix] -r [-m] [-a] [-f] [--all-versions]
         (Remove objects, reserve bucket)
         If you remove with --recursive option, without --bucket option, ossutil remove all 
     the objects that prefix-matching the cloud_url you specified(empty prefix means all 
@@ -193,8 +206,10 @@ Usage:
         If --all-type option is specified, ossutil will remove the objects with the specified 
     prefix along with the multipart upload tasks whose object name start with the specified 
     prefix. 
+        If --all-versions option is specified, ossutil will remove all versions of the objects with the specified 
+    prefix. 
 
-    4) ossutil rm oss://bucket[/prefix] -r -b [-a] [-f] 
+    4) ossutil rm oss://bucket[/prefix] -r -b [-a] [-f] [--all-versions]
         (Remove bucket and objects inside)
         If you remove with both --recursive and --bucket option, after ossutil removed all 
     the prefix-matching objects, ossutil will try to remove the bucket together. If user want 
@@ -205,7 +220,8 @@ Usage:
         If --all-type option is specified, ossutil will remove the objects with the specified 
     prefix along with the multipart upload tasks whose object name start with the specified 
     prefix. 
-
+	    If --all-versions option is specified, ossutil will remove all versions of the objects with the specified 
+    prefix. 
 
 	Invalid Usage: 
     1) ossutil rm oss://bucket/object -m -b [-f]
@@ -227,6 +243,10 @@ Usage:
     ossutil rm oss://bucket2 -r -b -f
     ossutil rm oss://bucket2 -a -r -b -f
     ossutil rm oss://bucket2/%e4%b8%ad%e6%96%87 --encoding-type url
+    ossutil rm oss://bucket1/obj1 --version-id versionId
+    ossutil rm oss://bucket1/obj1 --all-versions
+    ossutil rm oss://bucket1/objdir -r  --all-versions
+    ossutil rm oss://bucket1 -r -b --all-versions
 `,
 }
 
@@ -260,6 +280,8 @@ var removeCommand = RemoveCommand{
 			OptionSTSToken,
 			OptionRetryTimes,
 			OptionLogLevel,
+			OptionVersionId,
+			OptionAllversions,
 		},
 	},
 }
@@ -324,6 +346,8 @@ func (rc *RemoveCommand) assembleOption(cloudURL CloudURL) error {
 	isMultipart, _ := GetBool(OptionMultipart, rc.command.options)
 	isAllType, _ := GetBool(OptionAllType, rc.command.options)
 	toBucket, _ := GetBool(OptionBucket, rc.command.options)
+	rc.rmOption.versionId, _ = GetString(OptionVersionId, rc.command.options)
+	rc.rmOption.allVersions, _ = GetBool(OptionAllversions, rc.command.options)
 
 	if err := rc.checkOption(cloudURL, isMultipart, isAllType, toBucket); err != nil {
 		return err
@@ -373,6 +397,17 @@ func (rc *RemoveCommand) checkOption(cloudURL CloudURL, isMultipart, isAllType, 
 			}
 		}
 	}
+
+	if len(rc.rmOption.versionId) > 0 {
+		if rc.rmOption.recursive {
+			return fmt.Errorf("remove objects: %s, do not support --version-id", rc.command.args[0])
+		}
+
+		if rc.rmOption.allVersions {
+			return fmt.Errorf("remove object: %s, do not support --version-id and --all-versions at the same time.", rc.command.args[0])
+		}
+	}
+
 	return nil
 }
 
@@ -409,7 +444,11 @@ func (rc *RemoveCommand) entryStatistic(bucket *oss.Bucket, cloudURL CloudURL) {
 func (rc *RemoveCommand) objectStatistic(bucket *oss.Bucket, cloudURL CloudURL) error {
 	// single object statistic before remove
 	if rc.rmOption.recursive {
-		return rc.batchObjectStatistic(bucket, cloudURL)
+		if rc.rmOption.allVersions {
+			return rc.batchObjectStatisticVersion(bucket, cloudURL)
+		} else {
+			return rc.batchObjectStatistic(bucket, cloudURL)
+		}
 	}
 	return nil
 }
@@ -514,10 +553,21 @@ func (rc *RemoveCommand) removeEntry(bucket *oss.Bucket, cloudURL CloudURL) erro
 }
 
 func (rc *RemoveCommand) removeObjectEntry(bucket *oss.Bucket, cloudURL CloudURL) error {
-	if !rc.rmOption.recursive {
-		return rc.removeObject(bucket, cloudURL)
+	//version mode
+	if len(rc.rmOption.versionId) > 0 || rc.rmOption.allVersions {
+		if len(rc.rmOption.versionId) > 0 {
+			return rc.removeObjectVersion(bucket, cloudURL, rc.rmOption.versionId)
+		} else if !rc.rmOption.recursive {
+			return rc.removeObjectAllVersion(bucket, cloudURL)
+		} else {
+			return rc.batchDeleteObjectsVersion(bucket, cloudURL)
+		}
 	} else {
-		return rc.batchDeleteObjects(bucket, cloudURL)
+		if !rc.rmOption.recursive {
+			return rc.removeObject(bucket, cloudURL)
+		} else {
+			return rc.batchDeleteObjects(bucket, cloudURL)
+		}
 	}
 }
 
@@ -759,6 +809,196 @@ func (rc *RemoveCommand) ossDeleteBucketRetry(client *oss.Client, bucket string)
 				fmt.Printf("\nWhether new objects were uploaded during the deletion?\n\n")
 			}
 			return BucketError{err, bucket}
+		}
+	}
+}
+
+//version
+func (rc *RemoveCommand) removeObjectVersion(bucket *oss.Bucket, cloudURL CloudURL, versionId string) error {
+	err := rc.deleteObjectWithMonitorVersion(bucket, cloudURL.object, versionId)
+	if err != nil && rc.monitor.op == objectType {
+		// remove single object error, return error information, do not print progressbar
+		rc.monitor.setOP(0)
+	}
+	return err
+}
+
+func (rc *RemoveCommand) deleteObjectWithMonitorVersion(bucket *oss.Bucket, object string, versionId string) error {
+	err := rc.ossDeleteObjectRetryVersion(bucket, object, versionId)
+	if err == nil {
+		rc.monitor.updateScanNum(1)
+		rc.updateObjectMonitor(1, 0)
+	} else {
+		rc.updateObjectMonitor(0, 1)
+	}
+	return err
+}
+
+func (rc *RemoveCommand) ossDeleteObjectRetryVersion(bucket *oss.Bucket, object string, versionId string) error {
+	retryTimes, _ := GetInt(OptionRetryTimes, rc.command.options)
+	for i := 1; ; i++ {
+		err := bucket.DeleteObject(object, oss.VersionId(versionId))
+		if err == nil {
+			return err
+		}
+		if int64(i) >= retryTimes {
+			return ObjectError{err, bucket.BucketName, object}
+		}
+	}
+}
+
+func (rc *RemoveCommand) removeObjectAllVersion(bucket *oss.Bucket, cloudURL CloudURL) error {
+
+	// list objects
+	pre := oss.Prefix(cloudURL.object)
+	keyMarker := oss.KeyMarker("")
+	versionIdMarker := oss.VersionIdMarker("")
+
+	for {
+		lor, err := rc.command.ossListObjectVersionsRetry(bucket, pre, keyMarker, versionIdMarker, oss.MaxKeys(10))
+		if err != nil {
+			return err
+		}
+
+		objectsToDelete := make([]oss.DeleteObject, 0)
+		for _, object := range lor.ObjectDeleteMarkers {
+			if object.Key != cloudURL.object {
+				break
+			}
+			objectsToDelete = append(objectsToDelete, oss.DeleteObject{
+				Key:       object.Key,
+				VersionId: object.VersionId,
+			})
+		}
+
+		for _, object := range lor.ObjectVersions {
+			if object.Key != cloudURL.object {
+				break
+			}
+			objectsToDelete = append(objectsToDelete, oss.DeleteObject{
+				Key:       object.Key,
+				VersionId: object.VersionId,
+			})
+		}
+
+		rc.monitor.updateScanNum(int64(len(objectsToDelete)))
+
+		// batch delete
+		delNum, err := rc.ossBatchDeleteObjectsRetryVersion(bucket, objectsToDelete)
+		rc.updateObjectMonitor(int64(delNum), int64(len(objectsToDelete)-delNum))
+		if err != nil {
+			return err
+		}
+
+		pre = oss.Prefix(lor.Prefix)
+		keyMarker = oss.KeyMarker(lor.NextKeyMarker)
+		versionIdMarker = oss.VersionIdMarker(lor.NextVersionIdMarker)
+
+		if !lor.IsTruncated {
+			break
+		}
+
+		if lor.NextKeyMarker != cloudURL.object {
+			break
+		}
+	}
+	return nil
+}
+
+func (rc *RemoveCommand) batchObjectStatisticVersion(bucket *oss.Bucket, cloudURL CloudURL) error {
+	pre := oss.Prefix(cloudURL.object)
+	keyMarker := oss.KeyMarker("")
+	versionIdMarker := oss.VersionIdMarker("")
+
+	for {
+		lor, err := rc.command.ossListObjectVersionsRetry(bucket, pre, keyMarker, versionIdMarker)
+		if err != nil {
+			rc.monitor.setScanError(err)
+			return err
+		}
+
+		rc.monitor.updateScanNum(int64(len(lor.ObjectDeleteMarkers) + len(lor.ObjectVersions)))
+
+		pre = oss.Prefix(lor.Prefix)
+		keyMarker = oss.KeyMarker(lor.NextKeyMarker)
+		versionIdMarker = oss.VersionIdMarker(lor.NextVersionIdMarker)
+
+		if !lor.IsTruncated {
+			break
+		}
+	}
+	return nil
+}
+
+func (rc *RemoveCommand) batchDeleteObjectsVersion(bucket *oss.Bucket, cloudURL CloudURL) error {
+	// list objects
+	pre := oss.Prefix(cloudURL.object)
+	keyMarker := oss.KeyMarker("")
+	versionIdMarker := oss.VersionIdMarker("")
+
+	for {
+
+		lor, err := rc.command.ossListObjectVersionsRetry(bucket, pre, keyMarker, versionIdMarker)
+		if err != nil {
+			return err
+		}
+
+		objectsToDelete := make([]oss.DeleteObject, 0)
+		for _, object := range lor.ObjectDeleteMarkers {
+			objectsToDelete = append(objectsToDelete, oss.DeleteObject{
+				Key:       object.Key,
+				VersionId: object.VersionId,
+			})
+		}
+
+		for _, object := range lor.ObjectVersions {
+			objectsToDelete = append(objectsToDelete, oss.DeleteObject{
+				Key:       object.Key,
+				VersionId: object.VersionId,
+			})
+		}
+
+		// batch delete
+		delNum, err := rc.ossBatchDeleteObjectsRetryVersion(bucket, objectsToDelete)
+		rc.updateObjectMonitor(int64(delNum), int64(len(objectsToDelete)-delNum))
+		if err != nil {
+			return err
+		}
+		pre = oss.Prefix(lor.Prefix)
+		keyMarker = oss.KeyMarker(lor.NextKeyMarker)
+		versionIdMarker = oss.VersionIdMarker(lor.NextVersionIdMarker)
+		if !lor.IsTruncated {
+			break
+		}
+	}
+	return nil
+}
+
+func (rc *RemoveCommand) ossBatchDeleteObjectsRetryVersion(bucket *oss.Bucket, objectVersions []oss.DeleteObject) (int, error) {
+	retryTimes, _ := GetInt(OptionRetryTimes, rc.command.options)
+	num := len(objectVersions)
+	if num <= 0 {
+		return 0, nil
+	}
+
+	for i := 1; ; i++ {
+		delRes, err := bucket.DeleteObjectVersions(objectVersions, oss.DeleteObjectsQuiet(true))
+		if err == nil && len(delRes.DeletedObjectsDetail) == 0 {
+			return num, nil
+		}
+		if int64(i) >= retryTimes {
+			if err != nil {
+				return num - len(objectVersions), err
+			}
+			return num - len(delRes.DeletedObjectsDetail), fmt.Errorf("delete objects: %#v failed", delRes.DeletedObjectsDetail)
+		}
+
+		objectVersions = make([]oss.DeleteObject, 0)
+		for _, object := range delRes.DeletedObjectsDetail {
+			objectVersions = append(objectVersions, oss.DeleteObject{
+				Key:       object.Key,
+				VersionId: object.VersionId,
+			})
 		}
 	}
 }

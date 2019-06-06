@@ -154,6 +154,15 @@ var OptionMap = map[string]Option{
 	OptionKMSMasterKeyID: Option{"", "--kms-masterkey-id", "", OptionTypeString, "", "",
 		"表示kms秘钥托管服务中的主秘钥id",
 		"specifies the primary key id in the kms(key management service)"},
+	OptionVersionId: Option{"", "--version-id", "", OptionTypeString, "", "",
+		"表示object的版本id",
+		"specifies the object's version id"},
+	OptionAllversions: Option{"", "--all-versions", "", OptionTypeFlagTrue, "", "",
+		"表示object所有版本",
+		"specifies the object's all versions"},
+	OptionVersionIdMarker: Option{"", "--version-id-marker", "", OptionTypeString, "", "",
+		"表示列举objects所有版本的version id marker",
+		"specifies the marker of object version id when list objects's all versions"},
 }
 
 func (T *Option) getHelp(language string) string {
