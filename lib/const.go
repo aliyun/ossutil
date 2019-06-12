@@ -62,9 +62,6 @@ const (
 	OptionPartitionDownload          = "partitionDownload"
 	OptionSSEAlgorithm               = "SSEAlgorithm"
 	OptionKMSMasterKeyID             = "KMSMasterKeyID"
-	OptionVersionId                  = "versionId"
-	OptionAllversions                = "allVersions"
-	OptionVersionIdMarker            = "versionIdMarker"
 )
 
 // the elements show in stat object
@@ -79,9 +76,9 @@ const (
 	StatLastModified            = "Last-Modified"
 	StatContentMD5              = "Content-Md5"
 	StatCRC64                   = "X-Oss-Hash-Crc64ecma"
-	StatStorageClass            = "StorageClass"
-	StatSSEAlgorithm            = "SSEAlgorithm"
-	StatKMSMasterKeyID          = "KMSMasterKeyID"
+    StatStorageClass            = "StorageClass"
+    StatSSEAlgorithm            = "SSEAlgorithm"
+    StatKMSMasterKeyID          = "KMSMasterKeyID"
 )
 
 // the elements show in hash file
@@ -108,7 +105,7 @@ const (
 const (
 	Package                 string = "ossutil"
 	ChannelBuf              int    = 1000
-	Version                 string = "v1.6.2"
+	Version                 string = "v1.6.1"
 	DefaultEndpoint         string = "oss.aliyuncs.com"
 	ChineseLanguage                = "CH"
 	EnglishLanguage                = "EN"

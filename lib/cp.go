@@ -55,7 +55,6 @@ type copyOptionType struct {
 	partitionInfo  string
 	partitionIndex int
 	partitionCount int
-	versionId      string
 }
 
 type filterOptionType struct {
@@ -118,8 +117,8 @@ var specChineseCopy = SpecText{
 
 	syntaxText: ` 
     ossutil cp file_url cloud_url  [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--snapshot-path=sdir] [--payer requester]
-    ossutil cp cloud_url file_url  [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--range=x-y] [--payer requester] [--version-id versionId]
-    ossutil cp cloud_url cloud_url [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--payer requester] [--version-id versionId]
+    ossutil cp cloud_url file_url  [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--range=x-y] [--payer requester]
+    ossutil cp cloud_url cloud_url [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--payer requester]
 `,
 
 	detailHelpText: ` 
@@ -510,9 +509,6 @@ var specChineseCopy = SpecText{
     ossutil cp oss://bucket1/%e6%b5%8b%e8%af%95 %e4%b8%ad%e6%96%87 --encoding-type url
     下载bucket1中名称为”测试“的object到本地，生成文件名为“中文”的文件
 
-    ossutil cp oss://bucket/object local_file --version-id versionId
-    指定object版本下载
-
     3) 在oss间拷贝
     假设oss上有下列objects：
         oss://bucket/abcdir1/a
@@ -579,9 +575,6 @@ var specChineseCopy = SpecText{
 
     ossutil cp oss://bucket1/%e6%b5%8b%e8%af%95 oss://bucket2/%e4%b8%ad%e6%96%87 --encoding-type url
     拷贝bucket1中名称为”测试“的object到bucket2，生成object名为“中文”的object
-
-    ossutil cp oss://bucket/object1 oss://bucket/object2 --version-id versionId
-    指定object版本copy 
 `,
 }
 
@@ -1033,9 +1026,6 @@ Usage:
     ossutil cp oss://bucket1/%e6%b5%8b%e8%af%95 %e4%b8%ad%e6%96%87 --encoding-type url
     Download oss://bucket1/测试 to local file：中文 
 
-    ossutil cp oss://bucket/object1 local_file --version-id versionId
-    Specify object version download
-
     3) Copy between oss 
     Suppose there are following objects in oss:
         oss://bucket/abcdir1/a
@@ -1100,9 +1090,6 @@ Usage:
 
     ossutil cp oss://bucket1/%e6%b5%8b%e8%af%95 oss://bucket2/%e4%b8%ad%e6%96%87 --encoding-type url
     Copy oss://bucket1/测试 to oss://bucket2/中文
-
-    ossutil cp oss://bucket/object1 oss://bucket/object2 --version-id versionId
-    Specify source object version copy
 `,
 }
 
@@ -1151,7 +1138,6 @@ var copyCommand = CopyCommand{
 			OptionLogLevel,
 			OptionMaxUpSpeed,
 			OptionPartitionDownload,
-			OptionVersionId,
 		},
 	},
 }
@@ -1190,7 +1176,6 @@ func (cc *CopyCommand) RunCommand() error {
 	acl, _ := GetString(OptionACL, cc.command.options)
 	payer, _ := GetString(OptionRequestPayer, cc.command.options)
 	cc.cpOption.partitionInfo, _ = GetString(OptionPartitionDownload, cc.command.options)
-	cc.cpOption.versionId, _ = GetString(OptionVersionId, cc.command.options)
 
 	var res bool
 	res, cc.cpOption.filters = getFilter(os.Args)
@@ -1253,10 +1238,6 @@ func (cc *CopyCommand) RunCommand() error {
 			return err
 		}
 		cc.cpOption.options = append(cc.cpOption.options, oss.ObjectACL(opAcl))
-	}
-
-	if cc.cpOption.versionId != "" {
-		cc.cpOption.options = append(cc.cpOption.options, oss.VersionId(cc.cpOption.versionId))
 	}
 
 	if payer != "" {
@@ -1398,22 +1379,12 @@ func (cc *CopyCommand) checkCopyArgs(srcURLList []StorageURLer, destURL StorageU
 
 func (cc *CopyCommand) checkCopyOptions(opType operationType) error {
 	if operationTypeCopy == opType && cc.cpOption.snapshotPath != "" {
-		msg := fmt.Sprintf("CopyObject doesn't support option --snapshot-path")
+		msg := fmt.Sprintf("CopyObject doesn't support option: \"%s\"", OptionSnapshotPath)
 		return CommandError{cc.command.name, msg}
 	}
 	if operationTypeGet != opType && cc.cpOption.vrange != "" {
-		msg := fmt.Sprintf("only download support option --range")
+		msg := fmt.Sprintf("only download support option: \"%s\"", OptionRange)
 		return CommandError{cc.command.name, msg}
-	}
-	if cc.cpOption.versionId != "" {
-		if operationTypePut == opType {
-			msg := fmt.Sprintf("upload doesn't support option --version-id")
-			return CommandError{cc.command.name, msg}
-		}
-		if cc.cpOption.recursive {
-			msg := fmt.Sprintf("option --version-id can't be used with option -r")
-			return CommandError{cc.command.name, msg}
-		}
 	}
 	return nil
 }
@@ -2089,11 +2060,7 @@ func (cc *CopyCommand) downloadSingleFile(bucket *oss.Bucket, objectInfo objectI
 	msg := fmt.Sprintf("%s %s to %s", opDownload, CloudURLToString(bucket.BucketName, object), fileName)
 
 	if size < 0 {
-		statOptions := cc.cpOption.payerOptions
-		if cc.cpOption.versionId != "" {
-			statOptions = append(statOptions, oss.VersionId(cc.cpOption.versionId))
-		}
-		props, err := cc.command.ossGetObjectStatRetry(bucket, object, statOptions...)
+		props, err := cc.command.ossGetObjectStatRetry(bucket, object, cc.cpOption.payerOptions...)
 		if err != nil {
 			return false, err, size, msg
 		}
@@ -2300,17 +2267,11 @@ func (cc *CopyCommand) objectStatistic(bucket *oss.Bucket, cloudURL CloudURL) {
 			}
 		}
 	} else {
-		statOptions := cc.cpOption.payerOptions
-		if cc.cpOption.versionId != "" {
-			statOptions = append(statOptions, oss.VersionId(cc.cpOption.versionId))
-		}
-
-		props, err := cc.command.ossGetObjectStatRetry(bucket, cloudURL.object, statOptions...)
+		props, err := cc.command.ossGetObjectStatRetry(bucket, cloudURL.object, cc.cpOption.payerOptions...)
 		if err != nil {
 			cc.monitor.setScanError(err)
 			return
 		}
-
 		size, err := strconv.ParseInt(props.Get(oss.HTTPHeaderContentLength), 10, 64)
 		if err != nil {
 			cc.monitor.setScanError(err)
@@ -2540,12 +2501,7 @@ func (cc *CopyCommand) copySingleFile(bucket *oss.Bucket, objectInfo objectInfoT
 
 	//get object size
 	if size < 0 {
-		statOptions := cc.cpOption.payerOptions
-		if cc.cpOption.versionId != "" {
-			statOptions = append(statOptions, oss.VersionId(cc.cpOption.versionId))
-		}
-
-		props, err := cc.command.ossGetObjectStatRetry(bucket, srcObject, statOptions...)
+		props, err := cc.command.ossGetObjectStatRetry(bucket, srcObject, cc.cpOption.payerOptions...)
 		if err != nil {
 			return false, err, size, msg
 		}

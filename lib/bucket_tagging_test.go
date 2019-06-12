@@ -132,7 +132,7 @@ func (s *OssutilCommandSuite) TestBucketTaggingPutEmptyEndpoint(c *C) {
 	bucketName := bucketNamePrefix + randLowStr(12)
 	s.putBucket(bucketName, c)
 
-	// bucket-tagging command test
+	// referer command test
 	var str string
 	strMethod := "put"
 	options := OptionMapType{

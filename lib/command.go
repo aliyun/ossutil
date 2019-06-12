@@ -376,19 +376,6 @@ func (cmd *Command) ossListObjectsRetry(bucket *oss.Bucket, options ...oss.Optio
 	}
 }
 
-func (cmd *Command) ossListObjectVersionsRetry(bucket *oss.Bucket, options ...oss.Option) (oss.ListObjectVersionsResult, error) {
-	retryTimes, _ := GetInt(OptionRetryTimes, cmd.options)
-	for i := 1; ; i++ {
-		lor, err := bucket.ListObjectVersions(options...)
-		if err == nil {
-			return lor, err
-		}
-		if int64(i) >= retryTimes {
-			return lor, BucketError{err, bucket.BucketName}
-		}
-	}
-}
-
 func (cmd *Command) ossListMultipartUploadsRetry(bucket *oss.Bucket, options ...oss.Option) (oss.ListMultipartUploadResult, error) {
 	retryTimes, _ := GetInt(OptionRetryTimes, cmd.options)
 	for i := 1; ; i++ {
@@ -579,6 +566,5 @@ func GetAllCommands() []interface{} {
 		&catCommand,
 		&bucketTagCommand,
 		&bucketEncryptionCommand,
-		&bucketVersioningCommand,
 	}
 }
