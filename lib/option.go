@@ -154,6 +154,9 @@ var OptionMap = map[string]Option{
 	OptionKMSMasterKeyID: Option{"", "--kms-masterkey-id", "", OptionTypeString, "", "",
 		"表示kms秘钥托管服务中的主秘钥id",
 		"specifies the primary key id in the kms(key management service)"},
+	OptionAcrHeaders: Option{"", "--acr-headers", "", OptionTypeString, "", "",
+		"表示http header Access-Control-Request-Headers的值,主要用于options命令",
+		"specifies the value of the http header Access-Control-Request-Headers, mainly used for the options command."},
 }
 
 func (T *Option) getHelp(language string) string {
