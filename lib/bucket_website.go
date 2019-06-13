@@ -27,8 +27,8 @@ var specChineseBucketWebSite = SpecText{
     该命令有三种用法:
 	
     1) ossutil website --method put oss://bucket local_xml_file [options]
-        这个命令从配置文件local_xml_file中读取website配置，然后设置bucket的website规则
-        配置文件是一个xml格式的文件，举例如下
+        这个命令从配置文件local_xml_file中读取website配置,然后设置bucket的website规则
+        配置文件是一个xml格式的文件,可以选择只配置部分规则,下面是一个所有规则的例子
    
         <?xml version="1.0" encoding="UTF-8"?>
         <WebsiteConfiguration>
@@ -110,7 +110,7 @@ var specChineseBucketWebSite = SpecText{
 }
 
 var specEnglishBucketWebSite = SpecText{
-	synopsisText: "Set、get or delete bucket website configuration",
+	synopsisText: "Set, get or delete bucket website configuration",
 
 	paramText: "bucket_url website [options]",
 
@@ -120,16 +120,16 @@ var specEnglishBucketWebSite = SpecText{
     ossuitl website --method delete oss://bucket
 `,
 	detailHelpText: ` 
-    website command can set、get and delete the website configuration of the oss bucket by
-    set method option value to put, get,delete
+    website command can set, get and delete the website configuration of the oss bucket by
+    set method option value to put, get, delete
 
 Usage:
     There are three usages for this command:
 	
     1) ossutil website --method put oss://bucket local_xml_file [options]
         The command sets the website configuration of bucket from local file local_xml_file
-        the local_xml_file is xml format
-        The following is an example of the contents of local_xml_file
+        the local_xml_file is xml format,you can choose to configure only some rules
+        The following is an example of all rules:
 
         <?xml version="1.0" encoding="UTF-8"?>
         <WebsiteConfiguration>

@@ -63,6 +63,7 @@ const (
 	OptionSSEAlgorithm               = "SSEAlgorithm"
 	OptionKMSMasterKeyID             = "KMSMasterKeyID"
 	OptionAcrHeaders                 = "acrHeaders"
+	OptionAcrMethod                  = "acrMethod"
 )
 
 // the elements show in stat object

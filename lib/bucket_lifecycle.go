@@ -28,21 +28,25 @@ var specChineseBucketLifeCycle = SpecText{
 	
     1) ossutil lifecycle --method put oss://bucket local_xml_file [options]
         这个命令从配置文件local_xml_file中读取lifecycle配置，然后设置bucket的lifecycle规则
-        配置文件是一个xml格式的文件，举例如下
+        配置文件是一个xml格式的文件，可以选择只配置部分规则,下面是一个所有规则的例子
    
         <?xml version="1.0" encoding="UTF-8"?>
         <LifecycleConfiguration>
-            <Rule>
-                <ID>a1f08f0d-1653-4092-9647-9cef6368ccbd</ID>
-                <Prefix>testdelete</Prefix>
-                <Status>Enabled</Status>
-                <Expiration>
-                    <Days>240</Days>
-                </Expiration>
-                <AbortMultipartUpload>
-                    <Days>30</Days>
-                </AbortMultipartUpload>
-            </Rule>
+          <Rule>
+            <ID>RuleID</ID>
+            <Prefix>Prefix</Prefix>
+            <Status>Status</Status>
+            <Expiration>
+              <Days>Days</Days>
+            </Expiration>
+            <Transition>
+              <Days>Days</Days>
+              <StorageClass>StorageClass</StorageClass>
+            </Transition>
+            <AbortMultipartUpload>
+              <Days>Days</Days>
+            </AbortMultipartUpload>
+          </Rule>
         </LifecycleConfiguration>
 
     2) ossutil lifecycle --method get oss://bucket  [local_xml_file]
@@ -68,7 +72,7 @@ var specChineseBucketLifeCycle = SpecText{
 }
 
 var specEnglishBucketLifeCycle = SpecText{
-	synopsisText: "Set、get or delete bucket lifecycle configuration",
+	synopsisText: "Set, get or delete bucket lifecycle configuration",
 
 	paramText: "bucket_url lifecycle [options]",
 
@@ -78,30 +82,34 @@ var specEnglishBucketLifeCycle = SpecText{
     ossuitl lifecycle --method delete oss://bucket
 `,
 	detailHelpText: ` 
-    lifecycle command can set、get and delete the lifecycle configuration of the oss bucket by
-    set method option value to put, get,delete
+    lifecycle command can set, get and delete the lifecycle configuration of the oss bucket by
+    set method option value to put, get, delete
 
 Usage:
     There are three usages for this command:
 	
     1) ossutil lifecycle --method put oss://bucket local_xml_file [options]
         The command sets the lifecycle configuration of bucket from local file local_xml_file
-        the local_xml_file is xml format
-        The following is an example of the contents of local_xml_file
+        the local_xml_file is xml format, you can choose to configure only some rules
+        The following is an example of all rules:
 
         <?xml version="1.0" encoding="UTF-8"?>
         <LifecycleConfiguration>
-            <Rule>
-                <ID>a1f08f0d-1653-4092-9647-9cef6368ccbd</ID>
-                <Prefix>testdelete</Prefix>
-                <Status>Enabled</Status>
-                <Expiration>
-                    <Days>240</Days>
-                </Expiration>
-                <AbortMultipartUpload>
-                    <Days>30</Days>
-                </AbortMultipartUpload>
-            </Rule>
+          <Rule>
+            <ID>RuleID</ID>
+            <Prefix>Prefix</Prefix>
+            <Status>Status</Status>
+            <Expiration>
+              <Days>Days</Days>
+            </Expiration>
+            <Transition>
+              <Days>Days</Days>
+              <StorageClass>StorageClass</StorageClass>
+            </Transition>
+            <AbortMultipartUpload>
+              <Days>Days</Days>
+            </AbortMultipartUpload>
+          </Rule>
         </LifecycleConfiguration>
         
     2) ossutil lifecycle --method get oss://bucket  [local_xml_file]
