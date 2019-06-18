@@ -282,9 +282,14 @@ func (cmd *Command) ossClient(bucket string) (*oss.Client, error) {
 	accessKeySecret, _ := GetString(OptionAccessKeySecret, cmd.options)
 	stsToken, _ := GetString(OptionSTSToken, cmd.options)
 	disableCRC64, _ := GetBool(OptionDisableCRC64, cmd.options)
-	if err := cmd.checkCredentials(endpoint, accessKeyID, accessKeySecret); err != nil {
-		return nil, err
+
+	ecsUrl, _ := cmd.getEcsRamAkService()
+	if ecsUrl == "" {
+		if err := cmd.checkCredentials(endpoint, accessKeyID, accessKeySecret); err != nil {
+			return nil, err
+		}
 	}
+
 	options := []oss.ClientOption{oss.UseCname(isCname), oss.SecurityToken(stsToken), oss.UserAgent(getUserAgent()), oss.Timeout(120, 1200)}
 	if disableCRC64 {
 		options = append(options, oss.EnableCRC(false))
@@ -295,6 +300,12 @@ func (cmd *Command) ossClient(bucket string) (*oss.Client, error) {
 	if logLevel > oss.LogOff {
 		options = append(options, oss.SetLogLevel(logLevel))
 		options = append(options, oss.SetLogger(utilLogger))
+	}
+
+	if accessKeyID == "" {
+		LogInfo("using user ak service:%s\n", ecsUrl)
+		ecsRoleAK := EcsRoleAK{url: ecsUrl}
+		options = append(options, oss.SetAKInterface(&ecsRoleAK))
 	}
 
 	client, err := oss.New(endpoint, accessKeyID, accessKeySecret, options...)
@@ -330,6 +341,19 @@ func (cmd *Command) checkCredentials(endpoint, accessKeyID, accessKeySecret stri
 		return fmt.Errorf("invalid accessKeySecret, accessKeySecret is empty, please check your config")
 	}
 	return nil
+}
+
+func (cmd *Command) getEcsRamAkService() (string, bool) {
+	if urlMap, ok := cmd.configOptions[AkServiceSection]; ok {
+		if strUrl, ok := urlMap.(map[string]string)[ItemEcsAk]; ok {
+			if strUrl != "" {
+				return strUrl, true
+			} else {
+				return "", false
+			}
+		}
+	}
+	return "", false
 }
 
 func (cmd *Command) getEndpoint(bucket string) (string, bool) {
