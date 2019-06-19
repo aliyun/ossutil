@@ -154,15 +154,12 @@ var OptionMap = map[string]Option{
 	OptionKMSMasterKeyID: Option{"", "--kms-masterkey-id", "", OptionTypeString, "", "",
 		"表示kms秘钥托管服务中的主秘钥id",
 		"specifies the primary key id in the kms(key management service)"},
-	OptionVersionId: Option{"", "--version-id", "", OptionTypeString, "", "",
-		"表示object的版本id",
-		"specifies the object's version id"},
-	OptionAllversions: Option{"", "--all-versions", "", OptionTypeFlagTrue, "", "",
-		"表示object所有版本",
-		"specifies the object's all versions"},
-	OptionVersionIdMarker: Option{"", "--version-id-marker", "", OptionTypeString, "", "",
-		"表示列举objects所有版本的version id marker",
-		"specifies the marker of object version id when list objects's all versions"},
+	OptionAcrHeaders: Option{"", "--acr-headers", "", OptionTypeString, "", "",
+		"表示http header Access-Control-Request-Headers的值,主要用于cors-options命令",
+		"specifies the value of the http header Access-Control-Request-Headers, mainly used for the options command."},
+	OptionAcrMethod: Option{"", "--acr-method", "", OptionTypeString, "", "",
+		"表示http header Access-Control-Request-Method的值,主要用于cors-options命令",
+		"specifies the value of the http header Access-Control-Request-Method, mainly used for the options command."},
 }
 
 func (T *Option) getHelp(language string) string {

@@ -79,7 +79,7 @@ var specChineseSetMeta = SpecText{
 	paramText: "cloud_url [meta] [options]",
 
 	syntaxText: ` 
-    ossutil set-meta oss://bucket[/prefix] [header:value#header:value...] [--update] [--delete] [-r] [-f] [-c file] [--version-id versionId]
+    ossutil set-meta oss://bucket[/prefix] [header:value#header:value...] [--update] [--delete] [-r] [-f] [-c file] 
 `,
 
 	detailHelpText: ` 
@@ -115,7 +115,7 @@ Headers:
 
     该命令有两种用法：
 
-    1) ossutil set-meta oss://bucket/object [header:value#header:value...] [--update] [--delete] [-f] [--version-id versionId]
+    1) ossutil set-meta oss://bucket/object [header:value#header:value...] [--update] [--delete] [-f] 
         如果未指定--recursive选项，ossutil设置指定的单个object的meta信息，此时请确保输入
     的cloud_url精确指定了想要设置meta的object，当object不存在时会报错。如果指定了--force
     选项，则不会进行询问提示。如果用户未输入[header:value#header:value...]，相当于删除
@@ -154,9 +154,6 @@ Headers:
 
     (7)ossutil set-meta oss://bucket1/%e4%b8%ad%e6%96%87 X-Oss-Meta-delete --delete --encoding-type url
         删除oss://bucket1/中文的X-Oss-Meta-delete头域
-
-    (6)ossutil set-meta oss://bucket1/obj1 X-Oss-Meta-delete --delete --version-id versionId
-        删除指定版本obj1的X-Oss-Meta-delete头域，并生成最新版本
 `,
 }
 
@@ -167,7 +164,7 @@ var specEnglishSetMeta = SpecText{
 	paramText: "cloud_url [meta] [options]",
 
 	syntaxText: ` 
-    ossutil set-meta oss://bucket[/prefix] [header:value#header:value...] [--update] [--delete] [-r] [-f] [-c file] [--version-id versionId]
+    ossutil set-meta oss://bucket[/prefix] [header:value#header:value...] [--update] [--delete] [-r] [-f] [-c file] 
 `,
 
 	detailHelpText: ` 
@@ -210,7 +207,7 @@ Usage:
 
     There are two usages:
 
-    1) ossutil set-meta oss://bucket/object [header:value#header:value...] [--update] [--delete] [-f] [--version-id versionId]
+    1) ossutil set-meta oss://bucket/object [header:value#header:value...] [--update] [--delete] [-f] 
         If --recursive option is not specified, ossutil set meta on the specified single 
     object. In the usage, please make sure cloud_url exactly specified the object you want to 
     set meta on, if object not exist, error occurs. If --force option is specified, ossutil 
@@ -250,9 +247,6 @@ Usage:
 
     (7)ossutil set-meta oss://bucket1/%e4%b8%ad%e6%96%87 X-Oss-Meta-delete --delete --encoding-type url
         Delete X-Oss-Meta-delete header of oss://bucket1/中文
-    
-	(8)ossutil set-meta oss://bucket1/obj1 X-Oss-Meta-delete --delete --version-id versionId
-        Delete X-Oss-Meta-delete header of a specific version of obj1，and generate the latest version obj1
 `,
 }
 
@@ -291,7 +285,6 @@ var setMetaCommand = SetMetaCommand{
 			OptionLanguage,
 			OptionOutputDir,
 			OptionLogLevel,
-			OptionVersionId,
 		},
 	},
 }
@@ -322,7 +315,6 @@ func (sc *SetMetaCommand) RunCommand() error {
 	language, _ := GetString(OptionLanguage, sc.command.options)
 	language = strings.ToLower(language)
 	encodingType, _ := GetString(OptionEncodingType, sc.command.options)
-	versionId, _ := GetString(OptionVersionId, sc.command.options)
 
 	var res bool
 	res, sc.filters = getFilter(os.Args)
@@ -332,10 +324,6 @@ func (sc *SetMetaCommand) RunCommand() error {
 
 	if !recursive && len(sc.filters) > 0 {
 		return fmt.Errorf("--include or --exclude only work with --recursive")
-	}
-
-	if recursive && len(versionId) > 0 {
-		return fmt.Errorf("--version-id only work on single object")
 	}
 
 	cloudURL, err := CloudURLFromString(sc.command.args[0], encodingType)
@@ -371,7 +359,7 @@ func (sc *SetMetaCommand) RunCommand() error {
 	}
 
 	if !recursive {
-		return sc.setObjectMeta(bucket, cloudURL.object, headers, isUpdate, isDelete, versionId)
+		return sc.setObjectMeta(bucket, cloudURL.object, headers, isUpdate, isDelete)
 	}
 	return sc.batchSetObjectMeta(bucket, cloudURL, headers, isUpdate, isDelete, force, routines)
 }
@@ -475,14 +463,10 @@ func (cmd *Command) parseHeaders(str string, isDelete bool) (map[string]string, 
 	return headers, nil
 }
 
-func (sc *SetMetaCommand) setObjectMeta(bucket *oss.Bucket, object string, headers map[string]string, isUpdate, isDelete bool, versionId string) error {
+func (sc *SetMetaCommand) setObjectMeta(bucket *oss.Bucket, object string, headers map[string]string, isUpdate, isDelete bool) error {
 	allheaders := headers
 	if isUpdate || isDelete {
-		var options []oss.Option
-		if len(versionId) > 0 {
-			options = append(options, oss.VersionId(versionId))
-		}
-		props, err := sc.command.ossGetObjectStatRetry(bucket, object, options...)
+		props, err := sc.command.ossGetObjectStatRetry(bucket, object)
 		if err != nil {
 			return err
 		}
@@ -493,9 +477,7 @@ func (sc *SetMetaCommand) setObjectMeta(bucket *oss.Bucket, object string, heade
 	if err != nil {
 		return err
 	}
-	if len(versionId) > 0 {
-		options = append(options, oss.VersionId(versionId))
-	}
+
 	return sc.ossSetObjectMetaRetry(bucket, object, options...)
 }
 
@@ -524,9 +506,8 @@ func (sc *SetMetaCommand) mergeHeader(props http.Header, headers map[string]stri
 
 func (sc *SetMetaCommand) ossSetObjectMetaRetry(bucket *oss.Bucket, object string, options ...oss.Option) error {
 	retryTimes, _ := GetInt(OptionRetryTimes, sc.command.options)
-	cpOptions := append(options, oss.MetadataDirective(oss.MetaReplace))
 	for i := 1; ; i++ {
-		_, err := bucket.CopyObject(object, object, cpOptions...)
+		_, err := bucket.CopyObject(object, object, options...)
 		if err == nil {
 			return err
 		}
@@ -582,7 +563,7 @@ func (sc *SetMetaCommand) setObjectMetaConsumer(bucket *oss.Bucket, headers map[
 }
 
 func (sc *SetMetaCommand) setObjectMetaWithReport(bucket *oss.Bucket, object string, headers map[string]string, isUpdate, isDelete bool) error {
-	err := sc.setObjectMeta(bucket, object, headers, isUpdate, isDelete, "")
+	err := sc.setObjectMeta(bucket, object, headers, isUpdate, isDelete)
 	sc.command.updateMonitor(err, &sc.monitor)
 	msg := fmt.Sprintf("set meta on %s", CloudURLToString(bucket.BucketName, object))
 	sc.command.report(msg, err, &sc.smOption)

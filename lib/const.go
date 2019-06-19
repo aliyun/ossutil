@@ -62,9 +62,8 @@ const (
 	OptionPartitionDownload          = "partitionDownload"
 	OptionSSEAlgorithm               = "SSEAlgorithm"
 	OptionKMSMasterKeyID             = "KMSMasterKeyID"
-	OptionVersionId                  = "versionId"
-	OptionAllversions                = "allVersions"
-	OptionVersionIdMarker            = "versionIdMarker"
+	OptionAcrHeaders                 = "acrHeaders"
+	OptionAcrMethod                  = "acrMethod"
 )
 
 // the elements show in stat object
@@ -108,7 +107,7 @@ const (
 const (
 	Package                 string = "ossutil"
 	ChannelBuf              int    = 1000
-	Version                 string = "v1.6.2"
+	Version                 string = "v1.6.3"
 	DefaultEndpoint         string = "oss.aliyuncs.com"
 	ChineseLanguage                = "CH"
 	EnglishLanguage                = "EN"
