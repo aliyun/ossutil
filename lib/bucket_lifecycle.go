@@ -17,8 +17,8 @@ var specChineseBucketLifeCycle = SpecText{
 
 	syntaxText: ` 
 	ossutil lifecycle --method put oss://bucket local_xml_file [options]
-    ossutil lifecycle --method get oss://bucket [local_file]
-    ossuitl lifecycle --method delete oss://bucket
+    ossutil lifecycle --method get oss://bucket [local_file] [options]
+    ossuitl lifecycle --method delete oss://bucket [options]
 `,
 	detailHelpText: ` 
     lifecycle命令通过设置method选项值为put、get、delete,可以设置、查询或者删除bucket的lifecycle配置
@@ -49,11 +49,11 @@ var specChineseBucketLifeCycle = SpecText{
           </Rule>
         </LifecycleConfiguration>
 
-    2) ossutil lifecycle --method get oss://bucket  [local_xml_file]
+    2) ossutil lifecycle --method get oss://bucket  [local_xml_file] [options]
         这个命令查询bucket的lifecycle配置
         如果输入参数local_xml_file，lifecycle配置将输出到该文件，否则输出到屏幕上
 	
-    3)  ossutil lifecycle --method delete oss://bucket
+    3) ossutil lifecycle --method delete oss://bucket [options]
         这个命令删除bucket的lifecycle配置
 `,
 	sampleText: ` 
@@ -78,8 +78,8 @@ var specEnglishBucketLifeCycle = SpecText{
 
 	syntaxText: ` 
 	ossutil lifecycle --method put oss://bucket local_xml_file [options]
-    ossutil lifecycle --method get oss://bucket [local_xml_file]
-    ossuitl lifecycle --method delete oss://bucket
+    ossutil lifecycle --method get oss://bucket [local_xml_file] [options]
+    ossuitl lifecycle --method delete oss://bucket [options]
 `,
 	detailHelpText: ` 
     lifecycle command can set, get and delete the lifecycle configuration of the oss bucket by
@@ -112,12 +112,12 @@ Usage:
           </Rule>
         </LifecycleConfiguration>
         
-    2) ossutil lifecycle --method get oss://bucket  [local_xml_file]
+    2) ossutil lifecycle --method get oss://bucket  [local_xml_file] [options]
        The command gets the lifecycle configuration of bucket
        If you input parameter local_xml_file,the configuration will be output to local_xml_file
        If you don't input parameter local_xml_file,the configuration will be output to stdout
 	
-    3)  ossutil lifecycle --method delete oss://bucket
+    3) ossutil lifecycle --method delete oss://bucket [options]
        The command deletes the lifecycle configuration of bucket
 `,
 	sampleText: ` 
@@ -130,7 +130,7 @@ Usage:
     3) get lifecycle configuration to local file
        ossutil lifecycle --method get oss://bucket local_xml_file
 	
-    5) delete lifecycle configuration
+    4) delete lifecycle configuration
        ossutil lifecycle --method delete oss://bucket
 `,
 }

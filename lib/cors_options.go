@@ -13,7 +13,7 @@ var specChineseOptions = SpecText{
 	paramText: "oss_url [options]",
 
 	syntaxText: ` 
-    ossutil cors-options --acr-method <value> --origin <value> --acr-headers <value> oss://bucket/[object]
+    ossutil cors-options --acr-method <value> --origin <value> --acr-headers <value> oss://bucket/[object] [options]
 `,
 	detailHelpText: ` 
     cors-options命令向oss发送http options请求
@@ -23,7 +23,7 @@ var specChineseOptions = SpecText{
 用法:
     该命令有一种用法:
 	
-    1) ossutil cors-options --acr-method PUT --origin "www.aliyuncs.com" --acr-header x-oss-meta-author oss://bucket/
+    1) ossutil cors-options --acr-method PUT --origin "www.aliyuncs.com" --acr-header x-oss-meta-author oss://bucket/ [options]
        向oss发送options请求,Origin、Access-Control-Request-Method、Access-Control-Request-Headers分别为www.aliyuncs.com、PUT、x-oss-meta-author
 `,
 	sampleText: ` 
@@ -41,7 +41,7 @@ var specEnglishOptions = SpecText{
 	paramText: "oss_url [options]",
 
 	syntaxText: ` 
-    ossutil cors-options --acr-method <value> --origin <value> --acr-headers <value> oss://bucket/[object]
+    ossutil cors-options --acr-method <value> --origin <value> --acr-headers <value> oss://bucket/[object] [options]
 `,
 	detailHelpText: ` 
     The cors-options command sends an http options request to oss
@@ -51,7 +51,7 @@ var specEnglishOptions = SpecText{
 Usage:
     There are one usage for this command:
 	
-    1) ossutil cors-options --acr-method PUT --origin "www.aliyuncs.com" --acr-header x-oss-meta-author oss://bucket/
+    1) ossutil cors-options --acr-method PUT --origin "www.aliyuncs.com" --acr-header x-oss-meta-author oss://bucket/ [options]
        sends an http options request to oss,Origin、Access-Control-Request-Method、Access-Control-Request-Headers values are www.aliyuncs.com、PUT、x-oss-meta-author
 `,
 	sampleText: ` 

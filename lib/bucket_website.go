@@ -17,8 +17,8 @@ var specChineseBucketWebSite = SpecText{
 
 	syntaxText: ` 
 	ossutil website --method put oss://bucket local_xml_file [options]
-    ossutil website --method get oss://bucket [local_file]
-    ossuitl website --method delete oss://bucket
+    ossutil website --method get oss://bucket [local_file] [options]
+    ossuitl website --method delete oss://bucket [options]
 `,
 	detailHelpText: ` 
     website命令通过设置method选项值为put、get、delete,可以设置、查询或者删除bucket的website配置
@@ -87,11 +87,11 @@ var specChineseBucketWebSite = SpecText{
             </RoutingRules>
         </WebsiteConfiguration>
 
-    2) ossutil website --method get oss://bucket  [local_xml_file]
+    2) ossutil website --method get oss://bucket  [local_xml_file] [options]
         这个命令查询bucket的website配置
         如果输入参数local_xml_file，website配置将输出到该文件，否则输出到屏幕上
 	
-    3)  ossutil website --method delete oss://bucket
+    3) ossutil website --method delete oss://bucket [options]
         这个命令删除bucket的website配置
 `,
 	sampleText: ` 
@@ -116,8 +116,8 @@ var specEnglishBucketWebSite = SpecText{
 
 	syntaxText: ` 
 	ossutil website --method put oss://bucket local_xml_file [options]
-    ossutil website --method get oss://bucket [local_xml_file]
-    ossuitl website --method delete oss://bucket
+    ossutil website --method get oss://bucket [local_xml_file] [options]
+    ossuitl website --method delete oss://bucket [options]
 `,
 	detailHelpText: ` 
     website command can set, get and delete the website configuration of the oss bucket by
@@ -188,12 +188,12 @@ Usage:
             </RoutingRules>
         </WebsiteConfiguration>
         
-    2) ossutil website --method get oss://bucket  [local_xml_file]
+    2) ossutil website --method get oss://bucket  [local_xml_file] [options]
        The command gets the website configuration of bucket
        If you input parameter local_xml_file,the configuration will be output to local_xml_file
        If you don't input parameter local_xml_file,the configuration will be output to stdout
 	
-    3)  ossutil website --method delete oss://bucket
+    3) ossutil website --method delete oss://bucket [options]
        The command deletes the website configuration of bucket
 `,
 	sampleText: ` 
@@ -206,7 +206,7 @@ Usage:
     3) get website configuration to local file
        ossutil website --method get oss://bucket local_xml_file
 	
-    5) delete website configuration
+    4) delete website configuration
        ossutil website --method delete oss://bucket
 `,
 }

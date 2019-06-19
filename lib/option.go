@@ -156,10 +156,10 @@ var OptionMap = map[string]Option{
 		"specifies the primary key id in the kms(key management service)"},
 	OptionAcrHeaders: Option{"", "--acr-headers", "", OptionTypeString, "", "",
 		"表示http header Access-Control-Request-Headers的值,主要用于cors-options命令",
-		"specifies the value of the http header Access-Control-Request-Headers, mainly used for the options command."},
+		"specifies the value of the http header Access-Control-Request-Headers, mainly used for the cors-options command."},
 	OptionAcrMethod: Option{"", "--acr-method", "", OptionTypeString, "", "",
 		"表示http header Access-Control-Request-Method的值,主要用于cors-options命令",
-		"specifies the value of the http header Access-Control-Request-Method, mainly used for the options command."},
+		"specifies the value of the http header Access-Control-Request-Method, mainly used for the cors-options command."},
 }
 
 func (T *Option) getHelp(language string) string {
