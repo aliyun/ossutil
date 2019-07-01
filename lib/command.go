@@ -394,9 +394,16 @@ func (cmd *Command) ossListObjectsRetry(bucket *oss.Bucket, options ...oss.Optio
 		if err == nil {
 			return lor, err
 		}
-		if int64(i) >= retryTimes {
-			return lor, BucketError{err, bucket.BucketName}
+
+		// http 4XX error no need to retry
+		// only network error or internal errror need to retry
+		serviceError, noNeedRetry := err.(oss.ServiceError)
+		if int64(i) >= retryTimes || (noNeedRetry && serviceError.StatusCode < 500) {
+			return lor, ObjectError{err, bucket.BucketName, ""}
 		}
+
+		// wait 1 second
+		time.Sleep(time.Duration(1) * time.Second)
 	}
 }
 
@@ -407,9 +414,16 @@ func (cmd *Command) ossListMultipartUploadsRetry(bucket *oss.Bucket, options ...
 		if err == nil {
 			return lmr, err
 		}
-		if int64(i) >= retryTimes {
-			return lmr, BucketError{err, bucket.BucketName}
+
+		// http 4XX error no need to retry
+		// only network error or internal errror need to retry
+		serviceError, noNeedRetry := err.(oss.ServiceError)
+		if int64(i) >= retryTimes || (noNeedRetry && serviceError.StatusCode < 500) {
+			return lmr, ObjectError{err, bucket.BucketName, ""}
 		}
+
+		// wait 1 second
+		time.Sleep(time.Duration(1) * time.Second)
 	}
 }
 
@@ -421,8 +435,8 @@ func (cmd *Command) ossGetObjectStatRetry(bucket *oss.Bucket, object string, opt
 			return props, err
 		}
 
-		// http 4XX 、5XX error no need to retry
-		// only network error need to retry
+		// http 4XX error no need to retry
+		// only network error or internal errror need to retry
 		serviceError, noNeedRetry := err.(oss.ServiceError)
 		if int64(i) >= retryTimes || (noNeedRetry && serviceError.StatusCode < 500) {
 			return props, ObjectError{err, bucket.BucketName, object}
@@ -441,8 +455,8 @@ func (cmd *Command) ossGetObjectMetaRetry(bucket *oss.Bucket, object string, opt
 			return props, err
 		}
 
-		// http 4XX 、5XX error no need to retry
-		// only network error need to retry
+		// http 4XX error no need to retry
+		// only network error or internal errror need to retry
 		serviceError, noNeedRetry := err.(oss.ServiceError)
 		if int64(i) >= retryTimes || (noNeedRetry && serviceError.StatusCode < 500) {
 			return props, ObjectError{err, bucket.BucketName, object}
