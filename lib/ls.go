@@ -589,7 +589,7 @@ func (lc *ListCommand) listObjects(bucket *oss.Bucket, cloudURL CloudURL, shortF
 		if *limitedNum == 0 {
 			break
 		}
-		lor, err := lc.command.ossListObjectsRetry(bucket, marker, pre, del, payer, oss.MaxKeys(900))
+		lor, err := lc.command.ossListObjectsRetry(bucket, marker, pre, del, payer, oss.MaxKeys(1000))
 		if err != nil {
 			return num, err
 		}
