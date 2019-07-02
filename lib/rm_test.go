@@ -3,6 +3,7 @@ package lib
 import (
 	"fmt"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -644,5 +645,52 @@ func (s *OssutilCommandSuite) TestRmPartfilterExclude(c *C) {
 
 	// cleanup
 	os.Remove(testOutFileName)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestRmSpecialCharacterKey(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+    s.putBucket(bucketName, c)
+
+	fileName := "ossutil-test-file-" + randLowStr(5)
+	text := randLowStr(100)
+	s.createFile(fileName, text, c)
+
+	// put object with special characters key
+	object := "%C0%AE%C0%AE%2F%C0%AE%C0%AE%2F%C0%AE%C0%AE%2F%C0%AE%C0%AE%2F%C0%AE%C0%AE%2F%C0%AE%C0%AE%2F%C0%AE%C0%AE%2F%C0%AE%C0%AE%2F%C0%AE%C0%AE%2F%C0%AE%C0%AE%2Fetc%2Fprofile"
+	command := "cp"
+	args := []string{fileName, CloudURLToString(bucketName, object)}
+	str := ""
+	ok := true
+	cpDir := CheckpointDir
+	thre := strconv.FormatInt(DefaultBigFileThreshold, 10)
+	routines := strconv.Itoa(Routines)
+	partSize := strconv.FormatInt(DefaultPartSize, 10)
+	encodingType := "url"
+	options := OptionMapType{
+		"endpoint":         &str,
+		"accessKeyID":      &str,
+		"accessKeySecret":  &str,
+		"stsToken":         &str,
+		"configFile":       &configFile,
+		"force":            &ok,
+		"bigfileThreshold": &thre,
+		"checkpointDir":    &cpDir,
+		"routines":         &routines,
+		"partSize":         &partSize,
+		"encodingType":     &encodingType,
+	}
+	_, err := cm.RunCommand(command, args, options)
+	c.Assert(err, IsNil)
+
+	// get object
+	downloadFileName := fileName + "-down"
+	decodedKey, _ := url.QueryUnescape(object)
+	s.getObject(bucketName, decodedKey, downloadFileName, c)
+	fileData := s.readFile(downloadFileName, c)
+	c.Assert(fileData, Equals, text)
+
+	os.Remove(fileName)
+	os.Remove(downloadFileName)
 	s.removeBucket(bucketName, true, c)
 }

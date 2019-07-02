@@ -396,7 +396,7 @@ func (cmd *Command) ossListObjectsRetry(bucket *oss.Bucket, options ...oss.Optio
 		}
 
 		// http 4XX error no need to retry
-		// only network error or internal errror need to retry
+		// only network error or internal error need to retry
 		serviceError, noNeedRetry := err.(oss.ServiceError)
 		if int64(i) >= retryTimes || (noNeedRetry && serviceError.StatusCode < 500) {
 			return lor, ObjectError{err, bucket.BucketName, ""}
@@ -416,7 +416,7 @@ func (cmd *Command) ossListMultipartUploadsRetry(bucket *oss.Bucket, options ...
 		}
 
 		// http 4XX error no need to retry
-		// only network error or internal errror need to retry
+		// only network error or internal error need to retry
 		serviceError, noNeedRetry := err.(oss.ServiceError)
 		if int64(i) >= retryTimes || (noNeedRetry && serviceError.StatusCode < 500) {
 			return lmr, ObjectError{err, bucket.BucketName, ""}
@@ -436,7 +436,7 @@ func (cmd *Command) ossGetObjectStatRetry(bucket *oss.Bucket, object string, opt
 		}
 
 		// http 4XX error no need to retry
-		// only network error or internal errror need to retry
+		// only network error or internal error need to retry
 		serviceError, noNeedRetry := err.(oss.ServiceError)
 		if int64(i) >= retryTimes || (noNeedRetry && serviceError.StatusCode < 500) {
 			return props, ObjectError{err, bucket.BucketName, object}
@@ -456,7 +456,7 @@ func (cmd *Command) ossGetObjectMetaRetry(bucket *oss.Bucket, object string, opt
 		}
 
 		// http 4XX error no need to retry
-		// only network error or internal errror need to retry
+		// only network error or internal error need to retry
 		serviceError, noNeedRetry := err.(oss.ServiceError)
 		if int64(i) >= retryTimes || (noNeedRetry && serviceError.StatusCode < 500) {
 			return props, ObjectError{err, bucket.BucketName, object}

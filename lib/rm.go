@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
@@ -565,15 +566,27 @@ func (rc *RemoveCommand) removeEntry(bucket *oss.Bucket, cloudURL CloudURL) erro
 		if err := rc.removeObjectEntry(bucket, cloudURL); err != nil {
 			return err
 		}
+
+		if rc.rmOption.recursive && len(rc.filters) == 0 {
+			// check again
+			// the key including special character can't be deleted by function removeObjectEntry
+			// so delete them one by one
+			if err := rc.removeSpecialCharacterObjects(bucket, cloudURL); err != nil {
+				return err
+			}
+		}
 	}
+
 	if rc.rmOption.typeSet&multipartType != 0 {
 		if err := rc.removeMultipartUploadsEntry(bucket, cloudURL); err != nil {
 			return err
 		}
 	}
+
 	if rc.rmOption.typeSet&bucketType != 0 {
 		return rc.removeBucket(bucket, cloudURL)
 	}
+
 	return nil
 }
 
@@ -675,6 +688,30 @@ func (rc *RemoveCommand) ossBatchDeleteObjectsRetry(bucket *oss.Bucket, objects 
 		}
 		objects = delRes.DeletedObjects
 	}
+}
+
+func (rc *RemoveCommand) removeSpecialCharacterObjects(bucket *oss.Bucket, cloudURL CloudURL) error {
+	pre := oss.Prefix(cloudURL.object)
+	marker := oss.Marker("")
+	for {
+		lor, err := rc.command.ossListObjectsRetry(bucket, marker, pre)
+		if err != nil {
+			return err
+		}
+
+		for _, object := range lor.Objects {
+			if err := bucket.DeleteObject(object.Key); err != nil {
+				return err
+			}
+		}
+
+		pre = oss.Prefix(lor.Prefix)
+		marker = oss.Marker(lor.NextMarker)
+		if !lor.IsTruncated {
+			break
+		}
+	}
+	return nil
 }
 
 func (rc *RemoveCommand) getObjectsFromListResult(lor oss.ListObjectsResult) []string {
@@ -824,11 +861,18 @@ func (rc *RemoveCommand) ossDeleteBucketRetry(client *oss.Client, bucket string)
 		if err == nil {
 			return err
 		}
-		if int64(i) >= retryTimes {
+
+		// http 4XX error no need to retry
+		// only network error or internal error need to retry
+		serviceError, noNeedRetry := err.(oss.ServiceError)
+		if int64(i) >= retryTimes || (noNeedRetry && serviceError.StatusCode < 500) {
 			if strings.Contains(err.Error(), "bucket you tried to delete is not empty") {
 				fmt.Printf("\nWhether new objects were uploaded during the deletion?\n\n")
 			}
 			return BucketError{err, bucket}
 		}
+
+		// wait 1 second
+		time.Sleep(time.Duration(1) * time.Second)
 	}
 }
