@@ -102,9 +102,7 @@ type OssProgressListener struct {
 // ProgressChanged handle progress event
 func (l *OssProgressListener) ProgressChanged(event *oss.ProgressEvent) {
 	if event.EventType == oss.TransferDataEvent {
-		l.lastSize = l.currSize
-		l.currSize = event.ConsumedBytes
-		l.monitor.updateTransferSize(l.currSize - l.lastSize)
+		l.monitor.updateTransferSize(event.RwBytes)
 		freshProgress()
 	}
 }
@@ -2042,7 +2040,7 @@ func (cc *CopyCommand) downloadSingleFileWithReport(bucket *oss.Bucket, objectIn
 		}
 		objectKey := objectInfo.prefix + objectInfo.relativeKey
 		LogInfo("download success,object:%s,size:%d,speed:%.2f(KB/s),cost:%d(ms)\n", objectKey, objectInfo.size, speed, cost)
-		cc.updateSnapshot(nil, objectKey, objectInfo.lastModified.Unix())
+		cc.updateSnapshot(nil, CloudURLToString(bucket.BucketName, objectKey), objectInfo.lastModified.Unix())
 	}
 
 	cc.updateMonitor(skip, err, false, size)
@@ -2074,7 +2072,7 @@ func (cc *CopyCommand) downloadSingleFile(bucket *oss.Bucket, objectInfo objectI
 	}
 
 	rsize := cc.getRangeSize(size)
-	if cc.skipDownload(fileName, srct, object) {
+	if cc.skipDownload(fileName, srct, CloudURLToString(bucket.BucketName, object)) {
 		return true, nil, rsize, msg
 	}
 
