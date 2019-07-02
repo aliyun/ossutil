@@ -10,6 +10,10 @@ import (
 	"time"
 )
 
+const (
+	AdvanceSeconds int64 = 60
+)
+
 type STSAkJson struct {
 	AccessKeyId     string `json:"AccessKeyId,omitempty"`
 	AccessKeySecret string `json:"AccessKeySecret,omitempty"`
@@ -61,10 +65,7 @@ func (ecsRole *EcsRoleAK) GetAk() (string, string, string) {
 	if !ecsRole.HasGet {
 		bTimeOut = true
 	} else {
-		bTimeOut, err = ecsRole.IsTimeOut()
-		if err != nil {
-			return "", "", ""
-		}
+		bTimeOut = ecsRole.IsTimeOut()
 	}
 
 	if bTimeOut {
@@ -77,30 +78,25 @@ func (ecsRole *EcsRoleAK) GetAk() (string, string, string) {
 	return ecsRole.AccessKeyId, ecsRole.AccessKeySecret, ecsRole.SecurityToken
 }
 
-func (ecsRole *EcsRoleAK) IsTimeOut() (bool, error) {
-	utcExpirationTime, err := time.Parse("2006-01-02T15:04:05Z", ecsRole.Expiration)
-	if err != nil {
-		LogError("time.Parse error,Expiration is %s,%s\n", ecsRole.Expiration, err.Error())
-		return false, err
+func (ecsRole *EcsRoleAK) IsTimeOut() bool {
+	if ecsRole.Expiration == "" {
+		return false
 	}
+
+	utcExpirationTime, _ := time.Parse("2006-01-02T15:04:05Z", ecsRole.Expiration)
 
 	// Now() returns the current local time
 	nowLocalTime := time.Now()
 
 	// Unix() returns the number of seconds elapsedsince January 1, 1970 UTC.
 	// five minutes in advance
-	if utcExpirationTime.Unix()-nowLocalTime.Unix()-5*60 <= 0 {
-		return true, nil
+	if utcExpirationTime.Unix()-nowLocalTime.Unix()-AdvanceSeconds <= 0 {
+		return true
 	}
-	return false, nil
+	return false
 }
 
 func (ecsRole *EcsRoleAK) HttpReqAk() error {
-	if ecsRole.url == "" {
-		LogError("insight getAK error,url is empty\n")
-		return fmt.Errorf("insight getAK error,url is empty")
-	}
-
 	//http time out
 	c := &http.Client{
 		Timeout: 15 * time.Second,
@@ -118,7 +114,6 @@ func (ecsRole *EcsRoleAK) HttpReqAk() error {
 		return err
 	}
 	tEnd := time.Now().UnixNano() / 1000 / 1000
-
 	akJson := &STSAkJson{}
 	err = json.Unmarshal(body, akJson)
 	if err != nil {
@@ -136,16 +131,22 @@ func (ecsRole *EcsRoleAK) HttpReqAk() error {
 	//    "Code" : "Success"
 	// }
 
-	if strings.ToUpper(akJson.Code) != "SUCCESS" {
+	if akJson.Code != "" && strings.ToUpper(akJson.Code) != "SUCCESS" {
 		LogError("insight getAK,get sts ak error,code:%s\n", akJson.Code)
 		return fmt.Errorf("insight getAK,get sts ak error,code:%s", akJson.Code)
 	}
 
-	if akJson.AccessKeyId == "" || akJson.AccessKeySecret == "" ||
-		akJson.Expiration == "" || akJson.SecurityToken == "" ||
-		akJson.LastUpDated == "" {
+	if akJson.AccessKeyId == "" || akJson.AccessKeySecret == "" {
 		LogError("insight getAK,parsar http json body error:\n%s\n", string(body))
 		return fmt.Errorf("insight getAK,parsar http json body error:\n%s\n", string(body))
+	}
+
+	if akJson.Expiration != "" {
+		_, err := time.Parse("2006-01-02T15:04:05Z", akJson.Expiration)
+		if err != nil {
+			LogError("time.Parse error,Expiration is %s,%s\n", akJson.Expiration, err.Error())
+			return err
+		}
 	}
 
 	ecsRole.AccessKeyId = akJson.AccessKeyId

@@ -31,11 +31,11 @@ var _ = Suite(&OssutilCommandSuite{})
 
 var (
 	// Update before running test
-	endpoint        = "<testEndpoint>"
-	accessKeyID     = "<testAccessKeyID>"
-	accessKeySecret = "<testAccessKeySecret>"
-	stsToken        = "<testSTSToken>"
-	payerBucket     = "<testPayerBucket>"
+	endpoint        = ""
+	accessKeyID     = ""
+	accessKeySecret = ""
+	stsToken        = ""
+	payerBucket     = ""
 )
 
 var (
@@ -79,7 +79,7 @@ func (s *OssutilCommandSuite) SetUpSuite(c *C) {
 }
 
 func SetUpCredential() {
-	if endpoint == "<testEndpoint>" {
+	if endpoint == "" {
 		endpoint = os.Getenv("OSS_TEST_ENDPOINT")
 	}
 	if strings.HasPrefix(endpoint, "https://") {
@@ -88,13 +88,13 @@ func SetUpCredential() {
 	if strings.HasPrefix(endpoint, "http://") {
 		endpoint = endpoint[7:]
 	}
-	if accessKeyID == "<testAccessKeyID>" {
+	if accessKeyID == "" {
 		accessKeyID = os.Getenv("OSS_TEST_ACCESS_KEY_ID")
 	}
-	if accessKeySecret == "<testAccessKeySecret>" {
+	if accessKeySecret == "" {
 		accessKeySecret = os.Getenv("OSS_TEST_ACCESS_KEY_SECRET")
 	}
-	if payerBucket == "<testPayerBucket>" {
+	if payerBucket == "" {
 		payerBucket = os.Getenv("OSS_TEST_PAYER_BUCKET")
 	}
 	if ue := os.Getenv("OSS_TEST_UPDATE_ENDPOINT"); ue != "" {
