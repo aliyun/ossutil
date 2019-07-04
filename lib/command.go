@@ -607,5 +607,7 @@ func GetAllCommands() []interface{} {
 		&corsOptionsCommand,
 		&bucketLifeCycleCommand,
 		&bucketWebsiteCommand,
+		&bucketQosCommand,
+		&userQosCommand,
 	}
 }
