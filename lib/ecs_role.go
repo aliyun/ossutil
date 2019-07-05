@@ -83,13 +83,13 @@ func (ecsRole *EcsRoleAK) IsTimeOut() bool {
 		return false
 	}
 
+	// attention: can't use time.ParseInLocation(),ecsRole.Expiration is UTC time
 	utcExpirationTime, _ := time.Parse("2006-01-02T15:04:05Z", ecsRole.Expiration)
 
 	// Now() returns the current local time
 	nowLocalTime := time.Now()
 
 	// Unix() returns the number of seconds elapsedsince January 1, 1970 UTC.
-	// five minutes in advance
 	if utcExpirationTime.Unix()-nowLocalTime.Unix()-AdvanceSeconds <= 0 {
 		return true
 	}

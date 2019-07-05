@@ -10,6 +10,13 @@ import (
 	. "gopkg.in/check.v1"
 )
 
+const (
+	TestEcsTimeout int64 = 2
+)
+const (
+	TIME_LAYOUT = "2006-01-02T15:04:05Z"
+)
+
 func StsHttpHandlerOk(w http.ResponseWriter, r *http.Request) {
 	akJson := &STSAkJson{}
 
@@ -25,8 +32,11 @@ func StsHttpHandlerOk(w http.ResponseWriter, r *http.Request) {
 	akJson.AccessKeySecret = accessKeySecret
 	akJson.SecurityToken = ""
 	nowLocalTime := time.Now()
-	akJson.Expiration = (nowLocalTime.Add(time.Second * 3600)).Format("2006-01-02T15:04:05Z")
-	akJson.LastUpDated = nowLocalTime.Format("2006-01-02T15:04:05Z")
+
+	expirationTime := nowLocalTime.Add(time.Second * time.Duration(AdvanceSeconds+TestEcsTimeout))
+	akJson.Expiration = expirationTime.UTC().Format(TIME_LAYOUT)
+
+	akJson.LastUpDated = nowLocalTime.UTC().Format(TIME_LAYOUT)
 	akJson.Code = "Success"
 	bs, _ := json.Marshal(akJson)
 	w.Write(bs)
@@ -95,6 +105,29 @@ func (s *OssutilCommandSuite) TestEcsRoleSuccess(c *C) {
 	c.Assert(err, IsNil)
 
 	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestEcsRoleAkTimeout(c *C) {
+	svr := startHttpServer(StsHttpHandlerOk)
+	time.Sleep(time.Duration(1) * time.Second)
+
+	ecsRole := EcsRoleAK{url: "http://127.0.0.1:32915/latest/meta-data/Ram/security-credentials/EcsRamRoleTesting"}
+	strKeyId1 := ecsRole.GetAccessKeyID()
+	c.Assert(strKeyId1 == "", Equals, false)
+	Expiration1 := ecsRole.Expiration
+
+	// wait Ak timeout
+	time.Sleep(time.Duration(1+TestEcsTimeout) * time.Second)
+
+	strKeyId2 := ecsRole.GetAccessKeyID()
+	c.Assert(strKeyId2 == "", Equals, false)
+	Expiration2 := ecsRole.Expiration
+
+	c.Assert(strKeyId1, Equals, strKeyId2)
+	c.Assert(Expiration1 == Expiration2, Equals, false)
+
+	svr.Shutdown(nil)
+
 }
 
 func (s *OssutilCommandSuite) TestEcsRoleNotHttpServerError(c *C) {
