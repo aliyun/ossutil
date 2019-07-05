@@ -412,9 +412,9 @@ func (s *OssutilCommandSuite) removeBucket(bucket string, clearObjects bool, c *
 		showElapse, err = s.removeWrapper("rm -arfb", bucket, "", c)
 	}
 	if err != nil {
-		verr := err.(BucketError).err
-		c.Assert(verr.(oss.ServiceError).Code == "NoSuchBucket" || verr.(oss.ServiceError).Code == "BucketNotEmpty", Equals, true)
-		c.Assert(showElapse, Equals, false)
+		bNoBucket := strings.Contains(err.Error(), "NoSuchBucket")
+		bBucketEmpty := strings.Contains(err.Error(), "BucketNotEmpty")
+		c.Assert((bBucketEmpty || bNoBucket), Equals, true)
 	} else {
 		c.Assert(showElapse, Equals, true)
 	}
