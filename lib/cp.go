@@ -1239,7 +1239,7 @@ func (cc *CopyCommand) RunCommand() error {
 	}
 
 	if payer != "" {
-		if payer != string(oss.Requester) {
+		if payer != strings.ToLower(string(oss.Requester)) {
 			return fmt.Errorf("invalid request payer: %s, please check", payer)
 		}
 		cc.cpOption.options = append(cc.cpOption.options, oss.RequestPayer(oss.PayerType(payer)))
