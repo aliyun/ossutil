@@ -14,7 +14,7 @@ import (
 var commandLine string
 
 func LogEnd(startT time.Time) {
-	LogInfo("ossutil run end,cost :%d(ms).\n", time.Now().UnixNano()/1000/1000-startT.UnixNano()/1000/1000)
+	LogInfo("ossutil run end,cost:%d(ms).\n", time.Now().UnixNano()/1000/1000-startT.UnixNano()/1000/1000)
 	UnInitLogger()
 }
 

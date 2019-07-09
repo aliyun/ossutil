@@ -304,8 +304,8 @@ func (cmd *Command) ossClient(bucket string) (*oss.Client, error) {
 
 	if accessKeyID == "" {
 		LogInfo("using user ak service:%s\n", ecsUrl)
-		ecsRoleAK := EcsRoleAK{url: ecsUrl}
-		options = append(options, oss.SetAKInterface(&ecsRoleAK))
+		ecsRoleAKBuild := EcsRoleAKBuild{url: ecsUrl}
+		options = append(options, oss.SetCredentialsProvider(&ecsRoleAKBuild))
 	}
 
 	client, err := oss.New(endpoint, accessKeyID, accessKeySecret, options...)

@@ -111,15 +111,15 @@ func (s *OssutilCommandSuite) TestEcsRoleAkTimeout(c *C) {
 	svr := startHttpServer(StsHttpHandlerOk)
 	time.Sleep(time.Duration(1) * time.Second)
 
-	ecsRole := EcsRoleAK{url: "http://127.0.0.1:32915/latest/meta-data/Ram/security-credentials/EcsRamRoleTesting"}
-	strKeyId1 := ecsRole.GetAccessKeyID()
+	ecsRole := EcsRoleAKBuild{url: "http://127.0.0.1:32915/latest/meta-data/Ram/security-credentials/EcsRamRoleTesting"}
+	strKeyId1 := ecsRole. GetCredentials().GetAccessKeyID()
 	c.Assert(strKeyId1 == "", Equals, false)
 	Expiration1 := ecsRole.Expiration
 
 	// wait Ak timeout
 	time.Sleep(time.Duration(1+TestEcsTimeout) * time.Second)
 
-	strKeyId2 := ecsRole.GetAccessKeyID()
+	strKeyId2 := ecsRole. GetCredentials().GetAccessKeyID()
 	c.Assert(strKeyId2 == "", Equals, false)
 	Expiration2 := ecsRole.Expiration
 

@@ -8,6 +8,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
 
 const (
@@ -23,8 +25,31 @@ type STSAkJson struct {
 	Code            string `json:"Code,omitempty"`
 }
 
-// for ecs bind ram and get ak by ossutil automaticly
+func (stsJson *STSAkJson) String() string {
+	return fmt.Sprintf("AccessKeyId:%s,AccessKeySecret:%s,SecurityToken:%s,Expiration:%s,LastUpDated:%s",
+		stsJson.AccessKeyId, stsJson.AccessKeySecret, stsJson.SecurityToken, stsJson.Expiration, stsJson.LastUpDated)
+}
+
 type EcsRoleAK struct {
+	AccessKeyId     string
+	AccessKeySecret string
+	SecurityToken   string
+}
+
+func (ecsRole *EcsRoleAK) GetAccessKeyID() string {
+	return ecsRole.AccessKeyId
+}
+
+func (ecsRole *EcsRoleAK) GetAccessKeySecret() string {
+	return ecsRole.AccessKeySecret
+}
+
+func (ecsRole *EcsRoleAK) GetSecurityToken() string {
+	return ecsRole.SecurityToken
+}
+
+// for ecs bind ram and get ak by ossutil automaticly
+type EcsRoleAKBuild struct {
 	lock            sync.Mutex
 	HasGet          bool
 	url             string //url for get ak,such as http://100.100.100.200/latest/meta-data/Ram/security-credentials/RamRoleName
@@ -35,56 +60,52 @@ type EcsRoleAK struct {
 	LastUpDated     string
 }
 
-func (ecsRole *EcsRoleAK) String() string {
-	return fmt.Sprintf("AccessKeyId:%s,AccessKeySecret:%s,SecurityToken:%s,Expiration:%s,LastUpDated:%s",
-		ecsRole.AccessKeyId, ecsRole.AccessKeySecret, ecsRole.SecurityToken, ecsRole.Expiration, ecsRole.LastUpDated)
-}
+func (roleBuild *EcsRoleAKBuild) GetCredentials() oss.Credentials {
+	roleBuild.lock.Lock()
+	defer roleBuild.lock.Unlock()
 
-func (ecsRole *EcsRoleAK) GetAccessKeyID() string {
-	key, _, _ := ecsRole.GetAk()
-	return key
-}
-
-func (ecsRole *EcsRoleAK) GetAccessKeySecret() string {
-	_, secret, _ := ecsRole.GetAk()
-	return secret
-}
-
-func (ecsRole *EcsRoleAK) GetSecurityToken() string {
-	_, _, token := ecsRole.GetAk()
-	return token
-}
-
-func (ecsRole *EcsRoleAK) GetAk() (string, string, string) {
-	ecsRole.lock.Lock()
-	defer ecsRole.lock.Unlock()
-
-	var err error
+	akJson := STSAkJson{}
+	var err error = nil
 	bTimeOut := false
 
-	if !ecsRole.HasGet {
+	if !roleBuild.HasGet {
 		bTimeOut = true
 	} else {
-		bTimeOut = ecsRole.IsTimeOut()
+		bTimeOut = roleBuild.IsTimeOut()
 	}
 
 	if bTimeOut {
-		err = ecsRole.HttpReqAk()
+		tStart := time.Now().UnixNano() / 1000 / 1000
+		akJson, err = roleBuild.HttpReqAk()
+		tEnd := time.Now().UnixNano() / 1000 / 1000
+
+		if err == nil {
+			roleBuild.AccessKeyId = akJson.AccessKeyId
+			roleBuild.AccessKeySecret = akJson.AccessKeySecret
+			roleBuild.SecurityToken = akJson.SecurityToken
+			roleBuild.Expiration = akJson.Expiration
+			LogInfo("get sts ak success,%s,cost:%d(ms)\n", akJson.String(), tEnd-tStart)
+		}
 	}
 
 	if err != nil {
-		return "", "", ""
+		return &EcsRoleAK{}
 	}
-	return ecsRole.AccessKeyId, ecsRole.AccessKeySecret, ecsRole.SecurityToken
+
+	return &EcsRoleAK{
+		AccessKeyId:     roleBuild.AccessKeyId,
+		AccessKeySecret: roleBuild.AccessKeySecret,
+		SecurityToken:   roleBuild.SecurityToken,
+	}
 }
 
-func (ecsRole *EcsRoleAK) IsTimeOut() bool {
-	if ecsRole.Expiration == "" {
+func (roleBuild *EcsRoleAKBuild) IsTimeOut() bool {
+	if roleBuild.Expiration == "" {
 		return false
 	}
 
 	// attention: can't use time.ParseInLocation(),ecsRole.Expiration is UTC time
-	utcExpirationTime, _ := time.Parse("2006-01-02T15:04:05Z", ecsRole.Expiration)
+	utcExpirationTime, _ := time.Parse("2006-01-02T15:04:05Z", roleBuild.Expiration)
 
 	// Now() returns the current local time
 	nowLocalTime := time.Now()
@@ -96,29 +117,29 @@ func (ecsRole *EcsRoleAK) IsTimeOut() bool {
 	return false
 }
 
-func (ecsRole *EcsRoleAK) HttpReqAk() error {
+func (roleBuild *EcsRoleAKBuild) HttpReqAk() (STSAkJson, error) {
+	akJson := STSAkJson{}
+
 	//http time out
 	c := &http.Client{
 		Timeout: 15 * time.Second,
 	}
 
-	tStart := time.Now().UnixNano() / 1000 / 1000
-	resp, err := c.Get(ecsRole.url)
+	resp, err := c.Get(roleBuild.url)
 	if err != nil {
-		LogError("insight getAK,http client get error,url is %s,%s\n", ecsRole.url, err.Error())
-		return err
+		LogError("insight getAK,http client get error,url is %s,%s\n", roleBuild.url, err.Error())
+		return akJson, err
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return err
+		return akJson, err
 	}
-	tEnd := time.Now().UnixNano() / 1000 / 1000
-	akJson := &STSAkJson{}
-	err = json.Unmarshal(body, akJson)
+
+	err = json.Unmarshal(body, &akJson)
 	if err != nil {
 		LogError("insight getAK,json.Unmarshal error,body is %s,%s\n", string(body), err.Error())
-		return err
+		return akJson, err
 	}
 
 	// parsar json,such as
@@ -133,29 +154,22 @@ func (ecsRole *EcsRoleAK) HttpReqAk() error {
 
 	if akJson.Code != "" && strings.ToUpper(akJson.Code) != "SUCCESS" {
 		LogError("insight getAK,get sts ak error,code:%s\n", akJson.Code)
-		return fmt.Errorf("insight getAK,get sts ak error,code:%s", akJson.Code)
+		return akJson, fmt.Errorf("insight getAK,get sts ak error,code:%s", akJson.Code)
 	}
 
 	if akJson.AccessKeyId == "" || akJson.AccessKeySecret == "" {
 		LogError("insight getAK,parsar http json body error:\n%s\n", string(body))
-		return fmt.Errorf("insight getAK,parsar http json body error:\n%s\n", string(body))
+		return akJson, fmt.Errorf("insight getAK,parsar http json body error:\n%s\n", string(body))
 	}
 
 	if akJson.Expiration != "" {
 		_, err := time.Parse("2006-01-02T15:04:05Z", akJson.Expiration)
 		if err != nil {
 			LogError("time.Parse error,Expiration is %s,%s\n", akJson.Expiration, err.Error())
-			return err
+			return akJson, err
 		}
 	}
 
-	ecsRole.AccessKeyId = akJson.AccessKeyId
-	ecsRole.AccessKeySecret = akJson.AccessKeySecret
-	ecsRole.SecurityToken = akJson.SecurityToken
-	ecsRole.Expiration = akJson.Expiration
-	ecsRole.LastUpDated = akJson.LastUpDated
-
-	LogInfo("get sts ak success,%s,cost:%d(ms)\n", ecsRole.String(), tEnd-tStart)
-	ecsRole.HasGet = true
-	return nil
+	roleBuild.HasGet = true
+	return akJson, nil
 }
