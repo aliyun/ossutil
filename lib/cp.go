@@ -1798,7 +1798,11 @@ func (cc *CopyCommand) ossPutObjectRetry(bucket *oss.Bucket, objectName string, 
 		if err == nil {
 			return err
 		}
-		if int64(i) >= retryTimes {
+
+		// http 4XX error no need to retry
+		// only network error or internal error need to retry
+		serviceError, noNeedRetry := err.(oss.ServiceError)
+		if int64(i) >= retryTimes || (noNeedRetry && serviceError.StatusCode < 500) {
 			return ObjectError{err, bucket.BucketName, objectName}
 		}
 	}
@@ -1825,7 +1829,10 @@ func (cc *CopyCommand) ossUploadFileRetry(bucket *oss.Bucket, objectName string,
 			LogError("try count:%d,upload file error %s,cost:%d(ms),error:%s\n", i, filePath, cost, err.Error())
 		}
 
-		if int64(i) >= retryTimes {
+		// http 4XX error no need to retry
+		// only network error or internal error need to retry
+		serviceError, noNeedRetry := err.(oss.ServiceError)
+		if int64(i) >= retryTimes || (noNeedRetry && serviceError.StatusCode < 500) {
 			return FileError{err, filePath}
 		}
 	}
@@ -2170,7 +2177,10 @@ func (cc *CopyCommand) ossDownloadFileRetry(bucket *oss.Bucket, objectName, file
 			LogError("try count:%d,GetObjectToFile error %s,cost:%d(ms),error:%s\n", i, fileName, cost, err.Error())
 		}
 
-		if int64(i) >= retryTimes {
+		// http 4XX error no need to retry
+		// only network error or internal error need to retry
+		serviceError, noNeedRetry := err.(oss.ServiceError)
+		if int64(i) >= retryTimes || (noNeedRetry && serviceError.StatusCode < 500) {
 			return ObjectError{err, bucket.BucketName, objectName}
 		}
 	}
@@ -2575,7 +2585,11 @@ func (cc *CopyCommand) ossCopyObjectRetry(bucket *oss.Bucket, objectName, destBu
 		if err == nil {
 			return err
 		}
-		if int64(i) >= retryTimes {
+
+		// http 4XX error no need to retry
+		// only network error or internal error need to retry
+		serviceError, noNeedRetry := err.(oss.ServiceError)
+		if int64(i) >= retryTimes || (noNeedRetry && serviceError.StatusCode < 500) {
 			return ObjectError{err, bucket.BucketName, objectName}
 		}
 	}
