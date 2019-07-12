@@ -1,3 +1,12 @@
+## 版本号：v1.6.4 日期：2019-07-12
+### 变更内容
+ - 增加：增加user-qos, bucket-qos命令
+ - 增加: 支持利用ecs绑定的角色操作
+ - 增加: ls & rm命令支持include、exclude选项
+ - 修复: cp命令传输速度统计不准
+ - 修复: windows平台配置项长度不能超过256字符
+ - 修复: 无法删除key中带有特殊字符的object
+ 
 ## 版本号：v1.6.3 日期：2019-06-19
 ### 变更内容
  - 增加：增加lifecycle, website, cors-options命令
