@@ -2,7 +2,11 @@ package lib
 
 import (
 	"fmt"
+	"io/ioutil"
+	"net/url"
 	"os"
+	"strconv"
+	"strings"
 
 	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 	. "gopkg.in/check.v1"
@@ -403,4 +407,290 @@ func (s *OssutilCommandSuite) TestAllTypeError(c *C) {
 
 	_, e := s.removeWrapper("rm -ab", bucketName, object, c)
 	c.Assert(e, NotNil)
+}
+
+func (s *OssutilCommandSuite) TestRmObjectfilter(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	bucketStr := CloudURLToString(bucketName, "")
+
+	dir := "ossutil-test-dir-" + randLowStr(5)
+	subdir := "dir1"
+	contents := map[string]string{}
+	filenames := s.createTestFiles(dir, subdir, c, contents)
+
+	// upload files
+	args := []string{dir, bucketStr}
+	cmdline := []string{"ossutil", "cp", dir, bucketStr, "-rf"}
+	showElapse, err := s.rawCPWithFilter(args, true, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	// ls files
+	limitedNum := strconv.FormatInt(-1, 10)
+	lsArgs := []string{CloudURLToString(bucketName, "")}
+	str := ""
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+		"limitedNum":      &limitedNum,
+	}
+
+	testOutFileName := "ossutil-test-outfile-" + randLowStr(5)
+	testOutFile, _ := os.OpenFile(testOutFileName, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
+	oldStdout := os.Stdout
+	os.Stdout = testOutFile
+	_, err = cm.RunCommand("ls", lsArgs, options)
+	c.Assert(err, IsNil)
+	testOutFile.Close()
+	os.Stdout = oldStdout
+
+	fileBody, err := ioutil.ReadFile(testOutFileName)
+	c.Assert(err, IsNil)
+
+	// Verify
+	for _, filename := range filenames {
+		c.Assert(strings.Contains(string(fileBody), filename), Equals, true)
+	}
+
+	// then rm objects
+	cmdline = []string{"ossutil", "rm", bucketStr, "-rf", "--include", "*.jpg"}
+	rmArgs := []string{CloudURLToString(bucketName, "")}
+	bRecusive := true
+	bForce := true
+	rmOptions := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+		"recursive":       &bRecusive,
+		"force":           &bForce,
+	}
+	os.Args = cmdline
+	_, err = cm.RunCommand("rm", rmArgs, rmOptions)
+	os.Args = []string{}
+	c.Assert(err, IsNil)
+
+	// check again after rm
+	testOutFile, _ = os.OpenFile(testOutFileName, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
+	oldStdout = os.Stdout
+	os.Stdout = testOutFile
+	_, err = cm.RunCommand("ls", lsArgs, options)
+	c.Assert(err, IsNil)
+	testOutFile.Close()
+	os.Stdout = oldStdout
+
+	fileBody, err = ioutil.ReadFile(testOutFileName)
+	c.Assert(err, IsNil)
+
+	// Verify include
+	files := filterStrsWithInclude(filenames, "*.jpg")
+	for _, filename := range files {
+		c.Assert(strings.Contains(string(fileBody), filename), Equals, false)
+	}
+
+	// Verify exclude
+	files = filterStrsWithExclude(filenames, "*.jpg")
+	for _, filename := range files {
+		c.Assert(strings.Contains(string(fileBody), filename), Equals, true)
+	}
+
+	// cleanup
+	os.Remove(testOutFileName)
+	os.RemoveAll(dir)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestRmPartfilter(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	bucketStr := CloudURLToString(bucketName, "")
+
+	bucket, err := makeBucketCommand.command.ossBucket(bucketName)
+
+	// object jpg
+	object1 := "ossutil-test-object-" + randLowStr(5) + ".jpg"
+	_, err = bucket.InitiateMultipartUpload(object1)
+	c.Assert(err, IsNil)
+
+	// object png
+	object2 := "ossutil-test-object-" + randLowStr(5) + ".png"
+	_, err = bucket.InitiateMultipartUpload(object2)
+	c.Assert(err, IsNil)
+
+	// ls files
+	cmdline := []string{"ossutil", "ls", "-m", bucketStr, "--include", "*.jpg"}
+	limitedNum := strconv.FormatInt(-1, 10)
+	lsArgs := []string{CloudURLToString(bucketName, "")}
+	str := ""
+	bPart := true
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+		"limitedNum":      &limitedNum,
+		"multipart":       &bPart,
+	}
+
+	testOutFileName := "ossutil-test-outfile-" + randLowStr(5)
+	testOutFile, _ := os.OpenFile(testOutFileName, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
+	oldStdout := os.Stdout
+	os.Stdout = testOutFile
+	os.Args = cmdline
+	_, err = cm.RunCommand("ls", lsArgs, options)
+	c.Assert(err, IsNil)
+	testOutFile.Close()
+	os.Stdout = oldStdout
+	os.Args = []string{}
+
+	fileBody, err := ioutil.ReadFile(testOutFileName)
+	c.Assert(err, IsNil)
+
+	// Verify
+	c.Assert(strings.Contains(string(fileBody), object1), Equals, true)
+	c.Assert(strings.Contains(string(fileBody), object2), Equals, false)
+
+	// cleanup
+	os.Remove(testOutFileName)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestRmPartfilterExclude(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	bucketStr := CloudURLToString(bucketName, "")
+
+	bucket, err := makeBucketCommand.command.ossBucket(bucketName)
+
+	// object jpg
+	object1 := "ossutil-test-object-" + randLowStr(5) + ".jpg"
+	_, err = bucket.InitiateMultipartUpload(object1)
+	c.Assert(err, IsNil)
+
+	// object png
+	object2 := "ossutil-test-object-" + randLowStr(5) + ".png"
+	_, err = bucket.InitiateMultipartUpload(object2)
+	c.Assert(err, IsNil)
+
+	// ls files
+	limitedNum := strconv.FormatInt(-1, 10)
+	lsArgs := []string{CloudURLToString(bucketName, "")}
+	str := ""
+	bPart := true
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+		"limitedNum":      &limitedNum,
+		"multipart":       &bPart,
+	}
+
+	testOutFileName := "ossutil-test-outfile-" + randLowStr(5)
+	testOutFile, _ := os.OpenFile(testOutFileName, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
+	oldStdout := os.Stdout
+	os.Stdout = testOutFile
+	_, err = cm.RunCommand("ls", lsArgs, options)
+	c.Assert(err, IsNil)
+	testOutFile.Close()
+	os.Stdout = oldStdout
+	os.Args = []string{}
+
+	fileBody, err := ioutil.ReadFile(testOutFileName)
+	c.Assert(err, IsNil)
+
+	// Verify
+	c.Assert(strings.Contains(string(fileBody), object1), Equals, true)
+	c.Assert(strings.Contains(string(fileBody), object2), Equals, true)
+
+	// then rm objects
+	cmdline := []string{"ossutil", "rm", bucketStr, "-rf", "--include", "*.jpg"}
+	rmArgs := []string{CloudURLToString(bucketName, "")}
+	bRecusive := true
+	bForce := true
+	bMultiPart := true
+	rmOptions := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+		"recursive":       &bRecusive,
+		"force":           &bForce,
+		"multipart":       &bMultiPart,
+	}
+
+	os.Args = cmdline
+	_, err = cm.RunCommand("rm", rmArgs, rmOptions)
+	os.Args = []string{}
+	c.Assert(err, IsNil)
+
+	// check again after rm
+	testOutFile, _ = os.OpenFile(testOutFileName, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
+	oldStdout = os.Stdout
+	os.Stdout = testOutFile
+	_, err = cm.RunCommand("ls", lsArgs, options)
+	c.Assert(err, IsNil)
+	testOutFile.Close()
+	os.Stdout = oldStdout
+
+	fileBody, err = ioutil.ReadFile(testOutFileName)
+	c.Assert(err, IsNil)
+
+	// Verify
+	c.Assert(strings.Contains(string(fileBody), object1), Equals, false)
+	c.Assert(strings.Contains(string(fileBody), object2), Equals, true)
+
+	// cleanup
+	os.Remove(testOutFileName)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestRmSpecialCharacterKey(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+    s.putBucket(bucketName, c)
+
+	fileName := "ossutil-test-file-" + randLowStr(5)
+	text := randLowStr(100)
+	s.createFile(fileName, text, c)
+
+	// put object with special characters key
+	object := "%C0%AE%C0%AE%2F%C0%AE%C0%AE%2F%C0%AE%C0%AE%2F%C0%AE%C0%AE%2F%C0%AE%C0%AE%2F%C0%AE%C0%AE%2F%C0%AE%C0%AE%2F%C0%AE%C0%AE%2F%C0%AE%C0%AE%2F%C0%AE%C0%AE%2Fetc%2Fprofile"
+	command := "cp"
+	args := []string{fileName, CloudURLToString(bucketName, object)}
+	str := ""
+	ok := true
+	cpDir := CheckpointDir
+	thre := strconv.FormatInt(DefaultBigFileThreshold, 10)
+	routines := strconv.Itoa(Routines)
+	partSize := strconv.FormatInt(DefaultPartSize, 10)
+	encodingType := "url"
+	options := OptionMapType{
+		"endpoint":         &str,
+		"accessKeyID":      &str,
+		"accessKeySecret":  &str,
+		"stsToken":         &str,
+		"configFile":       &configFile,
+		"force":            &ok,
+		"bigfileThreshold": &thre,
+		"checkpointDir":    &cpDir,
+		"routines":         &routines,
+		"partSize":         &partSize,
+		"encodingType":     &encodingType,
+	}
+	_, err := cm.RunCommand(command, args, options)
+	c.Assert(err, IsNil)
+
+	// get object
+	downloadFileName := fileName + "-down"
+	decodedKey, _ := url.QueryUnescape(object)
+	s.getObject(bucketName, decodedKey, downloadFileName, c)
+	fileData := s.readFile(downloadFileName, c)
+	c.Assert(fileData, Equals, text)
+
+	os.Remove(fileName)
+	os.Remove(downloadFileName)
+	s.removeBucket(bucketName, true, c)
 }

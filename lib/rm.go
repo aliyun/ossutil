@@ -2,7 +2,9 @@ package lib
 
 import (
 	"fmt"
+	"os"
 	"strings"
+	"time"
 
 	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
@@ -25,7 +27,7 @@ var specChineseRemove = SpecText{
 	paramText: "cloud_url [options]",
 
 	syntaxText: ` 
-    ossutil rm oss://bucket[/prefix] [-r] [-b] [-f] [-c file] 
+    ossutil rm oss://bucket[/prefix] [-r] [-b] [-f] [-c file] [--include include-pattern] [--exclude exclude-pattern]
 `,
 
 	detailHelpText: ` 
@@ -54,6 +56,20 @@ var specChineseRemove = SpecText{
     cp命令使用Multipart来进行断点续传，删除未complete的Multipart Upload事件可能造成cp
     命令断点续传失败（报错：NoSuchUpload），这种时候如果想要重新上传整个文件，请删除
     checkpoint目录中相应的文件。
+
+--include和--exclude选项
+
+    可以指定该选项以指定规则筛选要操作的文件/object
+
+    规则支持以下格式：
+    *：匹配索引
+    ?：匹配单个字符
+    [sequence]：匹配sequence的任意字符
+    [!sequence]：匹配不在sequence的任意字符
+    注意：规则不支持带目录的格式，e.g.，--include "/usr/*/test/*.jpg"。
+
+    --include和--exclude可以出现多次。当多个规则出现时，这些规则按从左往右的顺序应用
+
 
 用法：
 
@@ -113,6 +129,7 @@ var specChineseRemove = SpecText{
     ossutil rm oss://bucket2 -r -b -f
     ossutil rm oss://bucket2 -a -r -b -f
     ossutil rm oss://bucket2/%e4%b8%ad%e6%96%87 --encoding-type url
+    ossutil rm oss://bucket1/objdir -r --include "*.jpg" --include "*.png" --exclude "*.avi" --exclude "*.mp4"
 `,
 }
 
@@ -123,7 +140,7 @@ var specEnglishRemove = SpecText{
 	paramText: "cloud_url [options]",
 
 	syntaxText: ` 
-    ossutil rm oss://bucket[/prefix] [-r] [-b] [-f] [-c file]
+    ossutil rm oss://bucket[/prefix] [-r] [-b] [-f] [-c file]  [--include include-pattern] [--exclude exclude-pattern]
 `,
 
 	detailHelpText: ` 
@@ -159,6 +176,24 @@ var specEnglishRemove = SpecText{
     remove the multipart upload tasks uncompleted may cause resume upload/download/copy fail 
     the next time(Error: NoSuchUpload). If you want to reupload/download/copy the entire file 
     again, please remove the checkpoint file in checkpoint directory. 
+
+--include and --exclude option:
+
+    These parameters perform pattern matching to either exclude or include a particular file or object
+
+    The following pattern symbols are supported.
+    *: Matches everything
+    ?: Matches any single character
+    [sequence]: Matches any character in sequence
+    [!sequence]: Matches any character not in sequence
+    Note: does not support patterns containing directory info. e.g., --include "/usr/*/test/*.jpg" 
+
+    Any number of these parameters can be passed to a command. You can do this by providing an --exclude
+    or --include argument multiple times, e.g.,
+      --include "*.txt" --include "*.png". 
+    When there are multi filters, the rule is the filters that appear later in the command take precedence
+    over filters that appear earlier in the command
+
 
 Usage:
 
@@ -227,6 +262,7 @@ Usage:
     ossutil rm oss://bucket2 -r -b -f
     ossutil rm oss://bucket2 -a -r -b -f
     ossutil rm oss://bucket2/%e4%b8%ad%e6%96%87 --encoding-type url
+    ossutil rm oss://bucket1/objdir -r --include "*.jpg" --include "*.png" --exclude "*.avi" --exclude "*.mp4"
 `,
 }
 
@@ -235,6 +271,7 @@ type RemoveCommand struct {
 	monitor  RMMonitor //Put first for atomic op on some fileds
 	command  Command
 	rmOption removeOptionType
+	filters  []filterOptionType
 }
 
 var removeCommand = RemoveCommand{
@@ -247,12 +284,6 @@ var removeCommand = RemoveCommand{
 		specEnglish: specEnglishRemove,
 		group:       GroupTypeNormalCommand,
 		validOptionNames: []string{
-			OptionRecursion,
-			OptionBucket,
-			OptionForce,
-			OptionMultipart,
-			OptionAllType,
-			OptionEncodingType,
 			OptionConfigFile,
 			OptionEndpoint,
 			OptionAccessKeyID,
@@ -260,6 +291,14 @@ var removeCommand = RemoveCommand{
 			OptionSTSToken,
 			OptionRetryTimes,
 			OptionLogLevel,
+			OptionRecursion,
+			OptionBucket,
+			OptionForce,
+			OptionMultipart,
+			OptionAllType,
+			OptionEncodingType,
+			OptionInclude,
+			OptionExclude,
 		},
 	},
 }
@@ -300,6 +339,16 @@ func (rc *RemoveCommand) RunCommand() error {
 	// assembleOption
 	if err := rc.assembleOption(cloudURL); err != nil {
 		return err
+	}
+
+	var res bool
+	res, rc.filters = getFilter(os.Args)
+	if !res {
+		return fmt.Errorf("--include or --exclude does not support format containing dir info")
+	}
+
+	if !rc.rmOption.recursive && len(rc.filters) > 0 {
+		return fmt.Errorf("--include or --exclude only work with --recursive")
 	}
 
 	// confirm remove objects/multiparts/allTypes before statistic
@@ -447,7 +496,15 @@ func (rc *RemoveCommand) batchObjectStatistic(bucket *oss.Bucket, cloudURL Cloud
 			return err
 		}
 
-		rc.monitor.updateScanNum(int64(len(lor.Objects)))
+		if len(rc.filters) == 0 {
+			rc.monitor.updateScanNum(int64(len(lor.Objects)))
+		} else {
+			for _, object := range lor.Objects {
+				if doesSingleObjectMatchPatterns(object.Key, rc.filters) {
+					rc.monitor.updateScanNum(int64(1))
+				}
+			}
+		}
 
 		pre = oss.Prefix(lor.Prefix)
 		marker = oss.Marker(lor.NextMarker)
@@ -470,7 +527,15 @@ func (rc *RemoveCommand) multipartUploadsStatistic(bucket *oss.Bucket, cloudURL 
 		}
 
 		if rc.rmOption.recursive {
-			rc.monitor.updateScanUploadIdNum(int64(len(lmr.Uploads)))
+			if len(rc.filters) == 0 {
+				rc.monitor.updateScanUploadIdNum(int64(len(lmr.Uploads)))
+			} else {
+				for _, upload := range lmr.Uploads {
+					if doesSingleObjectMatchPatterns(upload.Key, rc.filters) {
+						rc.monitor.updateScanUploadIdNum(int64(1))
+					}
+				}
+			}
 		} else {
 			for _, uploadId := range lmr.Uploads {
 				if uploadId.Key == cloudURL.object {
@@ -501,15 +566,27 @@ func (rc *RemoveCommand) removeEntry(bucket *oss.Bucket, cloudURL CloudURL) erro
 		if err := rc.removeObjectEntry(bucket, cloudURL); err != nil {
 			return err
 		}
+
+		if rc.rmOption.recursive && len(rc.filters) == 0 {
+			// check again
+			// the key including special character can't be deleted by function removeObjectEntry
+			// so delete them one by one
+			if err := rc.removeSpecialCharacterObjects(bucket, cloudURL); err != nil {
+				return err
+			}
+		}
 	}
+
 	if rc.rmOption.typeSet&multipartType != 0 {
 		if err := rc.removeMultipartUploadsEntry(bucket, cloudURL); err != nil {
 			return err
 		}
 	}
+
 	if rc.rmOption.typeSet&bucketType != 0 {
 		return rc.removeBucket(bucket, cloudURL)
 	}
+
 	return nil
 }
 
@@ -575,11 +652,13 @@ func (rc *RemoveCommand) batchDeleteObjects(bucket *oss.Bucket, cloudURL CloudUR
 		}
 
 		// batch delete
-		delNum, err := rc.ossBatchDeleteObjectsRetry(bucket, rc.getObjectsFromListResult(lor))
-		rc.updateObjectMonitor(int64(delNum), int64(len(lor.Objects)-delNum))
+		skipLor := rc.getObjectsFromListResult(lor)
+		delNum, err := rc.ossBatchDeleteObjectsRetry(bucket, skipLor)
+		rc.updateObjectMonitor(int64(delNum), int64(len(skipLor)-delNum))
 		if err != nil {
 			return err
 		}
+
 		pre = oss.Prefix(lor.Prefix)
 		marker = oss.Marker(lor.NextMarker)
 		if !lor.IsTruncated {
@@ -611,10 +690,36 @@ func (rc *RemoveCommand) ossBatchDeleteObjectsRetry(bucket *oss.Bucket, objects 
 	}
 }
 
+func (rc *RemoveCommand) removeSpecialCharacterObjects(bucket *oss.Bucket, cloudURL CloudURL) error {
+	pre := oss.Prefix(cloudURL.object)
+	marker := oss.Marker("")
+	for {
+		lor, err := rc.command.ossListObjectsRetry(bucket, marker, pre)
+		if err != nil {
+			return err
+		}
+
+		for _, object := range lor.Objects {
+			if err := bucket.DeleteObject(object.Key); err != nil {
+				return err
+			}
+		}
+
+		pre = oss.Prefix(lor.Prefix)
+		marker = oss.Marker(lor.NextMarker)
+		if !lor.IsTruncated {
+			break
+		}
+	}
+	return nil
+}
+
 func (rc *RemoveCommand) getObjectsFromListResult(lor oss.ListObjectsResult) []string {
 	objects := []string{}
 	for _, object := range lor.Objects {
-		objects = append(objects, object.Key)
+		if doesSingleObjectMatchPatterns(object.Key, rc.filters) {
+			objects = append(objects, object.Key)
+		}
 	}
 	return objects
 }
@@ -662,7 +767,9 @@ func (rc *RemoveCommand) multipartUploadsProducer(bucket *oss.Bucket, cloudURL C
 			if !rc.rmOption.recursive && uploadId.Key != cloudURL.object {
 				break
 			}
-			chUploadIds <- uploadIdInfoType{uploadId.Key, uploadId.UploadID}
+			if doesSingleObjectMatchPatterns(uploadId.Key, rc.filters) {
+				chUploadIds <- uploadIdInfoType{uploadId.Key, uploadId.UploadID}
+			}
 		}
 
 		pre = oss.Prefix(lmr.Prefix)
@@ -754,11 +861,18 @@ func (rc *RemoveCommand) ossDeleteBucketRetry(client *oss.Client, bucket string)
 		if err == nil {
 			return err
 		}
-		if int64(i) >= retryTimes {
+
+		// http 4XX error no need to retry
+		// only network error or internal error need to retry
+		serviceError, noNeedRetry := err.(oss.ServiceError)
+		if int64(i) >= retryTimes || (noNeedRetry && serviceError.StatusCode < 500) {
 			if strings.Contains(err.Error(), "bucket you tried to delete is not empty") {
 				fmt.Printf("\nWhether new objects were uploaded during the deletion?\n\n")
 			}
 			return BucketError{err, bucket}
 		}
+
+		// wait 1 second
+		time.Sleep(time.Duration(1) * time.Second)
 	}
 }

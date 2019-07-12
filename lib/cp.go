@@ -102,9 +102,7 @@ type OssProgressListener struct {
 // ProgressChanged handle progress event
 func (l *OssProgressListener) ProgressChanged(event *oss.ProgressEvent) {
 	if event.EventType == oss.TransferDataEvent {
-		l.lastSize = l.currSize
-		l.currSize = event.ConsumedBytes
-		l.monitor.updateTransferSize(l.currSize - l.lastSize)
+		l.monitor.updateTransferSize(event.RwBytes)
 		freshProgress()
 	}
 }
@@ -1241,7 +1239,7 @@ func (cc *CopyCommand) RunCommand() error {
 	}
 
 	if payer != "" {
-		if payer != string(oss.Requester) {
+		if payer != strings.ToLower(string(oss.Requester)) {
 			return fmt.Errorf("invalid request payer: %s, please check", payer)
 		}
 		cc.cpOption.options = append(cc.cpOption.options, oss.RequestPayer(oss.PayerType(payer)))
@@ -1800,7 +1798,11 @@ func (cc *CopyCommand) ossPutObjectRetry(bucket *oss.Bucket, objectName string, 
 		if err == nil {
 			return err
 		}
-		if int64(i) >= retryTimes {
+
+		// http 4XX error no need to retry
+		// only network error or internal error need to retry
+		serviceError, noNeedRetry := err.(oss.ServiceError)
+		if int64(i) >= retryTimes || (noNeedRetry && serviceError.StatusCode < 500) {
 			return ObjectError{err, bucket.BucketName, objectName}
 		}
 	}
@@ -1827,7 +1829,10 @@ func (cc *CopyCommand) ossUploadFileRetry(bucket *oss.Bucket, objectName string,
 			LogError("try count:%d,upload file error %s,cost:%d(ms),error:%s\n", i, filePath, cost, err.Error())
 		}
 
-		if int64(i) >= retryTimes {
+		// http 4XX error no need to retry
+		// only network error or internal error need to retry
+		serviceError, noNeedRetry := err.(oss.ServiceError)
+		if int64(i) >= retryTimes || (noNeedRetry && serviceError.StatusCode < 500) {
 			return FileError{err, filePath}
 		}
 	}
@@ -2042,7 +2047,7 @@ func (cc *CopyCommand) downloadSingleFileWithReport(bucket *oss.Bucket, objectIn
 		}
 		objectKey := objectInfo.prefix + objectInfo.relativeKey
 		LogInfo("download success,object:%s,size:%d,speed:%.2f(KB/s),cost:%d(ms)\n", objectKey, objectInfo.size, speed, cost)
-		cc.updateSnapshot(nil, objectKey, objectInfo.lastModified.Unix())
+		cc.updateSnapshot(nil, CloudURLToString(bucket.BucketName, objectKey), objectInfo.lastModified.Unix())
 	}
 
 	cc.updateMonitor(skip, err, false, size)
@@ -2074,7 +2079,7 @@ func (cc *CopyCommand) downloadSingleFile(bucket *oss.Bucket, objectInfo objectI
 	}
 
 	rsize := cc.getRangeSize(size)
-	if cc.skipDownload(fileName, srct, object) {
+	if cc.skipDownload(fileName, srct, CloudURLToString(bucket.BucketName, object)) {
 		return true, nil, rsize, msg
 	}
 
@@ -2172,7 +2177,10 @@ func (cc *CopyCommand) ossDownloadFileRetry(bucket *oss.Bucket, objectName, file
 			LogError("try count:%d,GetObjectToFile error %s,cost:%d(ms),error:%s\n", i, fileName, cost, err.Error())
 		}
 
-		if int64(i) >= retryTimes {
+		// http 4XX error no need to retry
+		// only network error or internal error need to retry
+		serviceError, noNeedRetry := err.(oss.ServiceError)
+		if int64(i) >= retryTimes || (noNeedRetry && serviceError.StatusCode < 500) {
 			return ObjectError{err, bucket.BucketName, objectName}
 		}
 	}
@@ -2577,7 +2585,11 @@ func (cc *CopyCommand) ossCopyObjectRetry(bucket *oss.Bucket, objectName, destBu
 		if err == nil {
 			return err
 		}
-		if int64(i) >= retryTimes {
+
+		// http 4XX error no need to retry
+		// only network error or internal error need to retry
+		serviceError, noNeedRetry := err.(oss.ServiceError)
+		if int64(i) >= retryTimes || (noNeedRetry && serviceError.StatusCode < 500) {
 			return ObjectError{err, bucket.BucketName, objectName}
 		}
 	}

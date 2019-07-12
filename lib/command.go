@@ -282,9 +282,14 @@ func (cmd *Command) ossClient(bucket string) (*oss.Client, error) {
 	accessKeySecret, _ := GetString(OptionAccessKeySecret, cmd.options)
 	stsToken, _ := GetString(OptionSTSToken, cmd.options)
 	disableCRC64, _ := GetBool(OptionDisableCRC64, cmd.options)
-	if err := cmd.checkCredentials(endpoint, accessKeyID, accessKeySecret); err != nil {
-		return nil, err
+
+	ecsUrl, _ := cmd.getEcsRamAkService()
+	if ecsUrl == "" {
+		if err := cmd.checkCredentials(endpoint, accessKeyID, accessKeySecret); err != nil {
+			return nil, err
+		}
 	}
+
 	options := []oss.ClientOption{oss.UseCname(isCname), oss.SecurityToken(stsToken), oss.UserAgent(getUserAgent()), oss.Timeout(120, 1200)}
 	if disableCRC64 {
 		options = append(options, oss.EnableCRC(false))
@@ -295,6 +300,12 @@ func (cmd *Command) ossClient(bucket string) (*oss.Client, error) {
 	if logLevel > oss.LogOff {
 		options = append(options, oss.SetLogLevel(logLevel))
 		options = append(options, oss.SetLogger(utilLogger))
+	}
+
+	if accessKeyID == "" {
+		LogInfo("using user ak service:%s\n", ecsUrl)
+		ecsRoleAKBuild := EcsRoleAKBuild{url: ecsUrl}
+		options = append(options, oss.SetCredentialsProvider(&ecsRoleAKBuild))
 	}
 
 	client, err := oss.New(endpoint, accessKeyID, accessKeySecret, options...)
@@ -330,6 +341,19 @@ func (cmd *Command) checkCredentials(endpoint, accessKeyID, accessKeySecret stri
 		return fmt.Errorf("invalid accessKeySecret, accessKeySecret is empty, please check your config")
 	}
 	return nil
+}
+
+func (cmd *Command) getEcsRamAkService() (string, bool) {
+	if urlMap, ok := cmd.configOptions[AkServiceSection]; ok {
+		if strUrl, ok := urlMap.(map[string]string)[ItemEcsAk]; ok {
+			if strUrl != "" {
+				return strUrl, true
+			} else {
+				return "", false
+			}
+		}
+	}
+	return "", false
 }
 
 func (cmd *Command) getEndpoint(bucket string) (string, bool) {
@@ -370,9 +394,16 @@ func (cmd *Command) ossListObjectsRetry(bucket *oss.Bucket, options ...oss.Optio
 		if err == nil {
 			return lor, err
 		}
-		if int64(i) >= retryTimes {
-			return lor, BucketError{err, bucket.BucketName}
+
+		// http 4XX error no need to retry
+		// only network error or internal error need to retry
+		serviceError, noNeedRetry := err.(oss.ServiceError)
+		if int64(i) >= retryTimes || (noNeedRetry && serviceError.StatusCode < 500) {
+			return lor, ObjectError{err, bucket.BucketName, ""}
 		}
+
+		// wait 1 second
+		time.Sleep(time.Duration(1) * time.Second)
 	}
 }
 
@@ -383,9 +414,16 @@ func (cmd *Command) ossListMultipartUploadsRetry(bucket *oss.Bucket, options ...
 		if err == nil {
 			return lmr, err
 		}
-		if int64(i) >= retryTimes {
-			return lmr, BucketError{err, bucket.BucketName}
+
+		// http 4XX error no need to retry
+		// only network error or internal error need to retry
+		serviceError, noNeedRetry := err.(oss.ServiceError)
+		if int64(i) >= retryTimes || (noNeedRetry && serviceError.StatusCode < 500) {
+			return lmr, ObjectError{err, bucket.BucketName, ""}
 		}
+
+		// wait 1 second
+		time.Sleep(time.Duration(1) * time.Second)
 	}
 }
 
@@ -397,8 +435,8 @@ func (cmd *Command) ossGetObjectStatRetry(bucket *oss.Bucket, object string, opt
 			return props, err
 		}
 
-		// http 4XX 、5XX error no need to retry
-		// only network error need to retry
+		// http 4XX error no need to retry
+		// only network error or internal error need to retry
 		serviceError, noNeedRetry := err.(oss.ServiceError)
 		if int64(i) >= retryTimes || (noNeedRetry && serviceError.StatusCode < 500) {
 			return props, ObjectError{err, bucket.BucketName, object}
@@ -417,8 +455,8 @@ func (cmd *Command) ossGetObjectMetaRetry(bucket *oss.Bucket, object string, opt
 			return props, err
 		}
 
-		// http 4XX 、5XX error no need to retry
-		// only network error need to retry
+		// http 4XX error no need to retry
+		// only network error or internal error need to retry
 		serviceError, noNeedRetry := err.(oss.ServiceError)
 		if int64(i) >= retryTimes || (noNeedRetry && serviceError.StatusCode < 500) {
 			return props, ObjectError{err, bucket.BucketName, object}
@@ -569,5 +607,7 @@ func GetAllCommands() []interface{} {
 		&corsOptionsCommand,
 		&bucketLifeCycleCommand,
 		&bucketWebsiteCommand,
+		&bucketQosCommand,
+		&userQosCommand,
 	}
 }

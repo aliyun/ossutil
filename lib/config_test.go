@@ -2,6 +2,7 @@ package lib
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -260,4 +261,47 @@ func (s *OssutilConfigSuite) TestConfigNotConfigFile(c *C) {
 	contents, _ = ioutil.ReadFile(logPath)
 	LogContent = string(contents)
 	c.Assert(strings.Contains(LogContent, "请输入配置文件路径"), Equals, true)
+}
+
+func (s *OssutilConfigSuite) TestConfigConfigInteractive(c *C) {
+	inputFileName := "test-util-" + randLowStr(6)
+	configFileName := "test-util-config" + randLowStr(6)
+	cf, _ := os.Create(configFileName)
+	cf.Close()
+
+	// prepare input config
+	inputFile, _ := os.OpenFile(inputFileName, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
+	strEndPoint := randLowStr(1024) // over 256
+	io.WriteString(inputFile, strEndPoint)
+	inputFile.Seek(0, 0)
+
+	oldStdin := os.Stdin
+	os.Stdin = inputFile
+
+	err := configCommand.configInteractive(configFileName, LEnglishLanguage)
+	c.Assert(err, IsNil)
+
+	fileData, err := ioutil.ReadFile(configFileName)
+	c.Assert(err, IsNil)
+	c.Assert(strings.Contains(string(fileData), strEndPoint), Equals, true)
+
+	os.Stdin = oldStdin
+	inputFile.Close()
+
+	os.Remove(inputFileName)
+	os.Remove(configFileName)
+	os.Remove(configFileName + ".bak")
+}
+
+func (s *OssutilCommandSuite) TestConfigHelpInfo(c *C) {
+	options := OptionMapType{}
+
+	mkArgs := []string{"config"}
+	_, err := cm.RunCommand("help", mkArgs, options)
+	c.Assert(err, IsNil)
+
+	mkArgs = []string{}
+	_, err = cm.RunCommand("help", mkArgs, options)
+	c.Assert(err, IsNil)
+
 }

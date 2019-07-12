@@ -3,6 +3,7 @@ package lib
 import (
 	"fmt"
 	"net/url"
+	"os"
 	"strings"
 
 	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
@@ -15,7 +16,7 @@ var specChineseList = SpecText{
 	paramText: "[cloud_url] [options]",
 
 	syntaxText: ` 
-    ossutil ls [oss://bucket[/prefix]] [-s] [-d] [--limited-num num] [--marker marker] [--upload-id-marker umarker] [--payer requester] [-c file]
+    ossutil ls [oss://bucket[/prefix]] [-s] [-d] [--limited-num num] [--marker marker] [--upload-id-marker umarker] [--payer requester] [-c file] [--include include-pattern] [--exclude exclude-pattern]
 `,
 
 	detailHelpText: ` 
@@ -29,7 +30,19 @@ var specChineseList = SpecText{
     --marker选项或--upload-id-marker选项，ossutil默认指定的marker或upload-id-marker也同样是经过
     url编码的。注意：形如oss://bucket/object的cloud_url，输入形式为：oss://bucket/url_encode(object)，
     其中oss://bucket/字符串不需要编码。
-    
+
+--include和--exclude选项
+
+    可以指定该选项以指定规则筛选要操作的文件/object
+
+    规则支持以下格式：
+    *：匹配索引
+    ?：匹配单个字符
+    [sequence]：匹配sequence的任意字符
+    [!sequence]：匹配不在sequence的任意字符
+    注意：规则不支持带目录的格式，e.g.，--include "/usr/*/test/*.jpg"。
+
+    --include和--exclude可以出现多次。当多个规则出现时，这些规则按从左往右的顺序应用
 
 用法：
 
@@ -156,6 +169,13 @@ var specChineseList = SpecText{
         2017-03-17 17:34:40 +0800 CST      8345742      Standard   BBCC8C0954B869B4A6B34D9404C5BCFD      oss://bucket1/中文
         Object Number is: 1
         0.066567(s) elapsed
+    
+    14) ossutil ls oss://bucket --include "*.avi" --include "*.mp4" --exclude "*.png" --exclude "*.jpg"
+        LastModifiedTime                   Size(B)  StorageClass   ETAG                                  ObjectName
+        2019-05-30 14:23:51 +0800 CST         1030      Standard   4A902D176BE0EE4224BC196BBB8CCC69      oss://bucket/test.avi
+        2019-05-30 14:24:05 +0800 CST         1030      Standard   4A902D176BE0EE4224BC196BBB8CCC69      oss://bucket/test.mp4
+        Object Number is: 2
+
 `,
 }
 
@@ -166,7 +186,7 @@ var specEnglishList = SpecText{
 	paramText: "[cloud_url] [options]",
 
 	syntaxText: ` 
-    ossutil ls [oss://bucket[/prefix]] [-s] [-d] [--limited-num num] [--marker marker] [--upload-id-marker umarker] [--payer requester] [-c file]
+    ossutil ls [oss://bucket[/prefix]] [-s] [-d] [--limited-num num] [--marker marker] [--upload-id-marker umarker] [--payer requester] [-c file]  [--include include-pattern] [--exclude exclude-pattern]
 `,
 
 	detailHelpText: ` 
@@ -185,6 +205,22 @@ var specEnglishList = SpecText{
     inputted as: oss://bucket/url_encode(object), the string: oss://bucket/ should not 
     be url encoded. 
 
+--include and --exclude option:
+
+    These parameters perform pattern matching to either exclude or include a particular file or object
+
+    The following pattern symbols are supported.
+    *: Matches everything
+    ?: Matches any single character
+    [sequence]: Matches any character in sequence
+    [!sequence]: Matches any character not in sequence
+    Note: does not support patterns containing directory info. e.g., --include "/usr/*/test/*.jpg" 
+
+    Any number of these parameters can be passed to a command. You can do this by providing an --exclude
+    or --include argument multiple times, e.g.,
+      --include "*.txt" --include "*.png". 
+    When there are multi filters, the rule is the filters that appear later in the command take precedence
+    over filters that appear earlier in the command
 
 Usage:
 
@@ -314,6 +350,12 @@ Usage:
         2017-03-17 17:34:40 +0800 CST      8345742      Standard   BBCC8C0954B869B4A6B34D9404C5BCFD      oss://bucket1/中文
         Object Number is: 1
         0.066567(s) elapsed
+    
+    14) ossutil ls oss://bucket --include "*.avi" --include "*.mp4" --exclude "*.png" --exclude "*.jpg"
+        LastModifiedTime                   Size(B)  StorageClass   ETAG                                  ObjectName
+        2019-05-30 14:23:51 +0800 CST         1030      Standard   4A902D176BE0EE4224BC196BBB8CCC69      oss://bucket/test.avi
+        2019-05-30 14:24:05 +0800 CST         1030      Standard   4A902D176BE0EE4224BC196BBB8CCC69      oss://bucket/test.mp4
+        Object Number is: 2
 `,
 }
 
@@ -321,6 +363,7 @@ Usage:
 type ListCommand struct {
 	command     Command
 	payerOption oss.Option
+	filters     []filterOptionType
 }
 
 var listCommand = ListCommand{
@@ -333,6 +376,14 @@ var listCommand = ListCommand{
 		specEnglish: specEnglishList,
 		group:       GroupTypeNormalCommand,
 		validOptionNames: []string{
+			OptionConfigFile,
+			OptionEndpoint,
+			OptionAccessKeyID,
+			OptionAccessKeySecret,
+			OptionSTSToken,
+			OptionRetryTimes,
+			OptionLogLevel,
+			OptionRequestPayer,
 			OptionShortFormat,
 			OptionDirectory,
 			OptionMultipart,
@@ -341,14 +392,8 @@ var listCommand = ListCommand{
 			OptionMarker,
 			OptionUploadIDMarker,
 			OptionEncodingType,
-			OptionConfigFile,
-			OptionEndpoint,
-			OptionAccessKeyID,
-			OptionAccessKeySecret,
-			OptionSTSToken,
-			OptionRetryTimes,
-			OptionRequestPayer,
-			OptionLogLevel,
+			OptionInclude,
+			OptionExclude,
 		},
 	},
 }
@@ -381,7 +426,7 @@ func (lc *ListCommand) RunCommand() error {
 
 	payer, _ := GetString(OptionRequestPayer, lc.command.options)
 	if payer != "" {
-		if payer != string(oss.Requester) {
+		if payer != strings.ToLower(string(oss.Requester)) {
 			return fmt.Errorf("invalid request payer: %s, please check", payer)
 		}
 	}
@@ -389,6 +434,12 @@ func (lc *ListCommand) RunCommand() error {
 
 	if cloudURL.bucket == "" {
 		return lc.listBuckets("")
+	}
+
+	var res bool
+	res, lc.filters = getFilter(os.Args)
+	if !res {
+		return fmt.Errorf("--include or --exclude does not support format containing dir info")
 	}
 
 	return lc.listFiles(cloudURL)
@@ -538,7 +589,7 @@ func (lc *ListCommand) listObjects(bucket *oss.Bucket, cloudURL CloudURL, shortF
 		if *limitedNum == 0 {
 			break
 		}
-		lor, err := lc.command.ossListObjectsRetry(bucket, marker, pre, del, payer)
+		lor, err := lc.command.ossListObjectsRetry(bucket, marker, pre, del, payer, oss.MaxKeys(1000))
 		if err != nil {
 			return num, err
 		}
@@ -582,6 +633,11 @@ func (lc *ListCommand) showObjects(lor oss.ListObjectsResult, bucket string, sho
 		if *limitedNum == 0 {
 			break
 		}
+
+		if !doesSingleObjectMatchPatterns(object.Key, lc.filters) {
+			continue
+		}
+
 		if !shortFormat {
 			fmt.Printf("%-30s%12d%s%12s%s%-36s%s%s\n", utcToLocalTime(object.LastModified), object.Size, "  ", object.StorageClass, "   ", strings.Trim(object.ETag, "\""), "  ", CloudURLToString(bucket, object.Key))
 		} else {
@@ -600,6 +656,11 @@ func (lc *ListCommand) showDirectories(lor oss.ListObjectsResult, bucket string,
 		if *limitedNum == 0 {
 			break
 		}
+
+		if !doesSingleObjectMatchPatterns(strings.TrimSuffix(prefix, "/"), lc.filters) {
+			continue
+		}
+
 		fmt.Printf("%s\n", CloudURLToString(bucket, prefix))
 		*limitedNum--
 		num++
@@ -676,6 +737,11 @@ func (lc *ListCommand) showMultipartUploads(lmr oss.ListMultipartUploadResult, b
 		if *limitedNum == 0 {
 			break
 		}
+
+		if !doesSingleObjectMatchPatterns(upload.Key, lc.filters) {
+			continue
+		}
+
 		if shortFormat {
 			fmt.Printf("%-32s%s%s\n", upload.UploadID, FormatTAB, CloudURLToString(bucket, upload.Key))
 		} else {

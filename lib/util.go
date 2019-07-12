@@ -172,7 +172,6 @@ func filterObjectsFromChanWithPattern(srcCh <-chan string, pattern string, dstCh
 }
 
 // Following for strings
-
 func getFilter(cmdline []string) (bool, []filterOptionType) {
 	filters := make([]filterOptionType, 0)
 	for i, item := range cmdline {
@@ -200,12 +199,10 @@ func getFilter(cmdline []string) (bool, []filterOptionType) {
 
 			// To support standard glob
 			filter.pattern = strings.Replace(strArg, "[!", "[^", -1)
-
 			dir, _ := filepath.Split(filter.pattern)
 			if dir != "" {
 				return false, filters
 			}
-
 			filters = append(filters, filter)
 		}
 	}

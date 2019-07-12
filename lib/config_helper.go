@@ -17,6 +17,13 @@ const (
 	BucketEndpointSection string = "Bucket-Endpoint"
 
 	BucketCnameSection string = "Bucket-Cname"
+
+	AkServiceSection string = "AkService"
+)
+
+// config items in section AKSerivce
+const (
+	ItemEcsAk string = "ecsAk"
 )
 
 type configOption struct {
@@ -108,6 +115,16 @@ func readConfigFromFile(configFile string) (OptionMapType, error) {
 			}
 		}
 	}
+
+	// get options in AKService for user-defined GetAk
+	sec := AkServiceSection
+	if section, err := config.Section(sec); err == nil {
+		configMap[sec] = map[string]string{}
+		options := section.Options()
+		for ecsUrl, strUrl := range options {
+			(configMap[sec]).(map[string]string)[strings.TrimSpace(ecsUrl)] = strings.TrimSpace(strUrl)
+		}
+	} 
 	return configMap, nil
 }
 
