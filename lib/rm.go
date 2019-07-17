@@ -1031,7 +1031,21 @@ func (rc *RemoveCommand) batchObjectStatisticVersion(bucket *oss.Bucket, cloudUR
 			return err
 		}
 
-		rc.monitor.updateScanNum(int64(len(lor.ObjectDeleteMarkers) + len(lor.ObjectVersions)))
+		if len(rc.filters) == 0 {
+			rc.monitor.updateScanNum(int64(len(lor.ObjectDeleteMarkers) + len(lor.ObjectVersions)))
+		} else {
+			for _, object := range lor.ObjectDeleteMarkers {
+				if doesSingleObjectMatchPatterns(object.Key, rc.filters) {
+					rc.monitor.updateScanNum(int64(1))
+				}
+			}
+
+			for _, object := range lor.ObjectVersions {
+				if doesSingleObjectMatchPatterns(object.Key, rc.filters) {
+					rc.monitor.updateScanNum(int64(1))
+				}
+			}
+		}
 
 		pre = oss.Prefix(lor.Prefix)
 		keyMarker = oss.KeyMarker(lor.NextKeyMarker)
@@ -1058,17 +1072,21 @@ func (rc *RemoveCommand) batchDeleteObjectsVersion(bucket *oss.Bucket, cloudURL 
 
 		objectsToDelete := make([]oss.DeleteObject, 0)
 		for _, object := range lor.ObjectDeleteMarkers {
-			objectsToDelete = append(objectsToDelete, oss.DeleteObject{
-				Key:       object.Key,
-				VersionId: object.VersionId,
-			})
+			if doesSingleObjectMatchPatterns(object.Key, rc.filters) {
+				objectsToDelete = append(objectsToDelete, oss.DeleteObject{
+					Key:       object.Key,
+					VersionId: object.VersionId,
+				})
+			}
 		}
 
 		for _, object := range lor.ObjectVersions {
-			objectsToDelete = append(objectsToDelete, oss.DeleteObject{
-				Key:       object.Key,
-				VersionId: object.VersionId,
-			})
+			if doesSingleObjectMatchPatterns(object.Key, rc.filters) {
+				objectsToDelete = append(objectsToDelete, oss.DeleteObject{
+					Key:       object.Key,
+					VersionId: object.VersionId,
+				})
+			}
 		}
 
 		// batch delete

@@ -735,6 +735,10 @@ func (lc *ListCommand) showObjectVersions(lor oss.ListObjectVersionsResult, buck
 			break
 		}
 
+		if !doesSingleObjectMatchPatterns(object.Key, lc.filters) {
+			continue
+		}
+
 		//COMMON-PREFIX LastModifiedTime  Size(B)  StorageClass  ETAG VERSIONID  IS-LATEST  DELETE-MARKER  ObjectName
 		if directory {
 			fmt.Printf("%-13t%s%-30s%12d%s%12s%s%-36s%s%-66s%s%-10t%s%-13t%s%s\n",
@@ -766,6 +770,10 @@ func (lc *ListCommand) showObjectVersions(lor oss.ListObjectVersionsResult, buck
 	for _, object := range lor.ObjectVersions {
 		if *limitedNum == 0 {
 			break
+		}
+
+		if !doesSingleObjectMatchPatterns(object.Key, lc.filters) {
+			continue
 		}
 
 		//COMMON-PREFIX LastModifiedTime  Size(B)  StorageClass  ETAG VERSIONID  IS-LATEST  DELETE-MARKER  ObjectName
@@ -824,6 +832,10 @@ func (lc *ListCommand) showDirectoriesVersion(lor oss.ListObjectVersionsResult, 
 	for _, prefix := range lor.CommonPrefixes {
 		if *limitedNum == 0 {
 			break
+		}
+
+		if !doesSingleObjectMatchPatterns(strings.TrimSuffix(prefix, "/"), lc.filters) {
+			continue
 		}
 
 		fmt.Printf("%-13t%s%-30s%12s%s%12s%s%-36s%s%-66s%s%-10s%s%-13s%s%s\n",

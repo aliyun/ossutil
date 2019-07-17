@@ -1319,3 +1319,168 @@ func (s *OssutilCommandSuite) TestListObjectVersionsMarker(c *C) {
 	os.Remove(testOutFileName)
 	s.removeBucket(bucketName, true, c)
 }
+
+func (s *OssutilCommandSuite) TestListObjectfilterIncludeVersions(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	s.putBucketVersioning(bucketName, string(oss.VersionEnabled), c)
+
+	bucketStr := CloudURLToString(bucketName, "")
+
+	dir := "ossutil-test-dir-" + randLowStr(5)
+	subdir := "dir1"
+	contents := map[string]string{}
+	filenames := s.createTestFiles(dir, subdir, c, contents)
+
+	// upload files
+	args := []string{dir, bucketStr}
+	cmdline := []string{"ossutil", "cp", dir, bucketStr, "-rf"}
+	showElapse, err := s.rawCPWithFilter(args, true, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	// "rm oss://bucket/prefix -r -f"
+	// remove object
+	s.removeObjects(bucketName, "re", true, true, c)
+
+	// ls files
+	// e.g., ossutil ls oss://tempb4/ --include "*.jpg" --include "*.txt"
+	cmdline = []string{"ossutil", "ls", bucketStr, "--include", "*.jpg", "--include", "*.txt"}
+	limitedNum := strconv.FormatInt(-1, 10)
+	lsArgs := []string{CloudURLToString(bucketName, "")}
+	allVersions := true
+	str := ""
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+		"limitedNum":      &limitedNum,
+		"allVersions":     &allVersions,
+	}
+
+	testOutFileName := "ossutil-test-outfile-" + randLowStr(5)
+	testOutFile, _ := os.OpenFile(testOutFileName, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
+	oldStdout := os.Stdout
+	os.Stdout = testOutFile
+	os.Args = cmdline
+	_, err = cm.RunCommand("ls", lsArgs, options)
+	c.Assert(err, IsNil)
+	testOutFile.Close()
+	os.Stdout = oldStdout
+	os.Args = []string{}
+
+	fileBody, err := ioutil.ReadFile(testOutFileName)
+	c.Assert(err, IsNil)
+
+	// Verify
+	files := filterStrsWithInclude(filenames, "*.jpg")
+	for _, filename := range files {
+		c.Assert(strings.Contains(string(fileBody), filename), Equals, true)
+	}
+
+	files = filterStrsWithInclude(filenames, "*.txt")
+	for _, filename := range files {
+		c.Assert(strings.Contains(string(fileBody), filename), Equals, true)
+	}
+
+	files = filterStrsWithInclude(filenames, "*.rtf")
+	for _, filename := range files {
+		c.Assert(strings.Contains(string(fileBody), filename), Equals, false)
+	}
+
+	// cleanup
+	os.Remove(testOutFileName)
+	os.RemoveAll(dir)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestListDirectoryfilterIncludeVersions(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	s.putBucketVersioning(bucketName, string(oss.VersionEnabled), c)
+
+	bucketStr := CloudURLToString(bucketName, "")
+
+	// directory1
+	dir1 := "ossutil-test-dir-" + randLowStr(5)
+	subdir1 := "dir1"
+	contents1 := map[string]string{}
+	filenames1 := s.createTestFiles(dir1, subdir1, c, contents1)
+
+	// directory2
+	dir2 := "ossutil-test-dir-" + randLowStr(5)
+	subdir2 := "dir2"
+	contents2 := map[string]string{}
+	filenames2 := s.createTestFiles(dir2, subdir2, c, contents2)
+
+	// upload directory1
+	args := []string{dir1, bucketStr + "/" + dir1}
+	cmdline := []string{"ossutil", "cp", dir1, bucketStr + "/" + dir1, "-rf"}
+	showElapse, err := s.rawCPWithFilter(args, true, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	// upload directory2
+	args = []string{dir2, bucketStr + "/" + dir2}
+	cmdline = []string{"ossutil", "cp", dir2, bucketStr + "/" + dir2, "-rf"}
+	showElapse, err = s.rawCPWithFilter(args, true, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	// "rm oss://bucket/prefix -r -f"
+	// remove object
+	s.removeObjects(bucketName, "re", true, true, c)
+
+	// ls files
+	// e.g., ossutil ls oss://tempb4/ --include "*.jpg" --include dir1
+	cmdline = []string{"ossutil", "ls", bucketStr, "--include"}
+	strFilter := "*" + dir1
+	cmdline = append(cmdline, strFilter)
+
+	limitedNum := strconv.FormatInt(-1, 10)
+	lsArgs := []string{CloudURLToString(bucketName, "")}
+	str := ""
+	bDirectory := true
+	allVersions := true
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+		"limitedNum":      &limitedNum,
+		"directory":       &bDirectory,
+		"allVersions":     &allVersions,
+	}
+
+	testOutFileName := "ossutil-test-outfile-" + randLowStr(5)
+	testOutFile, _ := os.OpenFile(testOutFileName, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
+	oldStdout := os.Stdout
+	os.Stdout = testOutFile
+	os.Args = cmdline
+	_, err = cm.RunCommand("ls", lsArgs, options)
+	c.Assert(err, IsNil)
+	testOutFile.Close()
+	os.Stdout = oldStdout
+	os.Args = []string{}
+
+	fileBody, err := ioutil.ReadFile(testOutFileName)
+	c.Assert(err, IsNil)
+
+	// Verify
+	c.Assert(strings.Contains(string(fileBody), dir1), Equals, true)
+	for _, filename := range filenames1 {
+		c.Assert(strings.Contains(string(fileBody), filename), Equals, false)
+	}
+
+	c.Assert(strings.Contains(string(fileBody), dir2), Equals, false)
+	for _, filename := range filenames2 {
+		c.Assert(strings.Contains(string(fileBody), filename), Equals, false)
+	}
+
+	// cleanup
+	os.Remove(testOutFileName)
+	os.RemoveAll(dir1)
+	os.RemoveAll(dir2)
+	s.removeBucket(bucketName, true, c)
+}
