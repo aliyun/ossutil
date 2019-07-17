@@ -650,7 +650,7 @@ func (s *OssutilCommandSuite) TestRmPartfilterExclude(c *C) {
 
 func (s *OssutilCommandSuite) TestRmSpecialCharacterKey(c *C) {
 	bucketName := bucketNamePrefix + randLowStr(10)
-    s.putBucket(bucketName, c)
+	s.putBucket(bucketName, c)
 
 	fileName := "ossutil-test-file-" + randLowStr(5)
 	text := randLowStr(100)
@@ -692,5 +692,357 @@ func (s *OssutilCommandSuite) TestRmSpecialCharacterKey(c *C) {
 
 	os.Remove(fileName)
 	os.Remove(downloadFileName)
+	s.removeBucket(bucketName, true, c)
+}
+
+//versions
+func (s *OssutilCommandSuite) TestRemoveObjectInVersioningBucket(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	s.putBucketVersioning(bucketName, "enabled", c)
+
+	// put object
+	object := "TestRemoveObject"
+	s.putObject(bucketName, object, uploadFileName, c)
+
+	// list object
+	objects := s.listObjects(bucketName, object, "ls - ", c)
+	c.Assert(len(objects), Equals, 1)
+	c.Assert(objects[0], Equals, object)
+
+	// remove object
+	s.removeObjects(bucketName, object, false, true, c)
+
+	// list object
+	objects = s.listObjects(bucketName, object, "ls - ", c)
+	c.Assert(len(objects), Equals, 0)
+
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestRemoveObjectsInVersioningBucket(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	s.putBucketVersioning(bucketName, "enabled", c)
+
+	// put object
+	num := 2
+	objectNames := []string{}
+	for i := 0; i < num; i++ {
+		object := fmt.Sprintf("remove%d", i)
+		s.putObject(bucketName, object, uploadFileName, c)
+		objectNames = append(objectNames, object)
+	}
+
+	command := "rm"
+	args := []string{CloudURLToString(bucketName, "")}
+	str := ""
+	ok := true
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"stsToken":        &str,
+		"configFile":      &configFile,
+		"bucket":          &ok,
+		"force":           &ok,
+	}
+	_, err := cm.RunCommand(command, args, options)
+	c.Assert(err, NotNil)
+
+	// list object
+	objects := s.listObjects(bucketName, "", "ls - ", c)
+	c.Assert(len(objects), Equals, num)
+
+	// "rm oss://bucket/ -r"
+	// remove object
+	s.removeObjects(bucketName, "", true, false, c)
+
+	objects = s.listObjects(bucketName, "", "ls - ", c)
+	c.Assert(len(objects), Equals, num)
+
+	// "rm oss://bucket/prefix -r -f"
+	// remove object
+	s.removeObjects(bucketName, "re", true, true, c)
+
+	// list object
+	objects = s.listObjects(bucketName, "", "ls - ", c)
+	c.Assert(len(objects), Equals, 0)
+
+	//reput objects and delete bucket
+	for i := 0; i < num; i++ {
+		object := fmt.Sprintf("remove%d", i)
+		s.putObject(bucketName, object, uploadFileName, c)
+	}
+
+	// list buckets
+	bucketNames := s.listBuckets(false, c)
+	c.Assert(FindPos(bucketName, bucketNames) != -1, Equals, true)
+
+	// error remove bucket with config
+	cfile := randStr(10)
+	data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Endpoint]\n%s=%s[Bucket-Cname]\n%s=%s", "abc", "def", "ghi", bucketName, "abc", bucketName, "abc")
+	s.createFile(cfile, data, c)
+
+	options = OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"stsToken":        &str,
+		"configFile":      &cfile,
+		"recursive":       &ok,
+		"bucket":          &ok,
+		"allType":         &ok,
+		"force":           &ok,
+	}
+	_, err = cm.RunCommand(command, args, options)
+	c.Assert(err, NotNil)
+
+	options = OptionMapType{
+		"endpoint":        &endpoint,
+		"accessKeyID":     &accessKeyID,
+		"accessKeySecret": &accessKeySecret,
+		"stsToken":        &str,
+		"configFile":      &cfile,
+		"recursive":       &ok,
+		"bucket":          &ok,
+		"allType":         &ok,
+		"force":           &ok,
+	}
+	_, err = cm.RunCommand(command, args, options)
+	c.Assert(err, NotNil)
+
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestRemoveObjectWithVersionId(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	s.putBucketVersioning(bucketName, "enabled", c)
+
+	textBuffer := randStr(100)
+	s.createFile(uploadFileName, textBuffer, c)
+
+	// put object
+	objectName := "TestRemoveObject-versionid"
+	s.putObject(bucketName, objectName, uploadFileName, c)
+	objectStat := s.getStat(bucketName, objectName, c)
+	versionId := objectStat["X-Oss-Version-Id"]
+
+	// list object
+	objects := s.listObjects(bucketName, objectName, "ls - ", c)
+	c.Assert(len(objects), Equals, 1)
+	c.Assert(objects[0], Equals, objectName)
+
+	// remove object
+	// rm --version-id oss:\bucketName\objectName
+	command := "rm"
+	args := []string{CloudURLToString(bucketName, objectName)}
+	str := ""
+	ok := true
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"stsToken":        &str,
+		"configFile":      &configFile,
+		"versionId":       &versionId,
+	}
+	_, err := cm.RunCommand(command, args, options)
+	c.Assert(err, IsNil)
+
+	// list object
+	objects = s.listObjects(bucketName, objectName, "ls - ", c)
+	c.Assert(len(objects), Equals, 0)
+
+	// rm -b
+	args = []string{CloudURLToString(bucketName, "")}
+	options = OptionMapType{
+		"endpoint":        &endpoint,
+		"accessKeyID":     &accessKeyID,
+		"accessKeySecret": &accessKeySecret,
+		"stsToken":        &str,
+		"configFile":      &str,
+		"bucket":          &ok,
+		"force":           &ok,
+	}
+	_, err = cm.RunCommand(command, args, options)
+	c.Assert(err, IsNil)
+}
+
+func (s *OssutilCommandSuite) TestRemoveObjectWithAllVersion(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	s.putBucketVersioning(bucketName, "enabled", c)
+
+	textBuffer := randStr(100)
+	s.createFile(uploadFileName, textBuffer, c)
+
+	// put object 20 times, and has 20 object with different version id
+	objectName := "TestRemoveObject-allversion"
+	num := 20
+	for i := 0; i < num; i++ {
+		s.putObject(bucketName, objectName, uploadFileName, c)
+	}
+	objectStat := s.getStat(bucketName, objectName, c)
+	versionId := objectStat["X-Oss-Version-Id"]
+
+	// list object
+	objects := s.listObjects(bucketName, objectName, "ls - ", c)
+	c.Assert(len(objects), Equals, 1)
+	c.Assert(objects[0], Equals, objectName)
+
+	// remove the latest version object
+	// rm --version-id oss:\bucketName\objectName
+	command := "rm"
+	args := []string{CloudURLToString(bucketName, objectName)}
+	str := ""
+	ok := true
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"stsToken":        &str,
+		"configFile":      &configFile,
+		"versionId":       &versionId,
+	}
+	_, err := cm.RunCommand(command, args, options)
+	c.Assert(err, IsNil)
+
+	// list object, and remains 19
+	objects = s.listObjects(bucketName, objectName, "ls - ", c)
+	c.Assert(len(objects), Equals, 1)
+	c.Assert(objects[0], Equals, objectName)
+
+	// rm --all-versions oss:\bucketName\objectName
+	args = []string{CloudURLToString(bucketName, objectName)}
+	options = OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"stsToken":        &str,
+		"configFile":      &configFile,
+		"allVersions":     &ok,
+	}
+	_, err = cm.RunCommand(command, args, options)
+	c.Assert(err, IsNil)
+
+	objects = s.listObjects(bucketName, objectName, "ls - ", c)
+	c.Assert(len(objects), Equals, 0)
+
+	// rm -b
+	args = []string{CloudURLToString(bucketName, "")}
+	options = OptionMapType{
+		"endpoint":        &endpoint,
+		"accessKeyID":     &accessKeyID,
+		"accessKeySecret": &accessKeySecret,
+		"stsToken":        &str,
+		"configFile":      &str,
+		"bucket":          &ok,
+		"force":           &ok,
+	}
+	_, err = cm.RunCommand(command, args, options)
+	c.Assert(err, IsNil)
+}
+
+func (s *OssutilCommandSuite) TestRmObjectfilterVersioning(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	s.putBucketVersioning(bucketName, "enabled", c)
+	bucketStr := CloudURLToString(bucketName, "")
+
+	dir := "ossutil-test-dir-" + randLowStr(5)
+	subdir := "dir1"
+	contents := map[string]string{}
+	filenames := s.createTestFiles(dir, subdir, c, contents)
+
+	// upload files
+	args := []string{dir, bucketStr}
+	cmdline := []string{"ossutil", "cp", dir, bucketStr, "-rf"}
+	showElapse, err := s.rawCPWithFilter(args, true, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	// "rm oss://bucket/prefix -r -f"
+	// remove object,create delete marker
+	s.removeObjects(bucketName, "re", true, true, c)
+
+	// ls files
+	limitedNum := strconv.FormatInt(-1, 10)
+	lsArgs := []string{CloudURLToString(bucketName, "")}
+	str := ""
+	allVersions := true
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+		"limitedNum":      &limitedNum,
+		"allVersions":     &allVersions,
+	}
+
+	testOutFileName := "ossutil-test-outfile-" + randLowStr(5)
+	testOutFile, _ := os.OpenFile(testOutFileName, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
+	oldStdout := os.Stdout
+	os.Stdout = testOutFile
+	_, err = cm.RunCommand("ls", lsArgs, options)
+	c.Assert(err, IsNil)
+	testOutFile.Close()
+	os.Stdout = oldStdout
+
+	fileBody, err := ioutil.ReadFile(testOutFileName)
+	c.Assert(err, IsNil)
+
+	// Verify
+	for _, filename := range filenames {
+		c.Assert(strings.Contains(string(fileBody), filename), Equals, true)
+	}
+
+	// then rm objects
+	cmdline = []string{"ossutil", "rm", bucketStr, "-rf", "--include", "*.jpg"}
+	rmArgs := []string{CloudURLToString(bucketName, "")}
+	bRecusive := true
+	bForce := true
+	rmOptions := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+		"recursive":       &bRecusive,
+		"force":           &bForce,
+		"allVersions":     &allVersions,
+	}
+	os.Args = cmdline
+	_, err = cm.RunCommand("rm", rmArgs, rmOptions)
+	os.Args = []string{}
+	c.Assert(err, IsNil)
+
+	// check again after rm
+	testOutFile, _ = os.OpenFile(testOutFileName, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
+	oldStdout = os.Stdout
+	os.Stdout = testOutFile
+	_, err = cm.RunCommand("ls", lsArgs, options)
+	c.Assert(err, IsNil)
+	testOutFile.Close()
+	os.Stdout = oldStdout
+
+	fileBody, err = ioutil.ReadFile(testOutFileName)
+	c.Assert(err, IsNil)
+
+	// Verify include
+	files := filterStrsWithInclude(filenames, "*.jpg")
+	for _, filename := range files {
+		c.Assert(strings.Contains(string(fileBody), filename), Equals, false)
+	}
+
+	// Verify exclude
+	files = filterStrsWithExclude(filenames, "*.jpg")
+	for _, filename := range files {
+		c.Assert(strings.Contains(string(fileBody), filename), Equals, true)
+	}
+
+	// cleanup
+	os.Remove(testOutFileName)
+	os.RemoveAll(dir)
 	s.removeBucket(bucketName, true, c)
 }

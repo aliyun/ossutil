@@ -64,6 +64,9 @@ const (
 	OptionKMSMasterKeyID             = "KMSMasterKeyID"
 	OptionAcrHeaders                 = "acrHeaders"
 	OptionAcrMethod                  = "acrMethod"
+	OptionVersionId                  = "versionId"
+	OptionAllversions                = "allVersions"
+	OptionVersionIdMarker            = "versionIdMarker"
 )
 
 // the elements show in stat object
@@ -107,7 +110,7 @@ const (
 const (
 	Package                 string = "ossutil"
 	ChannelBuf              int    = 1000
-	Version                 string = "v1.6.4"
+	Version                 string = "v1.6.5"
 	DefaultEndpoint         string = "oss.aliyuncs.com"
 	ChineseLanguage                = "CH"
 	EnglishLanguage                = "EN"

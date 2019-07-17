@@ -150,6 +150,7 @@ var restoreCommand = RestoreCommand{
 			OptionRoutines,
 			OptionOutputDir,
 			OptionLogLevel,
+			OptionVersionId,
 		},
 	},
 }
@@ -174,13 +175,14 @@ func (rc *RestoreCommand) RunCommand() error {
 
 	encodingType, _ := GetString(OptionEncodingType, rc.command.options)
 	recursive, _ := GetBool(OptionRecursion, rc.command.options)
+	versionid, _ := GetString(OptionVersionId, rc.command.options)
 
 	cloudURL, err := CloudURLFromString(rc.command.args[0], encodingType)
 	if err != nil {
 		return err
 	}
 
-	if err = rc.checkArgs(cloudURL, recursive); err != nil {
+	if err = rc.checkArgs(cloudURL, recursive, versionid); err != nil {
 		return err
 	}
 
@@ -190,25 +192,34 @@ func (rc *RestoreCommand) RunCommand() error {
 	}
 
 	if !recursive {
-		return rc.ossRestoreObject(bucket, cloudURL.object)
+		return rc.ossRestoreObject(bucket, cloudURL.object, versionid)
 	}
 	return rc.batchRestoreObjects(bucket, cloudURL)
 }
 
-func (rc *RestoreCommand) checkArgs(cloudURL CloudURL, recursive bool) error {
+func (rc *RestoreCommand) checkArgs(cloudURL CloudURL, recursive bool, versionid string) error {
 	if cloudURL.bucket == "" {
 		return fmt.Errorf("invalid cloud url: %s, miss bucket", rc.command.args[0])
 	}
 	if !recursive && cloudURL.object == "" {
 		return fmt.Errorf("restore object invalid cloud url: %s, object empty. Restore bucket is not supported, if you mean batch restore objects, please use --recursive", rc.command.args[0])
 	}
+	if recursive && len(versionid) > 0 {
+		return fmt.Errorf("restore bucket dose not support the --version-id=%s argument.", versionid)
+	}
 	return nil
 }
 
-func (rc *RestoreCommand) ossRestoreObject(bucket *oss.Bucket, object string) error {
+func (rc *RestoreCommand) ossRestoreObject(bucket *oss.Bucket, object string, versionid string) error {
 	retryTimes, _ := GetInt(OptionRetryTimes, rc.command.options)
 	for i := 1; ; i++ {
-		err := bucket.RestoreObject(object)
+
+	    var options []oss.Option
+		if len(versionid) > 0 {
+			options = append(options, oss.VersionId(versionid))
+		}
+
+		err := bucket.RestoreObject(object, options...)
 		if err == nil {
 			return err
 		}
@@ -281,7 +292,7 @@ func (rc *RestoreCommand) restoreConsumer(bucket *oss.Bucket, cloudURL CloudURL,
 }
 
 func (rc *RestoreCommand) restoreObjectWithReport(bucket *oss.Bucket, object string) error {
-	err := rc.ossRestoreObject(bucket, object)
+	err := rc.ossRestoreObject(bucket, object, "")
 	rc.command.updateMonitor(err, &rc.monitor)
 	msg := fmt.Sprintf("restore %s", CloudURLToString(bucket.BucketName, object))
 	rc.command.report(msg, err, &rc.reOption)

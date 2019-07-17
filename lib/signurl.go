@@ -13,17 +13,17 @@ var specChineseSignurl = SpecText{
 	paramText: "cloud_url [meta] [options]",
 
 	syntaxText: ` 
-    ossutil sign cloud_url [--timeout t]
+    ossutil sign cloud_url [--timeout t] [--version-id versionId]
 `,
 
 	detailHelpText: ` 
     该命令签名用户指定的cloud_url，生成经过签名的url可供第三方用户访问object，其中cloud_url
     必须为形如：oss://bucket/object的cloud_url，bucket和object不可缺少。通过--timeout选项指
-    定url的过期时间，默认为60s。
+    定url的过期时间，默认为60s。通过--version-id选项指定版本号。
 
 用法：
 
-    ossutil sign oss://bucket/object [--timeout t]
+    ossutil sign oss://bucket/object [--timeout t] [--version-id versionId]
 `,
 
 	sampleText: ` 
@@ -35,6 +35,9 @@ var specChineseSignurl = SpecText{
 
     ossutil sign oss://tempb1/test%20a%2Bb' --encoding-type url
         生成oss://tempb1/'test a+b'的签名url，超时时间60s
+
+    ossutil sign oss://bucket1/object1  --version-id versionId
+        生成指定版本的 oss://bucket1/object1的签名url，超时时间60s
 `,
 }
 
@@ -45,7 +48,7 @@ var specEnglishSignurl = SpecText{
 	paramText: "cloud_url [options]",
 
 	syntaxText: ` 
-    ossutil sign cloud_url [--timeout t]
+    ossutil sign cloud_url [--timeout t] [--version-id versionId]
 `,
 
 	detailHelpText: ` 
@@ -53,10 +56,11 @@ var specEnglishSignurl = SpecText{
     be used by third-party to access the object. 
     Where, cloud_url must like: oss://bucket/object
     Use --timeout to specify the expire time of url, the default is 60s.
+	Use --version-id to specify the version.
 
 Usage:
 
-    ossutil sign oss://bucket/object [--timeout t]
+    ossutil sign oss://bucket/object [--timeout t] [--version-id versionId]
 `,
 
 	sampleText: ` 
@@ -68,6 +72,9 @@ Usage:
 
     ossutil sign oss://tempb1/test%20a%2Bb' --encoding-type url
         Generate the signature of oss://tempb1/'test a+b' with expire time 60s
+
+    ossutil sign oss://bucket1/object1 --version-id versionId
+        Generate the signature of a specific version of oss://bucket1/object1 with  expire time 60s
 `,
 }
 
@@ -94,6 +101,7 @@ var signURLCommand = SignurlCommand{
 			OptionAccessKeySecret,
 			OptionSTSToken,
 			OptionLogLevel,
+			OptionVersionId,
 		},
 	},
 }
@@ -121,13 +129,19 @@ func (sc *SignurlCommand) RunCommand() error {
 	}
 
 	timeout, _ := GetInt(OptionTimeout, sc.command.options)
+	versionId, _ := GetString(OptionVersionId, sc.command.options)
 
 	bucket, err := sc.command.ossBucket(cloudURL.bucket)
 	if err != nil {
 		return err
 	}
 
-	str, err := sc.ossSign(bucket, cloudURL.object, timeout)
+	var options []oss.Option
+	if len(versionId) > 0 {
+		options = append(options, oss.VersionId(versionId))
+	}
+
+	str, err := sc.ossSign(bucket, cloudURL.object, timeout, options...)
 	if err != nil {
 		return err
 	}
