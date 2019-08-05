@@ -1140,6 +1140,9 @@ var copyCommand = CopyCommand{
 			OptionAccessKeyID,
 			OptionAccessKeySecret,
 			OptionSTSToken,
+			OptionProxyHost,
+			OptionProxyUser,
+			OptionProxyPwd,
 			OptionRetryTimes,
 			OptionRoutines,
 			OptionParallel,
@@ -1678,7 +1681,7 @@ func (cc *CopyCommand) uploadFileWithReport(bucket *oss.Bucket, destURL CloudURL
 		fileInfo, errF := os.Stat(absPath)
 		speed := 0.0
 		if cost > 0 && errF == nil {
-			speed = float64(fileInfo.Size()) / float64(cost)
+			speed = (float64(fileInfo.Size()) / 1024) / (float64(cost) / 1000)
 		}
 		LogInfo("upload file success,file:%s,size:%d,speed:%.2f(KB/s),cost:%d(ms)\n", file.filePath, fileInfo.Size(), speed, cost)
 	}
@@ -2064,18 +2067,26 @@ func (cc *CopyCommand) downloadSingleFileWithReport(bucket *oss.Bucket, objectIn
 	startT := time.Now()
 	skip, err, size, msg := cc.downloadSingleFile(bucket, objectInfo, filePath)
 	cost := time.Now().UnixNano()/1000/1000 - startT.UnixNano()/1000/1000
-
+	var realSize int64 = objectInfo.size
 	if err != nil {
 		LogError("download error,file:%s,cost:%d(ms),error info:%s\n", objectInfo.relativeKey, cost, err.Error())
 	} else if skip {
 		LogInfo("download skip:%s.\n", objectInfo.relativeKey)
 	} else {
+		if realSize < 0 && logLevel >= oss.Info {
+			fileName := cc.makeFileName(objectInfo.relativeKey, filePath)
+			fileInfo, errF := os.Stat(fileName)
+			if errF == nil && !fileInfo.IsDir() {
+				realSize = fileInfo.Size()
+			}
+		}
+
 		speed := 0.0
 		if cost > 0 {
-			speed = float64(objectInfo.size) / float64(cost)
+			speed = (float64(realSize) / 1024) / (float64(cost) / 1000)
 		}
 		objectKey := objectInfo.prefix + objectInfo.relativeKey
-		LogInfo("download success,object:%s,size:%d,speed:%.2f(KB/s),cost:%d(ms)\n", objectKey, objectInfo.size, speed, cost)
+		LogInfo("download success,object:%s,size:%d,speed:%.2f(KB/s),cost:%d(ms)\n", objectKey, realSize, speed, cost)
 		cc.updateSnapshot(nil, CloudURLToString(bucket.BucketName, objectKey), objectInfo.lastModified.Unix())
 	}
 

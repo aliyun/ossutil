@@ -60,10 +60,12 @@ func DecideConfigFile(configFile string) string {
 	if configFile == "" {
 		configFile = DefaultConfigFile
 	}
-	usr, _ := user.Current()
-	dir := usr.HomeDir
+
 	if len(configFile) >= 2 && strings.HasPrefix(configFile, "~"+string(os.PathSeparator)) {
-		configFile = strings.Replace(configFile, "~", dir, 1)
+		usr, _ := user.Current()
+		if usr != nil {
+			configFile = strings.Replace(configFile, "~", usr.HomeDir, 1)
+		}
 	}
 	return configFile
 }
@@ -124,7 +126,7 @@ func readConfigFromFile(configFile string) (OptionMapType, error) {
 		for ecsUrl, strUrl := range options {
 			(configMap[sec]).(map[string]string)[strings.TrimSpace(ecsUrl)] = strings.TrimSpace(strUrl)
 		}
-	} 
+	}
 	return configMap, nil
 }
 

@@ -37,6 +37,9 @@ var (
 	stsToken            = ""
 	payerBucket         = ""
 	payerBucketEndPoint = ""
+	proxyHost           = ""
+	proxyUser           = ""
+	proxyPwd            = ""
 )
 
 var (
@@ -120,6 +123,16 @@ func SetUpCredential() {
 			payerBucketEndPoint = payerBucketEndPoint[7:]
 		}
 	}
+
+	if proxyHost == "" {
+		proxyHost = os.Getenv("OSS_TEST_PROXY_HOST")
+	}
+	if proxyUser == "" {
+		proxyUser = os.Getenv("OSS_TEST_PROXY_USER")
+	}
+	if proxyPwd == "" {
+		proxyPwd = os.Getenv("OSS_TEST_PROXY_PASSWORD")
+	}
 }
 
 func (s *OssutilCommandSuite) SetUpBucketEnv(c *C) {
@@ -173,6 +186,28 @@ func randStr(n int) string {
 
 func randLowStr(n int) string {
 	return strings.ToLower(randStr(n))
+}
+
+func getFileList(dpath string) ([]string, error) {
+	fileNames := make([]string, 0)
+	err := filepath.Walk(dpath, func(fpath string, f os.FileInfo, err error) error {
+		if f == nil {
+			return err
+		}
+		dpath = filepath.Clean(dpath)
+		fpath = filepath.Clean(fpath)
+		if err != nil {
+			return fmt.Errorf("list file error: %s, info: %s", fpath, err.Error())
+		}
+
+		// fpath may be dir,exclude itself
+		if fpath != dpath {
+			fileNames = append(fileNames, fpath)
+		}
+
+		return nil
+	})
+	return fileNames, err
 }
 
 func (s *OssutilCommandSuite) PutObject(bucketName string, object string, body string, c *C) {

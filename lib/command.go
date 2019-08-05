@@ -3,6 +3,7 @@ package lib
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -282,8 +283,15 @@ func (cmd *Command) ossClient(bucket string) (*oss.Client, error) {
 	accessKeySecret, _ := GetString(OptionAccessKeySecret, cmd.options)
 	stsToken, _ := GetString(OptionSTSToken, cmd.options)
 	disableCRC64, _ := GetBool(OptionDisableCRC64, cmd.options)
-
+	proxyHost, _ := GetString(OptionProxyHost, cmd.options)
+	proxyUser, _ := GetString(OptionProxyUser, cmd.options)
+	proxyPwd, _ := GetString(OptionProxyPwd, cmd.options)
 	ecsUrl, _ := cmd.getEcsRamAkService()
+
+	if accessKeyID == "" && ecsUrl == "" {
+		return nil, fmt.Errorf("accessKeyID and ecsUrl are both empty")
+	}
+
 	if ecsUrl == "" {
 		if err := cmd.checkCredentials(endpoint, accessKeyID, accessKeySecret); err != nil {
 			return nil, err
@@ -295,6 +303,14 @@ func (cmd *Command) ossClient(bucket string) (*oss.Client, error) {
 		options = append(options, oss.EnableCRC(false))
 	} else {
 		options = append(options, oss.EnableCRC(true))
+	}
+
+	if proxyHost != "" {
+		if proxyUser != "" {
+			options = append(options, oss.AuthProxy(proxyHost, proxyUser, proxyPwd))
+		} else {
+			options = append(options, oss.Proxy(proxyHost))
+		}
 	}
 
 	if logLevel > oss.LogOff {
@@ -480,7 +496,7 @@ func (cmd *Command) ossGetObjectMetaRetry(bucket *oss.Bucket, object string, opt
 	}
 }
 
-func (cmd *Command) objectStatistic(bucket *oss.Bucket, cloudURL CloudURL, monitor Monitorer, filters []filterOptionType) {
+func (cmd *Command) objectStatistic(bucket *oss.Bucket, cloudURL CloudURL, monitor Monitorer, filters []filterOptionType, options ...oss.Option) {
 	if monitor == nil {
 		return
 	}
@@ -488,7 +504,8 @@ func (cmd *Command) objectStatistic(bucket *oss.Bucket, cloudURL CloudURL, monit
 	pre := oss.Prefix(cloudURL.object)
 	marker := oss.Marker("")
 	for {
-		lor, err := cmd.ossListObjectsRetry(bucket, marker, pre)
+		listOptions := append(options, marker, pre)
+		lor, err := cmd.ossListObjectsRetry(bucket, listOptions...)
 		if err != nil {
 			monitor.setScanError(err)
 			return
@@ -509,11 +526,12 @@ func (cmd *Command) objectStatistic(bucket *oss.Bucket, cloudURL CloudURL, monit
 	monitor.setScanEnd()
 }
 
-func (cmd *Command) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, chObjects chan<- string, chError chan<- error, filters []filterOptionType) {
+func (cmd *Command) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, chObjects chan<- string, chError chan<- error, filters []filterOptionType, options ...oss.Option) {
 	pre := oss.Prefix(cloudURL.object)
 	marker := oss.Marker("")
 	for {
-		lor, err := cmd.ossListObjectsRetry(bucket, marker, pre)
+		listOptions := append(options, marker, pre)
+		lor, err := cmd.ossListObjectsRetry(bucket, listOptions...)
 		if err != nil {
 			chError <- err
 			break
@@ -533,6 +551,18 @@ func (cmd *Command) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, chObje
 	}
 	defer close(chObjects)
 	chError <- nil
+}
+
+func (cmd *Command) getRawMarker(str string) (string, error) {
+	encodingType, _ := GetString(OptionEncodingType, cmd.options)
+	if encodingType == URLEncodingType {
+		unencodedStr, err := url.QueryUnescape(str)
+		if err != nil {
+			return str, err
+		}
+		return unencodedStr, nil
+	}
+	return str, nil
 }
 
 func (cmd *Command) updateMonitor(err error, monitor *Monitor) {
@@ -623,5 +653,9 @@ func GetAllCommands() []interface{} {
 		&bucketQosCommand,
 		&userQosCommand,
 		&bucketVersioningCommand,
+		&duSizeCommand,
+		&bucketPolicyCommand,
+		&requestPaymentCommand,
+		&objectTagCommand,
 	}
 }

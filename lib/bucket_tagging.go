@@ -109,6 +109,9 @@ var bucketTagCommand = BucketTagCommand{
 			OptionAccessKeyID,
 			OptionAccessKeySecret,
 			OptionSTSToken,
+			OptionProxyHost,
+			OptionProxyUser,
+			OptionProxyPwd,
 			OptionMethod,
 			OptionLogLevel,
 		},
@@ -194,12 +197,12 @@ func (btc *BucketTagCommand) GetBucketTag() error {
 	}
 
 	if len(btc.tagResult.Tags) > 0 {
-		fmt.Printf("%-10s%s\t\t%s\n", "index", "tag key", "tag value")
+		fmt.Printf("%-10s%s\t%s\n", "index", "tag key", "tag value")
 		fmt.Printf("---------------------------------------------------\n")
 	}
 
 	for index, tag := range btc.tagResult.Tags {
-		fmt.Printf("%-10d\"%s\"\t\t\"%s\"\n", index, tag.Key, tag.Value)
+		fmt.Printf("%-10d\"%s\"\t\"%s\"\n", index, tag.Key, tag.Value)
 	}
 
 	fmt.Printf("\n\n")
