@@ -169,6 +169,18 @@ var OptionMap = map[string]Option{
 	OptionVersionIdMarker: Option{"", "--version-id-marker", "", OptionTypeString, "", "",
 		"表示列举objects所有版本的version id marker",
 		"specifies the marker of object version id when list objects's all versions"},
+	OptionTrafficLimit: Option{"", "--trafic-limit", "", OptionTypeInt64, "", "",
+		"http请求限速,单位:bit/s,缺省值为0(不受限制),用于sign命令",
+		"http request speed limit,the unit is:bit/s,default value is 0(unlimited),used by sign command"},
+	OptionProxyHost: Option{"", "--proxy-host", "", OptionTypeString, "", "",
+		"网络代理服务器的url地址,支持http/https/socks5,比如 https://120.79.128.211:3128, socks5://120.79.128.211:1080",
+		"url of network proxy server, which supports http/https/socks5, such as https://120.79.128.211:3128, socks5://120.79.128.211:1080"},
+	OptionProxyUser: Option{"", "--proxy-user", "", OptionTypeString, "", "",
+		"网络代理服务器的用户名,默认为空",
+		"username of network proxy, default is empty"},
+	OptionProxyPwd: Option{"", "--proxy-pwd", "", OptionTypeString, "", "",
+		"网络代理服务器的密码,默认为空",
+		"password of network proxy, default is empty"}, 
 }
 
 func (T *Option) getHelp(language string) string {

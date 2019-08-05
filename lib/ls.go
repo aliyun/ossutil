@@ -2,7 +2,6 @@ package lib
 
 import (
 	"fmt"
-	"net/url"
 	"os"
 	"strings"
 
@@ -383,6 +382,9 @@ var listCommand = ListCommand{
 			OptionAccessKeyID,
 			OptionAccessKeySecret,
 			OptionSTSToken,
+			OptionProxyHost,
+			OptionProxyUser,
+			OptionProxyPwd,
 			OptionRetryTimes,
 			OptionLogLevel,
 			OptionRequestPayer,
@@ -432,9 +434,10 @@ func (lc *ListCommand) RunCommand() error {
 	if payer != "" {
 		if payer != strings.ToLower(string(oss.Requester)) {
 			return fmt.Errorf("invalid request payer: %s, please check", payer)
+		} else {
+			lc.payerOption = oss.RequestPayer(oss.PayerType(payer))
 		}
 	}
-	lc.payerOption = oss.RequestPayer(oss.PayerType(payer))
 
 	if cloudURL.bucket == "" {
 		return lc.listBuckets("")
@@ -458,7 +461,7 @@ func (lc *ListCommand) listBuckets(prefix string) error {
 	shortFormat, _ := GetBool(OptionShortFormat, lc.command.options)
 	limitedNum, _ := GetInt(OptionLimitedNum, lc.command.options)
 	vmarker, _ := GetString(OptionMarker, lc.command.options)
-	if vmarker, err = lc.getRawMarker(vmarker); err != nil {
+	if vmarker, err = lc.command.getRawMarker(vmarker); err != nil {
 		return fmt.Errorf("invalid marker: %s, marker is not url encoded, %s", vmarker, err.Error())
 	}
 
@@ -501,18 +504,6 @@ func (lc *ListCommand) listBuckets(prefix string) error {
 	}
 	fmt.Printf("Bucket Number is: %d\n", num)
 	return nil
-}
-
-func (lc *ListCommand) getRawMarker(str string) (string, error) {
-	encodingType, _ := GetString(OptionEncodingType, lc.command.options)
-	if encodingType == URLEncodingType {
-		unencodedStr, err := url.QueryUnescape(str)
-		if err != nil {
-			return str, err
-		}
-		return unencodedStr, nil
-	}
-	return str, nil
 }
 
 func (lc *ListCommand) lbCheckArgOptions() error {
@@ -584,7 +575,7 @@ func (lc *ListCommand) listObjects(bucket *oss.Bucket, cloudURL CloudURL, shortF
 	num = 0
 	pre := oss.Prefix(cloudURL.object)
 	vmarker, _ := GetString(OptionMarker, lc.command.options)
-	if vmarker, err = lc.getRawMarker(vmarker); err != nil {
+	if vmarker, err = lc.command.getRawMarker(vmarker); err != nil {
 		return num, fmt.Errorf("invalid marker: %s, marker is not url encoded, %s", vmarker, err.Error())
 	}
 	marker := oss.Marker(vmarker)
@@ -627,13 +618,13 @@ func (lc *ListCommand) listObjectVersions(bucket *oss.Bucket, cloudURL CloudURL,
 	num = 0
 	pre := oss.Prefix(cloudURL.object)
 	vmarker, _ := GetString(OptionMarker, lc.command.options)
-	if vmarker, err = lc.getRawMarker(vmarker); err != nil {
+	if vmarker, err = lc.command.getRawMarker(vmarker); err != nil {
 		return num, fmt.Errorf("invalid marker: %s, marker is not url encoded, %s", vmarker, err.Error())
 	}
 	marker := oss.KeyMarker(vmarker)
 
 	strVersionIdMarker, _ := GetString(OptionVersionIdMarker, lc.command.options)
-	if strVersionIdMarker, err = lc.getRawMarker(strVersionIdMarker); err != nil {
+	if strVersionIdMarker, err = lc.command.getRawMarker(strVersionIdMarker); err != nil {
 		return num, fmt.Errorf("invalid versionIdMarker: %s, versionIdMarker is not url encoded, %s", strVersionIdMarker, err.Error())
 	}
 	versionIdMarker := oss.VersionIdMarker(strVersionIdMarker)
@@ -861,13 +852,13 @@ func (lc *ListCommand) listMultipartUploads(bucket *oss.Bucket, cloudURL CloudUR
 	pre := oss.Prefix(cloudURL.object)
 
 	vmarker, _ := GetString(OptionMarker, lc.command.options)
-	if vmarker, err = lc.getRawMarker(vmarker); err != nil {
+	if vmarker, err = lc.command.getRawMarker(vmarker); err != nil {
 		return multipartNum, fmt.Errorf("invalid marker: %s, marker is not url encoded, %s", vmarker, err.Error())
 	}
 	keyMarker := oss.KeyMarker(vmarker)
 
 	vuploadIdMarker, _ := GetString(OptionUploadIDMarker, lc.command.options)
-	if vuploadIdMarker, err = lc.getRawMarker(vuploadIdMarker); err != nil {
+	if vuploadIdMarker, err = lc.command.getRawMarker(vuploadIdMarker); err != nil {
 		return multipartNum, fmt.Errorf("invalid uploadIDMarker: %s, uploadIDMarker is not url encoded, %s", vuploadIdMarker, err.Error())
 	}
 	uploadIdMarker := oss.UploadIDMarker(vuploadIdMarker)

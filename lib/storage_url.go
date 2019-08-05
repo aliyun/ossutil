@@ -137,10 +137,13 @@ func (fu *FileURL) Init(urlStr, encodingType string) error {
 		urlStr = vurl
 	}
 
-	usr, _ := user.Current()
-	dir := usr.HomeDir
 	if len(urlStr) >= 2 && urlStr[:2] == "~"+string(os.PathSeparator) {
-		urlStr = strings.Replace(urlStr, "~", dir, 1)
+		usr, err := user.Current()
+		if usr != nil {
+			urlStr = strings.Replace(urlStr, "~", usr.HomeDir, 1)
+		} else {
+			return fmt.Errorf("%s,get current user error for ~", err.Error())
+		}
 	}
 	fu.urlStr = urlStr
 	return nil

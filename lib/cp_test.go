@@ -3687,3 +3687,92 @@ func (s *OssutilCommandSuite) TestCPVersioingCopySuccess(c *C) {
 	os.RemoveAll(downFileName)
 	s.removeBucket(bucketName, true, c)
 }
+
+func (s *OssutilCommandSuite) TestCPWithAuthProxy(c *C) {
+	if proxyHost == "" {
+		return
+	}
+
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	fileName := randLowStr(10)
+	content := randLowStr(10)
+	s.createFile(fileName, content, c)
+	objectName := "ossutil_test_object" + randStr(5)
+
+	// upload object
+	thre := strconv.FormatInt(DefaultBigFileThreshold, 10)
+	command := "cp"
+	str := ""
+	cpDir := CheckpointDir
+	routines := strconv.Itoa(Routines)
+	options := OptionMapType{
+		"endpoint":         &str,
+		"accessKeyID":      &str,
+		"accessKeySecret":  &str,
+		"configFile":       &ConfigFile,
+		"checkpointDir":    &cpDir,
+		"routines":         &routines,
+		"bigfileThreshold": &thre,
+		"proxyHost":        &proxyHost,
+		"proxyUser":        &proxyUser,
+		"proxyPwd":         &proxyPwd,
+	}
+	srcUrl := CloudURLToString(bucketName, objectName)
+	args := []string{fileName, srcUrl}
+
+	_, err := cm.RunCommand(command, args, options)
+	c.Assert(err, IsNil)
+
+	os.RemoveAll(fileName)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestCPWithAuthProxyError(c *C) {
+	if proxyHost == "" {
+		return
+	}
+
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	fileName := randLowStr(10)
+	content := randLowStr(10)
+	s.createFile(fileName, content, c)
+	objectName := "ossutil_test_object" + randStr(5)
+
+	// upload object,proxy-user is empty
+	thre := strconv.FormatInt(DefaultBigFileThreshold, 10)
+	command := "cp"
+	str := ""
+	cpDir := CheckpointDir
+	routines := strconv.Itoa(Routines)
+	options := OptionMapType{
+		"endpoint":         &str,
+		"accessKeyID":      &str,
+		"accessKeySecret":  &str,
+		"configFile":       &ConfigFile,
+		"checkpointDir":    &cpDir,
+		"routines":         &routines,
+		"bigfileThreshold": &thre,
+		"proxyHost":        &proxyHost,
+		"proxyUser":        &str,
+		"proxyPwd":         &proxyPwd,
+	}
+	srcUrl := CloudURLToString(bucketName, objectName)
+	args := []string{fileName, srcUrl}
+
+	_, err := cm.RunCommand(command, args, options)
+    c.Assert(err, NotNil)
+    
+    // upload object,proxy-pwd is empty
+    options["proxyUser"] = &proxyUser
+    options["proxyPwd"] = &str
+
+    _, err = cm.RunCommand(command, args, options)
+    c.Assert(err, NotNil)
+
+	os.RemoveAll(fileName)
+	s.removeBucket(bucketName, true, c)
+}

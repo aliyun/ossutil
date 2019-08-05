@@ -67,6 +67,10 @@ const (
 	OptionVersionId                  = "versionId"
 	OptionAllversions                = "allVersions"
 	OptionVersionIdMarker            = "versionIdMarker"
+	OptionTrafficLimit               = "trafficLimit"
+	OptionProxyHost                  = "proxyHost"
+	OptionProxyUser                  = "proxyUser"
+	OptionProxyPwd                   = "proxyPwd"
 )
 
 // the elements show in stat object
@@ -110,7 +114,7 @@ const (
 const (
 	Package                 string = "ossutil"
 	ChannelBuf              int    = 1000
-	Version                 string = "v1.6.5"
+	Version                 string = "v1.6.6"
 	DefaultEndpoint         string = "oss.aliyuncs.com"
 	ChineseLanguage                = "CH"
 	EnglishLanguage                = "EN"
