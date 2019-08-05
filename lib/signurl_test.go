@@ -2,10 +2,10 @@ package lib
 
 import (
 	"net/url"
-	"strings"
-	"time"
 	"os"
 	"strconv"
+	"strings"
+	"time"
 
 	. "gopkg.in/check.v1"
 )
@@ -237,7 +237,7 @@ func (s *OssutilCommandSuite) TestInvalidOptions(c *C) {
 func (s *OssutilCommandSuite) TestSignurlWithVersion(c *C) {
 	bucketName := bucketNamePrefix + "-sign-" + randLowStr(10)
 	objectName := randStr(12)
-	
+
 	s.putBucket(bucketName, c)
 	s.putBucketVersioning(bucketName, "enabled", c)
 
@@ -276,7 +276,6 @@ func (s *OssutilCommandSuite) TestSignurlWithVersion(c *C) {
 	str = s.readFile(downloadFileName, c)
 	c.Assert(str, Equals, textBufferV2)
 
-
 	// get object with versionid V1
 	var str1 string
 	t := strconv.FormatInt(DefaultTimeout, 10)
@@ -313,4 +312,56 @@ func (s *OssutilCommandSuite) TestSignurlWithVersion(c *C) {
 	c.Assert(err, IsNil)
 	str = s.readFile(downloadFileName, c)
 	c.Assert(str, Equals, textBufferV1)
+}
+
+func (s *OssutilCommandSuite) TestTraficLimitSignUrl(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	data := randLowStr(1024)
+	uploadFileName := "ossutil-test-file-" + randLowStr(5)
+	s.createFile(uploadFileName, data, c)
+
+	object := randStr(10)
+	s.putObject(bucketName, object, uploadFileName, c)
+
+	command := "sign"
+	str := ""
+	trafficLimit := strconv.FormatInt(1024*1024*8, 10)
+	timeOut := strconv.FormatInt(60, 10)
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"stsToken":        &str,
+		"configFile":      &configFile,
+		"trafficLimit":    &trafficLimit,
+		"timeout":         &timeOut,
+	}
+
+	srcUrl := CloudURLToString(bucketName, object)
+	args := []string{srcUrl}
+	_, err := cm.RunCommand(command, args, options)
+	c.Assert(err, IsNil)
+
+	c.Assert(strings.Contains(signURLCommand.signUrl, "Expires"), Equals, true)
+	c.Assert(strings.Contains(signURLCommand.signUrl, "OSSAccessKeyId"), Equals, true)
+	c.Assert(strings.Contains(signURLCommand.signUrl, "Signature"), Equals, true)
+	c.Assert(strings.Contains(signURLCommand.signUrl, "Signature"), Equals, true)
+	c.Assert(strings.Contains(signURLCommand.signUrl, "x-oss-traffic-limit"), Equals, true)
+	c.Assert(strings.Contains(signURLCommand.signUrl, object), Equals, true)
+
+	bucket, err := signURLCommand.command.ossBucket(bucketName)
+	c.Assert(err, IsNil)
+
+	// get object with url
+	downFileName := "ossutil-test-file" + randStr(5)
+	err = bucket.GetObjectToFileWithURL(signURLCommand.signUrl, downFileName)
+	c.Assert(err, IsNil)
+	str = s.readFile(downFileName, c)
+	c.Assert(str, Equals, data)
+
+	os.Remove(uploadFileName)
+	os.Remove(downFileName)
+	s.removeBucket(bucketName, true, c)
 }

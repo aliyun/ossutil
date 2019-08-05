@@ -13,7 +13,7 @@ var specChineseSignurl = SpecText{
 	paramText: "cloud_url [meta] [options]",
 
 	syntaxText: ` 
-    ossutil sign cloud_url [--timeout t] [--version-id versionId]
+    ossutil sign cloud_url [--timeout t] [--version-id versionId] [--trafic-limit limitSpeed]
 `,
 
 	detailHelpText: ` 
@@ -23,7 +23,7 @@ var specChineseSignurl = SpecText{
 
 用法：
 
-    ossutil sign oss://bucket/object [--timeout t] [--version-id versionId]
+    ossutil sign oss://bucket/object [--timeout t] [--version-id versionId] [--trafic-limit limitSpeed]
 `,
 
 	sampleText: ` 
@@ -36,8 +36,11 @@ var specChineseSignurl = SpecText{
     ossutil sign oss://tempb1/test%20a%2Bb' --encoding-type url
         生成oss://tempb1/'test a+b'的签名url，超时时间60s
 
-    ossutil sign oss://bucket1/object1  --version-id versionId
+    ossutil sign oss://bucket1/object1 --version-id versionId
         生成指定版本的 oss://bucket1/object1的签名url，超时时间60s
+    
+    ossutil sign oss://bucket1/object1 --trafic-limit 8388608
+        生成oss://bucket1/object1的签名url, http限速为8388608(bit/s)
 `,
 }
 
@@ -48,7 +51,7 @@ var specEnglishSignurl = SpecText{
 	paramText: "cloud_url [options]",
 
 	syntaxText: ` 
-    ossutil sign cloud_url [--timeout t] [--version-id versionId]
+    ossutil sign cloud_url [--timeout t] [--version-id versionId] [--trafic-limit limitSpeed]
 `,
 
 	detailHelpText: ` 
@@ -60,7 +63,7 @@ var specEnglishSignurl = SpecText{
 
 Usage:
 
-    ossutil sign oss://bucket/object [--timeout t] [--version-id versionId]
+    ossutil sign oss://bucket/object [--timeout t] [--version-id versionId] [--trafic-limit limitSpeed]
 `,
 
 	sampleText: ` 
@@ -75,12 +78,16 @@ Usage:
 
     ossutil sign oss://bucket1/object1 --version-id versionId
         Generate the signature of a specific version of oss://bucket1/object1 with  expire time 60s
+    
+    ossutil sign oss://bucket1/object1  --trafic-limit 8388608
+        Generate the signature of oss://bucket1/object1, http limit speed is 8388608(bit/s)
 `,
 }
 
 // SignurlCommand definition
 type SignurlCommand struct {
 	command Command
+	signUrl string
 }
 
 var signURLCommand = SignurlCommand{
@@ -102,6 +109,7 @@ var signURLCommand = SignurlCommand{
 			OptionSTSToken,
 			OptionLogLevel,
 			OptionVersionId,
+			OptionTrafficLimit,
 		},
 	},
 }
@@ -130,6 +138,10 @@ func (sc *SignurlCommand) RunCommand() error {
 
 	timeout, _ := GetInt(OptionTimeout, sc.command.options)
 	versionId, _ := GetString(OptionVersionId, sc.command.options)
+	trafficLimit, getErr := GetInt(OptionTrafficLimit, sc.command.options)
+	if getErr == nil && trafficLimit < 0 {
+		return fmt.Errorf("Option value of --trafic-limit must be greater than 0")
+	}
 
 	bucket, err := sc.command.ossBucket(cloudURL.bucket)
 	if err != nil {
@@ -141,10 +153,15 @@ func (sc *SignurlCommand) RunCommand() error {
 		options = append(options, oss.VersionId(versionId))
 	}
 
+	if trafficLimit > 0 {
+		options = append(options, oss.TrafficLimitParam(trafficLimit))
+	}
+
 	str, err := sc.ossSign(bucket, cloudURL.object, timeout, options...)
 	if err != nil {
 		return err
 	}
+	sc.signUrl = str
 
 	fmt.Println(str)
 	return nil
