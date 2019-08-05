@@ -17,7 +17,7 @@ var specChineseStat = SpecText{
 	paramText: "cloud_url [options]",
 
 	syntaxText: ` 
-    ossutil stat oss://bucket[/object] [--encoding-type url] [--version-id versionId] [-c file] 
+    ossutil stat oss://bucket[/object] [--encoding-type url] [--version-id versionId] [--payer requester] [-c file] 
 `,
 
 	detailHelpText: ` 
@@ -42,6 +42,7 @@ var specChineseStat = SpecText{
     ossutil stat oss://bucket1/object  
     ossutil stat oss://bucket1/object --version-id versionId
     ossutil stat oss://bucket1/%e4%b8%ad%e6%96%87 --encoding-type url
+    ossutil stat oss://bucket1/object --payer requester
 `,
 }
 
@@ -52,7 +53,7 @@ var specEnglishStat = SpecText{
 	paramText: "cloud_url [options]",
 
 	syntaxText: ` 
-    ossutil stat oss://bucket[/object] [--encoding-type url]  [--version-id versionId] [-c file] 
+    ossutil stat oss://bucket[/object] [--encoding-type url]  [--version-id versionId] [--payer requester] [-c file] 
 `,
 
 	detailHelpText: ` 
@@ -77,13 +78,15 @@ Usage：
     ossutil stat oss://bucket1/object
     ossutil stat oss://bucket1/object --version-id versionId  
     ossutil stat oss://bucket1/%e4%b8%ad%e6%96%87 --encoding-type url
+    ossutil stat oss://bucket1/object --payer requester
 `,
 }
 
 // StatCommand is the command get bucket's or objects' meta information
 type StatCommand struct {
-	command   Command
-	versionId string
+	command       Command
+	versionId     string
+	commonOptions []oss.Option
 }
 
 var statCommand = StatCommand{
@@ -102,9 +105,13 @@ var statCommand = StatCommand{
 			OptionAccessKeyID,
 			OptionAccessKeySecret,
 			OptionSTSToken,
+			OptionProxyHost,
+			OptionProxyUser,
+			OptionProxyPwd,
 			OptionRetryTimes,
 			OptionLogLevel,
 			OptionVersionId,
+			OptionRequestPayer,
 		},
 	},
 }
@@ -134,6 +141,14 @@ func (sc *StatCommand) RunCommand() error {
 
 	if cloudURL.bucket == "" {
 		return fmt.Errorf("invalid cloud url: %s, miss bucket", sc.command.args[0])
+	}
+
+	payer, _ := GetString(OptionRequestPayer, sc.command.options)
+	if payer != "" {
+		if payer != strings.ToLower(string(oss.Requester)) {
+			return fmt.Errorf("invalid request payer: %s, please check", payer)
+		}
+		sc.commonOptions = append(sc.commonOptions, oss.RequestPayer(oss.PayerType(payer)))
 	}
 
 	bucket, err := sc.command.ossBucket(cloudURL.bucket)
@@ -175,7 +190,7 @@ func (sc *StatCommand) bucketStat(bucket *oss.Bucket, cloudURL CloudURL) error {
 func (sc *StatCommand) ossGetBucketStatRetry(bucket *oss.Bucket) (oss.GetBucketInfoResult, error) {
 	retryTimes, _ := GetInt(OptionRetryTimes, sc.command.options)
 	for i := 1; ; i++ {
-		gbar, err := bucket.Client.GetBucketInfo(bucket.BucketName)
+		gbar, err := bucket.Client.GetBucketInfo(bucket.BucketName, sc.commonOptions...)
 		if err == nil {
 			return gbar, err
 		}
@@ -197,6 +212,7 @@ func (sc *StatCommand) objectStat(bucket *oss.Bucket, cloudURL CloudURL) error {
 	if len(sc.versionId) > 0 {
 		statOptions = append(statOptions, oss.VersionId(sc.versionId))
 	}
+	statOptions = append(statOptions, sc.commonOptions...)
 
 	props, err := sc.command.ossGetObjectStatRetry(bucket, cloudURL.object, statOptions...)
 	if err != nil {
@@ -243,6 +259,7 @@ func (sc *StatCommand) ossGetObjectACLRetry(bucket *oss.Bucket, object string) (
 	if len(sc.versionId) > 0 {
 		aclOptions = append(aclOptions, oss.VersionId(sc.versionId))
 	}
+	aclOptions = append(aclOptions, sc.commonOptions...)
 
 	for i := 1; ; i++ {
 		goar, err := bucket.GetObjectACL(object, aclOptions...)

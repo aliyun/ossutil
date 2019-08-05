@@ -252,3 +252,43 @@ func (s *OssutilCommandSuite) TestStatVersioning(c *C) {
 	os.Remove(testFileName)
 	s.removeBucket(bucketName, true, c)
 }
+
+
+func (s *OssutilCommandSuite) TestStatObjectWithPayer(c *C) {
+	s.createFile(uploadFileName, content, c)
+	bucketName := payerBucket
+
+	//put object, with --payer=requester
+	args := []string{uploadFileName, CloudURLToString(bucketName, "")}
+	showElapse, err := s.rawCPWithPayer(args, false, true, false, DefaultBigFileThreshold, "requester")
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	// stat with payer
+	command := "stat"
+	args = []string{CloudURLToString(bucketName, uploadFileName)}
+	str := ""
+	requester := "requester"
+	options := OptionMapType{
+		"endpoint":        &payerBucketEndPoint,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"stsToken":        &str,
+		"configFile":      &configFile,
+		"payer":           &requester,
+	}
+
+	resultfileName := "ossutil-test-result-" + randLowStr(5)
+	testResultFile, _ := os.OpenFile(resultfileName, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
+	oldStdout := os.Stdout
+	os.Stdout = testResultFile
+
+	_, err = cm.RunCommand(command, args, options)
+	c.Assert(err, IsNil)
+	testResultFile.Close()
+	os.Stdout = oldStdout
+
+	statBody := s.readFile(resultfileName, c)
+	c.Assert(strings.Contains(statBody, "X-Oss-Hash-Crc64ecma"), Equals, true)
+	os.Remove(resultfileName)
+}

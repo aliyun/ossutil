@@ -19,7 +19,7 @@ var specChineseRestore = SpecText{
 	paramText: "cloud_url [options]",
 
 	syntaxText: ` 
-    ossutil restore cloud_url [--encoding-type url] [-r] [-f] [--output-dir=odir] [-c file] 
+    ossutil restore cloud_url [--encoding-type url] [-r] [-f] [--output-dir=odir] [--version-id versionId] [--payer requester] [-c file] 
 `,
 
 	detailHelpText: ` 
@@ -62,6 +62,7 @@ var specChineseRestore = SpecText{
     2) ossutil restore oss://bucket-restore/object-prefix -r
     3) ossutil restore oss://bucket-restore/object-prefix -r -f
     4) ossutil restore oss://bucket-restore/%e4%b8%ad%e6%96%87 --encoding-type url
+    5) ossutil restore oss://bucket-restore/object-store --payer requester
 `,
 }
 
@@ -72,7 +73,7 @@ var specEnglishRestore = SpecText{
 	paramText: "cloud_url [options]",
 
 	syntaxText: ` 
-    ossutil restore cloud_url [--encoding-type url] [-r] [-f] [--output-dir=odir] [-c file] 
+    ossutil restore cloud_url [--encoding-type url] [-r] [-f] [--output-dir=odir] [--version-id versionId] [--payer requester] [-c file] 
 `,
 
 	detailHelpText: ` 
@@ -118,14 +119,16 @@ Usage:
     2) ossutil restore oss://bucket-restore/object-prefix -r
     3) ossutil restore oss://bucket-restore/object-prefix -r -f
     4) ossutil restore oss://bucket-restore/%e4%b8%ad%e6%96%87 --encoding-type url
+    5) ossutil restore oss://bucket-restore/object-store --payer requester
 `,
 }
 
 // RestoreCommand is the command list buckets or objects
 type RestoreCommand struct {
-	monitor  Monitor //Put first for atomic op on some fileds
-	command  Command
-	reOption batchOptionType
+	monitor       Monitor //Put first for atomic op on some fileds
+	command       Command
+	reOption      batchOptionType
+	commonOptions []oss.Option
 }
 
 var restoreCommand = RestoreCommand{
@@ -146,11 +149,15 @@ var restoreCommand = RestoreCommand{
 			OptionAccessKeyID,
 			OptionAccessKeySecret,
 			OptionSTSToken,
+			OptionProxyHost,
+			OptionProxyUser,
+			OptionProxyPwd,
 			OptionRetryTimes,
 			OptionRoutines,
 			OptionOutputDir,
 			OptionLogLevel,
 			OptionVersionId,
+			OptionRequestPayer,
 		},
 	},
 }
@@ -176,6 +183,14 @@ func (rc *RestoreCommand) RunCommand() error {
 	encodingType, _ := GetString(OptionEncodingType, rc.command.options)
 	recursive, _ := GetBool(OptionRecursion, rc.command.options)
 	versionid, _ := GetString(OptionVersionId, rc.command.options)
+
+	payer, _ := GetString(OptionRequestPayer, rc.command.options)
+	if payer != "" {
+		if payer != strings.ToLower(string(oss.Requester)) {
+			return fmt.Errorf("invalid request payer: %s, please check", payer)
+		}
+		rc.commonOptions = append(rc.commonOptions, oss.RequestPayer(oss.PayerType(payer)))
+	}
 
 	cloudURL, err := CloudURLFromString(rc.command.args[0], encodingType)
 	if err != nil {
@@ -213,11 +228,11 @@ func (rc *RestoreCommand) checkArgs(cloudURL CloudURL, recursive bool, versionid
 func (rc *RestoreCommand) ossRestoreObject(bucket *oss.Bucket, object string, versionid string) error {
 	retryTimes, _ := GetInt(OptionRetryTimes, rc.command.options)
 	for i := 1; ; i++ {
-
-	    var options []oss.Option
+		var options []oss.Option
 		if len(versionid) > 0 {
 			options = append(options, oss.VersionId(versionid))
 		}
+		options = append(options, rc.commonOptions...)
 
 		err := bucket.RestoreObject(object, options...)
 		if err == nil {
@@ -267,8 +282,8 @@ func (rc *RestoreCommand) restoreObjects(bucket *oss.Bucket, cloudURL CloudURL) 
 	chObjects := make(chan string, ChannelBuf)
 	chError := make(chan error, routines+1)
 	chListError := make(chan error, 1)
-	go rc.command.objectStatistic(bucket, cloudURL, &rc.monitor, []filterOptionType{})
-	go rc.command.objectProducer(bucket, cloudURL, chObjects, chListError, []filterOptionType{})
+	go rc.command.objectStatistic(bucket, cloudURL, &rc.monitor, []filterOptionType{}, rc.commonOptions...)
+	go rc.command.objectProducer(bucket, cloudURL, chObjects, chListError, []filterOptionType{}, rc.commonOptions...)
 	for i := 0; int64(i) < routines; i++ {
 		go rc.restoreConsumer(bucket, cloudURL, chObjects, chError)
 	}

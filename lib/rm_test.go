@@ -1046,3 +1046,105 @@ func (s *OssutilCommandSuite) TestRmObjectfilterVersioning(c *C) {
 	os.RemoveAll(dir)
 	s.removeBucket(bucketName, true, c)
 }
+
+func (s *OssutilCommandSuite) TestRmObjectWithPayer(c *C) {
+	s.createFile(uploadFileName, content, c)
+	bucketName := payerBucket
+
+	//put object, with --payer=requester
+	args := []string{uploadFileName, CloudURLToString(bucketName, "")}
+	showElapse, err := s.rawCPWithPayer(args, false, true, false, DefaultBigFileThreshold, "requester")
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	// rm with payer
+	rmArgs := []string{CloudURLToString(bucketName, uploadFileName)}
+	bForce := true
+	str := ""
+	requester := "requester"
+	rmOptions := OptionMapType{
+		"endpoint":        &payerBucketEndPoint,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+		"force":           &bForce,
+		"payer":           &requester,
+	}
+	_, err = cm.RunCommand("rm", rmArgs, rmOptions)
+	os.Args = []string{}
+	c.Assert(err, IsNil)
+}
+
+func (s *OssutilCommandSuite) TestRmBatchObjectWithPayer(c *C) {
+	bucketName := payerBucket
+
+	dir := "ossutil-test-dir-" + randLowStr(5)
+	subDir := "dir1"
+	contents := map[string]string{}
+	s.createTestFiles(dir, subDir, c, contents)
+
+	// put object, with --payer=requester
+	args := []string{dir, CloudURLToString(bucketName, "")}
+	showElapse, err := s.rawCPWithPayer(args, true, true, false, DefaultBigFileThreshold, "requester")
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	// rm with payer
+	rmArgs := []string{CloudURLToString(bucketName, dir)}
+	bForce := true
+	recursive := true
+	str := ""
+	requester := "requester"
+	rmOptions := OptionMapType{
+		"endpoint":        &payerBucketEndPoint,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+		"force":           &bForce,
+		"recursive":       &recursive,
+		"payer":           &requester,
+	}
+	_, err = cm.RunCommand("rm", rmArgs, rmOptions)
+	os.Args = []string{}
+	c.Assert(err, IsNil)
+
+	os.RemoveAll(dir)
+}
+
+func (s *OssutilCommandSuite) TestRmBatchPartsWithPayer(c *C) {
+	bucketName := payerBucket
+	client, err := oss.New(payerBucketEndPoint, accessKeyID, accessKeySecret)
+	bucket, err := client.Bucket(bucketName)
+
+	content_len := 100
+	content := randLowStr(content_len)
+	fileName := "ossutil-testfile-" + randLowStr(5)
+	s.createFile(fileName, content, c)
+
+	// object jpg
+	object := "ossutil-test-object-" + randLowStr(5) + ".jpg"
+	imu, err := bucket.InitiateMultipartUpload(object, oss.RequestPayer(oss.PayerType("requester")))
+	c.Assert(err, IsNil)
+	_, err = bucket.UploadPartFromFile(imu, fileName, 0, int64(content_len), 1, oss.RequestPayer(oss.PayerType("requester")))
+	c.Assert(err, IsNil)
+
+	// rm with payer
+	rmArgs := []string{CloudURLToString(bucketName, "")}
+	bForce := true
+	recursive := true
+	allType := true
+	str := ""
+	requester := "requester"
+	rmOptions := OptionMapType{
+		"endpoint":        &payerBucketEndPoint,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+		"force":           &bForce,
+		"recursive":       &recursive,
+		"allType":         &allType,
+		"payer":           &requester,
+	}
+	_, err = cm.RunCommand("rm", rmArgs, rmOptions)
+	c.Assert(err, IsNil)
+}

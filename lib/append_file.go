@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
@@ -38,6 +39,9 @@ var specChineseAppendFile = SpecText{
 	
     2) append上传文件内容，设置meta信息
        ossutil appendfromfile local_file_name oss://bucket/object --meta "x-oss-meta-author:luxun"
+    
+    3) 以访问者付费模式上传文件内容
+       ossutil appendfromfile local_file_name oss://bucket/object --payer requester
 `,
 }
 
@@ -72,6 +76,9 @@ Usages：
 	
     2) Uploads file content by append mode with setting meta value
        ossutil appendfromfile local_file_name oss://bucket/object --meta "x-oss-meta-author:luxun"
+    
+    3) Uploads file content with requester payment mode
+       ossutil appendfromfile local_file_name oss://bucket/object --payer requester
 `,
 }
 
@@ -114,8 +121,9 @@ type appendFileOptionType struct {
 }
 
 type AppendFileCommand struct {
-	command  Command
-	afOption appendFileOptionType
+	command       Command
+	afOption      appendFileOptionType
+	commonOptions []oss.Option
 }
 
 var appendFileCommand = AppendFileCommand{
@@ -133,10 +141,14 @@ var appendFileCommand = AppendFileCommand{
 			OptionAccessKeyID,
 			OptionAccessKeySecret,
 			OptionSTSToken,
+			OptionProxyHost,
+			OptionProxyUser,
+			OptionProxyPwd,
 			OptionEncodingType,
 			OptionMeta,
 			OptionMaxUpSpeed,
 			OptionLogLevel,
+			OptionRequestPayer,
 		},
 	},
 }
@@ -167,6 +179,14 @@ func (afc *AppendFileCommand) RunCommand() error {
 
 	if srcBucketUrL.object == "" {
 		return fmt.Errorf("object key is empty")
+	}
+
+	payer, _ := GetString(OptionRequestPayer, afc.command.options)
+	if payer != "" {
+		if payer != strings.ToLower(string(oss.Requester)) {
+			return fmt.Errorf("invalid request payer: %s, please check", payer)
+		}
+		afc.commonOptions = append(afc.commonOptions, oss.RequestPayer(oss.PayerType(payer)))
 	}
 
 	afc.afOption.bucketName = srcBucketUrL.bucket
@@ -201,7 +221,7 @@ func (afc *AppendFileCommand) RunCommand() error {
 		return err
 	}
 
-	isExist, err := bucket.IsObjectExist(afc.afOption.objectName)
+	isExist, err := bucket.IsObjectExist(afc.afOption.objectName, afc.commonOptions...)
 	if err != nil {
 		return err
 	}
@@ -213,7 +233,7 @@ func (afc *AppendFileCommand) RunCommand() error {
 	position := int64(0)
 	if isExist {
 		//get object size
-		props, err := bucket.GetObjectMeta(afc.afOption.objectName)
+		props, err := bucket.GetObjectMeta(afc.afOption.objectName, afc.commonOptions...)
 		if err != nil {
 			return err
 		}
@@ -251,6 +271,7 @@ func (afc *AppendFileCommand) AppendFromFile(bucket *oss.Bucket, position int64)
 
 	var listener *AppendProgressListener = &AppendProgressListener{}
 	options = append(options, oss.Progress(listener))
+	options = append(options, afc.commonOptions...)
 
 	startT := time.Now()
 	newPosition, err := bucket.AppendObject(afc.afOption.objectName, file, position, options...)
