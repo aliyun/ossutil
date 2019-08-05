@@ -355,3 +355,58 @@ func (s *OssutilCommandSuite) TestAppendFileHelp(c *C) {
 	_, err = cm.RunCommand("help", mkArgs, options)
 	c.Assert(err, IsNil)
 }
+
+func (s *OssutilCommandSuite) TestAppendFileWithPayer(c *C) {
+	bucketName := payerBucket
+
+	// create file
+	fileName := "test-ossutil-appendfile" + randLowStr(5)
+	strText := randLowStr(100)
+	s.createFile(fileName, strText, c)
+
+	// object name
+	objectName := "test-ossutil-object-" + randLowStr(10)
+
+	// begin append
+	var str string
+	requester := "requester"
+	options := OptionMapType{
+		"endpoint":        &payerBucketEndPoint,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"stsToken":        &str,
+		"configFile":      &configFile,
+		"payer":           &requester,
+	}
+
+	appendArgs := []string{fileName, CloudURLToString(bucketName, objectName)}
+	_, err := cm.RunCommand("appendfromfile", appendArgs, options)
+	if err != nil {
+		fmt.Printf("error:%s\n", err.Error())
+	}
+	c.Assert(err, IsNil)
+
+	// downalod object
+	cpDir := CheckpointDir
+	cpOptions := OptionMapType{
+		"endpoint":        &payerBucketEndPoint,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"stsToken":        &str,
+		"checkpointDir":   &cpDir,
+		"configFile":      &configFile,
+		"payer":           &requester,
+	}
+	downFileName := randLowStr(10) + "-download"
+	dwArgs := []string{CloudURLToString(bucketName, objectName), downFileName}
+	_, err = cm.RunCommand("cp", dwArgs, cpOptions)
+	c.Assert(err, IsNil)
+
+	// compare content
+	fileBody, err := ioutil.ReadFile(downFileName)
+	c.Assert(err, IsNil)
+	c.Assert(strText, Equals, string(fileBody))
+
+	os.Remove(fileName)
+	os.Remove(downFileName)
+}

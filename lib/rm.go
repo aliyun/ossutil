@@ -31,7 +31,7 @@ var specChineseRemove = SpecText{
 	paramText: "cloud_url [options]",
 
 	syntaxText: ` 
-    ossutil rm oss://bucket[/prefix] [-r] [-b] [-f]  [--include include-pattern] [--exclude exclude-pattern]  [--version-id versionId | --all-versions] [-c file]
+    ossutil rm oss://bucket[/prefix] [-r] [-b] [-f]  [--include include-pattern] [--exclude exclude-pattern]  [--version-id versionId | --all-versions] [--payer requester] [-c file]
 `,
 
 	detailHelpText: ` 
@@ -141,6 +141,7 @@ var specChineseRemove = SpecText{
     ossutil rm oss://bucket1/obj1 --all-versions
     ossutil rm oss://bucket1/objdir -r  --all-versions
     ossutil rm oss://bucket1 -r -b --all-versions
+    ossutil rm oss://bucket1 -r --payer requester
 `,
 }
 
@@ -151,7 +152,7 @@ var specEnglishRemove = SpecText{
 	paramText: "cloud_url [options]",
 
 	syntaxText: ` 
-    ossutil rm oss://bucket[/prefix] [-r] [-b] [-f]  [--include include-pattern] [--exclude exclude-pattern]  [--version-id versionId | --all-versions] [-c file]
+    ossutil rm oss://bucket[/prefix] [-r] [-b] [-f]  [--include include-pattern] [--exclude exclude-pattern]  [--version-id versionId | --all-versions] [--payer requester] [-c file]
 `,
 
 	detailHelpText: ` 
@@ -283,15 +284,17 @@ Usage:
     ossutil rm oss://bucket1/obj1 --all-versions
     ossutil rm oss://bucket1/objdir -r  --all-versions
     ossutil rm oss://bucket1 -r -b --all-versions
+    ossutil rm oss://bucket1 -r --payer requester
 `,
 }
 
 // RemoveCommand is the command remove bucket or objects
 type RemoveCommand struct {
-	monitor  RMMonitor //Put first for atomic op on some fileds
-	command  Command
-	rmOption removeOptionType
-	filters  []filterOptionType
+	monitor       RMMonitor //Put first for atomic op on some fileds
+	command       Command
+	rmOption      removeOptionType
+	commonOptions []oss.Option
+	filters       []filterOptionType
 }
 
 var removeCommand = RemoveCommand{
@@ -309,6 +312,9 @@ var removeCommand = RemoveCommand{
 			OptionAccessKeyID,
 			OptionAccessKeySecret,
 			OptionSTSToken,
+			OptionProxyHost,
+			OptionProxyUser,
+			OptionProxyPwd,
 			OptionRetryTimes,
 			OptionLogLevel,
 			OptionRecursion,
@@ -321,6 +327,7 @@ var removeCommand = RemoveCommand{
 			OptionExclude,
 			OptionVersionId,
 			OptionAllversions,
+			OptionRequestPayer,
 		},
 	},
 }
@@ -347,6 +354,14 @@ func (rc *RemoveCommand) RunCommand() error {
 	cloudURL, err := CloudURLFromString(rc.command.args[0], encodingType)
 	if err != nil {
 		return err
+	}
+
+	payer, _ := GetString(OptionRequestPayer, rc.command.options)
+	if payer != "" {
+		if payer != strings.ToLower(string(oss.Requester)) {
+			return fmt.Errorf("invalid request payer: %s, please check", payer)
+		}
+		rc.commonOptions = append(rc.commonOptions, oss.RequestPayer(oss.PayerType(payer)))
 	}
 
 	if cloudURL.bucket == "" {
@@ -515,7 +530,7 @@ func (rc *RemoveCommand) touchObject(bucket *oss.Bucket, cloudURL CloudURL) (boo
 func (rc *RemoveCommand) ossIsObjectExistRetry(bucket *oss.Bucket, object string) (bool, error) {
 	retryTimes, _ := GetInt(OptionRetryTimes, rc.command.options)
 	for i := 1; ; i++ {
-		exist, err := bucket.IsObjectExist(object)
+		exist, err := bucket.IsObjectExist(object, rc.commonOptions...)
 		if err == nil {
 			return exist, err
 		}
@@ -529,7 +544,8 @@ func (rc *RemoveCommand) batchObjectStatistic(bucket *oss.Bucket, cloudURL Cloud
 	pre := oss.Prefix(cloudURL.object)
 	marker := oss.Marker("")
 	for {
-		lor, err := rc.command.ossListObjectsRetry(bucket, marker, pre)
+		listOptions := append(rc.commonOptions, marker, pre, oss.MaxKeys(1000))
+		lor, err := rc.command.ossListObjectsRetry(bucket, listOptions...)
 		if err != nil {
 			rc.monitor.setScanError(err)
 			return err
@@ -559,7 +575,8 @@ func (rc *RemoveCommand) multipartUploadsStatistic(bucket *oss.Bucket, cloudURL 
 	keyMarker := oss.KeyMarker("")
 	uploadIdMarker := oss.UploadIDMarker("")
 	for {
-		lmr, err := rc.command.ossListMultipartUploadsRetry(bucket, keyMarker, uploadIdMarker, pre)
+		listOptions := append(rc.commonOptions, keyMarker, uploadIdMarker, pre)
+		lmr, err := rc.command.ossListMultipartUploadsRetry(bucket, listOptions...)
 		if err != nil {
 			rc.monitor.setScanError(err)
 			return err
@@ -675,7 +692,7 @@ func (rc *RemoveCommand) deleteObjectWithMonitor(bucket *oss.Bucket, object stri
 func (rc *RemoveCommand) ossDeleteObjectRetry(bucket *oss.Bucket, object string) error {
 	retryTimes, _ := GetInt(OptionRetryTimes, rc.command.options)
 	for i := 1; ; i++ {
-		err := bucket.DeleteObject(object)
+		err := bucket.DeleteObject(object, rc.commonOptions...)
 		if err == nil {
 			return err
 		}
@@ -696,7 +713,8 @@ func (rc *RemoveCommand) batchDeleteObjects(bucket *oss.Bucket, cloudURL CloudUR
 	pre := oss.Prefix(cloudURL.object)
 	marker := oss.Marker("")
 	for {
-		lor, err := rc.command.ossListObjectsRetry(bucket, marker, pre)
+		listOptions := append(rc.commonOptions, marker, pre, oss.MaxKeys(1000))
+		lor, err := rc.command.ossListObjectsRetry(bucket, listOptions...)
 		if err != nil {
 			return err
 		}
@@ -725,18 +743,30 @@ func (rc *RemoveCommand) ossBatchDeleteObjectsRetry(bucket *oss.Bucket, objects 
 		return 0, nil
 	}
 
+	deletedNum := 0
 	for i := 1; ; i++ {
-		delRes, err := bucket.DeleteObjects(objects, oss.DeleteObjectsQuiet(true))
-		if err == nil && len(delRes.DeletedObjects) == 0 {
-			return num, nil
-		}
-		if int64(i) >= retryTimes {
-			if err != nil {
-				return num - len(objects), err
+		listOptions := append(rc.commonOptions, oss.DeleteObjectsQuiet(true))
+		delRes, err := bucket.DeleteObjects(objects, listOptions...)
+		if err == nil {
+			deletedNum += (len(objects) - len(delRes.DeletedObjects))
+			if len(delRes.DeletedObjects) == 0 {
+				return deletedNum, nil
 			}
-			return num - len(delRes.DeletedObjects), fmt.Errorf("delete objects: %s failed", delRes.DeletedObjects)
+			objects = delRes.DeletedObjects
+		} else {
+			// when 4XX,5XX error,delRes.DeletedObjects is empty
+			if len(delRes.DeletedObjects) > 0 {
+				deletedNum += (len(objects) - len(delRes.DeletedObjects))
+				objects = delRes.DeletedObjects
+			}
 		}
-		objects = delRes.DeletedObjects
+
+		if err != nil {
+			serviceError, noNeedRetry := err.(oss.ServiceError)
+			if int64(i) >= retryTimes || (noNeedRetry && serviceError.StatusCode < 500) {
+				return deletedNum, fmt.Errorf("%s,delete objects: %#v failed", err.Error(), objects)
+			}
+		}
 	}
 }
 
@@ -744,13 +774,14 @@ func (rc *RemoveCommand) removeSpecialCharacterObjects(bucket *oss.Bucket, cloud
 	pre := oss.Prefix(cloudURL.object)
 	marker := oss.Marker("")
 	for {
-		lor, err := rc.command.ossListObjectsRetry(bucket, marker, pre)
+		listOptions := append(rc.commonOptions, marker, pre, oss.MaxKeys(1000))
+		lor, err := rc.command.ossListObjectsRetry(bucket, listOptions...)
 		if err != nil {
 			return err
 		}
 
 		for _, object := range lor.Objects {
-			if err := bucket.DeleteObject(object.Key); err != nil {
+			if err := bucket.DeleteObject(object.Key, rc.commonOptions...); err != nil {
 				return err
 			}
 		}
@@ -807,7 +838,8 @@ func (rc *RemoveCommand) multipartUploadsProducer(bucket *oss.Bucket, cloudURL C
 	keyMarker := oss.KeyMarker("")
 	uploadIdMarker := oss.UploadIDMarker("")
 	for {
-		lmr, err := rc.command.ossListMultipartUploadsRetry(bucket, keyMarker, uploadIdMarker, pre)
+		listOptions := append(rc.commonOptions, keyMarker, uploadIdMarker, pre)
+		lmr, err := rc.command.ossListMultipartUploadsRetry(bucket, listOptions...)
 		if err != nil {
 			chListError <- err
 			break
@@ -859,7 +891,7 @@ func (rc *RemoveCommand) ossAbortMultipartUploadRetry(bucket *oss.Bucket, key, u
 	var imur = oss.InitiateMultipartUploadResult{Bucket: bucket.BucketName, Key: key, UploadID: uploadId}
 	retryTimes, _ := GetInt(OptionRetryTimes, rc.command.options)
 	for i := 1; ; i++ {
-		err := bucket.AbortMultipartUpload(imur)
+		err := bucket.AbortMultipartUpload(imur, rc.commonOptions...)
 
 		if err == nil {
 			return err
@@ -951,7 +983,8 @@ func (rc *RemoveCommand) deleteObjectWithMonitorVersion(bucket *oss.Bucket, obje
 func (rc *RemoveCommand) ossDeleteObjectRetryVersion(bucket *oss.Bucket, object string, versionId string) error {
 	retryTimes, _ := GetInt(OptionRetryTimes, rc.command.options)
 	for i := 1; ; i++ {
-		err := bucket.DeleteObject(object, oss.VersionId(versionId))
+		listOptions := append(rc.commonOptions, oss.VersionId(versionId))
+		err := bucket.DeleteObject(object, listOptions...)
 		if err == nil {
 			return err
 		}
@@ -969,7 +1002,8 @@ func (rc *RemoveCommand) removeObjectAllVersion(bucket *oss.Bucket, cloudURL Clo
 	versionIdMarker := oss.VersionIdMarker("")
 
 	for {
-		lor, err := rc.command.ossListObjectVersionsRetry(bucket, pre, keyMarker, versionIdMarker, oss.MaxKeys(10))
+		listOptions := append(rc.commonOptions, pre, keyMarker, versionIdMarker, oss.MaxKeys(1000))
+		lor, err := rc.command.ossListObjectVersionsRetry(bucket, listOptions...)
 		if err != nil {
 			return err
 		}
@@ -1025,7 +1059,8 @@ func (rc *RemoveCommand) batchObjectStatisticVersion(bucket *oss.Bucket, cloudUR
 	versionIdMarker := oss.VersionIdMarker("")
 
 	for {
-		lor, err := rc.command.ossListObjectVersionsRetry(bucket, pre, keyMarker, versionIdMarker)
+		listOptions := append(rc.commonOptions, pre, keyMarker, versionIdMarker, oss.MaxKeys(1000))
+		lor, err := rc.command.ossListObjectVersionsRetry(bucket, listOptions...)
 		if err != nil {
 			rc.monitor.setScanError(err)
 			return err
@@ -1065,7 +1100,8 @@ func (rc *RemoveCommand) batchDeleteObjectsVersion(bucket *oss.Bucket, cloudURL 
 	versionIdMarker := oss.VersionIdMarker("")
 
 	for {
-		lor, err := rc.command.ossListObjectVersionsRetry(bucket, pre, keyMarker, versionIdMarker)
+		listOptions := append(rc.commonOptions, pre, keyMarker, versionIdMarker, oss.MaxKeys(1000))
+		lor, err := rc.command.ossListObjectVersionsRetry(bucket, listOptions...)
 		if err != nil {
 			return err
 		}
@@ -1112,24 +1148,40 @@ func (rc *RemoveCommand) ossBatchDeleteObjectsRetryVersion(bucket *oss.Bucket, o
 		return 0, nil
 	}
 
+	deletedNum := 0
 	for i := 1; ; i++ {
-		delRes, err := bucket.DeleteObjectVersions(objectVersions, oss.DeleteObjectsQuiet(true))
-		if err == nil && len(delRes.DeletedObjectsDetail) == 0 {
-			return num, nil
-		}
-		if int64(i) >= retryTimes {
-			if err != nil {
-				return num - len(objectVersions), err
+		listOptions := append(rc.commonOptions, oss.DeleteObjectsQuiet(true))
+		delRes, err := bucket.DeleteObjectVersions(objectVersions, listOptions...)
+		getFailedObject := false
+		if err == nil {
+			deletedNum += (len(objectVersions) - len(delRes.DeletedObjectsDetail))
+			if len(delRes.DeletedObjectsDetail) == 0 {
+				return deletedNum, nil
 			}
-			return num - len(delRes.DeletedObjectsDetail), fmt.Errorf("delete objects: %#v failed", delRes.DeletedObjectsDetail)
+			getFailedObject = true
+		} else {
+			// when 4XX,5XX error,delRes.DeletedObjects is empty
+			if len(delRes.DeletedObjectsDetail) > 0 {
+				deletedNum += (len(objectVersions) - len(delRes.DeletedObjectsDetail))
+				getFailedObject = true
+			}
 		}
 
-		objectVersions = make([]oss.DeleteObject, 0)
-		for _, object := range delRes.DeletedObjectsDetail {
-			objectVersions = append(objectVersions, oss.DeleteObject{
-				Key:       object.Key,
-				VersionId: object.VersionId,
-			})
+		if err != nil {
+			serviceError, noNeedRetry := err.(oss.ServiceError)
+			if int64(i) >= retryTimes || (noNeedRetry && serviceError.StatusCode < 500) {
+				return deletedNum, fmt.Errorf("%s,delete versioning objects: %#v failed", err.Error(), objectVersions)
+			}
+		}
+
+		if getFailedObject {
+			objectVersions = make([]oss.DeleteObject, 0)
+			for _, object := range delRes.DeletedObjectsDetail {
+				objectVersions = append(objectVersions, oss.DeleteObject{
+					Key:       object.Key,
+					VersionId: object.VersionId,
+				})
+			}
 		}
 	}
 }

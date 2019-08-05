@@ -151,7 +151,7 @@ func (s *OssutilCommandSuite) TestCatObjectHelpInfo(c *C) {
 func (s *OssutilCommandSuite) TestCatObjectWithVersion(c *C) {
 	bucketName := bucketNamePrefix + "-cat-" + randLowStr(10)
 	objectName := randStr(12)
-	
+
 	s.putBucket(bucketName, c)
 	s.putBucketVersioning(bucketName, "enabled", c)
 
@@ -225,4 +225,44 @@ func (s *OssutilCommandSuite) TestCatObjectWithVersion(c *C) {
 	os.Remove(resultPath)
 
 	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestCatObjectWithPayer(c *C) {
+	s.createFile(uploadFileName, content, c)
+	bucketName := payerBucket
+
+	//put object, with --payer=requester
+	args := []string{uploadFileName, CloudURLToString(bucketName, "")}
+	showElapse, err := s.rawCPWithPayer(args, false, true, false, DefaultBigFileThreshold, "requester")
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	// begin cat with payer
+	var str string
+	requester := "requester"
+	options := OptionMapType{
+		"endpoint":        &payerBucketEndPoint,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"stsToken":        &str,
+		"configFile":      &configFile,
+		"payer":           &requester,
+	}
+
+	// output to file
+	testResultFile, _ = os.OpenFile(resultPath, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
+
+	oldStdout := os.Stdout
+	os.Stdout = testResultFile
+
+	catArgs := []string{CloudURLToString(bucketName, uploadFileName)}
+	_, err = cm.RunCommand("cat", catArgs, options)
+	c.Assert(err, IsNil)
+	testResultFile.Close()
+	os.Stdout = oldStdout
+
+	// check file content
+	catBody := s.readFile(resultPath, c)
+	c.Assert(strings.Contains(catBody, content), Equals, true)
+	os.Remove(resultPath)
 }

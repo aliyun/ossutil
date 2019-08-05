@@ -2,9 +2,11 @@ package lib
 
 import (
 	"fmt"
-	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"io"
 	"os"
+	"strings"
+
+	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
 
 var specChineseCat = SpecText{
@@ -13,7 +15,7 @@ var specChineseCat = SpecText{
 	paramText: "object [options]",
 
 	syntaxText: ` 
-	ossutil cat oss://bucket/object [--version-id versionId]
+	ossutil cat oss://bucket/object [--payer requester] [--version-id versionId]
 `,
 	detailHelpText: ` 
     cat命令可以将oss的object内容输出到标准输出,object内容最好是文本格式
@@ -21,13 +23,18 @@ var specChineseCat = SpecText{
 用法:
     该命令仅有一种用法:
 	
-    1) ossutil cat oss://bucket/object [--version-id versionId]
+    1) ossutil cat oss://bucket/object [--version-id versionId] [--payer requester]
        将object内容输出到标准输出
 `,
 	sampleText: ` 
     1) 将object内容输出到标准输出
        ossutil cat oss://bucket/object
+    
+    2) 将object指定版本内容输出到标准输出
        ossutil cat oss://bucket/object --version-id versionId
+    
+    3) 访问者付费模式
+       ossutil cat oss://bucket/object --payer requester
 `,
 }
 
@@ -37,7 +44,7 @@ var specEnglishCat = SpecText{
 	paramText: "object [options]",
 
 	syntaxText: ` 
-	ossutil cat oss://bucket/object [--version-id versionId]
+	ossutil cat oss://bucket/object [--payer requester] [--version-id versionId]
 `,
 	detailHelpText: ` 
 	The cat command can output the object content of oss to standard output
@@ -46,13 +53,18 @@ var specEnglishCat = SpecText{
 Usage:
     There is only one usage for this command:
 	
-    1) ossutil cat oss://bucket/object [--version-id versionId]
+    1) ossutil cat oss://bucket/object [--version-id versionId] [--payer requester]
        The command output object content to standard output
 `,
 	sampleText: ` 
     1) output object content to standard output
        ossutil cat oss://bucket/object
+    
+    2) output the object's specified version content to standard output
        ossutil cat oss://bucket/object --version-id versionId
+    
+    3) output object content with requester payment
+       ossutil cat oss://bucket/object --payer requester
 `,
 }
 
@@ -63,8 +75,9 @@ type catOptionType struct {
 }
 
 type CatCommand struct {
-	command   Command
-	catOption catOptionType
+	command       Command
+	catOption     catOptionType
+	commonOptions []oss.Option
 }
 
 var catCommand = CatCommand{
@@ -82,9 +95,13 @@ var catCommand = CatCommand{
 			OptionAccessKeyID,
 			OptionAccessKeySecret,
 			OptionSTSToken,
+			OptionProxyHost,
+			OptionProxyUser,
+			OptionProxyPwd,
 			OptionEncodingType,
 			OptionLogLevel,
 			OptionVersionId,
+			OptionRequestPayer,
 		},
 	},
 }
@@ -129,20 +146,20 @@ func (catc *CatCommand) RunCommand() error {
 		return err
 	}
 
-	var options []oss.Option
-	versionId, _ := GetString(OptionVersionId, catc.command.options)
+	payer, _ := GetString(OptionRequestPayer, catc.command.options)
+	if payer != "" {
+		if payer != strings.ToLower(string(oss.Requester)) {
+			return fmt.Errorf("invalid request payer: %s, please check", payer)
+		}
+		catc.commonOptions = append(catc.commonOptions, oss.RequestPayer(oss.PayerType(payer)))
+	}
 
+	var options []oss.Option
+	options = append(options, catc.commonOptions...)
+
+	versionId, _ := GetString(OptionVersionId, catc.command.options)
 	if len(versionId) > 0 {
 		options = append(options, oss.VersionId(versionId))
-	} else {
-		isExist, err := bucket.IsObjectExist(catc.catOption.objectName)
-		if err != nil {
-			return err
-		}
-
-		if !isExist {
-			return fmt.Errorf("oss object is not exist")
-		}
 	}
 
 	body, err := bucket.GetObject(catc.catOption.objectName, options...)
