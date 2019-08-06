@@ -161,8 +161,7 @@ func (reqpc *RequestPaymentCommand) PutRequestPayment() error {
 
 	if strPayment != strings.ToLower(string(oss.Requester)) &&
 		strPayment != strings.ToLower(string(oss.BucketOwner)) {
-		return fmt.Errorf("payment parameter must be %s or %s", strings.ToLower(string(oss.Requester)),
-			strings.ToLower(string(oss.BucketOwner)))
+		return fmt.Errorf("payment parameter must be %s or %s", string(oss.Requester), string(oss.BucketOwner))
 	}
 
 	// put bucket payment
@@ -192,7 +191,7 @@ func (reqpc *RequestPaymentCommand) GetRequestPayment() error {
 		return err
 	}
 
-	fmt.Printf("\nrequest payment configuration:%s\n", string(reqpc.paymentResult.Payer))
+	fmt.Printf("\n%s\n", string(reqpc.paymentResult.Payer))
 
 	return nil
 }

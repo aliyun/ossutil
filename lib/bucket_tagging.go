@@ -19,7 +19,7 @@ var specChineseBucketTag = SpecText{
 `,
 	detailHelpText: ` 
     bucket-tagging命令通过设置method选项值为put、get、delete,可以设置、查询或者删除bucket的tag配置
-    每个tag的key和value必须以字符'#'分隔,最多可以连续输入20个tag信息
+    每个tag的key和value必须以字符'#'分隔,最多可以连续输入10个tag信息
 
 用法:
     该命令有三种用法:
@@ -60,7 +60,7 @@ var specEnglishBucketTag = SpecText{
 `,
 	detailHelpText: ` 
     bucket-tagging command can set, get and delete the tag configuration of the oss bucket by set method option value to put, get, delete
-    the key and value of each tag must be separated by the character '#', you can enter up to 20 tag parameters.
+    the key and value of each tag must be separated by the character '#', you can enter up to 10 tag parameters.
 Usage:
     There are three usages for this command:
 	
@@ -99,7 +99,7 @@ var bucketTagCommand = BucketTagCommand{
 		name:        "bucket-tagging",
 		nameAlias:   []string{"bucket-tagging"},
 		minArgc:     1,
-		maxArgc:     21,
+		maxArgc:     11,
 		specChinese: specChineseBucketTag,
 		specEnglish: specEnglishBucketTag,
 		group:       GroupTypeNormalCommand,

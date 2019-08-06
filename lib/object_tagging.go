@@ -20,7 +20,7 @@ var specChineseObjectTag = SpecText{
 `,
 	detailHelpText: ` 
     object-tagging命令通过设置method选项值为put、get、delete,可以设置、查询或者删除object的tag配置
-    每个tag的key和value必须以字符'#'分隔,最多可以连续输入20个tag信息
+    每个tag的key和value必须以字符'#'分隔,最多可以连续输入10个tag信息
 
 用法:
     该命令有三种用法:
@@ -70,7 +70,7 @@ var specEnglishObjectTag = SpecText{
 `,
 	detailHelpText: ` 
     object-tagging command can set, get and delete the tag configuration of the oss object by set method option value to put, get, delete
-    the key and value of each tag must be separated by the character '#', you can enter up to 20 tag parameters.
+    the key and value of each tag must be separated by the character '#', you can enter up to 10 tag parameters.
 Usage:
     There are three usages for this command:
 	
@@ -124,7 +124,7 @@ var objectTagCommand = ObjectTagCommand{
 		name:        "object-tagging",
 		nameAlias:   []string{"object-tagging"},
 		minArgc:     1,
-		maxArgc:     21,
+		maxArgc:     11,
 		specChinese: specChineseObjectTag,
 		specEnglish: specEnglishObjectTag,
 		group:       GroupTypeNormalCommand,
@@ -252,7 +252,7 @@ func (otc *ObjectTagCommand) SingleObjectTagging(bucket *oss.Bucket, objectName 
 			}
 
 			for index, tag := range resutl.Tags {
-				fmt.Printf("%-15d%-15d\"%s\"\t\"%s\"\t%s\n", otc.objectIndex, index, tag.Key, tag.Value, objectName)
+				fmt.Printf("%-15d%-15d\"%s\"\t\"%s\"\t%s\n", otc.objectIndex, index, tag.Key, tag.Value, CloudURLToString(bucket.BucketName, objectName))
 			}
 			otc.lock.Unlock()
 		}
@@ -311,7 +311,11 @@ func (otc *ObjectTagCommand) objectTaggingWithReport(bucket *oss.Bucket, object 
 	if otc.method != "get" {
 		otc.command.updateMonitor(err, &otc.monitor)
 		msg := fmt.Sprintf("%s %s object tagging", otc.method, CloudURLToString(bucket.BucketName, object))
-		otc.command.report(msg, err, &otc.reportOption)
+		if err == nil {
+			otc.command.report(msg, err, &otc.reportOption)
+		} else {
+			otc.command.report(msg, ObjectError{err, bucket.BucketName, object}, &otc.reportOption)
+		}
 	}
 	return ObjectError{err, bucket.BucketName, object}
 }
