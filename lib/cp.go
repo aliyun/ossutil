@@ -1153,6 +1153,7 @@ var copyCommand = CopyCommand{
 			OptionMaxUpSpeed,
 			OptionPartitionDownload,
 			OptionVersionId,
+			OptionLocalHost,
 		},
 	},
 }

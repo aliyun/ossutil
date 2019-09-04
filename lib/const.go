@@ -71,6 +71,7 @@ const (
 	OptionProxyHost                  = "proxyHost"
 	OptionProxyUser                  = "proxyUser"
 	OptionProxyPwd                   = "proxyPwd"
+	OptionLocalHost                  = "localHost"
 )
 
 // the elements show in stat object

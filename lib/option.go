@@ -180,7 +180,10 @@ var OptionMap = map[string]Option{
 		"username of network proxy, default is empty"},
 	OptionProxyPwd: Option{"", "--proxy-pwd", "", OptionTypeString, "", "",
 		"网络代理服务器的密码,默认为空",
-		"password of network proxy, default is empty"}, 
+		"password of network proxy, default is empty"},
+	OptionLocalHost: Option{"", "--local-host", "", OptionTypeString, "", "",
+		"工具的ip地址,比如 127.0.0.1",
+		"ossutil's ip ,such as 127.0.0.1"},
 }
 
 func (T *Option) getHelp(language string) string {
