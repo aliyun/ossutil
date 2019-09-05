@@ -36,26 +36,27 @@ const (
  * Please guarantee the alignment if you add new filed
  */
 type copyOptionType struct {
-	cpDir          string
-	snapshotPath   string
-	vrange         string
-	encodingType   string
-	meta           string
-	options        []oss.Option
-	filters        []filterOptionType
-	threshold      int64
-	routines       int64
-	reporter       *Reporter
-	snapshotldb    *leveldb.DB
-	recursive      bool
-	force          bool
-	update         bool
-	ctnu           bool
-	payerOptions   []oss.Option
-	partitionInfo  string
-	partitionIndex int
-	partitionCount int
-	versionId      string
+	cpDir            string
+	snapshotPath     string
+	vrange           string
+	encodingType     string
+	meta             string
+	options          []oss.Option
+	filters          []filterOptionType
+	threshold        int64
+	routines         int64
+	reporter         *Reporter
+	snapshotldb      *leveldb.DB
+	recursive        bool
+	force            bool
+	update           bool
+	ctnu             bool
+	payerOptions     []oss.Option
+	partitionInfo    string
+	partitionIndex   int
+	partitionCount   int
+	versionId        string
+	enableSymlinkDir bool
 }
 
 type filterOptionType struct {
@@ -1154,6 +1155,7 @@ var copyCommand = CopyCommand{
 			OptionPartitionDownload,
 			OptionVersionId,
 			OptionLocalHost,
+			OptionEnableSymlinkDir,
 		},
 	},
 }
@@ -1193,6 +1195,7 @@ func (cc *CopyCommand) RunCommand() error {
 	payer, _ := GetString(OptionRequestPayer, cc.command.options)
 	cc.cpOption.partitionInfo, _ = GetString(OptionPartitionDownload, cc.command.options)
 	cc.cpOption.versionId, _ = GetString(OptionVersionId, cc.command.options)
+	cc.cpOption.enableSymlinkDir, _ = GetBool(OptionEnableSymlinkDir, cc.command.options)
 
 	var res bool
 	res, cc.cpOption.filters = getFilter(os.Args)
@@ -1522,6 +1525,11 @@ func (cc *CopyCommand) fileStatistic(srcURLList []StorageURLer) {
 			return
 		}
 		if f.IsDir() {
+			if !strings.HasSuffix(name, string(os.PathSeparator)) {
+				// for link directory
+				name += string(os.PathSeparator)
+			}
+
 			err := cc.getFileListStatistic(name)
 			if err != nil {
 				cc.monitor.setScanError(err)
@@ -1539,7 +1547,9 @@ func (cc *CopyCommand) fileStatistic(srcURLList []StorageURLer) {
 }
 
 func (cc *CopyCommand) getFileListStatistic(dpath string) error {
-	err := filepath.Walk(dpath, func(fpath string, f os.FileInfo, err error) error {
+	name := dpath
+	symlinkDiretorys := []string{dpath}
+	walkFunc := func(fpath string, f os.FileInfo, err error) error {
 		if f == nil {
 			return err
 		}
@@ -1551,7 +1561,7 @@ func (cc *CopyCommand) getFileListStatistic(dpath string) error {
 		dpath = filepath.Clean(dpath)
 		fpath = filepath.Clean(fpath)
 
-		_, err = filepath.Rel(dpath, fpath)
+		fileName, err := filepath.Rel(dpath, fpath)
 		if err != nil {
 			return fmt.Errorf("list file error: %s, info: %s", fpath, err.Error())
 		}
@@ -1563,11 +1573,45 @@ func (cc *CopyCommand) getFileListStatistic(dpath string) error {
 			return nil
 		}
 
+		if cc.cpOption.enableSymlinkDir && (f.Mode()&os.ModeSymlink) != 0 {
+			// there is difference between os.Stat and os.Lstat in filepath.Walk
+			realInfo, err := os.Stat(fpath)
+			if err == nil && realInfo.IsDir() {
+				// it's symlink dir
+				// if linkDir has suffix os.PathSeparator,os.Lstat determine it is a dir
+				if !strings.HasSuffix(name, string(os.PathSeparator)) {
+					name += string(os.PathSeparator)
+				}
+				linkDir := name + fileName + string(os.PathSeparator)
+				symlinkDiretorys = append(symlinkDiretorys, linkDir)
+				return nil
+			}
+
+			if err != nil {
+				return err
+			}
+		}
+
 		if doesSingleFileMatchPatterns(f.Name(), cc.cpOption.filters) {
 			cc.monitor.updateScanSizeNum(f.Size(), 1)
 		}
 		return nil
-	})
+	}
+
+	var err error
+	for {
+		symlinks := symlinkDiretorys
+		symlinkDiretorys = []string{}
+		for _, v := range symlinks {
+			err = filepath.Walk(v, walkFunc)
+			if err != nil {
+				return err
+			}
+		}
+		if len(symlinkDiretorys) == 0 {
+			break
+		}
+	}
 	return err
 }
 
@@ -1580,6 +1624,11 @@ func (cc *CopyCommand) fileProducer(srcURLList []StorageURLer, chFiles chan<- fi
 			return
 		}
 		if f.IsDir() {
+			if !strings.HasSuffix(name, string(os.PathSeparator)) {
+				// for link directory
+				name += string(os.PathSeparator)
+			}
+
 			err := cc.getFileList(name, chFiles)
 			if err != nil {
 				chListError <- err
@@ -1597,15 +1646,16 @@ func (cc *CopyCommand) fileProducer(srcURLList []StorageURLer, chFiles chan<- fi
 
 func (cc *CopyCommand) getFileList(dpath string, chFiles chan<- fileInfoType) error {
 	name := dpath
-	err := filepath.Walk(dpath, func(fpath string, f os.FileInfo, err error) error {
+	symlinkDiretorys := []string{dpath}
+	walkFunc := func(fpath string, f os.FileInfo, err error) error {
 		if f == nil {
 			return err
 		}
 
 		dpath = filepath.Clean(dpath)
 		fpath = filepath.Clean(fpath)
-		fileName, err := filepath.Rel(dpath, fpath)
 
+		fileName, err := filepath.Rel(dpath, fpath)
 		if err != nil {
 			return fmt.Errorf("list file error: %s, info: %s", fpath, err.Error())
 		}
@@ -1621,12 +1671,45 @@ func (cc *CopyCommand) getFileList(dpath string, chFiles chan<- fileInfoType) er
 			return nil
 		}
 
+		if cc.cpOption.enableSymlinkDir && (f.Mode()&os.ModeSymlink) != 0 {
+			// there is difference between os.Stat and os.Lstat in filepath.Walk
+			realInfo, err := os.Stat(fpath)
+			if err == nil && realInfo.IsDir() {
+				// it's symlink dir
+				// if linkDir has suffix os.PathSeparator,os.Lstat determine it is a dir
+				if !strings.HasSuffix(name, string(os.PathSeparator)) {
+					name += string(os.PathSeparator)
+				}
+				linkDir := name + fileName + string(os.PathSeparator)
+				symlinkDiretorys = append(symlinkDiretorys, linkDir)
+				return nil
+			}
+
+			if err != nil {
+				return err
+			}
+		}
+
 		if doesSingleFileMatchPatterns(fileName, cc.cpOption.filters) {
 			chFiles <- fileInfoType{fileName, name}
 		}
-
 		return nil
-	})
+	}
+
+	var err error
+	for {
+		symlinks := symlinkDiretorys
+		symlinkDiretorys = []string{}
+		for _, v := range symlinks {
+			err = filepath.Walk(v, walkFunc)
+			if err != nil {
+				return err
+			}
+		}
+		if len(symlinkDiretorys) == 0 {
+			break
+		}
+	}
 	return err
 }
 

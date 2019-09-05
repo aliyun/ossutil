@@ -184,6 +184,9 @@ var OptionMap = map[string]Option{
 	OptionLocalHost: Option{"", "--local-host", "", OptionTypeString, "", "",
 		"工具的ip地址,比如 127.0.0.1",
 		"ossutil's ip ,such as 127.0.0.1"},
+	OptionEnableSymlinkDir: Option{"", "--enable-symlink-dir", "", OptionTypeFlagTrue, "", "",
+		"表示上传链接子目录,默认不上传",
+		"specifies uploading link subdirectories,not uploading by default"},
 }
 
 func (T *Option) getHelp(language string) string {

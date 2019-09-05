@@ -72,6 +72,7 @@ const (
 	OptionProxyUser                  = "proxyUser"
 	OptionProxyPwd                   = "proxyPwd"
 	OptionLocalHost                  = "localHost"
+	OptionEnableSymlinkDir           = "enableSymlinkDir"
 )
 
 // the elements show in stat object
@@ -115,7 +116,7 @@ const (
 const (
 	Package                 string = "ossutil"
 	ChannelBuf              int    = 1000
-	Version                 string = "v1.6.6"
+	Version                 string = "v1.6.7"
 	DefaultEndpoint         string = "oss.aliyuncs.com"
 	ChineseLanguage                = "CH"
 	EnglishLanguage                = "EN"
