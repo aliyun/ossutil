@@ -3,6 +3,7 @@ package lib
 import (
 	"fmt"
 	"hash/fnv"
+	"io/ioutil"
 	"math"
 	"net/http"
 	"os"
@@ -57,6 +58,7 @@ type copyOptionType struct {
 	partitionCount   int
 	versionId        string
 	enableSymlinkDir bool
+	onlyCurrentDir   bool
 }
 
 type filterOptionType struct {
@@ -1156,6 +1158,7 @@ var copyCommand = CopyCommand{
 			OptionVersionId,
 			OptionLocalHost,
 			OptionEnableSymlinkDir,
+			OptionOnlyCurrentDir,
 		},
 	},
 }
@@ -1196,6 +1199,7 @@ func (cc *CopyCommand) RunCommand() error {
 	cc.cpOption.partitionInfo, _ = GetString(OptionPartitionDownload, cc.command.options)
 	cc.cpOption.versionId, _ = GetString(OptionVersionId, cc.command.options)
 	cc.cpOption.enableSymlinkDir, _ = GetBool(OptionEnableSymlinkDir, cc.command.options)
+	cc.cpOption.onlyCurrentDir, _ = GetBool(OptionOnlyCurrentDir, cc.command.options)
 
 	var res bool
 	res, cc.cpOption.filters = getFilter(os.Args)
@@ -1546,7 +1550,37 @@ func (cc *CopyCommand) fileStatistic(srcURLList []StorageURLer) {
 	freshProgress()
 }
 
+func (cc *CopyCommand) getCurrentDirFilesStatistic(dpath string) error {
+	if !strings.HasSuffix(dpath, string(os.PathSeparator)) {
+		dpath += string(os.PathSeparator)
+	}
+    
+    fileList, err := ioutil.ReadDir(dpath)
+	if err != nil {
+		return err
+	}
+
+	for _, fileInfo := range fileList {
+		if !fileInfo.IsDir() {
+			realInfo, _ := os.Stat(dpath + fileInfo.Name())
+			if realInfo.IsDir() {
+				// for symlink
+				continue
+			}
+
+			if doesSingleFileMatchPatterns(fileInfo.Name(), cc.cpOption.filters) {
+				cc.monitor.updateScanSizeNum(fileInfo.Size(), 1)
+			}
+		}
+	}
+	return nil
+}
+
 func (cc *CopyCommand) getFileListStatistic(dpath string) error {
+	if cc.cpOption.onlyCurrentDir {
+		return cc.getCurrentDirFilesStatistic(dpath)
+	}
+
 	name := dpath
 	symlinkDiretorys := []string{dpath}
 	walkFunc := func(fpath string, f os.FileInfo, err error) error {
@@ -1644,7 +1678,37 @@ func (cc *CopyCommand) fileProducer(srcURLList []StorageURLer, chFiles chan<- fi
 	chListError <- nil
 }
 
+func (cc *CopyCommand) getCurrentDirFileList(dpath string, chFiles chan<- fileInfoType) error {
+	if !strings.HasSuffix(dpath, string(os.PathSeparator)) {
+		dpath += string(os.PathSeparator)
+	}
+
+	fileList, err := ioutil.ReadDir(dpath)
+	if err != nil {
+		return err
+	}
+
+	for _, fileInfo := range fileList {
+		if !fileInfo.IsDir() {
+			realInfo, _ := os.Stat(dpath + fileInfo.Name())
+			if realInfo.IsDir() {
+				// for symlink
+				continue
+			}
+
+			if doesSingleFileMatchPatterns(fileInfo.Name(), cc.cpOption.filters) {
+				chFiles <- fileInfoType{fileInfo.Name(), dpath}
+			}
+		}
+	}
+	return nil
+}
+
 func (cc *CopyCommand) getFileList(dpath string, chFiles chan<- fileInfoType) error {
+	if cc.cpOption.onlyCurrentDir {
+		return cc.getCurrentDirFileList(dpath, chFiles)
+	}
+
 	name := dpath
 	symlinkDiretorys := []string{dpath}
 	walkFunc := func(fpath string, f os.FileInfo, err error) error {
@@ -2379,7 +2443,13 @@ func (cc *CopyCommand) objectStatistic(bucket *oss.Bucket, cloudURL CloudURL) {
 		if strings.HasSuffix(cloudURL.object, "/") {
 			marker = oss.Marker(cloudURL.object)
 		}
-		listOptions := append(cc.cpOption.payerOptions, pre, marker)
+
+		del := oss.Delimiter("")
+		if cc.cpOption.onlyCurrentDir {
+			del = oss.Delimiter("/")
+		}
+		listOptions := append(cc.cpOption.payerOptions, pre, marker, del)
+
 		fnvIns := fnv.New64()
 		for {
 			lor, err := cc.command.ossListObjectsRetry(bucket, listOptions...)
@@ -2484,7 +2554,12 @@ func (cc *CopyCommand) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, chO
 	if strings.HasSuffix(cloudURL.object, "/") {
 		marker = oss.Marker(cloudURL.object)
 	}
-	listOptions := append(cc.cpOption.payerOptions, pre, marker)
+	del := oss.Delimiter("")
+	if cc.cpOption.onlyCurrentDir {
+		del = oss.Delimiter("/")
+	}
+
+	listOptions := append(cc.cpOption.payerOptions, pre, marker, del)
 	for {
 		lor, err := cc.command.ossListObjectsRetry(bucket, listOptions...)
 		if err != nil {

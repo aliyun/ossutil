@@ -186,7 +186,10 @@ var OptionMap = map[string]Option{
 		"ossutil's ip ,such as 127.0.0.1"},
 	OptionEnableSymlinkDir: Option{"", "--enable-symlink-dir", "", OptionTypeFlagTrue, "", "",
 		"表示上传链接子目录,默认不上传",
-		"specifies uploading link subdirectories,not uploading by default"},
+		"specifies uploading link subdirectories,default are not uploaded"},
+	OptionOnlyCurrentDir: Option{"", "--only-current-dir", "", OptionTypeFlagTrue, "", "",
+		"表示仅针对当前目录, 缺省为递归目录",
+		"specifies only for the current directory; default recursive directories"},
 }
 
 func (T *Option) getHelp(language string) string {

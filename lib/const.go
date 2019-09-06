@@ -73,6 +73,7 @@ const (
 	OptionProxyPwd                   = "proxyPwd"
 	OptionLocalHost                  = "localHost"
 	OptionEnableSymlinkDir           = "enableSymlinkDir"
+	OptionOnlyCurrentDir             = "onlyCurrentDir"
 )
 
 // the elements show in stat object
