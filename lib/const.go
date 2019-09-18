@@ -74,6 +74,7 @@ const (
 	OptionLocalHost                  = "localHost"
 	OptionEnableSymlinkDir           = "enableSymlinkDir"
 	OptionOnlyCurrentDir             = "onlyCurrentDir"
+	OptionProbeItem                  = "probeItem"
 )
 
 // the elements show in stat object
@@ -117,7 +118,7 @@ const (
 const (
 	Package                 string = "ossutil"
 	ChannelBuf              int    = 1000
-	Version                 string = "v1.6.7"
+	Version                 string = "v1.6.8"
 	DefaultEndpoint         string = "oss.aliyuncs.com"
 	ChineseLanguage                = "CH"
 	EnglishLanguage                = "EN"

@@ -190,6 +190,9 @@ var OptionMap = map[string]Option{
 	OptionOnlyCurrentDir: Option{"", "--only-current-dir", "", OptionTypeFlagTrue, "", "",
 		"表示仅针对当前目录, 缺省为递归目录",
 		"specifies only for the current directory; default recursive directories"},
+	OptionProbeItem: Option{"", "--probe-item", "", OptionTypeString, "", "",
+		"表示probe命令的探测项目",
+		"specifies probe command's probe item"},
 }
 
 func (T *Option) getHelp(language string) string {

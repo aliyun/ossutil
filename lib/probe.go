@@ -2,6 +2,7 @@ package lib
 
 import (
 	"bytes"
+	"container/list"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -265,6 +266,7 @@ type probeOptionType struct {
 	dlFileSize       int64
 	dlFilePath       string
 	ulObject         string
+	probeItem        string
 }
 
 type ProbeCommand struct {
@@ -298,6 +300,7 @@ var probeCommand = ProbeCommand{
 			OptionAddr,
 			OptionUpMode,
 			OptionLogLevel,
+			OptionProbeItem,
 		},
 	},
 }
@@ -345,6 +348,22 @@ func (pc *ProbeCommand) RunCommand() error {
 	pc.pbOption.objectName, _ = GetString(OptionObject, pc.command.options)
 	pc.pbOption.netAddr, _ = GetString(OptionAddr, pc.command.options)
 	pc.pbOption.upMode, _ = GetString(OptionUpMode, pc.command.options)
+	pc.pbOption.probeItem, _ = GetString(OptionProbeItem, pc.command.options)
+
+	if pc.pbOption.probeItem != "" {
+		var err error
+		if pc.pbOption.probeItem == "cycle-symlink" {
+			err = pc.CheckCycleSymlinkWithDeepTravel()
+		} else {
+			err = fmt.Errorf("not support %s", pc.pbOption.probeItem)
+		}
+
+		if err == nil {
+			fmt.Println("\n", "success")
+		}
+
+		return err
+	}
 
 	pc.pbOption.logFile, pc.pbOption.logName, err = logFileMake()
 	if err != nil {
@@ -366,6 +385,49 @@ func (pc *ProbeCommand) RunCommand() error {
 		err = pc.probeUpload()
 	}
 	return err
+}
+
+func (pc *ProbeCommand) CheckCycleSymlinkWithDeepTravel() error {
+	if len(pc.command.args) == 0 {
+		return fmt.Errorf("dir parameter is emtpy")
+	}
+
+	dpath := pc.command.args[0]
+	fileInfo, err := os.Stat(dpath)
+	if err != nil {
+		return err
+	}
+
+	if !fileInfo.IsDir() {
+		return nil
+	}
+
+	if !strings.HasSuffix(dpath, string(os.PathSeparator)) {
+		dpath += string(os.PathSeparator)
+	}
+
+	DirStack := list.New()
+	DirStack.PushBack(dpath)
+	for DirStack.Len() > 0 {
+		dirItem := DirStack.Back()
+		DirStack.Remove(dirItem)
+		dirName := dirItem.Value.(string)
+		fileList, err := ioutil.ReadDir(dirName)
+		if err != nil {
+			return err
+		}
+
+		for _, fileInfo := range fileList {
+			realInfo, err := os.Stat(dirName + fileInfo.Name())
+			if err != nil {
+				return err
+			}
+			if realInfo.IsDir() {
+				DirStack.PushBack(dirName + fileInfo.Name() + string(os.PathSeparator))
+			}
+		}
+	}
+	return nil
 }
 
 func (pc *ProbeCommand) probeDownload() error {
