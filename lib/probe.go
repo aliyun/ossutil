@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 
 	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
@@ -305,6 +306,73 @@ var probeCommand = ProbeCommand{
 	},
 }
 
+type TestAppendReader struct {
+	RandText []byte
+}
+
+// Read
+func (r *TestAppendReader) Read(p []byte) (n int, err error) {
+	n = copy(p, r.RandText)
+	for n < len(p) {
+		nn := copy(p[n:], r.RandText)
+		n += nn
+	}
+	return n, nil
+}
+
+type AverageInfo struct {
+	Parallel int
+	AveSpeed float64
+}
+
+type StatBandWidth struct {
+	Mu         sync.Mutex
+	Parallel   int
+	StartTick  int64
+	TotalBytes int64
+	MaxSpeed   float64
+}
+
+func (s *StatBandWidth) Reset(pc int) {
+	s.Mu.Lock()
+	defer s.Mu.Unlock()
+	s.Parallel = pc
+	s.StartTick = time.Now().UnixNano() / 1000 / 1000
+	s.TotalBytes = 0
+	s.MaxSpeed = 0.0
+}
+
+func (s *StatBandWidth) AddBytes(bc int64) {
+	s.Mu.Lock()
+	defer s.Mu.Unlock()
+	s.TotalBytes += bc
+}
+
+func (s *StatBandWidth) SetMaxSpeed(ms float64) {
+	s.Mu.Lock()
+	defer s.Mu.Unlock()
+	s.MaxSpeed = ms
+}
+
+func (s *StatBandWidth) GetStat() StatBandWidth {
+	var rs StatBandWidth
+	s.Mu.Lock()
+	defer s.Mu.Unlock()
+	rs.Parallel = s.Parallel
+	rs.StartTick = s.StartTick
+	rs.TotalBytes = s.TotalBytes
+	rs.MaxSpeed = s.MaxSpeed
+	return rs
+}
+
+func (s *StatBandWidth) ProgressChanged(event *oss.ProgressEvent) {
+	s.Mu.Lock()
+	defer s.Mu.Unlock()
+	if event.EventType == oss.TransferDataEvent || event.EventType == oss.TransferCompletedEvent {
+		s.TotalBytes += event.RwBytes
+	}
+}
+
 // function for FormatHelper interface
 func (pc *ProbeCommand) formatHelpForWhole() string {
 	return pc.command.formatHelpForWhole()
@@ -354,14 +422,14 @@ func (pc *ProbeCommand) RunCommand() error {
 		var err error
 		if pc.pbOption.probeItem == "cycle-symlink" {
 			err = pc.CheckCycleSymlinkWithDeepTravel()
+			if err == nil {
+				fmt.Println("\n", "success")
+			}
+		} else if pc.pbOption.probeItem == "up-speed" || pc.pbOption.probeItem == "down-speed" {
+			err = pc.DetectBandWidth()
 		} else {
 			err = fmt.Errorf("not support %s", pc.pbOption.probeItem)
 		}
-
-		if err == nil {
-			fmt.Println("\n", "success")
-		}
-
 		return err
 	}
 
@@ -385,6 +453,152 @@ func (pc *ProbeCommand) RunCommand() error {
 		err = pc.probeUpload()
 	}
 	return err
+}
+
+func (pc *ProbeCommand) PutObject(bucket *oss.Bucket, st *StatBandWidth, reader io.Reader) {
+	var options []oss.Option
+	options = append(options, oss.Progress(st))
+
+	uniqId, _ := uuid.NewV4()
+	uniqKey := uniqId.String()
+	objectName := objectPrefex + uniqKey
+
+	err := bucket.PutObject(objectName, reader, options...)
+	if err != nil {
+		fmt.Printf("%s\n", err.Error())
+	}
+}
+
+func (pc *ProbeCommand) GetObject(bucket *oss.Bucket, objectName string, st *StatBandWidth) {
+	var options []oss.Option
+	options = append(options, oss.Progress(st))
+	options = append(options, oss.AcceptEncoding("identity"))
+	for {
+		result, err := bucket.DoGetObject(&oss.GetObjectRequest{ObjectKey: objectName}, options)
+		if err != nil {
+			fmt.Printf("GetObject error,%s", err.Error())
+			return
+		}
+		io.Copy(ioutil.Discard, result.Response.Body)
+		result.Response.Close()
+	}
+}
+
+func (pc *ProbeCommand) DetectBandWidth() error {
+	if pc.pbOption.bucketName == "" {
+		return fmt.Errorf("--bucketname is empty")
+	}
+
+	bucket, err := pc.command.ossBucket(pc.pbOption.bucketName)
+	if err != nil {
+		return err
+	}
+
+	if pc.pbOption.probeItem == "down-speed" && pc.pbOption.objectName == "" {
+		if pc.pbOption.objectName == "" {
+			return fmt.Errorf("--object is empty when probe-item is down-speed")
+		}
+
+		bExist, err := bucket.IsObjectExist(pc.pbOption.objectName)
+		if err != nil {
+			return err
+		}
+
+		if !bExist {
+			return fmt.Errorf("oss object is not exist,%s", pc.pbOption.objectName)
+		}
+	}
+
+	numCpu := runtime.NumCPU()
+	var statBandwidth StatBandWidth
+	statBandwidth.Reset(numCpu)
+
+	var appendReader TestAppendReader
+	if pc.pbOption.probeItem == "up-speed" {
+		appendReader.RandText = []byte(strings.Repeat("1", 32*1024))
+	}
+
+	for i := 0; i < numCpu; i++ {
+		time.Sleep(time.Duration(50) * time.Millisecond)
+		if pc.pbOption.probeItem == "up-speed" {
+			go pc.PutObject(bucket, &statBandwidth, &appendReader)
+		} else if pc.pbOption.probeItem == "down-speed" {
+			go pc.GetObject(bucket, pc.pbOption.objectName, &statBandwidth)
+		}
+	}
+
+	time.Sleep(time.Duration(2) * time.Second)
+
+	fmt.Printf("cpu core count:%d\n", numCpu)
+	startTick := time.Now().UnixNano() / 1000 / 1000
+	nowTick := startTick
+	changeTick := startTick
+	nowParallel := numCpu
+	addParallel := numCpu / 5
+	if addParallel == 0 {
+		addParallel = 1
+	}
+	var averageList []AverageInfo
+
+	// ignore the first max speed
+	bDiscarded := false
+	var oldStat StatBandWidth
+	var nowStat StatBandWidth
+
+	oldStat = statBandwidth.GetStat()
+	for nowParallel <= 2*numCpu {
+		time.Sleep(time.Duration(1) * time.Second)
+		nowStat = statBandwidth.GetStat()
+		nowTick = time.Now().UnixNano() / 1000 / 1000
+
+		nowSpeed := float64(nowStat.TotalBytes-oldStat.TotalBytes) / 1024
+		averSpeed := float64(nowStat.TotalBytes/1024) / float64((nowTick-nowStat.StartTick)/1000)
+		maxSpeed := nowStat.MaxSpeed
+		if nowSpeed > maxSpeed {
+			if !bDiscarded && maxSpeed < 0.0001 {
+				bDiscarded = true
+				oldStat.Reset(nowParallel)
+				statBandwidth.Reset(nowParallel) //discard the first max speed,becase is not accurate
+				continue
+			}
+			maxSpeed = nowSpeed
+			statBandwidth.SetMaxSpeed(maxSpeed)
+		}
+		fmt.Printf("\rparallel:%d,average speed:%.2f(KB/s),current speed:%.2f(KB/s),max speed:%.2f(KB/s)", nowStat.Parallel, averSpeed, nowSpeed, maxSpeed)
+		oldStat = nowStat
+
+		// 30 second
+		if nowTick-changeTick >= 30000 {
+			nowParallel += addParallel
+			for i := 0; i < addParallel; i++ {
+				time.Sleep(time.Duration(50) * time.Millisecond)
+				if pc.pbOption.probeItem == "up-speed" {
+					go pc.PutObject(bucket, &statBandwidth, &appendReader)
+				} else if pc.pbOption.probeItem == "down-speed" {
+					go pc.GetObject(bucket, pc.pbOption.objectName, &statBandwidth)
+				}
+			}
+			fmt.Printf("\n")
+			bDiscarded = false
+			averageList = append(averageList, AverageInfo{Parallel: nowStat.Parallel, AveSpeed: averSpeed})
+			changeTick = nowTick
+			oldStat.Reset(nowParallel)
+			statBandwidth.Reset(nowParallel)
+		}
+	}
+
+	maxIndex := 0
+	maxSpeed := 0.0
+	for k, v := range averageList {
+		if v.AveSpeed > maxSpeed {
+			maxIndex = k
+			maxSpeed = v.AveSpeed
+		}
+	}
+
+	fmt.Printf("\nsuggest parallel is %d, max average speed is %.2f(KB/s)\n", averageList[maxIndex].Parallel, averageList[maxIndex].AveSpeed)
+
+	return nil
 }
 
 func (pc *ProbeCommand) CheckCycleSymlinkWithDeepTravel() error {
