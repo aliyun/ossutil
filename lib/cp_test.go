@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"hash/fnv"
 	"io/ioutil"
+	"net"
 	"net/url"
 	"os"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -3764,15 +3766,406 @@ func (s *OssutilCommandSuite) TestCPWithAuthProxyError(c *C) {
 	args := []string{fileName, srcUrl}
 
 	_, err := cm.RunCommand(command, args, options)
-    c.Assert(err, NotNil)
-    
-    // upload object,proxy-pwd is empty
-    options["proxyUser"] = &proxyUser
-    options["proxyPwd"] = &str
+	c.Assert(err, NotNil)
 
-    _, err = cm.RunCommand(command, args, options)
-    c.Assert(err, NotNil)
+	// upload object,proxy-pwd is empty
+	options["proxyUser"] = &proxyUser
+	options["proxyPwd"] = &str
 
+	_, err = cm.RunCommand(command, args, options)
+	c.Assert(err, NotNil)
 	os.RemoveAll(fileName)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestCPSetLocalAddrSuccess(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(12)
+	s.putBucket(bucketName, c)
+
+	//get local ip
+	conn, err := net.Dial("udp", "8.8.8.8:80")
+	c.Assert(err, IsNil)
+	localAddr := conn.LocalAddr().(*net.UDPAddr)
+	localIp := localAddr.IP.String()
+	conn.Close()
+
+	// prepare two file
+	objectName := "ossutil_test_object" + randStr(5)
+	testFileName := "ossutil_test_file" + randStr(5)
+	data := randStr(100)
+	s.createFile(testFileName, data, c)
+
+	// begin cp file
+	cpArgs := []string{testFileName, CloudURLToString(bucketName, objectName)}
+	str := ""
+	cpDir := CheckpointDir
+	routines := strconv.Itoa(Routines)
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+		"checkpointDir":   &cpDir,
+		"routines":        &routines,
+		"localHost":       &localIp,
+	}
+
+	// upload
+	_, err = cm.RunCommand("cp", cpArgs, options)
+	c.Assert(err, IsNil)
+
+	// download
+	downFileName := testFileName + ".down"
+	dwArgs := []string{CloudURLToString(bucketName, objectName), downFileName}
+	_, err = cm.RunCommand("cp", dwArgs, options)
+	c.Assert(err, IsNil)
+
+	//check content
+	fileBody, err := ioutil.ReadFile(downFileName)
+	c.Assert(err, IsNil)
+	c.Assert(data, Equals, string(fileBody))
+
+	// remove
+	os.Remove(downFileName)
+	os.Remove(testFileName)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestCPSetLocalAddrError(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(12)
+	s.putBucket(bucketName, c)
+
+	//get local ip
+	localIp := "127.0.0.1"
+
+	// prepare file
+	objectName := "ossutil_test_object" + randStr(5)
+	testFileName := "ossutil_test_file" + randStr(5)
+	data := randStr(100)
+	s.createFile(testFileName, data, c)
+
+	// begin cp file
+	cpArgs := []string{testFileName, CloudURLToString(bucketName, objectName)}
+	str := ""
+	cpDir := CheckpointDir
+	routines := strconv.Itoa(Routines)
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+		"checkpointDir":   &cpDir,
+		"routines":        &routines,
+		"localHost":       &localIp,
+	}
+
+	// upload
+	_, err := cm.RunCommand("cp", cpArgs, options)
+	c.Assert(err, NotNil)
+
+	// ResolveIPAddr error
+	localIp = "1111111"
+	_, err = cm.RunCommand("cp", cpArgs, options)
+	c.Assert(err, NotNil)
+
+	os.Remove(testFileName)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestUploadSymlinkDir(c *C) {
+	if runtime.GOOS == "windows" {
+		return
+	}
+
+	bucketName := bucketNamePrefix + randLowStr(12)
+	s.putBucket(bucketName, c)
+
+	// mkdir
+	dirName := "ossutil_test_dir_" + randStr(5)
+	err := os.MkdirAll(dirName, 0755)
+	c.Assert(err, IsNil)
+
+	// mk symlink dir
+	symlinkDir := "ossutil_test_dir_" + randStr(5)
+	err = os.Symlink(dirName, symlinkDir)
+	c.Assert(err, IsNil)
+
+	// filename
+	testFileName := "ossutil_test_file" + randStr(5)
+	data := randStr(100)
+	s.createFile(dirName+string(os.PathSeparator)+testFileName, data, c)
+
+	// begin cp file
+	cpArgs := []string{symlinkDir, CloudURLToString(bucketName, "")}
+	str := ""
+	cpDir := CheckpointDir
+	routines := strconv.Itoa(Routines)
+	recursive := true
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+		"checkpointDir":   &cpDir,
+		"routines":        &routines,
+		"recursive":       &recursive,
+	}
+
+	// upload
+	_, err = cm.RunCommand("cp", cpArgs, options)
+	c.Assert(err, IsNil)
+
+	// download
+	delete(options, "recursive")
+	downFileName := testFileName + ".down"
+	dwArgs := []string{CloudURLToString(bucketName, testFileName), downFileName}
+	_, err = cm.RunCommand("cp", dwArgs, options)
+	c.Assert(err, IsNil)
+
+	//check content
+	fileBody, err := ioutil.ReadFile(downFileName)
+	c.Assert(err, IsNil)
+	c.Assert(data, Equals, string(fileBody))
+
+	os.Remove(testFileName)
+	os.Remove(downFileName)
+	os.RemoveAll(dirName)
+	os.RemoveAll(symlinkDir)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestUploadSubSymlinkDir(c *C) {
+	if runtime.GOOS == "windows" {
+		return
+	}
+
+	bucketName := bucketNamePrefix + randLowStr(12)
+	s.putBucket(bucketName, c)
+
+	// mkdir
+	dirName := "ossutil_test_dir_" + randStr(5)
+	err := os.MkdirAll(dirName, 0755)
+	c.Assert(err, IsNil)
+
+	subDirName := "ossutil_test_dir_" + randStr(5)
+	err = os.MkdirAll(dirName+string(os.PathSeparator)+subDirName, 0755)
+	c.Assert(err, IsNil)
+
+	// mk symlink dir
+	symlinkDir := "ossutil_test_dir_" + randStr(5)
+	err = os.Symlink(subDirName, dirName+string(os.PathSeparator)+symlinkDir)
+	c.Assert(err, IsNil)
+
+	// filename
+	testFileName := "ossutil_test_file" + randStr(5)
+	data := randStr(100)
+	s.createFile(dirName+string(os.PathSeparator)+subDirName+string(os.PathSeparator)+testFileName, data, c)
+
+	// begin cp file
+	cpArgs := []string{dirName, CloudURLToString(bucketName, "")}
+	str := ""
+	cpDir := CheckpointDir
+	routines := strconv.Itoa(Routines)
+	recursive := true
+	enableSymlinkDir := true
+	options := OptionMapType{
+		"endpoint":         &str,
+		"accessKeyID":      &str,
+		"accessKeySecret":  &str,
+		"configFile":       &configFile,
+		"checkpointDir":    &cpDir,
+		"routines":         &routines,
+		"recursive":        &recursive,
+		"enableSymlinkDir": &enableSymlinkDir,
+	}
+
+	// upload
+	_, err = cm.RunCommand("cp", cpArgs, options)
+	c.Assert(err, IsNil)
+
+	// download symlink dir object
+	delete(options, "recursive")
+	downFileName := testFileName + ".down"
+	dwArgs := []string{CloudURLToString(bucketName, symlinkDir+"/"+testFileName), downFileName}
+	_, err = cm.RunCommand("cp", dwArgs, options)
+	c.Assert(err, IsNil)
+
+	//check content
+	fileBody, err := ioutil.ReadFile(downFileName)
+	c.Assert(err, IsNil)
+	c.Assert(data, Equals, string(fileBody))
+	os.Remove(downFileName)
+
+	// download dir object
+	dwArgs = []string{CloudURLToString(bucketName, subDirName+"/"+testFileName), downFileName}
+	_, err = cm.RunCommand("cp", dwArgs, options)
+	c.Assert(err, IsNil)
+
+	//check content
+	fileBody, err = ioutil.ReadFile(downFileName)
+	c.Assert(err, IsNil)
+	c.Assert(data, Equals, string(fileBody))
+
+	os.Remove(downFileName)
+	os.RemoveAll(dirName)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestUploadOnlyCurrentDir(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(12)
+	s.putBucket(bucketName, c)
+
+	// mkdir
+	dirName := "ossutil_test_dir_" + randStr(5)
+	err := os.MkdirAll(dirName, 0755)
+	c.Assert(err, IsNil)
+
+	subDirName := "ossutil_test_dir_" + randStr(5)
+	err = os.MkdirAll(dirName+string(os.PathSeparator)+subDirName, 0755)
+	c.Assert(err, IsNil)
+
+	// filename
+	testDirFileName := "ossutil_test_file" + randStr(5)
+	data := randStr(100)
+	s.createFile(dirName+string(os.PathSeparator)+testDirFileName, data, c)
+
+	// subdir filename
+	testSubDirFileName := "ossutil_test_file" + randStr(5)
+	s.createFile(dirName+string(os.PathSeparator)+subDirName+string(os.PathSeparator)+testSubDirFileName, data, c)
+
+	// begin cp file
+	cpArgs := []string{dirName, CloudURLToString(bucketName, "")}
+	str := ""
+	cpDir := CheckpointDir
+	routines := strconv.Itoa(Routines)
+	recursive := true
+	onlyCurrentDir := true
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+		"checkpointDir":   &cpDir,
+		"routines":        &routines,
+		"recursive":       &recursive,
+		"onlyCurrentDir":  &onlyCurrentDir,
+	}
+
+	// upload
+	_, err = cm.RunCommand("cp", cpArgs, options)
+	c.Assert(err, IsNil)
+
+	// download dir object success
+	delete(options, "recursive")
+	downFileName := "ossutil_test_file" + randStr(5)
+	dwArgs := []string{CloudURLToString(bucketName, testDirFileName), downFileName}
+	_, err = cm.RunCommand("cp", dwArgs, options)
+	c.Assert(err, IsNil)
+
+	//check content
+	fileBody, err := ioutil.ReadFile(downFileName)
+	c.Assert(err, IsNil)
+	c.Assert(data, Equals, string(fileBody))
+	os.Remove(downFileName)
+
+	// download sub dir object error
+	dwArgs = []string{CloudURLToString(bucketName, subDirName+"/"+testSubDirFileName), downFileName}
+	_, err = cm.RunCommand("cp", dwArgs, options)
+	c.Assert(err, NotNil)
+
+	os.Remove(downFileName)
+	os.RemoveAll(dirName)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestDownloadOnlyCurrentDir(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(12)
+	s.putBucket(bucketName, c)
+
+	// mkdir
+	dirName := "ossutil_test_dir_" + randStr(5)
+	err := os.MkdirAll(dirName, 0755)
+	c.Assert(err, IsNil)
+
+	subDirName := "ossutil_test_dir_" + randStr(5)
+	err = os.MkdirAll(dirName+string(os.PathSeparator)+subDirName, 0755)
+	c.Assert(err, IsNil)
+
+	// filename
+	testDirFileName := "ossutil_test_file" + randStr(5)
+	data := randStr(100)
+	s.createFile(dirName+string(os.PathSeparator)+testDirFileName, data, c)
+
+	// subdir filename
+	testSubDirFileName := "ossutil_test_file" + randStr(5)
+	s.createFile(dirName+string(os.PathSeparator)+subDirName+string(os.PathSeparator)+testSubDirFileName, data, c)
+
+	// begin cp file
+	cpArgs := []string{dirName, CloudURLToString(bucketName, dirName)}
+	str := ""
+	cpDir := CheckpointDir
+	routines := strconv.Itoa(Routines)
+	recursive := true
+	onlyCurrentDir := true
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+		"checkpointDir":   &cpDir,
+		"routines":        &routines,
+		"recursive":       &recursive,
+		//"onlyCurrentDir":  &onlyCurrentDir,
+	}
+
+	// upload
+	_, err = cm.RunCommand("cp", cpArgs, options)
+	c.Assert(err, IsNil)
+
+	// download dir object success
+	delete(options, "recursive")
+	downFileName := "ossutil_test_file" + randStr(5)
+	dwArgs := []string{CloudURLToString(bucketName, dirName+"/"+testDirFileName), downFileName}
+	_, err = cm.RunCommand("cp", dwArgs, options)
+	c.Assert(err, IsNil)
+
+	//check content
+	fileBody, err := ioutil.ReadFile(downFileName)
+	c.Assert(err, IsNil)
+	c.Assert(data, Equals, string(fileBody))
+	os.Remove(downFileName)
+
+	// download sub dir object success
+	dwArgs = []string{CloudURLToString(bucketName, dirName+"/"+subDirName+"/"+testSubDirFileName), downFileName}
+	_, err = cm.RunCommand("cp", dwArgs, options)
+	c.Assert(err, IsNil)
+
+	// check content
+	fileBody, err = ioutil.ReadFile(downFileName)
+	c.Assert(err, IsNil)
+	c.Assert(data, Equals, string(fileBody))
+	os.Remove(downFileName)
+
+	// download with onlyCurrentDir
+	downDir := dirName + "-down"
+	options["recursive"] = &recursive
+	options["onlyCurrentDir"] = &onlyCurrentDir
+
+	// download sub dir object success
+	dwArgs = []string{CloudURLToString(bucketName, dirName+"/"), downDir}
+	_, err = cm.RunCommand("cp", dwArgs, options)
+	c.Assert(err, IsNil)
+
+	// stat dir object success
+	_, err = os.Stat(downDir + string(os.PathSeparator) + testDirFileName)
+	c.Assert(err, IsNil)
+
+	// stat subdir object error
+	_, err = os.Stat(downDir + string(os.PathSeparator) + subDirName + string(os.PathSeparator) + testSubDirFileName)
+	c.Assert(err, NotNil)
+
+	os.Remove(downFileName)
+	os.RemoveAll(dirName)
+	os.RemoveAll(downDir)
 	s.removeBucket(bucketName, true, c)
 }

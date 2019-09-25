@@ -118,9 +118,9 @@ var specChineseCopy = SpecText{
 	paramText: "src_url dest_url [options]",
 
 	syntaxText: ` 
-    ossutil cp file_url cloud_url  [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--snapshot-path=sdir] [--payer requester]
-    ossutil cp cloud_url file_url  [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--range=x-y] [--payer requester] [--version-id versionId]
-    ossutil cp cloud_url cloud_url [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--payer requester] [--version-id versionId]
+    ossutil cp file_url cloud_url  [-r] [-f] [-u] [--enable-symlink-dir] [--only-current-dir] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--snapshot-path=sdir] [--payer requester]
+    ossutil cp cloud_url file_url  [-r] [-f] [-u] [--enable-symlink-dir] [--only-current-dir] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--range=x-y] [--payer requester] [--version-id versionId]
+    ossutil cp cloud_url cloud_url [-r] [-f] [-u] [--enable-symlink-dir] [--only-current-dir] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--payer requester] [--version-id versionId]
 `,
 
 	detailHelpText: ` 
@@ -299,6 +299,17 @@ var specChineseCopy = SpecText{
 
     如果指定该选项为url，则表示输入的object名和文件名都是经过url编码的。
 
+--enable-symlink-dir选项
+
+    允许传输链接子目录下文件,如果存在死循环链接文件或者目录,会导致错误,使用前建议用probe命令
+    检测是否存在死循环链接文件或者目录
+
+--only-current-dir
+    
+    和-r选项一起使用,表示只操作当前目录下的文件, 会忽略当前目录下的子目录, 如果是下载或者拷贝oss
+    的目录，目录后面要加上反斜线/
+
+
 大文件断点续传：
 
     如果源文件大小超过--bigfile-threshold选项指定的大小（默认为100M），ossutil会认为该文件
@@ -463,6 +474,12 @@ var specChineseCopy = SpecText{
     ossutil cp %e4%b8%ad%e6%96%87 oss://bucket1/%e6%b5%8b%e8%af%95 --encoding-type url
     在本地查找文件名为“中文”的文件，并上传到bucket1生成名称为”测试“的object
 
+    ossutil cp local_dir oss://bucket1/b -r --enable-symlink-dir
+    支持上传符号链接子目录下的文件
+
+    ossutil cp local_dir oss://bucket1/b -r --only-current-dir
+    只上传当前目录的下文件,忽略其他的子目录
+
     2) 从oss下载object
     假设oss上有下列objects：
         oss://bucket/abcdir1/a
@@ -513,6 +530,9 @@ var specChineseCopy = SpecText{
 
     ossutil cp oss://bucket/object local_file --version-id versionId
     指定object版本下载
+
+    ossutil cp oss://bucket/dir/ local_dir -r --only-current-dir
+    只下载当前目录下的object, 忽略其他子目录
 
     3) 在oss间拷贝
     假设oss上有下列objects：
@@ -583,6 +603,9 @@ var specChineseCopy = SpecText{
 
     ossutil cp oss://bucket/object1 oss://bucket/object2 --version-id versionId
     指定object版本copy 
+
+    ossutil cp oss://bucket/dir/ oss://bucket1/ -r --only-current-dir
+    只copy当前目录下的object, 忽略其他子目录
 `,
 }
 
@@ -812,6 +835,18 @@ Other Options:
     If the --encoding-type option is setted to url, it means the object name and file name are url 
     endcoded.
 
+--enable-symlink-dir选项
+
+   Allows transfer of files in the link subdirectory. If there is an infinite loop link file or directory, 
+   it will cause an error. 
+   It is recommended to use the probe command to detect the existence of an infinite loop link file or 
+   directory before use
+
+--only-current-dir
+    
+   Used with the -r option, it means that only the files in the current directory will be manipulated, 
+   and the subdirectories under the current directory will be ignored.
+   If you are downloading or copying the oss directory, add a backslash(/) after the directory.
 
 Resume copy of big file:
 
@@ -988,6 +1023,12 @@ Usage:
     ossutil cp %e4%b8%ad%e6%96%87 oss://bucket1/%e6%b5%8b%e8%af%95 --encoding-type url
     Upload the file "中文" to oss://bucket1/测试
 
+    ossutil cp local_dir oss://bucket1/b -r --enable-symlink-dir
+    Support for uploading files in the symbolic link subdirectory
+
+    ossutil cp local_dir oss://bucket1/b -r --only-current-dir
+    Upload only the files in the current directory, ignoring other subdirectories
+
     2) download from oss
     Suppose there are following objects in oss:
         oss://bucket/abcdir1/a
@@ -1036,6 +1077,9 @@ Usage:
 
     ossutil cp oss://bucket/object1 local_file --version-id versionId
     Specify object version download
+
+    ossutil cp oss://bucket/dir/ local_dir -r --only-current-dir
+    Only download the object in the current directory, ignore other subdirectories
 
     3) Copy between oss 
     Suppose there are following objects in oss:
@@ -1104,6 +1148,9 @@ Usage:
 
     ossutil cp oss://bucket/object1 oss://bucket/object2 --version-id versionId
     Specify source object version copy
+
+    ossutil cp oss://bucket/dir/ oss://bucket1/ -r --only-current-dir
+    Copy only the object in the current directory, ignoring other subdirectories
 `,
 }
 
@@ -1554,8 +1601,8 @@ func (cc *CopyCommand) getCurrentDirFilesStatistic(dpath string) error {
 	if !strings.HasSuffix(dpath, string(os.PathSeparator)) {
 		dpath += string(os.PathSeparator)
 	}
-    
-    fileList, err := ioutil.ReadDir(dpath)
+
+	fileList, err := ioutil.ReadDir(dpath)
 	if err != nil {
 		return err
 	}

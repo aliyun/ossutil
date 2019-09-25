@@ -185,14 +185,14 @@ var OptionMap = map[string]Option{
 		"工具的ip地址,比如 127.0.0.1",
 		"ossutil's ip ,such as 127.0.0.1"},
 	OptionEnableSymlinkDir: Option{"", "--enable-symlink-dir", "", OptionTypeFlagTrue, "", "",
-		"表示上传链接子目录,默认不上传",
-		"specifies uploading link subdirectories,default are not uploaded"},
+		"表示上传链接子目录,默认不上传; probe命令可以探测是否存在死循环链接文件或者目录",
+		"specifies uploading link subdirectories,default are not uploaded; The probe command can detect whether there is a dead cycle symlink file or directory."},
 	OptionOnlyCurrentDir: Option{"", "--only-current-dir", "", OptionTypeFlagTrue, "", "",
-		"表示仅针对当前目录, 缺省为递归目录",
-		"specifies only for the current directory; default recursive directories"},
+		"表示仅操作当前目录下的文件或者object, 忽略子目录",
+		"specifies that only files or objects in the current directory are manipulated, and subdirectories are ignored."},
 	OptionProbeItem: Option{"", "--probe-item", "", OptionTypeString, "", "",
-		"表示probe命令的探测项目",
-		"specifies probe command's probe item"},
+		"表示probe命令的探测项目, 取值可为up-speed, down-speed, cycle-symlink",
+		"specifies probe command's probe item, the value can be up-speed, down-speed, cycle-symlink"},
 }
 
 func (T *Option) getHelp(language string) string {
