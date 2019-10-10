@@ -314,7 +314,7 @@ func (s *OssutilCommandSuite) TestSignurlWithVersion(c *C) {
 	c.Assert(str, Equals, textBufferV1)
 }
 
-func (s *OssutilCommandSuite) TestTraficLimitSignUrl(c *C) {
+func (s *OssutilCommandSuite) TestSignUrlTraficLimit(c *C) {
 	bucketName := bucketNamePrefix + randLowStr(10)
 	s.putBucket(bucketName, c)
 
@@ -349,6 +349,57 @@ func (s *OssutilCommandSuite) TestTraficLimitSignUrl(c *C) {
 	c.Assert(strings.Contains(signURLCommand.signUrl, "Signature"), Equals, true)
 	c.Assert(strings.Contains(signURLCommand.signUrl, "Signature"), Equals, true)
 	c.Assert(strings.Contains(signURLCommand.signUrl, "x-oss-traffic-limit"), Equals, true)
+	c.Assert(strings.Contains(signURLCommand.signUrl, object), Equals, true)
+
+	bucket, err := signURLCommand.command.ossBucket(bucketName)
+	c.Assert(err, IsNil)
+
+	// get object with url
+	downFileName := "ossutil-test-file" + randStr(5)
+	err = bucket.GetObjectToFileWithURL(signURLCommand.signUrl, downFileName)
+	c.Assert(err, IsNil)
+	str = s.readFile(downFileName, c)
+	c.Assert(str, Equals, data)
+
+	os.Remove(uploadFileName)
+	os.Remove(downFileName)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestSignUrlWithDisableEncodePathUrl(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	data := randLowStr(1024)
+	uploadFileName := "ossutil-test-file-" + randLowStr(5)
+	s.createFile(uploadFileName, data, c)
+
+	object := randStr(5) + "/" + randStr(5)
+	s.putObject(bucketName, object, uploadFileName, c)
+
+	command := "sign"
+	str := ""
+	disableEncodePath := true
+	timeOut := strconv.FormatInt(60, 10)
+	options := OptionMapType{
+		"endpoint":          &str,
+		"accessKeyID":       &str,
+		"accessKeySecret":   &str,
+		"stsToken":          &str,
+		"configFile":        &configFile,
+		"disableEncodePath": &disableEncodePath,
+		"timeout":           &timeOut,
+	}
+
+	srcUrl := CloudURLToString(bucketName, object)
+	args := []string{srcUrl}
+	_, err := cm.RunCommand(command, args, options)
+	c.Assert(err, IsNil)
+
+	c.Assert(strings.Contains(signURLCommand.signUrl, "Expires"), Equals, true)
+	c.Assert(strings.Contains(signURLCommand.signUrl, "OSSAccessKeyId"), Equals, true)
+	c.Assert(strings.Contains(signURLCommand.signUrl, "Signature"), Equals, true)
+	c.Assert(strings.Contains(signURLCommand.signUrl, "Signature"), Equals, true)
 	c.Assert(strings.Contains(signURLCommand.signUrl, object), Equals, true)
 
 	bucket, err := signURLCommand.command.ossBucket(bucketName)

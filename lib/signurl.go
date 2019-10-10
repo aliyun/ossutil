@@ -2,6 +2,7 @@ package lib
 
 import (
 	"fmt"
+	"strings"
 
 	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
@@ -13,7 +14,7 @@ var specChineseSignurl = SpecText{
 	paramText: "cloud_url [meta] [options]",
 
 	syntaxText: ` 
-    ossutil sign cloud_url [--timeout t] [--version-id versionId] [--trafic-limit limitSpeed]
+    ossutil sign cloud_url [--timeout t] [--version-id versionId] [--trafic-limit limitSpeed] [--disable-encode-path]
 `,
 
 	detailHelpText: ` 
@@ -23,7 +24,7 @@ var specChineseSignurl = SpecText{
 
 用法：
 
-    ossutil sign oss://bucket/object [--timeout t] [--version-id versionId] [--trafic-limit limitSpeed]
+    ossutil sign oss://bucket/object [--timeout t] [--version-id versionId] [--trafic-limit limitSpeed] [--disable-encode-path]
 `,
 
 	sampleText: ` 
@@ -41,6 +42,9 @@ var specChineseSignurl = SpecText{
     
     ossutil sign oss://bucket1/object1 --trafic-limit 8388608
         生成oss://bucket1/object1的签名url, http限速为8388608(bit/s)
+    
+    ossutil sign oss://bucket1/dir/object1 --disable-encode-path
+        生成oss://bucket1/dir/object1的签名url, 对path中的'/'不进行编码
 `,
 }
 
@@ -51,7 +55,7 @@ var specEnglishSignurl = SpecText{
 	paramText: "cloud_url [options]",
 
 	syntaxText: ` 
-    ossutil sign cloud_url [--timeout t] [--version-id versionId] [--trafic-limit limitSpeed]
+    ossutil sign cloud_url [--timeout t] [--version-id versionId] [--trafic-limit limitSpeed] [--disable-encode-path]
 `,
 
 	detailHelpText: ` 
@@ -59,11 +63,13 @@ var specEnglishSignurl = SpecText{
     be used by third-party to access the object. 
     Where, cloud_url must like: oss://bucket/object
     Use --timeout to specify the expire time of url, the default is 60s.
-	Use --version-id to specify the version.
+    Use --version-id to specify the version.
+    Use --trafic-limit to specify the trafic speed
+    use --disable-encode-path to specify not encoding of '/' in url path section
 
 Usage:
 
-    ossutil sign oss://bucket/object [--timeout t] [--version-id versionId] [--trafic-limit limitSpeed]
+    ossutil sign oss://bucket/object [--timeout t] [--version-id versionId] [--trafic-limit limitSpeed] [--disable-encode-path]
 `,
 
 	sampleText: ` 
@@ -81,6 +87,9 @@ Usage:
     
     ossutil sign oss://bucket1/object1  --trafic-limit 8388608
         Generate the signature of oss://bucket1/object1, http limit speed is 8388608(bit/s)
+    
+    ossutil sign oss://bucket1/dir/object1 --disable-encode-path
+        Generate the signature of oss://bucket1/dir/object1,no encoding of '/' in url path section
 `,
 }
 
@@ -110,6 +119,7 @@ var signURLCommand = SignurlCommand{
 			OptionLogLevel,
 			OptionVersionId,
 			OptionTrafficLimit,
+			OptionDisableEncodePath,
 		},
 	},
 }
@@ -169,9 +179,20 @@ func (sc *SignurlCommand) RunCommand() error {
 
 func (sc *SignurlCommand) ossSign(bucket *oss.Bucket, object string, timeout int64, options ...oss.Option) (string, error) {
 	str, err := bucket.SignURL(object, oss.HTTPMethod(DefaultMethod), timeout, options...)
-	if err == nil {
+	if err != nil {
+		return str, ObjectError{err, bucket.BucketName, object}
+	}
+
+	disableEncodePath, _ := GetBool(OptionDisableEncodePath, sc.command.options)
+	if !disableEncodePath {
 		return str, nil
 	}
 
-	return str, ObjectError{err, bucket.BucketName, object}
+	// replace %2F with /
+	urlSlice := strings.SplitN(str, "?", 2)
+	if len(urlSlice) == 2 {
+		headStr := strings.Replace(urlSlice[0], "%2F", "/", -1)
+		str = headStr + "?" + urlSlice[1]
+	}
+	return str, nil
 }
