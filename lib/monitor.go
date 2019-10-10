@@ -381,6 +381,7 @@ type CPMonitorSnap struct {
 	fileNum       int64
 	dirNum        int64
 	skipNum       int64
+	skipNumDir    int64
 	errNum        int64
 	okNum         int64
 	dealNum       int64
@@ -401,6 +402,7 @@ type CPMonitor struct {
 	fileNum        int64
 	dirNum         int64
 	skipNum        int64
+	skipNumDir     int64
 	errNum         int64
 	lastSnapSize   int64
 	tickDuration   int64
@@ -467,6 +469,10 @@ func (m *CPMonitor) updateSkip(size, num int64) {
 	atomic.AddInt64(&m.skipSize, size)
 }
 
+func (m *CPMonitor) updateSkipDir(num int64) {
+	atomic.AddInt64(&m.skipNumDir, num)
+}
+
 func (m *CPMonitor) updateErr(size, num int64) {
 	atomic.AddInt64(&m.errNum, num)
 	atomic.AddInt64(&m.transferSize, size)
@@ -483,6 +489,7 @@ func (m *CPMonitor) getSnapshot() *CPMonitorSnap {
 	snap.errNum = m.errNum
 	snap.okNum = snap.fileNum + snap.dirNum + snap.skipNum
 	snap.dealNum = snap.okNum + snap.errNum
+	snap.skipNumDir = m.skipNumDir
 	now := time.Now()
 	snap.duration = now.Sub(m.lastSnapTime).Nanoseconds()
 
@@ -570,7 +577,7 @@ func (m *CPMonitor) getOKNumDetail(snap *CPMonitorSnap) string {
 }
 
 func (m *CPMonitor) getNumDetail(snap *CPMonitorSnap, hasErr bool) string {
-	if snap.dealNum == 0 || (!hasErr && snap.okNum == 0) {
+	if !hasErr && snap.okNum == 0 {
 		return ""
 	}
 	strList := []string{}
@@ -590,6 +597,10 @@ func (m *CPMonitor) getNumDetail(snap *CPMonitorSnap, hasErr bool) string {
 	if snap.skipNum != 0 {
 		strList = append(strList, fmt.Sprintf("skip %d %s", snap.skipNum, m.getSubject()))
 	}
+	if snap.skipNumDir != 0 {
+		strList = append(strList, fmt.Sprintf("skip %d directory", snap.skipNumDir))
+	}
+
 	return fmt.Sprintf("(%s)", strings.Join(strList, ", "))
 }
 

@@ -75,6 +75,8 @@ const (
 	OptionEnableSymlinkDir           = "enableSymlinkDir"
 	OptionOnlyCurrentDir             = "onlyCurrentDir"
 	OptionProbeItem                  = "probeItem"
+	OptionDisableEncodePath          = "disableEncodePath"
+	OptionDisableDirObject           = "disableDirObject"
 )
 
 // the elements show in stat object

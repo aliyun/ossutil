@@ -4169,3 +4169,62 @@ func (s *OssutilCommandSuite) TestDownloadOnlyCurrentDir(c *C) {
 	os.RemoveAll(downDir)
 	s.removeBucket(bucketName, true, c)
 }
+
+func (s *OssutilCommandSuite) TestUploadDisableDirObject(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(12)
+	s.putBucket(bucketName, c)
+
+	// mkdir
+	dirName := "ossutil_test_dir_" + randStr(5)
+	err := os.MkdirAll(dirName, 0755)
+	c.Assert(err, IsNil)
+
+	// mk subdir
+	subDirName := "ossutil_test_dir_" + randStr(5)
+	err = os.MkdirAll(dirName+string(os.PathSeparator)+subDirName, 0755)
+	c.Assert(err, IsNil)
+
+	// begin cp file
+	cpArgs := []string{dirName, CloudURLToString(bucketName, dirName)}
+	str := ""
+	cpDir := CheckpointDir
+	routines := strconv.Itoa(Routines)
+	recursive := true
+	disableDirObject := true
+	options := OptionMapType{
+		"endpoint":         &str,
+		"accessKeyID":      &str,
+		"accessKeySecret":  &str,
+		"configFile":       &configFile,
+		"checkpointDir":    &cpDir,
+		"routines":         &routines,
+		"recursive":        &recursive,
+		"disableDirObject": &disableDirObject,
+	}
+
+	// upload
+	_, err = cm.RunCommand("cp", cpArgs, options)
+	c.Assert(err, IsNil)
+
+	// download dir object error
+	delete(options, "recursive")
+	delete(options, "disableDirObject")
+
+	downFileName := "ossutil_test_file" + randStr(5)
+	dwArgs := []string{CloudURLToString(bucketName, dirName+"/"+subDirName+"/"), downFileName}
+	_, err = cm.RunCommand("cp", dwArgs, options)
+	c.Assert(err, NotNil)
+
+	// upload again without disableDirObject
+	options["recursive"] = &recursive
+	_, err = cm.RunCommand("cp", cpArgs, options)
+	c.Assert(err, IsNil)
+
+	//down success
+	_, err = cm.RunCommand("cp", dwArgs, options)
+	c.Assert(err, IsNil)
+
+	os.Remove(downFileName)
+	os.RemoveAll(dirName)
+	s.removeBucket(bucketName, true, c)
+}
