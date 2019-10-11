@@ -399,6 +399,7 @@ type CPMonitor struct {
 	totalNum       int64
 	transferSize   int64
 	skipSize       int64
+	dealSize       int64
 	fileNum        int64
 	dirNum         int64
 	skipNum        int64
@@ -422,6 +423,7 @@ func (m *CPMonitor) init(op operationType) {
 	m.seekAheadError = nil
 	m.transferSize = 0
 	m.skipSize = 0
+	m.dealSize = 0
 	m.fileNum = 0
 	m.dirNum = 0
 	m.skipNum = 0
@@ -454,6 +456,10 @@ func (m *CPMonitor) updateTransferSize(size int64) {
 	atomic.AddInt64(&m.transferSize, size)
 }
 
+func (m *CPMonitor) updateDealSize(size int64) {
+	atomic.AddInt64(&m.dealSize, size)
+}
+
 func (m *CPMonitor) updateFile(size, num int64) {
 	atomic.AddInt64(&m.fileNum, num)
 	atomic.AddInt64(&m.transferSize, size)
@@ -482,7 +488,7 @@ func (m *CPMonitor) getSnapshot() *CPMonitorSnap {
 	var snap CPMonitorSnap
 	snap.transferSize = m.transferSize
 	snap.skipSize = m.skipSize
-	snap.dealSize = snap.transferSize + snap.skipSize
+	snap.dealSize = m.dealSize + snap.skipSize
 	snap.fileNum = m.fileNum
 	snap.dirNum = m.dirNum
 	snap.skipNum = m.skipNum
@@ -601,6 +607,9 @@ func (m *CPMonitor) getNumDetail(snap *CPMonitorSnap, hasErr bool) string {
 		strList = append(strList, fmt.Sprintf("skip %d directory", snap.skipNumDir))
 	}
 
+	if len(strList) == 0 {
+		return ""
+	}
 	return fmt.Sprintf("(%s)", strings.Join(strList, ", "))
 }
 

@@ -99,17 +99,23 @@ func freshProgress() {
 
 // OssProgressListener progress listener
 type OssProgressListener struct {
-	monitor  *CPMonitor
-	lastSize int64
-	currSize int64
+	monitor     *CPMonitor
+	lastSize    int64
+	currSize    int64
+	failedEvent bool
 }
 
 // ProgressChanged handle progress event
 func (l *OssProgressListener) ProgressChanged(event *oss.ProgressEvent) {
 	if event.EventType == oss.TransferDataEvent {
 		l.monitor.updateTransferSize(event.RwBytes)
-		freshProgress()
+		l.monitor.updateDealSize(event.RwBytes)
+		l.failedEvent = false
+	} else if !l.failedEvent && event.EventType == oss.TransferFailedEvent {
+		l.monitor.updateDealSize(-event.ConsumedBytes)
+		l.failedEvent = true
 	}
+	freshProgress()
 }
 
 var specChineseCopy = SpecText{
@@ -1927,7 +1933,6 @@ func (cc *CopyCommand) uploadFile(bucket *oss.Bucket, destURL CloudURL, file fil
 			skip = true
 			return
 		}
-
 		rerr = cc.ossPutObjectRetry(bucket, objectName, "")
 		if err := cc.updateSnapshot(rerr, spath, srct); err != nil {
 			rerr = err
@@ -1936,7 +1941,7 @@ func (cc *CopyCommand) uploadFile(bucket *oss.Bucket, destURL CloudURL, file fil
 	}
 
 	size = 0
-	var listener *OssProgressListener = &OssProgressListener{&cc.monitor, 0, 0}
+	var listener *OssProgressListener = &OssProgressListener{&cc.monitor, 0, 0, false}
 	//decide whether to use resume upload
 	if f.Size() < cc.cpOption.threshold {
 		options := cc.cpOption.options
@@ -2343,7 +2348,7 @@ func (cc *CopyCommand) downloadSingleFile(bucket *oss.Bucket, objectInfo objectI
 		return false, err, rsize, msg
 	}
 
-	var listener *OssProgressListener = &OssProgressListener{&cc.monitor, 0, 0}
+	var listener *OssProgressListener = &OssProgressListener{&cc.monitor, 0, 0, false}
 	downloadOptions := append(cc.cpOption.options, oss.Progress(listener))
 	if cc.cpOption.vrange != "" {
 		downloadOptions = append(downloadOptions, oss.NormalizedRange(cc.cpOption.vrange))
@@ -2803,7 +2808,7 @@ func (cc *CopyCommand) copySingleFile(bucket *oss.Bucket, objectInfo objectInfoT
 		return false, cc.ossCopyObjectRetry(bucket, srcObject, destURL.bucket, destObject), size, msg
 	}
 
-	var listener *OssProgressListener = &OssProgressListener{&cc.monitor, 0, 0}
+	var listener *OssProgressListener = &OssProgressListener{&cc.monitor, 0, 0, false}
 	partSize, rt := cc.preparePartOption(size)
 	cp := oss.CheckpointDir(true, cc.cpOption.cpDir)
 	options := cc.cpOption.options

@@ -5,6 +5,7 @@ import (
 	"hash/fnv"
 	"io/ioutil"
 	"net"
+	"net/http"
 	"net/url"
 	"os"
 	"runtime"
@@ -750,7 +751,7 @@ func (s *OssutilCommandSuite) TestCPObjectUpdate(c *C) {
 
 	// get object with update
 	// modify downloadFile
-	time.Sleep(1)
+	time.Sleep(time.Second*1)
 	downData := "download file has been modified locally"
 	s.createFile(downloadFileName, downData, c)
 
@@ -4226,5 +4227,61 @@ func (s *OssutilCommandSuite) TestUploadDisableDirObject(c *C) {
 
 	os.Remove(downFileName)
 	os.RemoveAll(dirName)
+	s.removeBucket(bucketName, true, c)
+}
+
+func MockOssServerHandle(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+	go func() {
+		ioutil.ReadAll(r.Body)
+	}()
+	time.Sleep(time.Second * 5)
+	w.WriteHeader(500)
+	w.Write([]byte(""))
+}
+
+func (s *OssutilCommandSuite) TestCPObjectProgressBarNetErrorRetry(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	// prepare file and object
+	maxUpSpeed := int64(2) // 2KB/s
+	upSecond := 120
+	objectContext := randLowStr(int(maxUpSpeed) * upSecond * 1024)
+	fileName := "ossutil_test." + randLowStr(12)
+	s.createFile(fileName, objectContext, c)
+
+	object := randLowStr(12)
+	cpArgs := []string{fileName, CloudURLToString(bucketName, object)}
+
+	mockHost := "127.0.0.1:32915" // mock oss http server
+	str := "mock"
+	cpDir := CheckpointDir
+	bForce := true
+	routines := strconv.Itoa(1)
+	thre := strconv.FormatInt(DefaultBigFileThreshold, 10)
+	strRetryTimes := "3"
+	options := OptionMapType{
+		"endpoint":         &mockHost,
+		"accessKeyID":      &str,
+		"accessKeySecret":  &str,
+		"configFile":       &configFile,
+		"checkpointDir":    &cpDir,
+		"routines":         &routines,
+		"force":            &bForce,
+		"maxupspeed":       &maxUpSpeed,
+		"bigfileThreshold": &thre,
+		"retryTimes":       &strRetryTimes,
+	}
+
+	//start mock http server
+	svr := startHttpServer(MockOssServerHandle)
+
+	// calculate time
+	_, err := cm.RunCommand("cp", cpArgs, options)
+	c.Assert(err, NotNil)
+
+	svr.Shutdown(nil)
+	os.Remove(fileName)
 	s.removeBucket(bucketName, true, c)
 }
