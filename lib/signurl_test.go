@@ -387,7 +387,7 @@ func (s *OssutilCommandSuite) TestSignUrlWithDisableEncodePathUrl(c *C) {
 		"accessKeySecret":   &str,
 		"stsToken":          &str,
 		"configFile":        &configFile,
-		"disableEncodePath": &disableEncodePath,
+		"disableEncodeSlash": &disableEncodePath,
 		"timeout":           &timeOut,
 	}
 

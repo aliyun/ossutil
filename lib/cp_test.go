@@ -3865,7 +3865,7 @@ func (s *OssutilCommandSuite) TestCPSetLocalAddrError(c *C) {
 	c.Assert(err, NotNil)
 
 	// ResolveIPAddr error
-	localIp = "1111111"
+	localIp = "11.11.11.11"
 	_, err = cm.RunCommand("cp", cpArgs, options)
 	c.Assert(err, NotNil)
 

@@ -463,11 +463,13 @@ func (m *CPMonitor) updateDealSize(size int64) {
 func (m *CPMonitor) updateFile(size, num int64) {
 	atomic.AddInt64(&m.fileNum, num)
 	atomic.AddInt64(&m.transferSize, size)
+	atomic.AddInt64(&m.dealSize, size)
 }
 
 func (m *CPMonitor) updateDir(size, num int64) {
 	atomic.AddInt64(&m.dirNum, num)
 	atomic.AddInt64(&m.transferSize, size)
+	atomic.AddInt64(&m.dealSize, size)
 }
 
 func (m *CPMonitor) updateSkip(size, num int64) {
