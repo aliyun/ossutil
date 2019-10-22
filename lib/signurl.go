@@ -14,7 +14,7 @@ var specChineseSignurl = SpecText{
 	paramText: "cloud_url [meta] [options]",
 
 	syntaxText: ` 
-    ossutil sign cloud_url [--timeout t] [--version-id versionId] [--trafic-limit limitSpeed] [--disable-encode-path]
+    ossutil sign cloud_url [--timeout t] [--version-id versionId] [--trafic-limit limitSpeed] [--disable-encode-slash]
 `,
 
 	detailHelpText: ` 
@@ -24,7 +24,7 @@ var specChineseSignurl = SpecText{
 
 用法：
 
-    ossutil sign oss://bucket/object [--timeout t] [--version-id versionId] [--trafic-limit limitSpeed] [--disable-encode-path]
+    ossutil sign oss://bucket/object [--timeout t] [--version-id versionId] [--trafic-limit limitSpeed] [--disable-encode-slash]
 `,
 
 	sampleText: ` 
@@ -43,7 +43,7 @@ var specChineseSignurl = SpecText{
     ossutil sign oss://bucket1/object1 --trafic-limit 8388608
         生成oss://bucket1/object1的签名url, http限速为8388608(bit/s)
     
-    ossutil sign oss://bucket1/dir/object1 --disable-encode-path
+    ossutil sign oss://bucket1/dir/object1 --disable-encode-slash
         生成oss://bucket1/dir/object1的签名url, 对path中的'/'不进行编码
 `,
 }
@@ -55,7 +55,7 @@ var specEnglishSignurl = SpecText{
 	paramText: "cloud_url [options]",
 
 	syntaxText: ` 
-    ossutil sign cloud_url [--timeout t] [--version-id versionId] [--trafic-limit limitSpeed] [--disable-encode-path]
+    ossutil sign cloud_url [--timeout t] [--version-id versionId] [--trafic-limit limitSpeed] [--disable-encode-slash]
 `,
 
 	detailHelpText: ` 
@@ -65,11 +65,11 @@ var specEnglishSignurl = SpecText{
     Use --timeout to specify the expire time of url, the default is 60s.
     Use --version-id to specify the version.
     Use --trafic-limit to specify the trafic speed
-    use --disable-encode-path to specify not encoding of '/' in url path section
+    use --disable-encode-slash to specify not encoding of '/' in url path section
 
 Usage:
 
-    ossutil sign oss://bucket/object [--timeout t] [--version-id versionId] [--trafic-limit limitSpeed] [--disable-encode-path]
+    ossutil sign oss://bucket/object [--timeout t] [--version-id versionId] [--trafic-limit limitSpeed] [--disable-encode-slash]
 `,
 
 	sampleText: ` 
@@ -88,7 +88,7 @@ Usage:
     ossutil sign oss://bucket1/object1  --trafic-limit 8388608
         Generate the signature of oss://bucket1/object1, http limit speed is 8388608(bit/s)
     
-    ossutil sign oss://bucket1/dir/object1 --disable-encode-path
+    ossutil sign oss://bucket1/dir/object1 --disable-encode-slash
         Generate the signature of oss://bucket1/dir/object1,no encoding of '/' in url path section
 `,
 }
@@ -119,7 +119,7 @@ var signURLCommand = SignurlCommand{
 			OptionLogLevel,
 			OptionVersionId,
 			OptionTrafficLimit,
-			OptionDisableEncodePath,
+			OptionDisableEncodeSlash,
 		},
 	},
 }
@@ -183,15 +183,15 @@ func (sc *SignurlCommand) ossSign(bucket *oss.Bucket, object string, timeout int
 		return str, ObjectError{err, bucket.BucketName, object}
 	}
 
-	disableEncodePath, _ := GetBool(OptionDisableEncodePath, sc.command.options)
-	if !disableEncodePath {
+	disableEncodeSlash, _ := GetBool(OptionDisableEncodeSlash, sc.command.options)
+	if !disableEncodeSlash {
 		return str, nil
 	}
 
 	// replace %2F with /
 	urlSlice := strings.SplitN(str, "?", 2)
+	headStr := strings.Replace(urlSlice[0], "%2F", "/", -1)
 	if len(urlSlice) == 2 {
-		headStr := strings.Replace(urlSlice[0], "%2F", "/", -1)
 		str = headStr + "?" + urlSlice[1]
 	}
 	return str, nil

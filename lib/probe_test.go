@@ -736,7 +736,7 @@ func (s *OssutilCommandSuite) TestProbeUploadBandWidth(c *C) {
 	s.putBucket(bucketName, c)
 
 	// begin probe
-	probeItem := "up-speed"
+	probeItem := "upload-speed"
 	str := ""
 	options := OptionMapType{
 		OptionEndpoint:        &str,
@@ -763,7 +763,7 @@ func (s *OssutilCommandSuite) TestProbeDownloadBandWidthSuccess(c *C) {
 	s.PutObject(bucketName, objectName, objectValue, c)
 
 	// begin probe
-	probeItem := "down-speed"
+	probeItem := "download-speed"
 	str := ""
 	options := OptionMapType{
 		OptionEndpoint:        &str,
@@ -789,7 +789,7 @@ func (s *OssutilCommandSuite) TestProbeDownloadBandWidthError(c *C) {
 	objectName := "ossutil_test_object" + randStr(5)
 
 	// begin probe
-	probeItem := "down-speed"
+	probeItem := "download-speed"
 	str := ""
 	options := OptionMapType{
 		OptionEndpoint:        &str,
@@ -812,7 +812,7 @@ func (s *OssutilCommandSuite) TestProbeDownloadBandWidthError(c *C) {
 	c.Assert(err, NotNil)
 
 	// bucket name is empty
-	probeItem = "up-speed"
+	probeItem = "upload-speed"
 	delete(options, OptionBucketName)
 	_, err = cm.RunCommand("probe", pbArgs, options)
 	c.Assert(err, NotNil)

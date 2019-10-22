@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
@@ -116,6 +117,36 @@ func (l *OssProgressListener) ProgressChanged(event *oss.ProgressEvent) {
 		l.failedEvent = true
 	}
 	freshProgress()
+}
+
+// OssProgressListener resume progress listener
+type OssResumeProgressListener struct {
+	monitor     *CPMonitor
+	lastSize    int64
+	currSize    int64
+	failedEvent bool
+}
+
+// ProgressChanged handle resume progress event
+func (l *OssResumeProgressListener) ProgressChanged(event *oss.ProgressEvent) {
+	if event.EventType == oss.TransferDataEvent {
+		l.monitor.updateTransferSize(event.RwBytes)
+		l.monitor.updateDealSize(event.RwBytes)
+		atomic.AddInt64(&l.currSize, event.RwBytes)
+	} else if event.EventType == oss.TransferStartedEvent {
+		if event.ConsumedBytes > 0 {
+			l.monitor.updateDealSize(event.ConsumedBytes)
+			atomic.StoreInt64(&l.currSize, event.ConsumedBytes)
+		}
+	}
+	freshProgress()
+}
+
+// Retry logic
+func (l *OssResumeProgressListener) Retry() {
+	currSize := atomic.LoadInt64(&l.currSize)
+	l.monitor.updateDealSize(-currSize)
+	atomic.StoreInt64(&l.currSize, 0)
 }
 
 var specChineseCopy = SpecText{
@@ -1941,7 +1972,7 @@ func (cc *CopyCommand) uploadFile(bucket *oss.Bucket, destURL CloudURL, file fil
 	}
 
 	size = 0
-	var listener *OssProgressListener = &OssProgressListener{&cc.monitor, 0, 0, false}
+	var listener *OssResumeProgressListener = &OssResumeProgressListener{&cc.monitor, 0, 0, false}
 	//decide whether to use resume upload
 	if f.Size() < cc.cpOption.threshold {
 		options := cc.cpOption.options
@@ -2132,6 +2163,12 @@ func (cc *CopyCommand) calcPartSize(fileSize int64) (int64, int64) {
 func (cc *CopyCommand) ossResumeUploadRetry(bucket *oss.Bucket, objectName string, filePath string, partSize int64, options ...oss.Option) error {
 	retryTimes, _ := GetInt(OptionRetryTimes, cc.command.options)
 	for i := 1; ; i++ {
+		listener := oss.GetProgressListener(options)
+		resumeProgress, isConvert := listener.(*OssResumeProgressListener)
+		if isConvert {
+			resumeProgress.Retry()
+		}
+
 		if i > 1 {
 			time.Sleep(time.Duration(1) * time.Second)
 			if int64(i) >= retryTimes {
@@ -2348,7 +2385,7 @@ func (cc *CopyCommand) downloadSingleFile(bucket *oss.Bucket, objectInfo objectI
 		return false, err, rsize, msg
 	}
 
-	var listener *OssProgressListener = &OssProgressListener{&cc.monitor, 0, 0, false}
+	var listener *OssResumeProgressListener = &OssResumeProgressListener{&cc.monitor, 0, 0, false}
 	downloadOptions := append(cc.cpOption.options, oss.Progress(listener))
 	if cc.cpOption.vrange != "" {
 		downloadOptions = append(downloadOptions, oss.NormalizedRange(cc.cpOption.vrange))
@@ -2445,6 +2482,12 @@ func (cc *CopyCommand) ossDownloadFileRetry(bucket *oss.Bucket, objectName, file
 func (cc *CopyCommand) ossResumeDownloadRetry(bucket *oss.Bucket, objectName string, filePath string, size, partSize int64, options ...oss.Option) error {
 	retryTimes, _ := GetInt(OptionRetryTimes, cc.command.options)
 	for i := 1; ; i++ {
+		listener := oss.GetProgressListener(options)
+		resumeProgress, isConvert := listener.(*OssResumeProgressListener)
+		if isConvert {
+			resumeProgress.Retry()
+		}
+
 		if i > 1 {
 			time.Sleep(time.Duration(1) * time.Second)
 			if int64(i) >= retryTimes {
@@ -2808,7 +2851,7 @@ func (cc *CopyCommand) copySingleFile(bucket *oss.Bucket, objectInfo objectInfoT
 		return false, cc.ossCopyObjectRetry(bucket, srcObject, destURL.bucket, destObject), size, msg
 	}
 
-	var listener *OssProgressListener = &OssProgressListener{&cc.monitor, 0, 0, false}
+	var listener *OssResumeProgressListener = &OssResumeProgressListener{&cc.monitor, 0, 0, false}
 	partSize, rt := cc.preparePartOption(size)
 	cp := oss.CheckpointDir(true, cc.cpOption.cpDir)
 	options := cc.cpOption.options
@@ -2880,6 +2923,12 @@ func (cc *CopyCommand) ossResumeCopyRetry(bucketName, objectName, destBucketName
 	}
 	retryTimes, _ := GetInt(OptionRetryTimes, cc.command.options)
 	for i := 1; ; i++ {
+		listener := oss.GetProgressListener(options)
+		resumeProgress, isConvert := listener.(*OssResumeProgressListener)
+		if isConvert {
+			resumeProgress.Retry()
+		}
+
 		if i > 1 {
 			time.Sleep(time.Duration(1) * time.Second)
 			if int64(i) >= retryTimes {

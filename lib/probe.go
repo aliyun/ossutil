@@ -59,8 +59,8 @@ var specChineseProbe = SpecText{
 
     其他探测功能(--probe-item表示)
     取值cycle-symlink: 探测本地目录是否存在死循环链接文件或者目录
-    取值up-speed: 探测上传带宽
-    取值down-speed: 探测下载带宽
+    取值upload-speed: 探测上传带宽
+    取值download-speed: 探测下载带宽
      
 
 --url选项
@@ -111,7 +111,7 @@ var specChineseProbe = SpecText{
         如果输入--addr，工具会探测domain_name, 默认探测 www.aliyun.com
     
     4) ossutil probe --probe-item item_value --bucketname bucket-name [--object=object_name]
-       该功能通过选项--probe-item不同的取值,可以实现不同的探测功能,目前取值有cycle-symlink, up-speed, down-speed
+       该功能通过选项--probe-item不同的取值,可以实现不同的探测功能,目前取值有cycle-symlink, upload-speed, download-speed
     分别表示本地死链检测, 探测上传带宽, 探测下载带宽
 `,
 
@@ -156,10 +156,10 @@ var specChineseProbe = SpecText{
         ossutil probe --probe-item cycle-symlink dir
 
     14) 探测上传带宽
-        ossutil probe --probe-item up-speed --bucketname bucket-name
+        ossutil probe --probe-item upload-speed --bucketname bucket-name
     
     15) 探测下载带宽, object要已经存在,且大小最好超过5M
-        ossutil probe --probe-item down-speed --bucketname bucket-name --object object_name
+        ossutil probe --probe-item download-speed --bucketname bucket-name --object object_name
 `,
 }
 
@@ -192,8 +192,8 @@ var specEnglishProbe = SpecText{
 
     Other detection functions(--probe-item)
     value cycle-symlink: Detects whether there is an infinite loop link file or directory in the local directory
-    value up-speed: probe upload bandwidth
-    value down-speed: probe download bandwidth
+    value upload-speed: probe upload bandwidth
+    value download-speed: probe download bandwidth
 
 --url option
 
@@ -250,7 +250,7 @@ Usage:
     
     4) ossutil probe --probe-item item_value --bucketname bucket-name [--object=object_name]
         You can implement different detection functions by using the value of the option --probe-item.
-    The current values ​​are cycle-symlink, up-speed, down-speed which represents local dead link detection, 
+    The current values ​​are cycle-symlink, upload-speed, download-speed which represents local dead link detection, 
     probe upload bandwidth, and probe download bandwidth
 `,
 
@@ -295,10 +295,10 @@ Usage:
         ossutil probe --probe-item cycle-symlink dir
 
     14) Probe upload bandwidth
-        ossutil probe --probe-item up-speed --bucketname bucket-name
+        ossutil probe --probe-item upload-speed --bucketname bucket-name
     
     15) Detect download bandwidth, object must already exist, and the size is better than 5M
-        ossutil probe --probe-item down-speed --bucketname bucket-name --object object_name
+        ossutil probe --probe-item download-speed --bucketname bucket-name --object object_name
 `,
 }
 
@@ -481,7 +481,7 @@ func (pc *ProbeCommand) RunCommand() error {
 			if err == nil {
 				fmt.Println("\n", "success")
 			}
-		} else if pc.pbOption.probeItem == "up-speed" || pc.pbOption.probeItem == "down-speed" {
+		} else if pc.pbOption.probeItem == "upload-speed" || pc.pbOption.probeItem == "download-speed" {
 			err = pc.DetectBandWidth()
 		} else {
 			err = fmt.Errorf("not support %s", pc.pbOption.probeItem)
@@ -549,9 +549,9 @@ func (pc *ProbeCommand) DetectBandWidth() error {
 		return err
 	}
 
-	if pc.pbOption.probeItem == "down-speed" {
+	if pc.pbOption.probeItem == "download-speed" {
 		if pc.pbOption.objectName == "" {
-			return fmt.Errorf("--object is empty when probe-item is down-speed")
+			return fmt.Errorf("--object is empty when probe-item is download-speed")
 		}
 
 		bExist, err := bucket.IsObjectExist(pc.pbOption.objectName)
@@ -569,15 +569,15 @@ func (pc *ProbeCommand) DetectBandWidth() error {
 	statBandwidth.Reset(numCpu)
 
 	var appendReader TestAppendReader
-	if pc.pbOption.probeItem == "up-speed" {
+	if pc.pbOption.probeItem == "upload-speed" {
 		appendReader.RandText = []byte(strings.Repeat("1", 32*1024))
 	}
 
 	for i := 0; i < numCpu; i++ {
 		time.Sleep(time.Duration(50) * time.Millisecond)
-		if pc.pbOption.probeItem == "up-speed" {
+		if pc.pbOption.probeItem == "upload-speed" {
 			go pc.PutObject(bucket, &statBandwidth, &appendReader)
-		} else if pc.pbOption.probeItem == "down-speed" {
+		} else if pc.pbOption.probeItem == "download-speed" {
 			go pc.GetObject(bucket, pc.pbOption.objectName, &statBandwidth)
 		}
 	}
@@ -627,9 +627,9 @@ func (pc *ProbeCommand) DetectBandWidth() error {
 			nowParallel += addParallel
 			for i := 0; i < addParallel; i++ {
 				time.Sleep(time.Duration(50) * time.Millisecond)
-				if pc.pbOption.probeItem == "up-speed" {
+				if pc.pbOption.probeItem == "upload-speed" {
 					go pc.PutObject(bucket, &statBandwidth, &appendReader)
-				} else if pc.pbOption.probeItem == "down-speed" {
+				} else if pc.pbOption.probeItem == "download-speed" {
 					go pc.GetObject(bucket, pc.pbOption.objectName, &statBandwidth)
 				}
 			}
