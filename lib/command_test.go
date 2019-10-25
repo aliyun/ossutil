@@ -39,6 +39,8 @@ var (
 	proxyHost           = ""
 	proxyUser           = ""
 	proxyPwd            = ""
+	accountID           = ""
+	stsARN              = ""
 )
 
 var (
@@ -131,6 +133,12 @@ func SetUpCredential() {
 	}
 	if proxyPwd == "" {
 		proxyPwd = os.Getenv("OSS_TEST_PROXY_PASSWORD")
+	}
+	if accountID == "" {
+		accountID = os.Getenv("OSS_TEST_ACCOUNT_ID")
+	}
+	if stsARN == "" {
+		stsARN = os.Getenv("OSS_TEST_STS_ARN")
 	}
 }
 
