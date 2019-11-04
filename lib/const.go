@@ -77,6 +77,7 @@ const (
 	OptionProbeItem                  = "probeItem"
 	OptionDisableEncodeSlash         = "disableEncodeSlash"
 	OptionDisableDirObject           = "disableDirObject"
+	OptionRedundancyType             = "redundancyType"
 )
 
 // the elements show in stat object
@@ -94,6 +95,7 @@ const (
 	StatStorageClass            = "StorageClass"
 	StatSSEAlgorithm            = "SSEAlgorithm"
 	StatKMSMasterKeyID          = "KMSMasterKeyID"
+	StatRedundancyType          = "RedundancyType"
 )
 
 // the elements show in hash file
