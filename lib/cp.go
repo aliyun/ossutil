@@ -158,8 +158,8 @@ var specChineseCopy = SpecText{
 
 	syntaxText: ` 
     ossutil cp file_url cloud_url  [-r] [-f] [-u] [--enable-symlink-dir] [--only-current-dir] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--snapshot-path=sdir] [--payer requester]
-    ossutil cp cloud_url file_url  [-r] [-f] [-u] [--enable-symlink-dir] [--only-current-dir] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--range=x-y] [--payer requester] [--version-id versionId]
-    ossutil cp cloud_url cloud_url [-r] [-f] [-u] [--enable-symlink-dir] [--only-current-dir] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--payer requester] [--version-id versionId]
+    ossutil cp cloud_url file_url  [-r] [-f] [-u] [--only-current-dir] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--range=x-y] [--payer requester] [--version-id versionId]
+    ossutil cp cloud_url cloud_url [-r] [-f] [-u] [--only-current-dir] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--payer requester] [--version-id versionId]
 `,
 
 	detailHelpText: ` 
@@ -655,9 +655,9 @@ var specEnglishCopy = SpecText{
 	paramText: "src_url dest_url [options]",
 
 	syntaxText: ` 
-    ossutil cp file_url cloud_url  [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--snapshot-path=sdir] [--payer requester]
-    ossutil cp cloud_url file_url  [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--range=x-y] [--payer requester]
-    ossutil cp cloud_url cloud_url [-r] [-f] [-u] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--payer requester]
+    ossutil cp file_url cloud_url  [-r] [-f] [-u] [--enable-symlink-dir] [--only-current-dir] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--snapshot-path=sdir] [--payer requester]
+    ossutil cp cloud_url file_url  [-r] [-f] [-u] [--only-current-dir] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--range=x-y] [--payer requester]
+    ossutil cp cloud_url cloud_url [-r] [-f] [-u] [--only-current-dir] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--payer requester]
 `,
 
 	detailHelpText: ` 

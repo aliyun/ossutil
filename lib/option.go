@@ -199,6 +199,9 @@ var OptionMap = map[string]Option{
 	OptionDisableDirObject: Option{"", "--disable-dir-object", "", OptionTypeFlagTrue, "", "",
 		"表示上传文件时不为目录生成oss对象,主要用于cp命令",
 		"specifies that oss object is not generated for directory itself when uploading, primarily used in cp command"},
+	OptionRedundancyType: Option{"", "--redundancy-type", "", OptionTypeString, "", "",
+		"表示bucket的数据容灾类型, 取值可为LRS, ZRS. LRS为默认值,表示本地容灾, ZRS表示更高可用的同城多可用区容灾(3AZ)",
+		"specifies bucket data redundancy type, the value can be LRS, ZRS. LRS is default value, specifies locally redundant storage; ZRS specifies higher availability of redundant storage"},
 }
 
 func (T *Option) getHelp(language string) string {
