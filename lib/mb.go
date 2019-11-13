@@ -57,7 +57,7 @@ RedundancyType:
 
 用法：
 
-    ossutil mb oss://bucket [--acl=acl] [--storage-class class] [-c file]
+    ossutil mb oss://bucket [--acl=acl] [--storage-class class] [--redundancy-type type] [-c file]
         当未指定--acl选项时，ossutil会在指定的身份凭证下创建指定bucket，所创建的bucket的acl
     为默认private。如果需要更改acl信息，可以使用set-acl命令。
         当未指定--storage-class选项时，ossutil创建的bucket的存储方式为默认存储方式：` + DefaultStorageClass + `。
@@ -82,7 +82,7 @@ var specEnglishMakeBucket = SpecText{
 	paramText: "cloud_url [options]",
 
 	syntaxText: ` 
-    ossutil mb oss://bucket [--acl acl] [--storage-class class] [-c file] 
+    ossutil mb oss://bucket [--acl acl] [--storage-class class] [--redundancy-type type] [-c file] 
 `,
 
 	detailHelpText: ` 
