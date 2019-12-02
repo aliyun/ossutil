@@ -125,7 +125,7 @@ const (
 const (
 	Package                 string = "ossutil"
 	ChannelBuf              int    = 1000
-	Version                 string = "v1.6.11"
+	Version                 string = "v1.6.12"
 	DefaultEndpoint         string = "oss.aliyuncs.com"
 	ChineseLanguage                = "CH"
 	EnglishLanguage                = "EN"
@@ -170,6 +170,7 @@ const (
 	StorageStandard                = string(oss.StorageStandard)
 	StorageIA                      = string(oss.StorageIA)
 	StorageArchive                 = string(oss.StorageArchive)
+	StorageColdArchive             = string(oss.StorageColdArchive)
 	DefaultStorageClass            = StorageStandard
 	DefaultMethod                  = string(oss.HTTPGet)
 	DefaultTimeout                 = 60
