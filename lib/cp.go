@@ -2133,7 +2133,7 @@ func (cc *CopyCommand) ossPutObjectRetry(bucket *oss.Bucket, objectName string, 
 	retryTimes, _ := GetInt(OptionRetryTimes, cc.command.options)
 	for i := 1; ; i++ {
 		if i > 1 {
-			time.Sleep(time.Duration(1) * time.Second)
+			time.Sleep(time.Duration(3) * time.Second)
 			if int64(i) >= retryTimes {
 				fmt.Printf("\nretry count:%d:put object:%s.\n", i-1, objectName)
 			}
@@ -2157,7 +2157,7 @@ func (cc *CopyCommand) ossUploadFileRetry(bucket *oss.Bucket, objectName string,
 	retryTimes, _ := GetInt(OptionRetryTimes, cc.command.options)
 	for i := 1; ; i++ {
 		if i > 1 {
-			time.Sleep(time.Duration(1) * time.Second)
+			time.Sleep(time.Duration(3) * time.Second)
 			if int64(i) >= retryTimes {
 				fmt.Printf("\nretry count:%d:upload file:%s\n", i-1, filePath)
 			}
@@ -2238,7 +2238,7 @@ func (cc *CopyCommand) ossResumeUploadRetry(bucket *oss.Bucket, objectName strin
 	retryTimes, _ := GetInt(OptionRetryTimes, cc.command.options)
 	for i := 1; ; i++ {
 		if i > 1 {
-			time.Sleep(time.Duration(1) * time.Second)
+			time.Sleep(time.Duration(3) * time.Second)
 			if int64(i) >= retryTimes {
 				fmt.Printf("\nretry count:%d,multipart upload file:%s.\n", i-1, filePath)
 			}
@@ -2525,7 +2525,7 @@ func (cc *CopyCommand) ossDownloadFileRetry(bucket *oss.Bucket, objectName, file
 	retryTimes, _ := GetInt(OptionRetryTimes, cc.command.options)
 	for i := 1; ; i++ {
 		if i > 1 {
-			time.Sleep(time.Duration(1) * time.Second)
+			time.Sleep(time.Duration(3) * time.Second)
 			if int64(i) >= retryTimes {
 				fmt.Printf("\nretry count:%d:get object to file:%s.\n", i-1, fileName)
 			}
@@ -2555,7 +2555,7 @@ func (cc *CopyCommand) ossResumeDownloadRetry(bucket *oss.Bucket, objectName str
 	retryTimes, _ := GetInt(OptionRetryTimes, cc.command.options)
 	for i := 1; ; i++ {
 		if i > 1 {
-			time.Sleep(time.Duration(1) * time.Second)
+			time.Sleep(time.Duration(3) * time.Second)
 			if int64(i) >= retryTimes {
 				fmt.Printf("\nretry count:%d:mulitpart download file:%s.\n", i-1, objectName)
 			}
@@ -2963,7 +2963,7 @@ func (cc *CopyCommand) ossCopyObjectRetry(bucket *oss.Bucket, objectName, destBu
 	options = append(options, oss.TaggingDirective(oss.TaggingReplace))
 	for i := 1; ; i++ {
 		if i > 1 {
-			time.Sleep(time.Duration(1) * time.Second)
+			time.Sleep(time.Duration(3) * time.Second)
 			if int64(i) >= retryTimes {
 				fmt.Printf("\nretry count:%d,copy object:%s.\n", i-1, objectName)
 			}
@@ -2990,7 +2990,7 @@ func (cc *CopyCommand) ossResumeCopyRetry(bucketName, objectName, destBucketName
 	retryTimes, _ := GetInt(OptionRetryTimes, cc.command.options)
 	for i := 1; ; i++ {
 		if i > 1 {
-			time.Sleep(time.Duration(1) * time.Second)
+			time.Sleep(time.Duration(3) * time.Second)
 			if int64(i) >= retryTimes {
 				fmt.Printf("\nretry count:%d, resume copy object:%s.\n", i-1, objectName)
 			}

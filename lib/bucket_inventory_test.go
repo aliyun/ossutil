@@ -26,7 +26,6 @@ func (s *OssutilCommandSuite) TestInventoryPutSuccess(c *C) {
 			RoleArn:   stsARN,
 			Bucket:    "acs:oss:::" + bucketName,
 			Prefix:    "prefix1",
-			KeyId:     "keyId",
 		},
 		Frequency:              "Daily",
 		IncludedObjectVersions: "All",
@@ -109,9 +108,7 @@ func (s *OssutilCommandSuite) TestInventoryGetErrorResultFileOpenError(c *C) {
 			AccountId: accountID,
 			RoleArn:   stsARN,
 			Bucket:    "acs:oss:::" + bucketName,
-			Prefix:    "prefix1",
-			KeyId:     "keyId",
-		},
+			Prefix:    "prefix1"},
 		Frequency:              "Daily",
 		IncludedObjectVersions: "All",
 		OptionalFields: oss.OptionalFields{
@@ -315,7 +312,6 @@ func (s *OssutilCommandSuite) TestInventoryGetConfirm(c *C) {
 			RoleArn:   stsARN,
 			Bucket:    "acs:oss:::" + bucketName,
 			Prefix:    "prefix1",
-			KeyId:     "keyId",
 		},
 		Frequency:              "Daily",
 		IncludedObjectVersions: "All",
@@ -393,7 +389,6 @@ func (s *OssutilCommandSuite) TestInventoryDelete(c *C) {
 			RoleArn:   stsARN,
 			Bucket:    "acs:oss:::" + bucketName,
 			Prefix:    "prefix1",
-			KeyId:     "keyId",
 		},
 		Frequency:              "Daily",
 		IncludedObjectVersions: "All",
@@ -478,7 +473,6 @@ func (s *OssutilCommandSuite) TestInventoryListSuccess(c *C) {
 			RoleArn:   stsARN,
 			Bucket:    "acs:oss:::" + bucketName,
 			Prefix:    "prefix1",
-			KeyId:     "keyId",
 		},
 		Frequency:              "Daily",
 		IncludedObjectVersions: "All",
@@ -557,7 +551,6 @@ func (s *OssutilCommandSuite) TestInventoryListMarkerSuccess(c *C) {
 			RoleArn:   stsARN,
 			Bucket:    "acs:oss:::" + bucketName,
 			Prefix:    "prefix1",
-			KeyId:     "keyId",
 		},
 		Frequency:              "Daily",
 		IncludedObjectVersions: "All",
@@ -629,7 +622,7 @@ func (s *OssutilCommandSuite) TestInventoryListMarkerSuccess(c *C) {
 	c.Assert(err, IsNil)
 
 	// list error,result file open error
-	inventoryArgs = []string{CloudURLToString(bucketName, ""), string(os.PathSeparator) + "root1" + string(os.PathListSeparator) + "test-file"}
+	inventoryArgs = []string{CloudURLToString(bucketName, ""), string(os.PathSeparator) + "root1" + string(os.PathSeparator) + "test-file"}
 	_, err = cm.RunCommand("inventory", inventoryArgs, options)
 	c.Assert(err, NotNil)
 
