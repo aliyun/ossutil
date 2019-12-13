@@ -78,6 +78,7 @@ const (
 	OptionDisableEncodeSlash         = "disableEncodeSlash"
 	OptionDisableDirObject           = "disableDirObject"
 	OptionRedundancyType             = "redundancyType"
+	OptionDisableAllSymlink          = "disableAllSymlink"
 )
 
 // the elements show in stat object
@@ -122,7 +123,7 @@ const (
 const (
 	Package                 string = "ossutil"
 	ChannelBuf              int    = 1000
-	Version                 string = "v1.6.9"
+	Version                 string = "v1.6.10"
 	DefaultEndpoint         string = "oss.aliyuncs.com"
 	ChineseLanguage                = "CH"
 	EnglishLanguage                = "EN"

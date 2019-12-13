@@ -38,30 +38,31 @@ const (
  * Please guarantee the alignment if you add new filed
  */
 type copyOptionType struct {
-	cpDir            string
-	snapshotPath     string
-	vrange           string
-	encodingType     string
-	meta             string
-	options          []oss.Option
-	filters          []filterOptionType
-	threshold        int64
-	routines         int64
-	reporter         *Reporter
-	snapshotldb      *leveldb.DB
-	recursive        bool
-	force            bool
-	update           bool
-	ctnu             bool
-	payerOptions     []oss.Option
-	partitionInfo    string
-	partitionIndex   int
-	partitionCount   int
-	versionId        string
-	enableSymlinkDir bool
-	onlyCurrentDir   bool
-	disableDirObject bool
-	resumeProgress   *OssResumeProgressListener
+	cpDir             string
+	snapshotPath      string
+	vrange            string
+	encodingType      string
+	meta              string
+	options           []oss.Option
+	filters           []filterOptionType
+	threshold         int64
+	routines          int64
+	reporter          *Reporter
+	snapshotldb       *leveldb.DB
+	recursive         bool
+	force             bool
+	update            bool
+	ctnu              bool
+	payerOptions      []oss.Option
+	partitionInfo     string
+	partitionIndex    int
+	partitionCount    int
+	versionId         string
+	enableSymlinkDir  bool
+	onlyCurrentDir    bool
+	disableDirObject  bool
+	resumeProgress    *OssResumeProgressListener
+	disableAllSymlink bool
 }
 
 type filterOptionType struct {
@@ -157,7 +158,7 @@ var specChineseCopy = SpecText{
 	paramText: "src_url dest_url [options]",
 
 	syntaxText: ` 
-    ossutil cp file_url cloud_url  [-r] [-f] [-u] [--enable-symlink-dir] [--only-current-dir] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--snapshot-path=sdir] [--payer requester]
+    ossutil cp file_url cloud_url  [-r] [-f] [-u] [--enable-symlink-dir] [--disable-all-symlink] [--only-current-dir] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--snapshot-path=sdir] [--payer requester]
     ossutil cp cloud_url file_url  [-r] [-f] [-u] [--only-current-dir] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--range=x-y] [--payer requester] [--version-id versionId]
     ossutil cp cloud_url cloud_url [-r] [-f] [-u] [--only-current-dir] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--payer requester] [--version-id versionId]
 `,
@@ -343,6 +344,10 @@ var specChineseCopy = SpecText{
     允许传输链接子目录下文件,如果存在死循环链接文件或者目录,会导致错误,使用前建议用probe命令
     检测是否存在死循环链接文件或者目录
 
+--disable-all-symlink选项
+
+    上传目录时,忽略掉该目录下所有的链接文件以及链接子目录
+
 --only-current-dir
     
     和-r选项一起使用,表示只操作当前目录下的文件, 会忽略当前目录下的子目录, 如果是下载或者拷贝oss
@@ -519,6 +524,9 @@ var specChineseCopy = SpecText{
     ossutil cp local_dir oss://bucket1/b -r --only-current-dir
     只上传当前目录的下文件,忽略其他的子目录
 
+    ossutil cp local_dir oss://bucket1/b -r --disable-all-symlink
+    忽略所有的链接子文件以及链接子目录
+
     2) 从oss下载object
     假设oss上有下列objects：
         oss://bucket/abcdir1/a
@@ -655,7 +663,7 @@ var specEnglishCopy = SpecText{
 	paramText: "src_url dest_url [options]",
 
 	syntaxText: ` 
-    ossutil cp file_url cloud_url  [-r] [-f] [-u] [--enable-symlink-dir] [--only-current-dir] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--snapshot-path=sdir] [--payer requester]
+    ossutil cp file_url cloud_url  [-r] [-f] [-u] [--enable-symlink-dir] [--disable-all-symlink] [--only-current-dir] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--snapshot-path=sdir] [--payer requester]
     ossutil cp cloud_url file_url  [-r] [-f] [-u] [--only-current-dir] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--range=x-y] [--payer requester]
     ossutil cp cloud_url cloud_url [-r] [-f] [-u] [--only-current-dir] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--payer requester]
 `,
@@ -874,12 +882,16 @@ Other Options:
     If the --encoding-type option is setted to url, it means the object name and file name are url 
     endcoded.
 
---enable-symlink-dir选项
+--enable-symlink-dir option
 
    Allows transfer of files in the link subdirectory. If there is an infinite loop link file or directory, 
    it will cause an error. 
    It is recommended to use the probe command to detect the existence of an infinite loop link file or 
    directory before use
+
+--disable-all-symlink option
+
+  specifies that uploading of symlink files and symlink directories under the directory is not allowed
 
 --only-current-dir
     
@@ -1063,10 +1075,13 @@ Usage:
     Upload the file "中文" to oss://bucket1/测试
 
     ossutil cp local_dir oss://bucket1/b -r --enable-symlink-dir
-    Support for uploading files in the symbolic link subdirectory
+    Support for uploading files in the symlink subdirectory
 
     ossutil cp local_dir oss://bucket1/b -r --only-current-dir
     Upload only the files in the current directory, ignoring other subdirectories
+
+    ossutil cp local_dir oss://bucket1/b -r --disable-all-symlink
+    uploading of symlink files and symlink directories under the local_dir is not allowed 
 
     2) download from oss
     Suppose there are following objects in oss:
@@ -1246,6 +1261,7 @@ var copyCommand = CopyCommand{
 			OptionEnableSymlinkDir,
 			OptionOnlyCurrentDir,
 			OptionDisableDirObject,
+			OptionDisableAllSymlink,
 		},
 	},
 }
@@ -1288,6 +1304,11 @@ func (cc *CopyCommand) RunCommand() error {
 	cc.cpOption.enableSymlinkDir, _ = GetBool(OptionEnableSymlinkDir, cc.command.options)
 	cc.cpOption.onlyCurrentDir, _ = GetBool(OptionOnlyCurrentDir, cc.command.options)
 	cc.cpOption.disableDirObject, _ = GetBool(OptionDisableDirObject, cc.command.options)
+	cc.cpOption.disableAllSymlink, _ = GetBool(OptionDisableAllSymlink, cc.command.options)
+
+	if cc.cpOption.enableSymlinkDir && cc.cpOption.disableAllSymlink {
+		return fmt.Errorf("--enable-symlink-dir and --disable-all-symlink can't be both exist")
+	}
 
 	var res bool
 	res, cc.cpOption.filters = getFilter(os.Args)
@@ -1695,6 +1716,10 @@ func (cc *CopyCommand) getFileListStatistic(dpath string) error {
 			return nil
 		}
 
+		if cc.cpOption.disableAllSymlink && (f.Mode()&os.ModeSymlink) != 0 {
+			return nil
+		}
+
 		if cc.cpOption.enableSymlinkDir && (f.Mode()&os.ModeSymlink) != 0 {
 			// there is difference between os.Stat and os.Lstat in filepath.Walk
 			realInfo, err := os.Stat(fpath)
@@ -1820,6 +1845,10 @@ func (cc *CopyCommand) getFileList(dpath string, chFiles chan<- fileInfoType) er
 					chFiles <- fileInfoType{fileName + string(os.PathSeparator), name}
 				}
 			}
+			return nil
+		}
+
+		if cc.cpOption.disableAllSymlink && (f.Mode()&os.ModeSymlink) != 0 {
 			return nil
 		}
 

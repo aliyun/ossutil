@@ -751,7 +751,7 @@ func (s *OssutilCommandSuite) TestCPObjectUpdate(c *C) {
 
 	// get object with update
 	// modify downloadFile
-	time.Sleep(time.Second*1)
+	time.Sleep(time.Second * 1)
 	downData := "download file has been modified locally"
 	s.createFile(downloadFileName, downData, c)
 
@@ -4283,5 +4283,126 @@ func (s *OssutilCommandSuite) TestCPObjectProgressBarNetErrorRetry(c *C) {
 
 	svr.Shutdown(nil)
 	os.Remove(fileName)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestUploadWithDisableAllSymlinkDirFailure(c *C) {
+	if runtime.GOOS == "windows" {
+		return
+	}
+
+	bucketName := bucketNamePrefix + randLowStr(12)
+	s.putBucket(bucketName, c)
+
+	dirName := "ossutil_test_dir_" + randStr(5)
+
+	// begin cp file
+	cpArgs := []string{dirName, CloudURLToString(bucketName, "")}
+	str := ""
+	cpDir := CheckpointDir
+	routines := strconv.Itoa(Routines)
+	recursive := true
+	enableSymlinkDir := true
+	disableAllSymlink := true
+
+	options := OptionMapType{
+		"endpoint":          &str,
+		"accessKeyID":       &str,
+		"accessKeySecret":   &str,
+		"configFile":        &configFile,
+		"checkpointDir":     &cpDir,
+		"routines":          &routines,
+		"recursive":         &recursive,
+		"enableSymlinkDir":  &enableSymlinkDir,
+		"disableAllSymlink": &disableAllSymlink,
+	}
+
+	//--enable-symlink-dir and --disable-all-symlink can't be both exist
+	_, err := cm.RunCommand("cp", cpArgs, options)
+	c.Assert(err, NotNil)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestUploadWithDisableAllSymlinkDirSuccess(c *C) {
+	if runtime.GOOS == "windows" {
+		return
+	}
+
+	bucketName := bucketNamePrefix + randLowStr(12)
+	s.putBucket(bucketName, c)
+
+	// mkdir
+	dirName := "ossutil_test_dir_" + randStr(5)
+	err := os.MkdirAll(dirName, 0755)
+	c.Assert(err, IsNil)
+
+	subDirName := "ossutil_test_dir_" + randStr(5)
+	err = os.MkdirAll(dirName+string(os.PathSeparator)+subDirName, 0755)
+	c.Assert(err, IsNil)
+
+	// mk symlink dir
+	symlinkDir := "ossutil_test_dir_" + randStr(5)
+	err = os.Symlink(subDirName, dirName+string(os.PathSeparator)+symlinkDir)
+	c.Assert(err, IsNil)
+
+	// file under subdir
+	testFileName := "ossutil_test_file" + randStr(5)
+	data := randStr(100)
+	s.createFile(dirName+string(os.PathSeparator)+subDirName+string(os.PathSeparator)+testFileName, data, c)
+
+	// file under dir
+	s.createFile(dirName+string(os.PathSeparator)+testFileName, data, c)
+
+	// symlink file under dir
+	testSymlinkFile := testFileName + "-symlink"
+	err = os.Symlink(testFileName, dirName+string(os.PathSeparator)+testSymlinkFile)
+	c.Assert(err, IsNil)
+
+	// begin cp file
+	cpArgs := []string{dirName, CloudURLToString(bucketName, "")}
+	str := ""
+	cpDir := CheckpointDir
+	routines := strconv.Itoa(Routines)
+	recursive := true
+	disableAllSymlink := true
+	options := OptionMapType{
+		"endpoint":          &str,
+		"accessKeyID":       &str,
+		"accessKeySecret":   &str,
+		"configFile":        &configFile,
+		"checkpointDir":     &cpDir,
+		"routines":          &routines,
+		"recursive":         &recursive,
+		"disableAllSymlink": &disableAllSymlink,
+	}
+
+	// upload
+	_, err = cm.RunCommand("cp", cpArgs, options)
+	c.Assert(err, IsNil)
+
+	// download symlink dir object failure
+	delete(options, "recursive")
+	downFileName := testFileName + ".down"
+	dwArgs := []string{CloudURLToString(bucketName, symlinkDir+"/"+testFileName), downFileName}
+	_, err = cm.RunCommand("cp", dwArgs, options)
+	c.Assert(err, NotNil)
+
+	// download sub dir object success
+	dwArgs = []string{CloudURLToString(bucketName, subDirName+"/"+testFileName), downFileName}
+	_, err = cm.RunCommand("cp", dwArgs, options)
+	c.Assert(err, IsNil)
+
+	//download dir object success
+	dwArgs = []string{CloudURLToString(bucketName, testFileName), downFileName}
+	_, err = cm.RunCommand("cp", dwArgs, options)
+	c.Assert(err, IsNil)
+
+	//download dir symlink failure
+	dwArgs = []string{CloudURLToString(bucketName, testSymlinkFile), downFileName}
+	_, err = cm.RunCommand("cp", dwArgs, options)
+	c.Assert(err, NotNil)
+
+	os.Remove(downFileName)
+	os.RemoveAll(dirName)
 	s.removeBucket(bucketName, true, c)
 }

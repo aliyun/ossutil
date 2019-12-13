@@ -202,6 +202,9 @@ var OptionMap = map[string]Option{
 	OptionRedundancyType: Option{"", "--redundancy-type", "", OptionTypeString, "", "",
 		"表示bucket的数据容灾类型, 取值可为LRS, ZRS. LRS为默认值,表示本地容灾, ZRS表示更高可用的同城多可用区容灾(3AZ)",
 		"specifies bucket data redundancy type, the value can be LRS, ZRS. LRS is default value, specifies locally redundant storage; ZRS specifies higher availability of redundant storage"},
+	OptionDisableAllSymlink: Option{"", "--disable-all-symlink", "", OptionTypeFlagTrue, "", "",
+		"表示不允许上传目录下的链接文件以及链接目录, 缺省值为false",
+		"specifies that uploading of symlink files and symlink directories under the directory is not allowed, the default value is false."},
 }
 
 func (T *Option) getHelp(language string) string {
