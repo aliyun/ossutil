@@ -66,10 +66,11 @@ var specEnglishSignurl = SpecText{
     Use --version-id to specify the version.
     Use --trafic-limit to specify the trafic speed
     use --disable-encode-slash to specify not encoding of '/' in url path section
+    use --payer to specify request payment
 
 Usage:
 
-    ossutil sign oss://bucket/object [--timeout t] [--version-id versionId] [--trafic-limit limitSpeed] [--disable-encode-slash]
+    ossutil sign oss://bucket/object [--timeout t] [--version-id versionId] [--trafic-limit limitSpeed] [--payer requester] [--disable-encode-slash]
 `,
 
 	sampleText: ` 
@@ -90,6 +91,9 @@ Usage:
     
     ossutil sign oss://bucket1/dir/object1 --disable-encode-slash
         Generate the signature of oss://bucket1/dir/object1,no encoding of '/' in url path section
+    
+    ossutil sign oss://bucket1/object1  --payer requester
+        Generate the signature of oss://bucket1/object1, use requester payment
 `,
 }
 
@@ -120,6 +124,7 @@ var signURLCommand = SignurlCommand{
 			OptionVersionId,
 			OptionTrafficLimit,
 			OptionDisableEncodeSlash,
+			OptionRequestPayer,
 		},
 	},
 }
@@ -153,6 +158,11 @@ func (sc *SignurlCommand) RunCommand() error {
 		return fmt.Errorf("Option value of --trafic-limit must be greater than 0")
 	}
 
+	payer, _ := GetString(OptionRequestPayer, sc.command.options)
+	if payer != "" && payer != strings.ToLower(string(oss.Requester)) {
+		return fmt.Errorf("invalid request payer: %s, please check", payer)
+	}
+
 	bucket, err := sc.command.ossBucket(cloudURL.bucket)
 	if err != nil {
 		return err
@@ -165,6 +175,10 @@ func (sc *SignurlCommand) RunCommand() error {
 
 	if trafficLimit > 0 {
 		options = append(options, oss.TrafficLimitParam(trafficLimit))
+	}
+
+	if payer != "" {
+		options = append(options, oss.RequestPayerParam(oss.PayerType(payer)))
 	}
 
 	str, err := sc.ossSign(bucket, cloudURL.object, timeout, options...)

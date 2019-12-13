@@ -382,13 +382,13 @@ func (s *OssutilCommandSuite) TestSignUrlWithDisableEncodePathUrl(c *C) {
 	disableEncodePath := true
 	timeOut := strconv.FormatInt(60, 10)
 	options := OptionMapType{
-		"endpoint":          &str,
-		"accessKeyID":       &str,
-		"accessKeySecret":   &str,
-		"stsToken":          &str,
-		"configFile":        &configFile,
+		"endpoint":           &str,
+		"accessKeyID":        &str,
+		"accessKeySecret":    &str,
+		"stsToken":           &str,
+		"configFile":         &configFile,
 		"disableEncodeSlash": &disableEncodePath,
-		"timeout":           &timeOut,
+		"timeout":            &timeOut,
 	}
 
 	srcUrl := CloudURLToString(bucketName, object)
@@ -415,4 +415,52 @@ func (s *OssutilCommandSuite) TestSignUrlWithDisableEncodePathUrl(c *C) {
 	os.Remove(uploadFileName)
 	os.Remove(downFileName)
 	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestSignUrlWithRequestPayer(c *C) {
+	s.createFile(uploadFileName, content, c)
+	bucketName := payerBucket
+
+	data := randLowStr(1024)
+	uploadFileName := "ossutil-test-file-" + randLowStr(5)
+	s.createFile(uploadFileName, data, c)
+
+	//put object, with --payer=requester
+	args := []string{uploadFileName, CloudURLToString(bucketName, "")}
+	showElapse, err := s.rawCPWithPayer(args, false, true, false, DefaultBigFileThreshold, "requester")
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	//signurl with requester payer
+	command := "sign"
+	str := ""
+	payer := "requester"
+	timeOut := strconv.FormatInt(60, 10)
+	options := OptionMapType{
+		"endpoint":        &payerBucketEndPoint,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"stsToken":        &str,
+		"configFile":      &configFile,
+		"payer":           &payer,
+		"timeout":         &timeOut,
+	}
+
+	srcUrl := CloudURLToString(bucketName, uploadFileName)
+	args = []string{srcUrl}
+	_, err = cm.RunCommand(command, args, options)
+	c.Assert(err, IsNil)
+
+	bucket, err := signURLCommand.command.ossBucket(bucketName)
+	c.Assert(err, IsNil)
+
+	// get object with url
+	downFileName := "ossutil-test-file" + randStr(5)
+	err = bucket.GetObjectToFileWithURL(signURLCommand.signUrl, downFileName)
+	c.Assert(err, IsNil)
+	str = s.readFile(downFileName, c)
+	c.Assert(str, Equals, data)
+
+	os.Remove(uploadFileName)
+	os.Remove(downFileName)
 }
