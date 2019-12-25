@@ -4406,3 +4406,56 @@ func (s *OssutilCommandSuite) TestUploadWithDisableAllSymlinkDirSuccess(c *C) {
 	os.RemoveAll(dirName)
 	s.removeBucket(bucketName, true, c)
 }
+
+func (s *OssutilCommandSuite) TestUploadSymlinkFileProgressPrecise(c *C) {
+	if runtime.GOOS == "windows" {
+		return
+	}
+
+	bucketName := bucketNamePrefix + randLowStr(12)
+	s.putBucket(bucketName, c)
+
+	// mkdir
+	dirName := "ossutil_test_dir_" + randStr(5)
+	err := os.MkdirAll(dirName, 0755)
+	c.Assert(err, IsNil)
+
+	// file under dir
+	testFileName := "ossutil_test_file" + randStr(5)
+	data := randStr(100)
+	s.createFile(dirName+string(os.PathSeparator)+testFileName, data, c)
+
+	// symlink file under dir
+	testSymlinkFile := testFileName + "-symlink"
+	err = os.Symlink(testFileName, dirName+string(os.PathSeparator)+testSymlinkFile)
+	c.Assert(err, IsNil)
+
+	// begin cp file
+	cpArgs := []string{dirName, CloudURLToString(bucketName, "")}
+	str := ""
+	cpDir := CheckpointDir
+	routines := strconv.Itoa(Routines)
+	recursive := true
+	disableAllSymlink := true
+	options := OptionMapType{
+		"endpoint":          &str,
+		"accessKeyID":       &str,
+		"accessKeySecret":   &str,
+		"configFile":        &configFile,
+		"checkpointDir":     &cpDir,
+		"routines":          &routines,
+		"recursive":         &recursive,
+		"disableAllSymlink": &disableAllSymlink,
+	}
+
+	// upload
+	_, err = cm.RunCommand("cp", cpArgs, options)
+	c.Assert(err, IsNil)
+
+	// check progress is 100%,not over 100%
+	snap := copyCommand.monitor.getSnapshot()
+	c.Assert((copyCommand.monitor.getPrecent(snap)) == 100, Equals, true)
+
+	os.RemoveAll(dirName)
+	s.removeBucket(bucketName, true, c)
+}

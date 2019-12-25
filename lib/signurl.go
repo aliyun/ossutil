@@ -14,7 +14,7 @@ var specChineseSignurl = SpecText{
 	paramText: "cloud_url [meta] [options]",
 
 	syntaxText: ` 
-    ossutil sign cloud_url [--timeout t] [--version-id versionId] [--trafic-limit limitSpeed] [--disable-encode-slash]
+    ossutil sign cloud_url [--timeout t] [--version-id versionId] [--trafic-limit limitSpeed] [--disable-encode-slash] [--payer requester]
 `,
 
 	detailHelpText: ` 
@@ -24,7 +24,7 @@ var specChineseSignurl = SpecText{
 
 用法：
 
-    ossutil sign oss://bucket/object [--timeout t] [--version-id versionId] [--trafic-limit limitSpeed] [--disable-encode-slash]
+    ossutil sign oss://bucket/object [--timeout t] [--version-id versionId] [--trafic-limit limitSpeed] [--disable-encode-slash] [--payer requester]
 `,
 
 	sampleText: ` 
@@ -45,6 +45,9 @@ var specChineseSignurl = SpecText{
     
     ossutil sign oss://bucket1/dir/object1 --disable-encode-slash
         生成oss://bucket1/dir/object1的签名url, 对path中的'/'不进行编码
+    
+    ossutil sign oss://bucket1/object1  --payer requester
+        生成oss://bucket1/dir/object1的签名url, 使用访问者付费模式
 `,
 }
 
@@ -55,7 +58,7 @@ var specEnglishSignurl = SpecText{
 	paramText: "cloud_url [options]",
 
 	syntaxText: ` 
-    ossutil sign cloud_url [--timeout t] [--version-id versionId] [--trafic-limit limitSpeed] [--disable-encode-slash]
+    ossutil sign cloud_url [--timeout t] [--version-id versionId] [--trafic-limit limitSpeed] [--disable-encode-slash] [--payer requester]
 `,
 
 	detailHelpText: ` 
@@ -70,7 +73,7 @@ var specEnglishSignurl = SpecText{
 
 Usage:
 
-    ossutil sign oss://bucket/object [--timeout t] [--version-id versionId] [--trafic-limit limitSpeed] [--payer requester] [--disable-encode-slash]
+    ossutil sign oss://bucket/object [--timeout t] [--version-id versionId] [--trafic-limit limitSpeed] [--disable-encode-slash] [--payer requester]
 `,
 
 	sampleText: ` 

@@ -1701,9 +1701,9 @@ func (cc *CopyCommand) getFileListStatistic(dpath string) error {
 			return nil
 		}
 
+		realFileSize := f.Size()
 		dpath = filepath.Clean(dpath)
 		fpath = filepath.Clean(fpath)
-
 		fileName, err := filepath.Rel(dpath, fpath)
 		if err != nil {
 			return fmt.Errorf("list file error: %s, info: %s", fpath, err.Error())
@@ -1720,10 +1720,21 @@ func (cc *CopyCommand) getFileListStatistic(dpath string) error {
 			return nil
 		}
 
-		if cc.cpOption.enableSymlinkDir && (f.Mode()&os.ModeSymlink) != 0 {
+		// link file or link dir
+		if f.Mode()&os.ModeSymlink != 0 {
 			// there is difference between os.Stat and os.Lstat in filepath.Walk
 			realInfo, err := os.Stat(fpath)
-			if err == nil && realInfo.IsDir() {
+			if err != nil {
+				return err
+			}
+
+			if realInfo.IsDir() {
+				realFileSize = 0
+			} else {
+				realFileSize = realInfo.Size()
+			}
+
+			if cc.cpOption.enableSymlinkDir && realInfo.IsDir() {
 				// it's symlink dir
 				// if linkDir has suffix os.PathSeparator,os.Lstat determine it is a dir
 				if !strings.HasSuffix(name, string(os.PathSeparator)) {
@@ -1733,14 +1744,9 @@ func (cc *CopyCommand) getFileListStatistic(dpath string) error {
 				symlinkDiretorys = append(symlinkDiretorys, linkDir)
 				return nil
 			}
-
-			if err != nil {
-				return err
-			}
 		}
-
 		if doesSingleFileMatchPatterns(f.Name(), cc.cpOption.filters) {
-			cc.monitor.updateScanSizeNum(f.Size(), 1)
+			cc.monitor.updateScanSizeNum(realFileSize, 1)
 		}
 		return nil
 	}
@@ -1855,7 +1861,11 @@ func (cc *CopyCommand) getFileList(dpath string, chFiles chan<- fileInfoType) er
 		if cc.cpOption.enableSymlinkDir && (f.Mode()&os.ModeSymlink) != 0 {
 			// there is difference between os.Stat and os.Lstat in filepath.Walk
 			realInfo, err := os.Stat(fpath)
-			if err == nil && realInfo.IsDir() {
+			if err != nil {
+				return err
+			}
+
+			if realInfo.IsDir() {
 				// it's symlink dir
 				// if linkDir has suffix os.PathSeparator,os.Lstat determine it is a dir
 				if !strings.HasSuffix(name, string(os.PathSeparator)) {
@@ -1864,10 +1874,6 @@ func (cc *CopyCommand) getFileList(dpath string, chFiles chan<- fileInfoType) er
 				linkDir := name + fileName + string(os.PathSeparator)
 				symlinkDiretorys = append(symlinkDiretorys, linkDir)
 				return nil
-			}
-
-			if err != nil {
-				return err
 			}
 		}
 
