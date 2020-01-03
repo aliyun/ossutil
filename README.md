@@ -15,7 +15,7 @@
 - The current version does not support bucket management. The feature will be available in future versions.
 
 ## Version
-- Current version: v1.6.9
+- Current version: v1.6.10
 
 ## Run environment
 - Linux
