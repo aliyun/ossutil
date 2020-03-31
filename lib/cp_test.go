@@ -4459,3 +4459,161 @@ func (s *OssutilCommandSuite) TestUploadSymlinkFileProgressPrecise(c *C) {
 	os.RemoveAll(dirName)
 	s.removeBucket(bucketName, true, c)
 }
+
+func (s *OssutilCommandSuite) TestDownLoadWithoutDisableIgnoreError(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(12)
+	s.putBucket(bucketName, c)
+
+	// file under dir
+	testFileName := "ossutil_test_file" + randStr(5)
+	data := randStr(100)
+	s.createFile(testFileName, data, c)
+
+	// put object1, standard
+	bucketStr := CloudURLToString(bucketName, "object1")
+	args := []string{testFileName, bucketStr}
+	cmdline := []string{"ossutil", "cp", testFileName, bucketStr, "-f", "--meta", "X-oss-Storage-Class:Standard"}
+	_, err := s.rawCPWithFilter(args, false, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "X-oss-Storage-Class:Standard", "")
+	c.Assert(err, IsNil)
+
+	// put object2, Archive
+	bucketStr = CloudURLToString(bucketName, "object2")
+	args = []string{testFileName, bucketStr}
+	cmdline = []string{"ossutil", "cp", testFileName, bucketStr, "-f", "--meta", "X-oss-Storage-Class:Archive"}
+	_, err = s.rawCPWithFilter(args, false, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "X-oss-Storage-Class:Archive", "")
+	c.Assert(err, IsNil)
+
+	// put object3, standard
+	bucketStr = CloudURLToString(bucketName, "object3")
+	args = []string{testFileName, bucketStr}
+	cmdline = []string{"ossutil", "cp", testFileName, bucketStr, "-f", "--meta", "X-oss-Storage-Class:Standard"}
+	_, err = s.rawCPWithFilter(args, false, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "X-oss-Storage-Class:Standard", "")
+	c.Assert(err, IsNil)
+
+	//down dir name
+	dirName := "ossutil_test_dir_" + randStr(5)
+	err = os.MkdirAll(dirName, 0755)
+	c.Assert(err, IsNil)
+
+	// downloas without disable-ignore-error
+	cpArgs := []string{CloudURLToString(bucketName, ""), dirName}
+	str := ""
+	cpDir := CheckpointDir
+	routines := 1
+	recursive := true
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+		"checkpointDir":   &cpDir,
+		"routines":        &routines,
+		"recursive":       &recursive,
+	}
+
+	// download
+	_, err = cm.RunCommand("cp", cpArgs, options)
+	c.Assert(err, IsNil)
+
+	// check,success download 2 file
+	// exist
+	filePath := dirName + string(os.PathSeparator) + "object1"
+	strObject := s.readFile(filePath, c)
+	c.Assert(len(strObject) > 0, Equals, true)
+	os.Remove(filePath)
+
+	// not exist
+	filePath = dirName + string(os.PathSeparator) + "object2"
+	_, err = os.Stat(filePath)
+	c.Assert(err, NotNil)
+
+	// exist
+	filePath = dirName + string(os.PathSeparator) + "object3"
+	strObject = s.readFile(filePath, c)
+	c.Assert(len(strObject) > 0, Equals, true)
+	os.Remove(filePath)
+
+	os.Remove(testFileName)
+	os.RemoveAll(dirName)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestDownLoadWithDisableIgnoreError(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(12)
+	s.putBucket(bucketName, c)
+
+	// file under dir
+	testFileName := "ossutil_test_file" + randStr(5)
+	data := randStr(100)
+	s.createFile(testFileName, data, c)
+
+	// put object1, standard
+	bucketStr := CloudURLToString(bucketName, "object1")
+	args := []string{testFileName, bucketStr}
+	cmdline := []string{"ossutil", "cp", testFileName, bucketStr, "-f", "--meta", "X-oss-Storage-Class:Standard"}
+	_, err := s.rawCPWithFilter(args, false, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "X-oss-Storage-Class:Standard", "")
+	c.Assert(err, IsNil)
+
+	// put object2, Archive
+	bucketStr = CloudURLToString(bucketName, "object2")
+	args = []string{testFileName, bucketStr}
+	cmdline = []string{"ossutil", "cp", testFileName, bucketStr, "-f", "--meta", "X-oss-Storage-Class:Archive"}
+	_, err = s.rawCPWithFilter(args, false, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "X-oss-Storage-Class:Archive", "")
+	c.Assert(err, IsNil)
+
+	// put object3, standard
+	bucketStr = CloudURLToString(bucketName, "object3")
+	args = []string{testFileName, bucketStr}
+	cmdline = []string{"ossutil", "cp", testFileName, bucketStr, "-f", "--meta", "X-oss-Storage-Class:Standard"}
+	_, err = s.rawCPWithFilter(args, false, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "X-oss-Storage-Class:Standard", "")
+	c.Assert(err, IsNil)
+
+	//down dir name
+	dirName := "ossutil_test_dir_" + randStr(5)
+	err = os.MkdirAll(dirName, 0755)
+	c.Assert(err, IsNil)
+
+	// downloas disable-ignore-error
+	cpArgs := []string{CloudURLToString(bucketName, ""), dirName}
+	str := ""
+	cpDir := CheckpointDir
+	routines := 1
+	recursive := true
+	disableIgnoreError := true
+	options := OptionMapType{
+		"endpoint":           &str,
+		"accessKeyID":        &str,
+		"accessKeySecret":    &str,
+		"configFile":         &configFile,
+		"checkpointDir":      &cpDir,
+		"routines":           &routines,
+		"recursive":          &recursive,
+		"disableIgnoreError": &disableIgnoreError,
+	}
+
+	// download
+	_, err = cm.RunCommand("cp", cpArgs, options)
+	c.Assert(err, NotNil)
+
+	// check,success download 2 file
+	// exist
+	filePath := dirName + string(os.PathSeparator) + "object1"
+	strObject := s.readFile(filePath, c)
+	c.Assert(len(strObject) > 0, Equals, true)
+	os.Remove(filePath)
+
+	// not exist
+	filePath = dirName + string(os.PathSeparator) + "object2"
+	_, err = os.Stat(filePath)
+	c.Assert(err, NotNil)
+
+	// not exist
+	filePath = dirName + string(os.PathSeparator) + "object3"
+	strObject = s.readFile(filePath, c)
+	c.Assert(len(strObject) > 0, Equals, true)
+	os.Remove(filePath)
+
+	os.Remove(testFileName)
+	os.RemoveAll(dirName)
+	s.removeBucket(bucketName, true, c)
+}

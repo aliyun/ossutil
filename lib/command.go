@@ -5,6 +5,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -597,6 +598,11 @@ func (cmd *Command) report(msg string, err error, option *batchOptionType) {
 
 func (cmd *Command) filterError(err error, option *batchOptionType) bool {
 	if err == nil {
+		return false
+	}
+
+	errorTypeName := reflect.TypeOf(err).String()
+	if !strings.Contains(errorTypeName, "ObjectError") {
 		return false
 	}
 

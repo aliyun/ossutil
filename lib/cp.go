@@ -158,9 +158,9 @@ var specChineseCopy = SpecText{
 	paramText: "src_url dest_url [options]",
 
 	syntaxText: ` 
-    ossutil cp file_url cloud_url  [-r] [-f] [-u] [--enable-symlink-dir] [--disable-all-symlink] [--only-current-dir] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--snapshot-path=sdir] [--payer requester]
-    ossutil cp cloud_url file_url  [-r] [-f] [-u] [--only-current-dir] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--range=x-y] [--payer requester] [--version-id versionId]
-    ossutil cp cloud_url cloud_url [-r] [-f] [-u] [--only-current-dir] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--payer requester] [--version-id versionId]
+    ossutil cp file_url cloud_url  [-r] [-f] [-u] [--enable-symlink-dir] [--disable-all-symlink] [--disable-ignore-error] [--only-current-dir] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--snapshot-path=sdir] [--payer requester]
+    ossutil cp cloud_url file_url  [-r] [-f] [-u] [--only-current-dir] [--disable-ignore-error] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--range=x-y] [--payer requester] [--version-id versionId]
+    ossutil cp cloud_url cloud_url [-r] [-f] [-u] [--only-current-dir] [--disable-ignore-error] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--payer requester] [--version-id versionId]
 `,
 
 	detailHelpText: ` 
@@ -663,9 +663,9 @@ var specEnglishCopy = SpecText{
 	paramText: "src_url dest_url [options]",
 
 	syntaxText: ` 
-    ossutil cp file_url cloud_url  [-r] [-f] [-u] [--enable-symlink-dir] [--disable-all-symlink] [--only-current-dir] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--snapshot-path=sdir] [--payer requester]
-    ossutil cp cloud_url file_url  [-r] [-f] [-u] [--only-current-dir] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--range=x-y] [--payer requester]
-    ossutil cp cloud_url cloud_url [-r] [-f] [-u] [--only-current-dir] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--payer requester]
+    ossutil cp file_url cloud_url  [-r] [-f] [-u] [--enable-symlink-dir] [--disable-all-symlink] [--disable-ignore-error] [--only-current-dir] [--output-dir=odir] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--snapshot-path=sdir] [--payer requester]
+    ossutil cp cloud_url file_url  [-r] [-f] [-u] [--only-current-dir] [--output-dir=odir] [--disable-ignore-error] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--range=x-y] [--payer requester]
+    ossutil cp cloud_url cloud_url [-r] [-f] [-u] [--only-current-dir] [--output-dir=odir] [--disable-ignore-error] [--bigfile-threshold=size] [--checkpoint-dir=cdir] [--payer requester]
 `,
 
 	detailHelpText: ` 
@@ -1262,6 +1262,7 @@ var copyCommand = CopyCommand{
 			OptionOnlyCurrentDir,
 			OptionDisableDirObject,
 			OptionDisableAllSymlink,
+			OptionDisableIgnoreError,
 		},
 	},
 }
@@ -1290,7 +1291,8 @@ func (cc *CopyCommand) RunCommand() error {
 	cc.cpOption.routines, _ = GetInt(OptionRoutines, cc.command.options)
 	cc.cpOption.ctnu = false
 	if cc.cpOption.recursive {
-		cc.cpOption.ctnu = true
+		disableIgnoreError, _ := GetBool(OptionDisableIgnoreError, cc.command.options)
+		cc.cpOption.ctnu = !disableIgnoreError
 	}
 	outputDir, _ := GetString(OptionOutputDir, cc.command.options)
 	cc.cpOption.snapshotPath, _ = GetString(OptionSnapshotPath, cc.command.options)
@@ -1386,7 +1388,7 @@ func (cc *CopyCommand) RunCommand() error {
 	}
 
 	// init reporter
-	if cc.cpOption.reporter, err = GetReporter(cc.cpOption.ctnu, outputDir, commandLine); err != nil {
+	if cc.cpOption.reporter, err = GetReporter(cc.cpOption.recursive, outputDir, commandLine); err != nil {
 		return err
 	}
 
@@ -2685,7 +2687,6 @@ func (cc *CopyCommand) parseRange(str string, size int64) (int64, error) {
 		}
 		return e - s + 1, nil
 	}
-	return size, nil
 }
 
 func (cc *CopyCommand) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, chObjects chan<- objectInfoType, chError chan<- error) {

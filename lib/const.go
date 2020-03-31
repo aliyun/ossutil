@@ -79,6 +79,7 @@ const (
 	OptionDisableDirObject           = "disableDirObject"
 	OptionRedundancyType             = "redundancyType"
 	OptionDisableAllSymlink          = "disableAllSymlink"
+	OptionDisableIgnoreError         = "disableIgnoreError"
 )
 
 // the elements show in stat object

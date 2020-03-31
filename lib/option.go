@@ -205,6 +205,9 @@ var OptionMap = map[string]Option{
 	OptionDisableAllSymlink: Option{"", "--disable-all-symlink", "", OptionTypeFlagTrue, "", "",
 		"表示不允许上传目录下的链接文件以及链接目录, 缺省值为false",
 		"specifies that uploading of symlink files and symlink directories under the directory is not allowed, the default value is false."},
+	OptionDisableIgnoreError: Option{"", "--disable-ignore-error", "", OptionTypeFlagTrue, "", "",
+		"批量操作时候不忽略错误, 缺省值为false",
+		"specifies that do not ignore errors during batch cp, default value is false"},
 }
 
 func (T *Option) getHelp(language string) string {
@@ -362,7 +365,6 @@ func GetInt(name string, options OptionMapType) (int64, error) {
 	} else {
 		return 0, fmt.Errorf("There is no option for %s", name)
 	}
-	return 0, nil
 }
 
 // GetString is used to get string option from option map parsed by ParseArgOptions
