@@ -11,13 +11,13 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
-	uuid "github.com/satori/go.uuid"
 )
 
 const (
@@ -411,7 +411,7 @@ func (s *StatBandWidth) SetMaxSpeed(ms float64) {
 	s.MaxSpeed = ms
 }
 
-func (s *StatBandWidth) GetStat() StatBandWidth {
+func (s *StatBandWidth) GetStat() *StatBandWidth {
 	var rs StatBandWidth
 	s.Mu.Lock()
 	defer s.Mu.Unlock()
@@ -419,7 +419,7 @@ func (s *StatBandWidth) GetStat() StatBandWidth {
 	rs.StartTick = s.StartTick
 	rs.TotalBytes = atomic.LoadInt64(&s.TotalBytes)
 	rs.MaxSpeed = s.MaxSpeed
-	return rs
+	return &rs
 }
 
 func (s *StatBandWidth) ProgressChanged(event *oss.ProgressEvent) {
@@ -514,9 +514,7 @@ func (pc *ProbeCommand) RunCommand() error {
 func (pc *ProbeCommand) PutObject(bucket *oss.Bucket, st *StatBandWidth, reader io.Reader) {
 	var options []oss.Option
 	options = append(options, oss.Progress(st))
-
-	uniqId, _ := uuid.NewV4()
-	uniqKey := uniqId.String()
+	uniqKey := strconv.FormatInt(time.Now().UnixNano(), 10) + "-" + randStr(10)
 	objectName := objectPrefex + uniqKey
 	err := bucket.PutObject(objectName, reader, options...)
 	if err != nil && !strings.Contains(err.Error(), "ossutil probe closed") {
@@ -597,8 +595,8 @@ func (pc *ProbeCommand) DetectBandWidth() error {
 
 	// ignore the first max speed
 	bDiscarded := false
-	var oldStat StatBandWidth
-	var nowStat StatBandWidth
+	var oldStat *StatBandWidth
+	var nowStat *StatBandWidth
 
 	oldStat = statBandwidth.GetStat()
 	for nowParallel <= 2*numCpu {
@@ -855,8 +853,7 @@ func (pc *ProbeCommand) probeDownloadWithParameter() error {
 	var bDeleteObject = false
 	srcURL.bucket = pc.pbOption.bucketName
 	if pc.pbOption.objectName == "" {
-		uniqId, _ := uuid.NewV4()
-		uniqKey := uniqId.String()
+		uniqKey := strconv.FormatInt(time.Now().UnixNano(), 10) + "-" + randStr(10)
 		objectName := objectPrefex + uniqKey
 		err := pc.prepareRandomObject(objectName)
 		if err != nil {
@@ -1137,9 +1134,7 @@ func (pc *ProbeCommand) probeUpload() error {
 		if err != nil {
 			return fmt.Errorf("probeUpload errro,os.Getwd error:%s", err.Error())
 		}
-
-		uniqId, _ := uuid.NewV4()
-		uniqKey := uniqId.String()
+		uniqKey := strconv.FormatInt(time.Now().UnixNano(), 10) + "-" + randStr(10)
 		tempName := objectPrefex + uniqKey
 		srcFileName = currentDir + string(os.PathSeparator) + tempName
 
@@ -1175,8 +1170,7 @@ func (pc *ProbeCommand) probeUpload() error {
 
 	var bDeleteObject = false
 	if objectName == "" {
-		uniqId, _ := uuid.NewV4()
-		uniqKey := uniqId.String()
+		uniqKey := strconv.FormatInt(time.Now().UnixNano(), 10) + "-" + randStr(10)
 		objectName = objectPrefex + uniqKey
 		bDeleteObject = true
 	} else {
