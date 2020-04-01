@@ -4499,7 +4499,7 @@ func (s *OssutilCommandSuite) TestDownLoadWithoutDisableIgnoreError(c *C) {
 	cpArgs := []string{CloudURLToString(bucketName, ""), dirName}
 	str := ""
 	cpDir := CheckpointDir
-	routines := 1
+	routines := strconv.Itoa(1)
 	recursive := true
 	options := OptionMapType{
 		"endpoint":        &str,
@@ -4577,7 +4577,7 @@ func (s *OssutilCommandSuite) TestDownLoadWithDisableIgnoreError(c *C) {
 	cpArgs := []string{CloudURLToString(bucketName, ""), dirName}
 	str := ""
 	cpDir := CheckpointDir
-	routines := 1
+	routines := strconv.Itoa(1)
 	recursive := true
 	disableIgnoreError := true
 	options := OptionMapType{
@@ -4595,7 +4595,7 @@ func (s *OssutilCommandSuite) TestDownLoadWithDisableIgnoreError(c *C) {
 	_, err = cm.RunCommand("cp", cpArgs, options)
 	c.Assert(err, NotNil)
 
-	// check,success download 2 file
+	// check,success download 1 file
 	// exist
 	filePath := dirName + string(os.PathSeparator) + "object1"
 	strObject := s.readFile(filePath, c)
@@ -4609,11 +4609,243 @@ func (s *OssutilCommandSuite) TestDownLoadWithDisableIgnoreError(c *C) {
 
 	// not exist
 	filePath = dirName + string(os.PathSeparator) + "object3"
-	strObject = s.readFile(filePath, c)
-	c.Assert(len(strObject) > 0, Equals, true)
-	os.Remove(filePath)
+	_, err = os.Stat(filePath)
+	c.Assert(err, NotNil)
 
 	os.Remove(testFileName)
 	os.RemoveAll(dirName)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestCpWithTaggingError(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(12)
+	s.putBucket(bucketName, c)
+
+	// create file
+	testFileName := "ossutil_test_file" + randStr(5)
+	data := randStr(100)
+	s.createFile(testFileName, data, c)
+
+	// upload with tagging
+	cpArgs := []string{testFileName, CloudURLToString(bucketName, "")}
+	str := ""
+	cpDir := CheckpointDir
+	routines := strconv.Itoa(Routines)
+	recursive := false
+
+	// invalid format 1
+	tagging := "tagA=A&&tagb=B"
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+		"checkpointDir":   &cpDir,
+		"routines":        &routines,
+		"recursive":       &recursive,
+		"tagging":         &tagging,
+	}
+
+	// upload
+	_, err := cm.RunCommand("cp", cpArgs, options)
+	c.Assert(err, NotNil)
+
+	// invalid format 2
+	tagging = "tagA=A&"
+	_, err = cm.RunCommand("cp", cpArgs, options)
+	c.Assert(err, NotNil)
+
+	// invalid format 3
+	tagging = "tagA==A"
+	_, err = cm.RunCommand("cp", cpArgs, options)
+	c.Assert(err, NotNil)
+
+	// invalid format 4
+	tagging = "tagA=A="
+	_, err = cm.RunCommand("cp", cpArgs, options)
+	c.Assert(err, NotNil)
+
+	os.Remove(testFileName)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestUploadFileWithTagging(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(12)
+	s.putBucket(bucketName, c)
+
+	// create file
+	testFileName := "ossutil_test_file" + randStr(5)
+	data := randStr(100)
+	s.createFile(testFileName, data, c)
+
+	// upload with tagging
+	cpArgs := []string{testFileName, CloudURLToString(bucketName, "")}
+	str := ""
+	cpDir := CheckpointDir
+	routines := strconv.Itoa(Routines)
+	recursive := false
+
+	tagging := "tagA=A&tagb=B&tagc=C"
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+		"checkpointDir":   &cpDir,
+		"routines":        &routines,
+		"recursive":       &recursive,
+		"tagging":         &tagging,
+	}
+
+	// upload
+	_, err := cm.RunCommand("cp", cpArgs, options)
+	c.Assert(err, IsNil)
+
+	objectStat := s.getStat(bucketName, testFileName, c)
+	c.Assert(objectStat["X-Oss-Tagging-Count"], Equals, "3")
+
+	os.Remove(testFileName)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestCopyFileWithoutTagging(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(12)
+	s.putBucket(bucketName, c)
+
+	// create file
+	testFileName := "ossutil_test_file" + randStr(5)
+	data := randStr(100)
+	s.createFile(testFileName, data, c)
+
+	// upload with tagging
+	cpArgs := []string{testFileName, CloudURLToString(bucketName, "")}
+	str := ""
+	cpDir := CheckpointDir
+	routines := strconv.Itoa(Routines)
+	recursive := false
+	tagging := "tagA=A&tagb=B&tagc=C"
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+		"checkpointDir":   &cpDir,
+		"routines":        &routines,
+		"recursive":       &recursive,
+		"tagging":         &tagging,
+	}
+
+	// upload
+	_, err := cm.RunCommand("cp", cpArgs, options)
+	c.Assert(err, IsNil)
+	objectStat := s.getStat(bucketName, testFileName, c)
+	c.Assert(objectStat["X-Oss-Tagging-Count"], Equals, "3")
+
+	// then copy file without tagging
+	destFileName := testFileName + "dest"
+	srcObjectURL := CloudURLToString(bucketName, testFileName)
+	destObjectURL := CloudURLToString(bucketName, destFileName)
+	cpArgs = []string{srcObjectURL, destObjectURL}
+	delete(options, "tagging")
+
+	_, err = cm.RunCommand("cp", cpArgs, options)
+	c.Assert(err, IsNil)
+
+	// check dest object, tagging not exist
+	objectStat = s.getStat(bucketName, destFileName, c)
+	_, ok := objectStat["X-Oss-Tagging-Count"]
+	c.Assert(ok, Equals, false)
+
+	os.Remove(testFileName)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestCopyFileWithTagging(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(12)
+	s.putBucket(bucketName, c)
+
+	// create file
+	testFileName := "ossutil_test_file" + randStr(5)
+	data := randStr(100)
+	s.createFile(testFileName, data, c)
+
+	// upload without tagging
+	cpArgs := []string{testFileName, CloudURLToString(bucketName, "")}
+	str := ""
+	cpDir := CheckpointDir
+	routines := strconv.Itoa(Routines)
+	recursive := false
+
+	tagging := "tagA=A&tagb=B&tagc=C"
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+		"checkpointDir":   &cpDir,
+		"routines":        &routines,
+		"recursive":       &recursive,
+	}
+
+	// upload
+	_, err := cm.RunCommand("cp", cpArgs, options)
+	c.Assert(err, IsNil)
+
+	// then copy file with tagging
+	destFileName := testFileName + "dest"
+	srcObjectURL := CloudURLToString(bucketName, testFileName)
+	destObjectURL := CloudURLToString(bucketName, destFileName)
+	cpArgs = []string{srcObjectURL, destObjectURL}
+
+	options["tagging"] = &tagging
+	_, err = cm.RunCommand("cp", cpArgs, options)
+	c.Assert(err, IsNil)
+
+	// check dest object, tagging exist
+	objectStat := s.getStat(bucketName, destFileName, c)
+	c.Assert(objectStat["X-Oss-Tagging-Count"], Equals, "3")
+	os.Remove(testFileName)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestUploadMultiFileFileWithTagging(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(12)
+	s.putBucket(bucketName, c)
+
+	// create file
+	fileLen := int64(2 * 1024 * 1024)
+	testFileName := "ossutil_test_file" + randStr(5)
+	data := randStr(int(fileLen))
+	s.createFile(testFileName, data, c)
+
+	// multipart upload with tagging
+	cpArgs := []string{testFileName, CloudURLToString(bucketName, "")}
+	str := ""
+	cpDir := CheckpointDir
+	routines := strconv.Itoa(Routines)
+	recursive := false
+	threshold := strconv.FormatInt(fileLen/2, 10)
+	tagging := "tagA=A&tagb=B&tagc=C"
+	options := OptionMapType{
+		"endpoint":         &str,
+		"accessKeyID":      &str,
+		"accessKeySecret":  &str,
+		"configFile":       &configFile,
+		"checkpointDir":    &cpDir,
+		"routines":         &routines,
+		"recursive":        &recursive,
+		"tagging":          &tagging,
+		"bigfileThreshold": &threshold,
+	}
+
+	// upload
+	_, err := cm.RunCommand("cp", cpArgs, options)
+	c.Assert(err, IsNil)
+
+	objectStat := s.getStat(bucketName, testFileName, c)
+	c.Assert(objectStat["X-Oss-Tagging-Count"], Equals, "3")
+	c.Assert(objectStat["X-Oss-Object-Type"], Equals, "Multipart")
+
+	os.Remove(testFileName)
 	s.removeBucket(bucketName, true, c)
 }

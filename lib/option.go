@@ -208,6 +208,9 @@ var OptionMap = map[string]Option{
 	OptionDisableIgnoreError: Option{"", "--disable-ignore-error", "", OptionTypeFlagTrue, "", "",
 		"批量操作时候不忽略错误, 缺省值为false",
 		"specifies that do not ignore errors during batch cp, default value is false"},
+	OptionTagging: Option{"", "--tagging", "", OptionTypeString, "", "",
+		"设置object的tagging,取值格式如[\"TagA=A&TagB=B...\"]",
+		"Set object tagging, value format is [\"TagA=A&TagB=B...]\""},
 }
 
 func (T *Option) getHelp(language string) string {

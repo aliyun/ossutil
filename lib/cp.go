@@ -63,6 +63,7 @@ type copyOptionType struct {
 	disableDirObject  bool
 	resumeProgress    *OssResumeProgressListener
 	disableAllSymlink bool
+	tagging           string
 }
 
 type filterOptionType struct {
@@ -250,6 +251,11 @@ var specChineseCopy = SpecText{
     注意：header不区分大小写，但value区分大小写。设置后将用指定的meta代替原来的meta。没有指定的
     HTTP HEADER将保留，没有指定的user meta将会被删除。
 
+--tagging选项
+    该选项在上传文件的同时设置object的tagging信息。当指定--recursive选项时，会设置所有上传的
+    objects的tagging信息。
+    如果一次设置多个tagging,必须使用双引号,比如 "tagA=A&tagB=B"
+    
 --acl选项
 
     该选项在上传文件的同时设置object的acl信息。当指定--recursive选项时，会设置所有上传的
@@ -527,6 +533,9 @@ var specChineseCopy = SpecText{
     ossutil cp local_dir oss://bucket1/b -r --disable-all-symlink
     忽略所有的链接子文件以及链接子目录
 
+    ossutil cp local_dir oss://bucket1/b --tagging "tagA=A&tagB=B" -r
+    上传的同时设置两个tagging,key分别为tagA和tagB,value分别为A和B
+
     2) 从oss下载object
     假设oss上有下列objects：
         oss://bucket/abcdir1/a
@@ -653,6 +662,9 @@ var specChineseCopy = SpecText{
 
     ossutil cp oss://bucket/dir/ oss://bucket1/ -r --only-current-dir
     只copy当前目录下的object, 忽略其他子目录
+
+    ossutil cp oss://bucket/object1 oss://bucket/object2 --tagging "tagA=A&tagB=B"
+    copy的同时设置两个tagging,key分别为tagA和tagB,value分别为A和B
 `,
 }
 
@@ -776,6 +788,12 @@ var specEnglishCopy = SpecText{
     Note: headers are case-insensitive, but value are case-sensitive. After setting, origin meta will be
     replaced with specified meta. HTTP HEADER will be reserved if no speified value. User meta will be
     deleted if no specified value.
+
+--tagging option
+
+    This option will set the specified objects' tagging data. If --recursive option is specified, 
+    ossutil will set tagging for all uploaded objects. 
+    If you set more than one tagging at a time, you must use double quotes, such as "tagA=A&tagB=B"
 
 --acl option
 
@@ -1083,6 +1101,9 @@ Usage:
     ossutil cp local_dir oss://bucket1/b -r --disable-all-symlink
     uploading of symlink files and symlink directories under the local_dir is not allowed 
 
+    ossutil cp local_dir oss://bucket/b --tagging "tagA=A&tagB=B"
+    Set two taggings when uploading, the key is tagA and tagB, and the value is A and B
+
     2) download from oss
     Suppose there are following objects in oss:
         oss://bucket/abcdir1/a
@@ -1205,6 +1226,9 @@ Usage:
 
     ossutil cp oss://bucket/dir/ oss://bucket1/ -r --only-current-dir
     Copy only the object in the current directory, ignoring other subdirectories
+
+    ossutil cp oss://bucket/object1 oss://bucket/object2 --tagging "tagA=A&tagB=B"
+    Set two taggings when copying, the key is tagA and tagB, and the value is A and B
 `,
 }
 
@@ -1263,6 +1287,7 @@ var copyCommand = CopyCommand{
 			OptionDisableDirObject,
 			OptionDisableAllSymlink,
 			OptionDisableIgnoreError,
+			OptionTagging,
 		},
 	},
 }
@@ -1299,6 +1324,7 @@ func (cc *CopyCommand) RunCommand() error {
 	cc.cpOption.vrange, _ = GetString(OptionRange, cc.command.options)
 	cc.cpOption.encodingType, _ = GetString(OptionEncodingType, cc.command.options)
 	cc.cpOption.meta, _ = GetString(OptionMeta, cc.command.options)
+	cc.cpOption.tagging, _ = GetString(OptionTagging, cc.command.options)
 	acl, _ := GetString(OptionACL, cc.command.options)
 	payer, _ := GetString(OptionRequestPayer, cc.command.options)
 	cc.cpOption.partitionInfo, _ = GetString(OptionPartitionDownload, cc.command.options)
@@ -1361,6 +1387,18 @@ func (cc *CopyCommand) RunCommand() error {
 			return err
 		}
 		cc.cpOption.options = append(cc.cpOption.options, topts...)
+	}
+
+	if cc.cpOption.tagging != "" {
+		if opType == operationTypeGet {
+			return fmt.Errorf("No need to set tagging for download")
+		}
+		tags, err := cc.command.getOSSTagging(cc.cpOption.tagging)
+		if err != nil {
+			return err
+		}
+		tagging := oss.Tagging{Tags: tags}
+		cc.cpOption.options = append(cc.cpOption.options, oss.SetTagging(tagging))
 	}
 
 	if acl != "" {
@@ -2931,6 +2969,7 @@ func (cc *CopyCommand) ossCopyObjectRetry(bucket *oss.Bucket, objectName, destBu
 	retryTimes, _ := GetInt(OptionRetryTimes, cc.command.options)
 	options := cc.cpOption.options
 	options = append(options, oss.MetadataDirective(oss.MetaReplace))
+	options = append(options, oss.TaggingDirective(oss.TaggingReplace))
 	for i := 1; ; i++ {
 		if i > 1 {
 			time.Sleep(time.Duration(1) * time.Second)

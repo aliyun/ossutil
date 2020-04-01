@@ -80,6 +80,7 @@ const (
 	OptionRedundancyType             = "redundancyType"
 	OptionDisableAllSymlink          = "disableAllSymlink"
 	OptionDisableIgnoreError         = "disableIgnoreError"
+	OptionTagging                    = "tagging"
 )
 
 // the elements show in stat object

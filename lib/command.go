@@ -635,6 +635,28 @@ func (cmd *Command) getOSSOptions(hopMap map[string]interface{}, headers map[str
 	return options, nil
 }
 
+func (cmd *Command) getOSSTagging(strTagging string) ([]oss.Tag, error) {
+	tags := []oss.Tag{}
+	strKeys := strings.Split(strTagging, "&")
+	for _, v := range strKeys {
+		if v == "" {
+			return tags, fmt.Errorf("tagging value is empty,maybe exist &&")
+		}
+		tagNode := strings.Split(v, "=")
+		if len(tagNode) >= 3 {
+			return tags, fmt.Errorf("tagging value error %s", v)
+		}
+
+		// value maybe empty
+		tagNode = append(tagNode, "")
+		tags = append(tags, oss.Tag{
+			Key:   tagNode[0],
+			Value: tagNode[1],
+		})
+	}
+	return tags, nil
+}
+
 // GetAllCommands returns all commands list
 func GetAllCommands() []interface{} {
 	return []interface{}{
