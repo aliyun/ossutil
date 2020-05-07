@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"os/user"
 	"path/filepath"
 	"reflect"
 	"strconv"
@@ -1596,12 +1595,11 @@ func (s *OssutilCommandSuite) TestNotExistCommand(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestDecideConfigFile(c *C) {
-	usr, _ := user.Current()
 	file := DecideConfigFile("")
-	c.Assert(file, Equals, strings.Replace(DefaultConfigFile, "~", usr.HomeDir, 1))
+	c.Assert(file, Equals, strings.Replace(DefaultConfigFile, "~", currentHomeDir(), 1))
 	input := "~" + string(os.PathSeparator) + "a"
 	file = DecideConfigFile(input)
-	c.Assert(file, Equals, strings.Replace(input, "~", usr.HomeDir, 1))
+	c.Assert(file, Equals, strings.Replace(input, "~", currentHomeDir(), 1))
 }
 
 func (s *OssutilCommandSuite) TestCheckConfig(c *C) {
@@ -1699,8 +1697,7 @@ func (s *OssutilCommandSuite) TestStorageURL(c *C) {
 	c.Assert(cloudURL.bucket, Equals, "abc")
 	c.Assert(cloudURL.object, Equals, "d")
 
-	usr, _ := user.Current()
-	dir := usr.HomeDir
+	dir := currentHomeDir()
 	url := "~" + string(os.PathSeparator) + "test"
 	var fileURL FileURL
 	fileURL.Init(url, "")
