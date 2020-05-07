@@ -2502,8 +2502,8 @@ func (cc *CopyCommand) skipDownload(fileName string, srcModifiedTime time.Time, 
 		}
 	} else {
 		if !cc.cpOption.force {
-			if _, err := os.Stat(fileName); err == nil {
-				if !cc.confirm(fileName) {
+			if fileInfo, err := os.Stat(fileName); err == nil {
+				if fileInfo.IsDir() || !cc.confirm(fileName) {
 					return true
 				}
 			}
