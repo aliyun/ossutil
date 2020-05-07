@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"os"
 	"os/exec"
+	"os/user"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -14,6 +15,26 @@ import (
 
 	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
+
+var sys_name string
+var sys_release string
+var sys_machine string
+
+func init() {
+	sys_name = runtime.GOOS
+	sys_release = "-"
+	sys_machine = runtime.GOARCH
+
+	if out, err := exec.Command("uname", "-s").CombinedOutput(); err == nil {
+		sys_name = string(bytes.TrimSpace(out))
+	}
+	if out, err := exec.Command("uname", "-r").CombinedOutput(); err == nil {
+		sys_release = string(bytes.TrimSpace(out))
+	}
+	if out, err := exec.Command("uname", "-m").CombinedOutput(); err == nil {
+		sys_machine = string(bytes.TrimSpace(out))
+	}
+}
 
 // Output print input string to stdout and add '\n'
 func Output(str string) {
@@ -60,19 +81,7 @@ type sysInfo struct {
 // Get　system info
 // 获取操作系统信息、机器类型
 func getSysInfo() sysInfo {
-	name := runtime.GOOS
-	release := "-"
-	machine := runtime.GOARCH
-	if out, err := exec.Command("uname", "-s").CombinedOutput(); err == nil {
-		name = string(bytes.TrimSpace(out))
-	}
-	if out, err := exec.Command("uname", "-r").CombinedOutput(); err == nil {
-		release = string(bytes.TrimSpace(out))
-	}
-	if out, err := exec.Command("uname", "-m").CombinedOutput(); err == nil {
-		machine = string(bytes.TrimSpace(out))
-	}
-	return sysInfo{name: name, release: release, machine: machine}
+	return sysInfo{name: sys_name, release: sys_release, machine: sys_machine}
 }
 
 func getUserAgent() string {
@@ -493,4 +502,23 @@ func randStr(n int) string {
 		b[i] = letters[r.Intn(len(letters))]
 	}
 	return string(b)
+}
+
+func currentHomeDir() string {
+	homeDir := ""
+	homeDrive := os.Getenv("HOMEDRIVE")
+	homePath := os.Getenv("HOMEPATH")
+	if runtime.GOOS == "windows" && homeDrive != "" && homePath != "" {
+		homeDir = homeDrive + string(os.PathSeparator) + homePath
+	}
+
+	if homeDir != "" {
+		return homeDir
+	}
+
+	usr, _ := user.Current()
+	if usr != nil {
+		homeDir = usr.HomeDir
+	}
+	return homeDir
 }
