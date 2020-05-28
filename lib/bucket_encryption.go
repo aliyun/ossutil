@@ -13,7 +13,7 @@ var specChineseBucketEncryption = SpecText{
 	paramText: "bucket_url [options]",
 
 	syntaxText: ` 
-    ossutil bucket-encryption --method put oss://bucket --sse-algorithm algorithmName [--kms-masterkey-id  keyid]
+    ossutil bucket-encryption --method put oss://bucket --sse-algorithm algorithmName [--kms-masterkey-id  keyid] [--kms-data-encryption SM4]
     ossutil bucket-encryption --method get oss://bucket 
     ossuitl bucket-encryption --method delete oss://bucket
 `,
@@ -21,6 +21,8 @@ var specChineseBucketEncryption = SpecText{
     bucket-encryption命令通过设置method选项值为put、get、delete,可以设置、查询或者删除bucket的encryption配置
     选项--sse-algorithm值只能是KMS、AES256
     当--sse-algorithm选项值为AES256时，不能输入选项--kms-masterkey-id
+    当--sse-algorithm取值为KMS时, --kms-data-encryption可以取值SM4, 指定KMS服务使用SM4加密算法加密
+    
 
 用法:
     该命令有三种用法:
@@ -31,7 +33,7 @@ var specChineseBucketEncryption = SpecText{
     2) ossutil bucket-encryption --method get oss://bucket 
         这个命令查询bucket的encryption配置
 	
-    3)  ossutil bucket-encryption --method delete oss://bucket
+    3) ossutil bucket-encryption --method delete oss://bucket
         这个命令删除bucket的encryption配置
 `,
 	sampleText: ` 
@@ -46,6 +48,9 @@ var specChineseBucketEncryption = SpecText{
 	
     4) 删除bucket的encryption配置
        ossutil bucket-encryption --method delete oss://bucket
+    
+    5) 使用kms服务加密,加密算法为SM4
+       ossutil bucket-encryption --method put oss://bucket --sse-algorithm KMS --kms-data-encryption SM4
 `,
 }
 
@@ -55,7 +60,7 @@ var specEnglishBucketEncryption = SpecText{
 	paramText: "bucket_url [options]",
 
 	syntaxText: ` 
-    ossutil bucket-encryption --method put oss://bucket --sse-algorithm algorithmName [--kms-masterkey-id  keyid]
+    ossutil bucket-encryption --method put oss://bucket --sse-algorithm algorithmName [--kms-masterkey-id  keyid] [--kms-data-encryption SM4]
     ossutil bucket-encryption --method get oss://bucket 
     ossuitl bucket-encryption --method delete oss://bucket
 `,
@@ -63,6 +68,7 @@ var specEnglishBucketEncryption = SpecText{
     bucket-encryption command can set, get and delete the encryption configuration of the oss bucket by set method option value to put, get, delete
     The option --sse-algorithm value can only be KMS, AES256.
     If the --sse-algorithm option value is AES256, you cannot input the option --kms-masterkey-id
+    If the --sse-algorithm is kms, the value of --kms-data-encryption can be SM4, specifying that the KMS service uses SM4 encryption algorithm to encrypt
 Usage:
     There are three usages for this command:
 	
@@ -87,6 +93,9 @@ Usage:
 	
     4) delete bucket encryption configuration
        ossutil bucket-encryption --method delete oss://bucket
+    
+    5) Using kms service encryption, the encryption algorithm is SM4
+       ossutil bucket-encryption --method put oss://bucket --sse-algorithm KMS --kms-data-encryption SM4
 `,
 }
 
@@ -118,6 +127,7 @@ var bucketEncryptionCommand = BucketEncryptionCommand{
 			OptionLogLevel,
 			OptionSSEAlgorithm,
 			OptionKMSMasterKeyID,
+			OptionKMSDataEncryption,
 		},
 	},
 }
@@ -168,6 +178,7 @@ func (bec *BucketEncryptionCommand) RunCommand() error {
 func (bec *BucketEncryptionCommand) PutBucketEncryption() error {
 	strAlgorithm, _ := GetString(OptionSSEAlgorithm, bec.command.options)
 	strKeyId, _ := GetString(OptionKMSMasterKeyID, bec.command.options)
+	strKmsDataEncryption, _ := GetString(OptionKMSDataEncryption, bec.command.options)
 
 	// support sm4 algorithm
 	//if strAlgorithm != string(oss.KMSAlgorithm) && strAlgorithm != string(oss.AESAlgorithm) {
@@ -181,6 +192,7 @@ func (bec *BucketEncryptionCommand) PutBucketEncryption() error {
 	var encryptionRule oss.ServerEncryptionRule
 	encryptionRule.SSEDefault.SSEAlgorithm = strAlgorithm
 	encryptionRule.SSEDefault.KMSMasterKeyID = strKeyId
+	encryptionRule.SSEDefault.KMSDataEncryption = strKmsDataEncryption
 
 	// put bucket encryption
 	client, err := bec.command.ossClient(bec.bucketName)

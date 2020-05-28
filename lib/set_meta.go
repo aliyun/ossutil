@@ -22,6 +22,10 @@ var headerOptionMap = map[string]interface{}{
 	oss.HTTPHeaderOrigin:                       oss.Origin,
 	oss.HTTPHeaderOssStorageClass:              oss.ObjectStorageClass,
 	oss.HTTPHeaderOssServerSideEncryptionKeyID: oss.ServerSideEncryptionKeyID,
+	oss.HTTPHeaderOssServerSideDataEncryption:  oss.ServerSideDataEncryption,
+	oss.HTTPHeaderSSECAlgorithm:                oss.SSECAlgorithm,
+	oss.HTTPHeaderSSECKey:                      oss.SSECKey,
+	oss.HTTPHeaderSSECKeyMd5:                   oss.SSECKeyMd5,
 }
 
 func formatHeaderString(hopMap map[string]interface{}, sep string) string {
