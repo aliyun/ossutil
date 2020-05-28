@@ -4849,3 +4849,103 @@ func (s *OssutilCommandSuite) TestUploadMultiFileFileWithTagging(c *C) {
 	os.Remove(testFileName)
 	s.removeBucket(bucketName, true, c)
 }
+
+// test PutObject with kms sm4
+func (s *OssutilCommandSuite) TestPutObjectWithKmsSm4Encryption(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	object := randStr(12)
+	bucketStr := CloudURLToString(bucketName, object)
+
+	// put object
+	testFileName := "ossutil-test-" + randStr(10)
+	content := randStr(1024)
+	s.createFile(testFileName, content, c)
+
+	// upload files
+	args := []string{testFileName, bucketStr}
+	cmdline := []string{"ossutil", "cp", testFileName, bucketStr, "--meta", "x-oss-server-side-encryption:KMS#x-oss-server-side-data-encryption:SM4"}
+	_, err := s.rawCPWithFilter(args, false, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "x-oss-server-side-encryption:KMS#x-oss-server-side-data-encryption:SM4", "")
+	c.Assert(err, IsNil)
+
+	// stat
+	objectStat := s.getStat(bucketName, object, c)
+	c.Assert(objectStat[oss.HTTPHeaderOssServerSideEncryption], Equals, "KMS")
+	c.Assert(len(objectStat["Etag"]) > 0, Equals, true)
+	c.Assert(objectStat[oss.HTTPHeaderOssServerSideDataEncryption], Equals, "SM4")
+}
+
+// test PutObject with sm4
+func (s *OssutilCommandSuite) TestPutObjectWithSm4Encryption(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	object := randStr(12)
+	bucketStr := CloudURLToString(bucketName, object)
+
+	// put object
+	testFileName := "ossutil-test-" + randStr(10)
+	content := randStr(1024)
+	s.createFile(testFileName, content, c)
+
+	// upload files
+	args := []string{testFileName, bucketStr}
+	cmdline := []string{"ossutil", "cp", testFileName, bucketStr, "--meta", "x-oss-server-side-encryption:SM4"}
+	_, err := s.rawCPWithFilter(args, false, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "x-oss-server-side-encryption:SM4", "")
+	c.Assert(err, IsNil)
+
+	// stat
+	objectStat := s.getStat(bucketName, object, c)
+	c.Assert(objectStat[oss.HTTPHeaderOssServerSideEncryption], Equals, "SM4")
+	c.Assert(len(objectStat["Etag"]) > 0, Equals, true)
+	c.Assert(objectStat[oss.HTTPHeaderOssServerSideDataEncryption], Equals, "")
+}
+
+// test PutObject with KMS
+func (s *OssutilCommandSuite) TestPutObjectWithKmsEncryption(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	object := randStr(12)
+	bucketStr := CloudURLToString(bucketName, object)
+
+	// put object
+	testFileName := "ossutil-test-" + randStr(10)
+	content := randStr(1024)
+	s.createFile(testFileName, content, c)
+
+	// upload files
+	args := []string{testFileName, bucketStr}
+	cmdline := []string{"ossutil", "cp", testFileName, bucketStr, "--meta", "x-oss-server-side-encryption:KMS"}
+	_, err := s.rawCPWithFilter(args, false, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "x-oss-server-side-encryption:KMS", "")
+	c.Assert(err, IsNil)
+
+	// stat
+	objectStat := s.getStat(bucketName, object, c)
+	c.Assert(objectStat[oss.HTTPHeaderOssServerSideEncryption], Equals, "KMS")
+	c.Assert(len(objectStat["Etag"]) > 0, Equals, true)
+	c.Assert(objectStat[oss.HTTPHeaderOssServerSideDataEncryption], Equals, "")
+}
+
+// test PutObject with AES256
+func (s *OssutilCommandSuite) TestPutObjectWithAES256(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	object := randStr(12)
+	bucketStr := CloudURLToString(bucketName, object)
+
+	// put object
+	testFileName := "ossutil-test-" + randStr(10)
+	content := randStr(1024)
+	s.createFile(testFileName, content, c)
+
+	// upload files
+	args := []string{testFileName, bucketStr}
+	cmdline := []string{"ossutil", "cp", testFileName, bucketStr, "--meta", "x-oss-server-side-encryption:AES256"}
+	_, err := s.rawCPWithFilter(args, false, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "x-oss-server-side-encryption:AES256", "")
+	c.Assert(err, IsNil)
+
+	// stat
+	objectStat := s.getStat(bucketName, object, c)
+	c.Assert(objectStat[oss.HTTPHeaderOssServerSideEncryption], Equals, "AES256")
+	c.Assert(len(objectStat["Etag"]) > 0, Equals, true)
+	c.Assert(objectStat[oss.HTTPHeaderOssServerSideDataEncryption], Equals, "")
+}

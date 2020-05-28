@@ -11,9 +11,9 @@ install:
 - go get github.com/syndtr/goleveldb/leveldb
 - go get github.com/satori/go.uuid
 script:
-- cd lib
-- travis_wait 120 go test -v -timeout 120m -covermode=count -coverprofile=coverage.out
-- "$HOME/gopath/bin/goveralls -coverprofile=coverage.out -service=travis-ci" 
+# - cd lib
+# - travis_wait 120 go test -v -timeout 120m -covermode=count -coverprofile=coverage.out
+# - "$HOME/gopath/bin/goveralls -coverprofile=coverage.out -service=travis-ci" 
 env:
   global:
   - secure: YO0OXWMcm0O+VH5xrQ66kKN/346bYnlLuk6hSbsR1Uvkg2OUkAXQVcIxnNkzCjSu2iYW8mvnx20GenjCLphlLK4n7vRBmRMhDm6UbHfi4ivVG7rx9q2Rl6q5Apd+TItafK9mxMaVxY7mSgMEgU4Mq9BMPP3bI7qfIvo5jJlpu6Lzr2PZKqLkVRzf0H+XoOdvKKz/HeneOztcMixhhKdq7IE60YG7lA+US67B43Ztgrw7B/LnieZGYtVqHnVvqc8LCBEuBYlSM1k3uPQZ8e8Un9An6KwpRcj4Ei94guvhN3SKuglVG93EUF2VluS+kuvHKQFsRHDOwU9vzPKUhmJ27HUSC4QC9IduiZ1NhWuCH8+yuaqjmeVmWEZu9XSSYn6/VIxD/DXPDTvfeyni256RatxIQLzgRrcmxzfHpfb7qQRQt9h0sqLOSeVDbyCUaufWZFR7WzPHGMVNEH2Z01zbjb7RTjdPPMP25PPPaNyERe4Udp1ezBuEdtaY3/UYMBxKqQNqZF23zXlJrl2srPZr1tASxBvU+vy7IIJUBVWYrWoPfoAGMMjXb8FhFeT/Ci/pTRnzBEBxL05Sz8T1KYRPWxQUtuFuV5JGcaP3epBSVGyMvI+p8cU2JnJC6d97lM5SAG9cWgevgvL7N1yBojK6w4lfi4kypEuhPGAOSCLhcGc=
