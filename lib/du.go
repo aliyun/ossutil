@@ -5,7 +5,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
-	"sync/atomic"
+	"sync"
 
 	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
@@ -90,6 +90,7 @@ type duSizeOptionType struct {
 	sumObjectSize    int64
 	totalPartCount   int64
 	sumPartSize      int64
+	mutex            sync.Mutex
 }
 
 type DuCommand struct {
@@ -204,7 +205,7 @@ func (duc *DuCommand) RunCommand() error {
 		return err
 	}
 	fmt.Printf("\r                                                                      ")
-	fmt.Printf("\r%-20s%-20d\t%-23s%d\n\n", "total part count:", atomic.LoadInt64(&duc.duOption.totalPartCount), "total part sum size:", atomic.LoadInt64(&duc.duOption.sumPartSize))
+	fmt.Printf("\r%-20s%-20d\t%-23s%d\n\n", "total part count:", duc.duOption.totalPartCount, "total part sum size:", duc.duOption.sumPartSize)
 
 	fmt.Printf("total du size(byte):%d\n", duc.duOption.sumObjectSize+duc.duOption.sumPartSize)
 	return nil
@@ -341,14 +342,14 @@ func (duc *DuCommand) statPartSize(bucket *oss.Bucket, object MultiPartObject) e
 				return err
 			}
 		} else {
-			atomic.AddInt64(&duc.duOption.totalPartCount, int64(len(lpRes.UploadedParts)))
+			duc.duOption.mutex.Lock()
+			duc.duOption.totalPartCount += int64(len(lpRes.UploadedParts))
+			for _, v := range lpRes.UploadedParts {
+				duc.duOption.sumPartSize += int64(v.Size)
+			}
+			fmt.Printf("\rpart count:%d\tpart sum size:%d", duc.duOption.totalPartCount, duc.duOption.sumPartSize)
+			duc.duOption.mutex.Unlock()
 		}
-
-		for _, v := range lpRes.UploadedParts {
-			atomic.AddInt64(&duc.duOption.sumPartSize, int64(v.Size))
-		}
-
-		fmt.Printf("\rpart count:%d\tpart sum size:%d", atomic.LoadInt64(&duc.duOption.totalPartCount), atomic.LoadInt64(&duc.duOption.sumPartSize))
 
 		if lpRes.IsTruncated {
 			partNumberMarker, _ = strconv.Atoi(lpRes.NextPartNumberMarker)
