@@ -82,6 +82,8 @@ const (
 	OptionDisableAllSymlink          = "disableAllSymlink"
 	OptionDisableIgnoreError         = "disableIgnoreError"
 	OptionTagging                    = "tagging"
+	OptionStartTime                  = "startTime"
+	OptionEndTime                    = "endTime"
 )
 
 // the elements show in stat object
@@ -127,7 +129,7 @@ const (
 const (
 	Package                 string = "ossutil"
 	ChannelBuf              int    = 1000
-	Version                 string = "v1.6.14"
+	Version                 string = "v1.6.15"
 	DefaultEndpoint         string = "oss.aliyuncs.com"
 	ChineseLanguage                = "CH"
 	EnglishLanguage                = "EN"

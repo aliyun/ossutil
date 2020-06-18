@@ -697,5 +697,6 @@ func GetAllCommands() []interface{} {
 		&requestPaymentCommand,
 		&objectTagCommand,
 		&bucketInventoryCommand,
+		&revertCommand,
 	}
 }
