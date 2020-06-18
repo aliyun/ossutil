@@ -214,6 +214,12 @@ var OptionMap = map[string]Option{
 	OptionTagging: Option{"", "--tagging", "", OptionTypeString, "", "",
 		"设置object的tagging,取值格式如[\"TagA=A&TagB=B...\"]",
 		"Set object tagging, value format is [\"TagA=A&TagB=B...]\""},
+	OptionStartTime: Option{"", "--start-time", "", OptionTypeInt64, "", "",
+		"起始时间,为linux/Unix系统里面的时间戳,既从1970年1月1日(UTC/GMT的午夜)开始所经过的秒数",
+		"The start time is the timestamp in the Linux/Unix system, that is, the number of seconds that have passed since January 1, 1970 (midnight UTC/GMT)"},
+	OptionEndTime: Option{"", "--end-time", "", OptionTypeInt64, "", "",
+		"结束时间,为linux/Unix系统里面的时间戳,既从1970年1月1日(UTC/GMT的午夜)开始所经过的秒数",
+		"The end time is the timestamp in the Linux/Unix system, that is, the number of seconds that have passed since January 1, 1970 (midnight UTC/GMT)"},
 }
 
 func (T *Option) getHelp(language string) string {
