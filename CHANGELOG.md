@@ -1,3 +1,7 @@
+## 版本号：v1.6.16 日期：2020-07-06
+### 变更内容
+ - 新增: 优化对symlink类型object下载,object size取指向的目标object size
+
 ## 版本号：v1.6.15 日期：2020-06-24
 ### 变更内容
  - 新增: 增加revert-versioning命令
