@@ -1,8 +1,11 @@
+## 版本号：v1.6.18 日期：2020-07-24
+### 变更内容
+ - 修复: 使用oss go sdk v2.1.4重新编译，lifecycle支持输入NoncurrentVersionTransition数组
+
 ## 版本号：v1.6.17 日期：2020-07-11
 ### 变更内容
  - 修复: 使用oss go sdk v2.1.3重新编译，lifecycle支持冷归档(ColdArchive)
  
-
 ## 版本号：v1.6.16 日期：2020-07-06
 ### 变更内容
  - 新增: 优化对symlink类型object下载,object size取指向的目标object size
