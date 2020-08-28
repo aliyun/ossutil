@@ -519,6 +519,8 @@ func currentHomeDir() string {
 	usr, _ := user.Current()
 	if usr != nil {
 		homeDir = usr.HomeDir
+	} else {
+		homeDir = os.Getenv("HOME")
 	}
 	return homeDir
 }
