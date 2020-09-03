@@ -1,3 +1,7 @@
+## 版本号：v1.6.19 日期：2020-09-03
+### 变更内容
+ - 修复: set-meta命令的更新模式会将object的acl重置为default
+
 ## 版本号：v1.6.18 日期：2020-07-24
 ### 变更内容
  - 修复: 使用oss go sdk v2.1.4重新编译，lifecycle支持输入NoncurrentVersionTransition数组
