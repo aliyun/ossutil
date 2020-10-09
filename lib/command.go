@@ -698,5 +698,6 @@ func GetAllCommands() []interface{} {
 		&objectTagCommand,
 		&bucketInventoryCommand,
 		&revertCommand,
+		&syncCommand,
 	}
 }

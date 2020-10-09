@@ -220,6 +220,9 @@ var OptionMap = map[string]Option{
 	OptionEndTime: Option{"", "--end-time", "", OptionTypeInt64, "", "",
 		"结束时间,为linux/Unix系统里面的时间戳,既从1970年1月1日(UTC/GMT的午夜)开始所经过的秒数",
 		"The end time is the timestamp in the Linux/Unix system, that is, the number of seconds that have passed since January 1, 1970 (midnight UTC/GMT)"},
+	OptionBackupDir: Option{"", "--backup-dir", "", OptionTypeString, "", "",
+		"sync命令使用的备份文件的目录",
+		"The directory of the backup file used by the sync command"},
 }
 
 func (T *Option) getHelp(language string) string {
