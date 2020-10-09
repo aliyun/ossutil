@@ -815,6 +815,45 @@ func (s *OssutilCommandSuite) createTestFiles(dir, subdir string, c *C, contents
 	return filenames
 }
 
+func (s *OssutilCommandSuite) prepareTestFiles(dir, subdir, filePrefix, fileSuffix string, num int, c *C) []string {
+	// Create dirs
+	f, err := os.Stat(dir)
+	if err != nil {
+		err := os.MkdirAll(dir, 0755)
+		c.Assert(err, IsNil)
+	} else {
+		c.Assert(f.IsDir(), Equals, true)
+	}
+
+	f, err = os.Stat(dir + string(os.PathSeparator) + subdir)
+	if err != nil {
+		err = os.MkdirAll(dir+string(os.PathSeparator)+subdir, 0755)
+		c.Assert(err, IsNil)
+	} else {
+		c.Assert(f.IsDir(), Equals, true)
+	}
+
+	filenames := make([]string, 0)
+
+	// Create files
+	for i := 0; i < num; i++ {
+		filename := fmt.Sprintf("%s-testfile%d.txt", filePrefix, i) + fileSuffix
+		content := fmt.Sprintf("include测试文件：%d内容", i)
+		filenames = append(filenames, filename)
+		filename = dir + string(os.PathSeparator) + filename
+		s.createFile(filename, content, c)
+	}
+
+	for i := num; i < 2*num; i++ {
+		filename := fmt.Sprintf("%s-testfile%d.jpg", filePrefix, i) + fileSuffix
+		content := fmt.Sprintf("include test jpg\n%dcontent", i)
+		filenames = append(filenames, subdir+string(os.PathSeparator)+filename)
+		filename = dir + string(os.PathSeparator) + subdir + string(os.PathSeparator) + filename
+		s.createFile(filename, content, c)
+	}
+	return filenames
+}
+
 func (s *OssutilCommandSuite) rawCPWithFilter(args []string, recursive, force, update bool, threshold int64, cpDir string, cmdline []string, meta, acl string) (bool, error) {
 	command := "cp"
 	str := ""

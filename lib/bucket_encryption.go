@@ -19,7 +19,7 @@ var specChineseBucketEncryption = SpecText{
 `,
 	detailHelpText: ` 
     bucket-encryption命令通过设置method选项值为put、get、delete,可以设置、查询或者删除bucket的encryption配置
-    选项--sse-algorithm值只能是KMS、AES256
+    选项--sse-algorithm值只能是KMS、AES256、SM4
     当--sse-algorithm选项值为AES256时，不能输入选项--kms-masterkey-id
     当--sse-algorithm取值为KMS时, --kms-data-encryption可以取值SM4, 指定KMS服务使用SM4加密算法加密
     
@@ -42,14 +42,17 @@ var specChineseBucketEncryption = SpecText{
     
     2) 设置bucket的encryption配置，算法名为KMS，KMSMasterKeyID为123
        ossutil bucket-encryption --method put oss://bucket --sse-algorithm KMS --kms-masterkey-id  123
+    
+    3) 设置bucket的encryption配置，算法名为SM4
+       ossutil bucket-encryption --method put oss://bucket --sse-algorithm SM4
 	
-    3) 查询bucket的encryption配置
+    4) 查询bucket的encryption配置
        ossutil bucket-encryption --method get oss://bucket
 	
-    4) 删除bucket的encryption配置
+    5) 删除bucket的encryption配置
        ossutil bucket-encryption --method delete oss://bucket
     
-    5) 使用kms服务加密,加密算法为SM4
+    6) 使用kms服务加密,加密算法为SM4
        ossutil bucket-encryption --method put oss://bucket --sse-algorithm KMS --kms-data-encryption SM4
 `,
 }
@@ -87,14 +90,17 @@ Usage:
     
     2) set the encryption configuration of the bucket. The algorithm name is KMS and the KMSMasterKeyID is 123.
        ossutil bucket-encryption --method put oss://bucket --sse-algorithm KMS --kms-masterkey-id 123
+    
+    3) set the encryption configuration of the bucket. The algorithm name is SM4
+       ossutil bucket-encryption --method put oss://bucket --sse-algorithm SM4
 	
-    3) get bucket encryption configuration
+    4) get bucket encryption configuration
        ossutil bucket-encryption --method get oss://bucket
 	
-    4) delete bucket encryption configuration
+    5) delete bucket encryption configuration
        ossutil bucket-encryption --method delete oss://bucket
     
-    5) Using kms service encryption, the encryption algorithm is SM4
+    6) Using kms service encryption, the encryption algorithm is SM4
        ossutil bucket-encryption --method put oss://bucket --sse-algorithm KMS --kms-data-encryption SM4
 `,
 }
@@ -218,6 +224,7 @@ func (bec *BucketEncryptionCommand) GetBucketEncryption() error {
 	fmt.Printf("SSEAlgorithm:%s\n", bec.encryptionResult.SSEDefault.SSEAlgorithm)
 	if bec.encryptionResult.SSEDefault.SSEAlgorithm == string(oss.KMSAlgorithm) {
 		fmt.Printf("KMSMasterKeyID:%s\n", bec.encryptionResult.SSEDefault.KMSMasterKeyID)
+		fmt.Printf("KMSDataEncryption:%s\n", bec.encryptionResult.SSEDefault.KMSDataEncryption)
 	}
 
 	fmt.Printf("\n\n")
