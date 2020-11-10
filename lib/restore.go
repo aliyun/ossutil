@@ -1,7 +1,6 @@
 package lib
 
 import (
-	"encoding/xml"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -151,6 +150,7 @@ type RestoreCommand struct {
 	commonOptions []oss.Option
 	restoreConfig oss.RestoreConfiguration
 	hasConfig     bool
+	configXml     string
 }
 
 var restoreCommand = RestoreCommand{
@@ -248,13 +248,8 @@ func (rc *RestoreCommand) RunCommand() error {
 		if err != nil {
 			return err
 		}
-
-		err = xml.Unmarshal(text, &(rc.restoreConfig))
-		if err != nil {
-			fmt.Printf("xml.Unmarshal error,%s is not valid xml file\n", xmlFile)
-			return err
-		}
 		rc.hasConfig = true
+		rc.configXml = string(text)
 	}
 
 	bucket, err := rc.command.ossBucket(cloudURL.bucket)
@@ -292,7 +287,7 @@ func (rc *RestoreCommand) ossRestoreObject(bucket *oss.Bucket, object string, ve
 
 		var err error
 		if rc.hasConfig {
-			err = bucket.RestoreObjectDetail(object, rc.restoreConfig, options...)
+			err = bucket.RestoreObjectXML(object, rc.configXml, options...)
 		} else {
 			err = bucket.RestoreObject(object, options...)
 		}

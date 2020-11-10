@@ -419,7 +419,7 @@ func (s *OssutilCommandSuite) TestRestoreObjectWithPayerError400(c *C) {
 	c.Assert(strings.Contains(err.Error(), "StatusCode=400"), Equals, true)
 }
 
-func (s *OssutilCommandSuite) TestRestoreObjectWithConfigSuccess(c *C) {
+func (s *OssutilCommandSuite) TestRestoreObjectWithConfigColdArchiveSuccess(c *C) {
 	bucketName := bucketNamePrefix + randLowStr(10)
 	s.putBucketWithStorageClass(bucketName, StorageColdArchive, c)
 
@@ -470,6 +470,56 @@ func (s *OssutilCommandSuite) TestRestoreObjectWithConfigSuccess(c *C) {
 	// get object status
 	objectStat = s.getStat(bucketName, objectName, c)
 	c.Assert(objectStat["X-Oss-Storage-Class"], Equals, StorageColdArchive)
+	c.Assert(objectStat["X-Oss-Restore"], Equals, "ongoing-request=\"true\"")
+
+	os.Remove(restoreFileName)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestRestoreObjectWithConfigArchiveSuccess(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucketWithStorageClass(bucketName, StorageArchive, c)
+
+	// put object to archive bucket
+	objectName := "ossutil_test_object" + randStr(5)
+	testFileName := "ossutil_test_file" + randStr(5)
+
+	data := randStr(20)
+	s.createFile(testFileName, data, c)
+	s.putObject(bucketName, objectName, testFileName, c)
+	os.Remove(testFileName)
+
+	// get object status
+	objectStat := s.getStat(bucketName, objectName, c)
+	c.Assert(objectStat["X-Oss-Storage-Class"], Equals, StorageArchive)
+	_, ok := objectStat["X-Oss-Restore"]
+	c.Assert(ok, Equals, false)
+
+	restoreXml := `<?xml version="1.0" encoding="UTF-8"?>
+    <RestoreRequest>
+        <Days>2</Days>
+    </RestoreRequest>`
+
+	restoreFileName := "test-ossutil-" + randLowStr(12)
+	s.createFile(restoreFileName, restoreXml, c)
+
+	//restore command test
+	var str string
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"stsToken":        &str,
+		"configFile":      &configFile,
+	}
+
+	restoreArgs := []string{CloudURLToString(bucketName, objectName), restoreFileName}
+	_, err := cm.RunCommand("restore", restoreArgs, options)
+	c.Assert(err, IsNil)
+
+	// get object status
+	objectStat = s.getStat(bucketName, objectName, c)
+	c.Assert(objectStat["X-Oss-Storage-Class"], Equals, StorageArchive)
 	c.Assert(objectStat["X-Oss-Restore"], Equals, "ongoing-request=\"true\"")
 
 	os.Remove(restoreFileName)
