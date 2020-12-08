@@ -699,5 +699,6 @@ func GetAllCommands() []interface{} {
 		&bucketInventoryCommand,
 		&revertCommand,
 		&syncCommand,
+		&wormCommand,
 	}
 }
