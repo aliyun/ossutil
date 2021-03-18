@@ -1278,6 +1278,7 @@ var copyCommand = CopyCommand{
 			OptionDisableAllSymlink,
 			OptionDisableIgnoreError,
 			OptionTagging,
+			OptionPassword,
 		},
 	},
 }

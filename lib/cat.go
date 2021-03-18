@@ -102,6 +102,7 @@ var catCommand = CatCommand{
 			OptionLogLevel,
 			OptionVersionId,
 			OptionRequestPayer,
+			OptionPassword,
 		},
 	},
 }

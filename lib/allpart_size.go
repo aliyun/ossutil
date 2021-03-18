@@ -94,6 +94,7 @@ var allPartSizeCommand = AllPartSizeCommand{
 			OptionProxyPwd,
 			OptionEncodingType,
 			OptionLogLevel,
+			OptionPassword,
 		},
 	},
 }

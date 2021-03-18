@@ -124,6 +124,7 @@ var bucketLogCommand = BucketLogCommand{
 			OptionProxyPwd,
 			OptionMethod,
 			OptionLogLevel,
+			OptionPassword,
 		},
 	},
 }

@@ -90,6 +90,7 @@ var corsOptionsCommand = OptionsCommand{
 			OptionOrigin,
 			OptionAcrMethod,
 			OptionAcrHeaders,
+			OptionPassword,
 		},
 	},
 }

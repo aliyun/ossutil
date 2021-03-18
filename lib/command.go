@@ -51,6 +51,7 @@ type Command struct {
 	args             []string
 	options          OptionMapType
 	configOptions    OptionMapType
+	inputKeySecret   string
 }
 
 // Commander is the interface of all commands
@@ -290,6 +291,19 @@ func (cmd *Command) ossClient(bucket string) (*oss.Client, error) {
 	proxyPwd, _ := GetString(OptionProxyPwd, cmd.options)
 	ecsUrl, _ := cmd.getEcsRamAkService()
 	localHost, _ := GetString(OptionLocalHost, cmd.options)
+
+	bPassword, _ := GetBool(OptionPassword, cmd.options)
+	if bPassword {
+		if cmd.inputKeySecret == "" {
+			strPwd, err := GetPassword("input access key secret:")
+			fmt.Printf("\r")
+			if err != nil {
+				return nil, err
+			}
+			cmd.inputKeySecret = string(strPwd)
+		}
+		accessKeySecret = cmd.inputKeySecret
+	}
 
 	if accessKeyID == "" && ecsUrl == "" {
 		return nil, fmt.Errorf("accessKeyID and ecsUrl are both empty")

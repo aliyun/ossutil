@@ -145,6 +145,7 @@ var corsCommand = CorsCommand{
 			OptionProxyPwd,
 			OptionMethod,
 			OptionLogLevel,
+			OptionPassword,
 		},
 	},
 }

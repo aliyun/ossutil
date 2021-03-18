@@ -149,6 +149,7 @@ var appendFileCommand = AppendFileCommand{
 			OptionMaxUpSpeed,
 			OptionLogLevel,
 			OptionRequestPayer,
+			OptionPassword,
 		},
 	},
 }

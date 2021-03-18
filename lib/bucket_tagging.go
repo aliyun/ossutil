@@ -114,6 +114,7 @@ var bucketTagCommand = BucketTagCommand{
 			OptionProxyPwd,
 			OptionMethod,
 			OptionLogLevel,
+			OptionPassword,
 		},
 	},
 }

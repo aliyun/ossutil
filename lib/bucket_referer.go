@@ -130,6 +130,7 @@ var bucketRefererCommand = BucketRefererCommand{
 			OptionLogLevel,
 			OptionDisableEmptyReferer,
 			OptionMethod,
+			OptionPassword,
 		},
 	},
 }

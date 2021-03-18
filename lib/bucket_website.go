@@ -1,7 +1,6 @@
 package lib
 
 import (
-	"encoding/xml"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -238,6 +237,7 @@ var bucketWebsiteCommand = BucketWebSiteCommand{
 			OptionProxyPwd,
 			OptionLogLevel,
 			OptionMethod,
+			OptionPassword,
 		},
 	},
 }
@@ -339,12 +339,7 @@ func (bwc *BucketWebSiteCommand) GetBucketWebsite() error {
 		return err
 	}
 
-	websiteRes, err := client.GetBucketWebsite(bwc.bwOption.bucketName)
-	if err != nil {
-		return err
-	}
-
-	output, err := xml.MarshalIndent(websiteRes, "  ", "    ")
+	output, err := client.GetBucketWebsiteXml(bwc.bwOption.bucketName)
 	if err != nil {
 		return err
 	}
@@ -369,8 +364,7 @@ func (bwc *BucketWebSiteCommand) GetBucketWebsite() error {
 		outFile = os.Stdout
 	}
 
-	outFile.Write([]byte(xml.Header))
-	outFile.Write(output)
+	outFile.Write([]byte(output))
 
 	fmt.Printf("\n\n")
 

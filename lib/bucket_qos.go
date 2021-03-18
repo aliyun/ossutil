@@ -150,6 +150,7 @@ var bucketQosCommand = BucketQosCommand{
 			OptionProxyPwd,
 			OptionLogLevel,
 			OptionMethod,
+			OptionPassword,
 		},
 	},
 }

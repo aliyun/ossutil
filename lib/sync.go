@@ -412,6 +412,7 @@ var syncCommand = SyncCommand{
 			OptionDisableAllSymlink,
 			OptionDisableIgnoreError,
 			OptionTagging,
+			OptionPassword,
 
 			// The following options are only supported by sc command, not supported by cp command
 			OptionDelete,

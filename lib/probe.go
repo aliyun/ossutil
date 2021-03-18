@@ -351,6 +351,7 @@ var probeCommand = ProbeCommand{
 			OptionUpMode,
 			OptionLogLevel,
 			OptionProbeItem,
+			OptionPassword,
 		},
 	},
 }

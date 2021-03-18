@@ -144,6 +144,7 @@ var objectTagCommand = ObjectTagCommand{
 			OptionRecursion,
 			OptionVersionId,
 			OptionRequestPayer,
+			OptionPassword,
 		},
 	},
 }
