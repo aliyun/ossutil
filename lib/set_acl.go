@@ -248,6 +248,7 @@ var setACLCommand = SetACLCommand{
 			OptionOutputDir,
 			OptionLogLevel,
 			OptionVersionId,
+			OptionPassword,
 		},
 	},
 }

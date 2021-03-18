@@ -80,6 +80,7 @@ var mkdirCommand = MkdirCommand{
 			OptionProxyPwd,
 			OptionLogLevel,
 			OptionEncodingType,
+			OptionPassword,
 		},
 	},
 }

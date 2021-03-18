@@ -16,6 +16,7 @@ import (
 	"time"
 
 	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 var sys_name string
@@ -689,4 +690,23 @@ func getObjectListCommon(bucket *oss.Bucket, cloudURL CloudURL, chObjects chan<-
 		}
 	}
 	return nil
+}
+
+func GetPassword(prompt string) ([]byte, error) {
+	fd := int(os.Stdin.Fd())
+	if terminal.IsTerminal(fd) {
+		state, err := terminal.MakeRaw(fd)
+		if err != nil {
+			f := "getpass: cannot disable terminal echoing — %v"
+			return nil, fmt.Errorf(f, err)
+		}
+		defer terminal.Restore(fd, state)
+		defer fmt.Println()
+	}
+
+	if prompt == "" {
+		prompt = "enter password: "
+	}
+	fmt.Fprint(os.Stderr, prompt)
+	return terminal.ReadPassword(fd)
 }

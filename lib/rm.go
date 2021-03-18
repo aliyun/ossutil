@@ -328,6 +328,7 @@ var removeCommand = RemoveCommand{
 			OptionVersionId,
 			OptionAllversions,
 			OptionRequestPayer,
+			OptionPassword,
 		},
 	},
 }

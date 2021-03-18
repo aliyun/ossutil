@@ -166,6 +166,7 @@ var makeBucketCommand = MakeBucketCommand{
 			OptionStorageClass,
 			OptionLogLevel,
 			OptionRedundancyType,
+			OptionPassword,
 		},
 	},
 }

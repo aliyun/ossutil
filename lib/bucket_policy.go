@@ -161,6 +161,7 @@ var bucketPolicyCommand = BucketPolicyCommand{
 			OptionProxyPwd,
 			OptionLogLevel,
 			OptionMethod,
+			OptionPassword,
 		},
 	},
 }

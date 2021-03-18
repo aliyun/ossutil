@@ -180,6 +180,7 @@ var restoreCommand = RestoreCommand{
 			OptionLogLevel,
 			OptionVersionId,
 			OptionRequestPayer,
+			OptionPassword,
 		},
 	},
 }

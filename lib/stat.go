@@ -112,6 +112,7 @@ var statCommand = StatCommand{
 			OptionLogLevel,
 			OptionVersionId,
 			OptionRequestPayer,
+			OptionPassword,
 		},
 	},
 }

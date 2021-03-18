@@ -106,6 +106,7 @@ var bucketVersioningCommand = BucketVersioningCommand{
 			OptionProxyPwd,
 			OptionMethod,
 			OptionLogLevel,
+			OptionPassword,
 		},
 	},
 }

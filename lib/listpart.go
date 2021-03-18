@@ -94,6 +94,7 @@ var listPartCommand = ListPartCommand{
 			OptionProxyPwd,
 			OptionEncodingType,
 			OptionLogLevel,
+			OptionPassword,
 		},
 	},
 }

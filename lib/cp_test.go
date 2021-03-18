@@ -4992,3 +4992,40 @@ func (s *OssutilCommandSuite) TestBatchDownloadSymlinkObject(c *C) {
 	os.Remove(symObject)
 	s.removeBucket(bucketName, true, c)
 }
+
+func (s *OssutilCommandSuite) TestCPObjectWithInputPassword(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	// prepare file and object
+	objectContext := randLowStr(1024)
+	fileName := "ossutil_test." + randLowStr(12)
+	s.createFile(fileName, objectContext, c)
+
+	object := randLowStr(12)
+	cpArgs := []string{fileName, CloudURLToString(bucketName, object)}
+
+	str := ""
+    bPassword:=true
+	cpDir := CheckpointDir
+	routines := strconv.Itoa(Routines)
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+		"checkpointDir":   &cpDir,
+		"routines":        &routines,
+        "password":        &bPassword,
+	}
+
+    fmt.Printf("password\n")
+
+	// calculate time
+	_, err := cm.RunCommand("cp", cpArgs, options)
+	c.Assert(err, NotNil)
+
+
+	os.Remove(fileName)
+	s.removeBucket(bucketName, true, c)
+}

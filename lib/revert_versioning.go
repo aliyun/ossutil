@@ -140,6 +140,7 @@ var revertCommand = RevertCommand{
 			OptionInclude,
 			OptionExclude,
 			OptionEncodingType,
+			OptionPassword,
 		},
 	},
 }

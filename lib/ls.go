@@ -400,6 +400,7 @@ var listCommand = ListCommand{
 			OptionExclude,
 			OptionAllversions,
 			OptionVersionIdMarker,
+			OptionPassword,
 		},
 	},
 }

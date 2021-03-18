@@ -300,6 +300,7 @@ var setMetaCommand = SetMetaCommand{
 			OptionOutputDir,
 			OptionLogLevel,
 			OptionVersionId,
+			OptionPassword,
 		},
 	},
 }

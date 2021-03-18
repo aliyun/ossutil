@@ -119,6 +119,7 @@ var duSizeCommand = DuCommand{
 			OptionLogLevel,
 			OptionRequestPayer,
 			OptionAllversions,
+			OptionPassword,
 		},
 	},
 }

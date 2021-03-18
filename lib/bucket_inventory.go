@@ -206,6 +206,7 @@ var bucketInventoryCommand = BucketInventoryCommand{
 			OptionLogLevel,
 			OptionMethod,
 			OptionMarker,
+			OptionPassword,
 		},
 	},
 }

@@ -115,6 +115,7 @@ var readSymlinkCommand = ReadSymlinkCommand{
 			OptionLogLevel,
 			OptionVersionId,
 			OptionRequestPayer,
+			OptionPassword,
 		},
 	},
 }

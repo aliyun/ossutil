@@ -117,6 +117,7 @@ var wormCommand = WormCommand{
 			OptionProxyUser,
 			OptionProxyPwd,
 			OptionLogLevel,
+			OptionPassword,
 		},
 	},
 }

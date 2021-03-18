@@ -134,6 +134,7 @@ var bucketEncryptionCommand = BucketEncryptionCommand{
 			OptionSSEAlgorithm,
 			OptionKMSMasterKeyID,
 			OptionKMSDataEncryption,
+			OptionPassword,
 		},
 	},
 }

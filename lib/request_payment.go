@@ -106,6 +106,7 @@ var requestPaymentCommand = RequestPaymentCommand{
 			OptionProxyPwd,
 			OptionMethod,
 			OptionLogLevel,
+			OptionPassword,
 		},
 	},
 }
