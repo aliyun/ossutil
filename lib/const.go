@@ -86,6 +86,7 @@ const (
 	OptionEndTime                    = "endTime"
 	OptionBackupDir                  = "backupDir"
 	OptionPassword                   = "password"
+	OptionBlockSize                  = "blockSize"
 )
 
 // the elements show in stat object
@@ -131,7 +132,7 @@ const (
 const (
 	Package                 string = "ossutil"
 	ChannelBuf              int    = 1000
-	Version                 string = "v1.7.2"
+	Version                 string = "v1.7.3"
 	DefaultEndpoint         string = "oss.aliyuncs.com"
 	ChineseLanguage                = "CH"
 	EnglishLanguage                = "EN"

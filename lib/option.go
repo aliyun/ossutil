@@ -223,9 +223,12 @@ var OptionMap = map[string]Option{
 	OptionBackupDir: Option{"", "--backup-dir", "", OptionTypeString, "", "",
 		"sync命令使用的备份文件的目录",
 		"The directory of the backup file used by the sync command"},
-    OptionPassword: Option{"-p", "--password", "", OptionTypeFlagTrue, "", "",
+	OptionPassword: Option{"-p", "--password", "", OptionTypeFlagTrue, "", "",
 		"表示从键盘输入accessKeySecret参数",
 		"specifies that the accessKeySecret is inputted from the keyboard"},
+	OptionBlockSize: Option{"-B", "--block-size", "", OptionTypeString, "", "",
+		"表示du命令字节显示的单位,取值可以为KB, MB, GB, TB",
+		"specifies the unit of byte display for du command, the value can be KB, MB, GB, TB"},
 }
 
 func (T *Option) getHelp(language string) string {

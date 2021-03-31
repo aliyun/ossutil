@@ -40,6 +40,8 @@ var specChineseDu = SpecText{
     3) 查询指定前缀(目录)占用存储空间大小, 包括多版本object
        ossutil du oss://bucket/prefix --all-versions
     
+    4) 统计结果以KB为单位显示, 支持MB, GB, TB
+       ossutil du oss://bucket/prefix --block-size KB
 `,
 }
 
@@ -72,6 +74,9 @@ Usages：
     
     3) get the prefix(directory) stroage size, including all versioning objects
        ossutil du oss://bucket/prefix --all-versions
+
+    4) The du results are displayed in KB block size, Support MB, GB, TB
+       ossutil du oss://bucket/prefix --block-size KB
 `,
 }
 
@@ -91,6 +96,8 @@ type duSizeOptionType struct {
 	totalPartCount   int64
 	sumPartSize      int64
 	mutex            sync.Mutex
+	displayUnit      string
+	blockSize        int64
 }
 
 type DuCommand struct {
@@ -120,6 +127,7 @@ var duSizeCommand = DuCommand{
 			OptionRequestPayer,
 			OptionAllversions,
 			OptionPassword,
+			OptionBlockSize,
 		},
 	},
 }
@@ -148,6 +156,13 @@ func (duc *DuCommand) RunCommand() error {
 	duc.duOption.totalPartCount = 0
 	duc.duOption.sumPartSize = 0
 
+	blockSizeMap := make(map[string]int64)
+	blockSizeMap["byte"] = 1
+	blockSizeMap["KB"] = 1024
+	blockSizeMap["MB"] = 1024 * 1024
+	blockSizeMap["GB"] = 1024 * 1024 * 1024
+	blockSizeMap["TB"] = 1024 * 1024 * 1024 * 1024
+
 	encodingType, _ := GetString(OptionEncodingType, duc.command.options)
 	srcBucketUrL, err := GetCloudUrl(duc.command.args[0], encodingType)
 	if err != nil {
@@ -163,6 +178,18 @@ func (duc *DuCommand) RunCommand() error {
 		}
 	}
 	allVersions, _ := GetBool(OptionAllversions, duc.command.options)
+
+	strBlockSize, _ := GetString(OptionBlockSize, duc.command.options)
+	strBlockSize = strings.ToUpper(strBlockSize)
+	if strBlockSize == "" {
+		strBlockSize = "byte"
+	}
+
+	if strBlockSize != "byte" && strBlockSize != "KB" && strBlockSize != "MB" && strBlockSize != "GB" && strBlockSize != "TB" {
+		return fmt.Errorf("-B value must be KB, MB, GB or TB")
+	}
+	duc.duOption.displayUnit = strBlockSize
+	duc.duOption.blockSize = blockSizeMap[strBlockSize]
 
 	duc.duOption.bucketName = srcBucketUrL.bucket
 	duc.duOption.object = srcBucketUrL.object
@@ -208,7 +235,13 @@ func (duc *DuCommand) RunCommand() error {
 	fmt.Printf("\r                                                                      ")
 	fmt.Printf("\r%-20s%-20d\t%-23s%d\n\n", "total part count:", duc.duOption.totalPartCount, "total part sum size:", duc.duOption.sumPartSize)
 
-	fmt.Printf("total du size(byte):%d\n", duc.duOption.sumObjectSize+duc.duOption.sumPartSize)
+	if duc.duOption.blockSize == int64(1) {
+		displaySize := (duc.duOption.sumObjectSize + duc.duOption.sumPartSize) / duc.duOption.blockSize
+		fmt.Printf("total du size(%s):%d\n", duc.duOption.displayUnit, displaySize)
+	} else {
+		displaySize := float64(duc.duOption.sumObjectSize+duc.duOption.sumPartSize) / float64(duc.duOption.blockSize)
+		fmt.Printf("total du size(%s):%.4f\n", duc.duOption.displayUnit, displaySize)
+	}
 	return nil
 }
 
