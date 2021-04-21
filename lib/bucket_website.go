@@ -246,6 +246,7 @@ var bucketWebsiteCommand = BucketWebSiteCommand{
 			OptionReadTimeout,
 			OptionConnectTimeout,
 			OptionSTSRegion,
+			OptionSkipVerfiyCert,
 		},
 	},
 }

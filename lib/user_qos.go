@@ -93,6 +93,7 @@ var userQosCommand = UserQosCommand{
 			OptionReadTimeout,
 			OptionConnectTimeout,
 			OptionSTSRegion,
+			OptionSkipVerfiyCert,
 		},
 	},
 }

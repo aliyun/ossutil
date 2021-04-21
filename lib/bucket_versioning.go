@@ -115,6 +115,7 @@ var bucketVersioningCommand = BucketVersioningCommand{
 			OptionReadTimeout,
 			OptionConnectTimeout,
 			OptionSTSRegion,
+			OptionSkipVerfiyCert,
 		},
 	},
 }

@@ -121,6 +121,7 @@ var statCommand = StatCommand{
 			OptionReadTimeout,
 			OptionConnectTimeout,
 			OptionSTSRegion,
+			OptionSkipVerfiyCert,
 		},
 	},
 }

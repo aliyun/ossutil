@@ -133,6 +133,7 @@ var bucketLogCommand = BucketLogCommand{
 			OptionReadTimeout,
 			OptionConnectTimeout,
 			OptionSTSRegion,
+			OptionSkipVerfiyCert,
 		},
 	},
 }

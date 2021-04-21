@@ -175,6 +175,7 @@ var makeBucketCommand = MakeBucketCommand{
 			OptionReadTimeout,
 			OptionConnectTimeout,
 			OptionSTSRegion,
+			OptionSkipVerfiyCert,
 		},
 	},
 }

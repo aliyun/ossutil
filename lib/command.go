@@ -305,6 +305,7 @@ func (cmd *Command) ossClient(bucket string) (*oss.Client, error) {
 	ecsUrl := ""
 
 	localHost, _ := GetString(OptionLocalHost, cmd.options)
+	bSkipVerifyCert, _ := GetBool(OptionSkipVerfiyCert, cmd.options)
 
 	bPassword, _ := GetBool(OptionPassword, cmd.options)
 
@@ -456,6 +457,11 @@ func (cmd *Command) ossClient(bucket string) (*oss.Client, error) {
 	if logLevel > oss.LogOff {
 		options = append(options, oss.SetLogLevel(logLevel))
 		options = append(options, oss.SetLogger(utilLogger))
+	}
+
+	if bSkipVerifyCert {
+		LogInfo("skip verify oss server's tls certificate\n")
+		options = append(options, oss.InsecureSkipVerify(true))
 	}
 
 	client, err := oss.New(endpoint, accessKeyID, accessKeySecret, options...)
