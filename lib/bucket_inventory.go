@@ -215,6 +215,7 @@ var bucketInventoryCommand = BucketInventoryCommand{
 			OptionReadTimeout,
 			OptionConnectTimeout,
 			OptionSTSRegion,
+			OptionSkipVerfiyCert,
 		},
 	},
 }

@@ -170,6 +170,7 @@ var bucketPolicyCommand = BucketPolicyCommand{
 			OptionReadTimeout,
 			OptionConnectTimeout,
 			OptionSTSRegion,
+			OptionSkipVerfiyCert,
 		},
 	},
 }

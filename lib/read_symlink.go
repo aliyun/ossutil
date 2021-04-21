@@ -124,6 +124,7 @@ var readSymlinkCommand = ReadSymlinkCommand{
 			OptionReadTimeout,
 			OptionConnectTimeout,
 			OptionSTSRegion,
+			OptionSkipVerfiyCert,
 		},
 	},
 }

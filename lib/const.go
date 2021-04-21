@@ -95,6 +95,7 @@ const (
 	OptionReadTimeout                = "readTimeOut"
 	OptionConnectTimeout             = "connectTimeOut"
 	OptionSTSRegion                  = "stsRegion"
+	OptionSkipVerfiyCert             = "skipVerifyCert"
 )
 
 // the elements show in stat object
