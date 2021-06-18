@@ -87,6 +87,14 @@ const (
 	OptionBackupDir                  = "backupDir"
 	OptionPassword                   = "password"
 	OptionBlockSize                  = "blockSize"
+	OptionMode                       = "mode"
+	OptionECSRoleName                = "ecsRoleName"
+	OptionTokenTimeout               = "tokenTimeout"
+	OptionRamRoleArn                 = "ramRoleArn"
+	OptionRoleSessionName            = "roleSessionName"
+	OptionReadTimeout                = "readTimeOut"
+	OptionConnectTimeout             = "connectTimeOut"
+	OptionSTSRegion                  = "stsRegion"
 )
 
 // the elements show in stat object
