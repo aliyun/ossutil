@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"workspace/ossutil/sts"
+
 	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
 
@@ -289,10 +291,25 @@ func (cmd *Command) ossClient(bucket string) (*oss.Client, error) {
 	proxyHost, _ := GetString(OptionProxyHost, cmd.options)
 	proxyUser, _ := GetString(OptionProxyUser, cmd.options)
 	proxyPwd, _ := GetString(OptionProxyPwd, cmd.options)
-	ecsUrl, _ := cmd.getEcsRamAkService()
+
+	mode, _ := GetString(OptionMode, cmd.options)
+	ramRoleName, _ := GetString(OptionRamRoleName, cmd.options)
+
+	strExpireSeconds, _ := GetString(OptionExpiredSeconds, cmd.options)
+	ramRoleArn, _ := GetString(OptionRamRoleArn, cmd.options)
+	roleSessionName, _ := GetString(OptionRoleSessionName, cmd.options)
+
+	strReadTimeout, _ := GetString(OptionReadTimeout, cmd.options)
+	strConnectTimeout, _ := GetString(OptionConnectTimeout, cmd.options)
+
+	stsRegion, _ := GetString(OptionSTSRegion, cmd.options)
+
+	ecsUrl := ""
+
 	localHost, _ := GetString(OptionLocalHost, cmd.options)
 
 	bPassword, _ := GetBool(OptionPassword, cmd.options)
+
 	if bPassword {
 		if cmd.inputKeySecret == "" {
 			strPwd, err := GetPassword("input access key secret:")
@@ -305,17 +322,114 @@ func (cmd *Command) ossClient(bucket string) (*oss.Client, error) {
 		accessKeySecret = cmd.inputKeySecret
 	}
 
-	if accessKeyID == "" && ecsUrl == "" {
-		return nil, fmt.Errorf("accessKeyID and ecsUrl are both empty")
-	}
+	options := []oss.ClientOption{}
 
-	if ecsUrl == "" {
+	if strings.EqualFold(mode, "AK") {
 		if err := cmd.checkCredentials(endpoint, accessKeyID, accessKeySecret); err != nil {
 			return nil, err
 		}
+	} else if strings.EqualFold(mode, "StsToken") {
+
+		if err := cmd.checkCredentials(endpoint, accessKeyID, accessKeySecret); err != nil {
+			return nil, err
+		}
+		if stsToken == "" {
+			return nil, fmt.Errorf("stsToken is empty")
+		}
+		options = append(options, oss.SecurityToken(stsToken))
+
+	} else if strings.EqualFold(mode, "RamRoleArn") {
+		if err := cmd.checkCredentials(endpoint, accessKeyID, accessKeySecret); err != nil {
+			return nil, err
+		}
+		if ramRoleArn == "" {
+			ramRoleArn, _ = cmd.getRamRoleArnService()
+		}
+		if ramRoleArn == "" {
+			return nil, fmt.Errorf("ramRoleArn is empty")
+		}
+		if roleSessionName == "" {
+			roleSessionName = "SessNameRand" + randStr(5)
+		}
+		// sts.NewClient(stsaccessID, stsaccessKey, stsARN, "oss_test_sess")
+		stsClient := sts.NewClient(accessKeyID, accessKeySecret, ramRoleArn, roleSessionName)
+
+		if strExpireSeconds == "" {
+			strExpireSeconds = "3600"
+		}
+		intExpireSeconds, err := strconv.Atoi(strExpireSeconds)
+		if err != nil {
+			return nil, err
+		}
+		expireSeconds := uint(intExpireSeconds)
+
+		stsEndPoint := ""
+		if stsRegion == "" {
+			stsEndPoint = ""
+		} else {
+			stsEndPoint = "https://sts.cn-" + stsRegion + ".aliyuncs.com"
+		}
+
+		resp, err := stsClient.AssumeRole(expireSeconds, stsEndPoint)
+		if err != nil {
+			return nil, err
+		}
+
+		accessKeyID = resp.Credentials.AccessKeyId
+		accessKeySecret = resp.Credentials.AccessKeySecret
+		stsToken = resp.Credentials.SecurityToken
+		options = append(options, oss.SecurityToken(stsToken))
+
+	} else if strings.EqualFold(mode, "EcsRamRole") {
+		if ramRoleName != "" {
+			ecsUrl = "http://100.100.100.200/latest/meta-data/Ram/security-credentials/" + ramRoleName
+		} else {
+			ecsUrl, _ = cmd.getEcsRamAkService()
+		}
+
+		if ecsUrl == "" {
+			return nil, fmt.Errorf("ecsUrl is empty")
+		}
+		ecsRoleAKBuild := EcsRoleAKBuild{url: ecsUrl}
+		options = append(options, oss.SetCredentialsProvider(&ecsRoleAKBuild))
+
+	} else if mode == "" {
+
+		ecsUrl, _ = cmd.getEcsRamAkService()
+		if accessKeyID == "" && ecsUrl == "" {
+			return nil, fmt.Errorf("accessKeyID and ecsUrl are both empty")
+		}
+		if ecsUrl == "" {
+			if err := cmd.checkCredentials(endpoint, accessKeyID, accessKeySecret); err != nil {
+				return nil, err
+			}
+		}
+		if accessKeyID == "" {
+			LogInfo("using user ak service:%s\n", ecsUrl)
+			ecsRoleAKBuild := EcsRoleAKBuild{url: ecsUrl}
+			options = append(options, oss.SetCredentialsProvider(&ecsRoleAKBuild))
+		}
+
+		options = append(options, oss.SecurityToken(stsToken))
 	}
 
-	options := []oss.ClientOption{oss.UseCname(isCname), oss.SecurityToken(stsToken), oss.UserAgent(getUserAgent()), oss.Timeout(120, 1200)}
+	if strConnectTimeout == "" {
+		strConnectTimeout = "120"
+	}
+	if strReadTimeout == "" {
+		strReadTimeout = "1200"
+	}
+	connectTimeout, err := strconv.ParseInt(strConnectTimeout, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	readTimeout, err := strconv.ParseInt(strReadTimeout, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+
+	options = append(options, oss.UseCname(isCname), oss.UserAgent(getUserAgent()), oss.Timeout(connectTimeout, readTimeout))
+
 	if disableCRC64 {
 		options = append(options, oss.EnableCRC(false))
 	} else {
@@ -342,12 +456,6 @@ func (cmd *Command) ossClient(bucket string) (*oss.Client, error) {
 	if logLevel > oss.LogOff {
 		options = append(options, oss.SetLogLevel(logLevel))
 		options = append(options, oss.SetLogger(utilLogger))
-	}
-
-	if accessKeyID == "" {
-		LogInfo("using user ak service:%s\n", ecsUrl)
-		ecsRoleAKBuild := EcsRoleAKBuild{url: ecsUrl}
-		options = append(options, oss.SetCredentialsProvider(&ecsRoleAKBuild))
 	}
 
 	client, err := oss.New(endpoint, accessKeyID, accessKeySecret, options...)
@@ -390,6 +498,19 @@ func (cmd *Command) getEcsRamAkService() (string, bool) {
 		if strUrl, ok := urlMap.(map[string]string)[ItemEcsAk]; ok {
 			if strUrl != "" {
 				return strUrl, true
+			} else {
+				return "", false
+			}
+		}
+	}
+	return "", false
+}
+
+func (cmd *Command) getRamRoleArnService() (string, bool) {
+	if arnMap, ok := cmd.configOptions[CREDSection]; ok {
+		if strArn, ok := arnMap.(map[string]string)[ItemRamRoleArn]; ok {
+			if strArn != "" {
+				return strArn, true
 			} else {
 				return "", false
 			}

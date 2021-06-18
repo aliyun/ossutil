@@ -1,0 +1,141 @@
+2021/06/17 22:18:29 command_test.go:78: test command started
+set up test:OssutilCommandSuite.TestCPObjectUnderAKmode
+Succeed: Total num: 1, size: 100. OK num: 1(upload 1 files).
+
+average speed 0(byte/s)
+Succeed: Total num: 1, size: 100. OK num: 1(download 1 objects).
+
+average speed 1000(byte/s)
+                                                                 Total 1 objects. Removed 1 objects. Progress: 100%                                                                 Succeed: Total 1 objects. Removed 1 objects.
+                                                                                                                                  Scanned 0 objects, 0 uploadIds. Removed 0 objects, 0 uploadIds.Succeed: Total 0 objects, 0 uploadIds. Removed 0 objects, 0 uploadIds.
+                                                                       Removed Bucket: ossutil-test-eq2zkiglfb1adsxnx7
+tear down test:OssutilCommandSuite.TestCPObjectUnderAKmode,cost:919(ms)
+set up test:OssutilCommandSuite.TestCPObjectUnderEcsmodeWithConfigEcsUrl
+                                                                       Succeed: Total num: 1, size: 100. OK num: 1(upload 1 files).
+
+average speed 0(byte/s)
+                                                                       Succeed: Total num: 1, size: 100. OK num: 1(download 1 objects).
+
+average speed 1000(byte/s)
+tear down test:OssutilCommandSuite.TestCPObjectUnderEcsmodeWithConfigEcsUrl,cost:193(ms)
+set up test:OssutilCommandSuite.TestCPObjectUnderEcsmodeWithEmptyEcsUrl
+
+average speed 0(byte/s)
+tear down test:OssutilCommandSuite.TestCPObjectUnderEcsmodeWithEmptyEcsUrl,cost:9(ms)
+set up test:OssutilCommandSuite.TestCPObjectUnderEcsmodeWithRolename
+                                                                       Succeed: Total num: 1, size: 100. OK num: 1(upload 1 files).
+
+average speed 0(byte/s)
+                                                                       Succeed: Total num: 1, size: 100. OK num: 1(download 1 objects).
+
+average speed 1000(byte/s)
+tear down test:OssutilCommandSuite.TestCPObjectUnderEcsmodeWithRolename,cost:196(ms)
+set up test:OssutilCommandSuite.TestCPObjectUnderNomode
+                                                                       Succeed: Total num: 1, size: 100. OK num: 1(upload 1 files).
+
+average speed 1000(byte/s)
+                                                                       Succeed: Total num: 1, size: 100. OK num: 1(download 1 objects).
+
+average speed 1000(byte/s)
+                                                                       Total 1 objects. Removed 1 objects. Progress: 100%                                                                       Succeed: Total 1 objects. Removed 1 objects.
+                                                                                                                                              Scanned 0 objects, 0 uploadIds. Removed 0 objects, 0 uploadIds.Succeed: Total 0 objects, 0 uploadIds. Removed 0 objects, 0 uploadIds.
+                                                                       Removed Bucket: ossutil-test-eq2zkixtpmtaealg3d
+tear down test:OssutilCommandSuite.TestCPObjectUnderNomode,cost:826(ms)
+set up test:OssutilCommandSuite.TestCPObjectUnderNomodeUsingEcsRoleAK
+                                                                       Succeed: Total num: 1, size: 100. OK num: 1(upload 1 files).
+
+average speed 0(byte/s)
+                                                                       Succeed: Total num: 1, size: 100. OK num: 1(download 1 objects).
+
+average speed 1000(byte/s)
+tear down test:OssutilCommandSuite.TestCPObjectUnderNomodeUsingEcsRoleAK,cost:182(ms)
+set up test:OssutilCommandSuite.TestCPObjectUnderNomodeWithEmptyAKIdAndEcsUrl
+oldConfigStr: [Credentials]
+language=EN
+endpoint=oss-cn-shenzhen.aliyuncs.com
+accessKeyID=LTAI5tEJcLhUzKES5Tyzcn3j
+accessKeySecret=pi4hMXrKblUNdGx3tmAclB4QUXcq1q
+
+                                                                       Scanned 0 objects. Removed 0 objects.                                                                       Succeed: Total 0 objects. Removed 0 objects.
+                                                                                                                                              Scanned 0 objects, 0 uploadIds. Removed 0 objects, 0 uploadIds.Succeed: Total 0 objects, 0 uploadIds. Removed 0 objects, 0 uploadIds.
+                                                                       Removed Bucket: ossutil-test-eq2zki7y4dwkav8kld
+tear down test:OssutilCommandSuite.TestCPObjectUnderNomodeWithEmptyAKIdAndEcsUrl,cost:742(ms)
+set up test:OssutilCommandSuite.TestCPObjectUnderNomodeWithTimeOut
+                                                                       Succeed: Total num: 1, size: 100. OK num: 1(upload 1 files).
+
+average speed 1000(byte/s)
+                                                                       Succeed: Total num: 1, size: 100. OK num: 1(download 1 objects).
+
+average speed 1000(byte/s)
+                                                                       Total 1 objects. Removed 1 objects. Progress: 100%                                                                       Succeed: Total 1 objects. Removed 1 objects.
+                                                                                                                                              Scanned 0 objects, 0 uploadIds. Removed 0 objects, 0 uploadIds.Succeed: Total 0 objects, 0 uploadIds. Removed 0 objects, 0 uploadIds.
+                                                                       Removed Bucket: ossutil-test-eq2zki1wox1jwh2gpn
+tear down test:OssutilCommandSuite.TestCPObjectUnderNomodeWithTimeOut,cost:891(ms)
+set up test:OssutilCommandSuite.TestCPObjectUnderRamRoleArnmodeWithArn
+                                                                       Succeed: Total num: 1, size: 100. OK num: 1(upload 1 files).
+
+average speed 0(byte/s)
+                                                                       Succeed: Total num: 1, size: 100. OK num: 1(download 1 objects).
+
+average speed 0(byte/s)
+                                                                       Total 1 objects. Removed 1 objects. Progress: 100%                                                                       Succeed: Total 1 objects. Removed 1 objects.
+                                                                                                                                              Scanned 0 objects, 0 uploadIds. Removed 0 objects, 0 uploadIds.Succeed: Total 0 objects, 0 uploadIds. Removed 0 objects, 0 uploadIds.
+                                                                       Removed Bucket: ossutil-test-eq2zki9ugs4po0znqm
+tear down test:OssutilCommandSuite.TestCPObjectUnderRamRoleArnmodeWithArn,cost:1205(ms)
+set up test:OssutilCommandSuite.TestCPObjectUnderRamRoleArnmodeWithConfigArn
+                                                                       Succeed: Total num: 1, size: 100. OK num: 1(upload 1 files).
+
+average speed 0(byte/s)
+                                                                       Succeed: Total num: 1, size: 100. OK num: 1(download 1 objects).
+
+average speed 0(byte/s)
+                                                                       Total 1 objects. Removed 1 objects. Progress: 100%                                                                       Succeed: Total 1 objects. Removed 1 objects.
+                                                                                                                                              Scanned 0 objects, 0 uploadIds. Removed 0 objects, 0 uploadIds.Succeed: Total 0 objects, 0 uploadIds. Removed 0 objects, 0 uploadIds.
+                                                                       Removed Bucket: ossutil-test-eq2zkiz8usq3piza25
+tear down test:OssutilCommandSuite.TestCPObjectUnderRamRoleArnmodeWithConfigArn,cost:1216(ms)
+set up test:OssutilCommandSuite.TestCPObjectUnderRamRoleArnmodeWithEmptyArn
+                                                                       Total 0 objects. Removed 0 objects. Progress: 100%                                                                       Succeed: Total 0 objects. Removed 0 objects.
+                                                                                                                                              Scanned 0 objects, 0 uploadIds. Removed 0 objects, 0 uploadIds.Succeed: Total 0 objects, 0 uploadIds. Removed 0 objects, 0 uploadIds.
+                                                                       Removed Bucket: ossutil-test-eq2zkir1qfgpajfizn
+tear down test:OssutilCommandSuite.TestCPObjectUnderRamRoleArnmodeWithEmptyArn,cost:707(ms)
+set up test:OssutilCommandSuite.TestCPObjectUnderRamRoleArnmodeWithExpiredSeconds
+                                                                       Succeed: Total num: 1, size: 100. OK num: 1(upload 1 files).
+
+average speed 0(byte/s)
+                                                                       Succeed: Total num: 1, size: 100. OK num: 1(download 1 objects).
+
+average speed 0(byte/s)
+                                                                       Total 1 objects. Removed 1 objects. Progress: 100%                                                                       Succeed: Total 1 objects. Removed 1 objects.
+                                                                                                                                              Scanned 0 objects, 0 uploadIds. Removed 0 objects, 0 uploadIds.Succeed: Total 0 objects, 0 uploadIds. Removed 0 objects, 0 uploadIds.
+                                                                       Removed Bucket: ossutil-test-eq2zkipjf1xq4w2av1
+tear down test:OssutilCommandSuite.TestCPObjectUnderRamRoleArnmodeWithExpiredSeconds,cost:1195(ms)
+set up test:OssutilCommandSuite.TestCPObjectUnderRamRoleArnmodeWithStsRegion
+                                                                       Succeed: Total num: 1, size: 100. OK num: 1(upload 1 files).
+
+average speed 0(byte/s)
+                                                                       Succeed: Total num: 1, size: 100. OK num: 1(download 1 objects).
+
+average speed 0(byte/s)
+                                                                       Total 0 objects. Removed 1 objects. Progress: 100%                                                                       Succeed: Total 0 objects. Removed 1 objects.
+                                                                                                                                              Scanned 0 objects, 0 uploadIds. Removed 0 objects, 0 uploadIds.Succeed: Total 0 objects, 0 uploadIds. Removed 0 objects, 0 uploadIds.
+                                                                       Removed Bucket: ossutil-test-eq2zki2bv2qcrgzmw9
+tear down test:OssutilCommandSuite.TestCPObjectUnderRamRoleArnmodeWithStsRegion,cost:970(ms)
+set up test:OssutilCommandSuite.TestCPObjectUnderSTSTokenmodeWithEmptySTSToken
+
+average speed 0(byte/s)
+                                                                       Scanned 0 objects. Removed 0 objects.                                                                       Succeed: Total 0 objects. Removed 0 objects.
+                                                                                                                                              Scanned 0 objects, 0 uploadIds. Removed 0 objects, 0 uploadIds.Succeed: Total 0 objects, 0 uploadIds. Removed 0 objects, 0 uploadIds.
+                                                                       Removed Bucket: ossutil-test-eq2zkipil39znmextx
+tear down test:OssutilCommandSuite.TestCPObjectUnderSTSTokenmodeWithEmptySTSToken,cost:708(ms)
+tear down OssutilCommandSuite
+                                                                       Total 0 objects. Removed 0 objects. Progress: 100%                                                                       Succeed: Total 0 objects. Removed 0 objects.
+                                                                                                                                              Scanned 0 objects, 0 uploadIds. Removed 0 objects, 0 uploadIds.Succeed: Total 0 objects, 0 uploadIds. Removed 0 objects, 0 uploadIds.
+                                                                       Removed Bucket: special-ossutil-test-eq2zkidestbucket
+                                                                       Scanned 0 objects. Removed 0 objects.                                                                       Succeed: Total 0 objects. Removed 0 objects.
+                                                                                                                                              Scanned 0 objects, 0 uploadIds. Removed 0 objects, 0 uploadIds.Succeed: Total 0 objects, 0 uploadIds. Removed 0 objects, 0 uploadIds.
+                                                                       Removed Bucket: special-ossutil-test-eq2zkiexistbucket
+                                                                       Scanned 0 objects. Removed 0 objects. when error happens.
+                                                                       Scanned 0 objects, 0 uploadIds. Removed 0 objects, 0 uploadIds. when error happens.
+                                                                                                                                                                        Scanned 0 objects. Removed 0 objects. when error happens.
+                                                                                    Scanned 0 objects, 0 uploadIds. Removed 0 objects, 0 uploadIds. when error happens.
+                                                                                    2021/06/17 22:18:41 command_test.go:159: test command completed

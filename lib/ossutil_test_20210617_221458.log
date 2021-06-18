@@ -1,0 +1,41 @@
+2021/06/17 22:14:58 command_test.go:78: test command started
+Total 0 objects. Removed 0 objects. Progress: 100%                                                   Succeed: Total 0 objects. Removed 0 objects.
+                                                   Total 0 objects, 0 uploadIds. Removed 0 objects, 0 uploadIds. Progress: 100%                                                                             Succeed: Total 0 objects, 0 uploadIds. Removed 0 objects, 0 uploadIds.
+                                                                             Removed Bucket: ossutil-test-23a60vqz8o4s37dt21
+                                                                             Total 0 objects. Removed 0 objects. Progress: 100%                                                                             Succeed: Total 0 objects. Removed 0 objects.
+                                                                                                                                                          Scanned 0 objects, 0 uploadIds. Removed 0 objects, 0 uploadIds.                                                                             Succeed: Total 0 objects, 0 uploadIds. Removed 0 objects, 0 uploadIds.
+                                                                             Removed Bucket: special-ossutil-test-23a60vdestbucket
+                                                                             Scanned 0 objects. Removed 0 objects.                                                                             Succeed: Total 0 objects. Removed 0 objects.
+                                                                             Total 0 objects, 0 uploadIds. Removed 0 objects, 0 uploadIds. Progress: 100%                                                                             Succeed: Total 0 objects, 0 uploadIds. Removed 0 objects, 0 uploadIds.
+                                                                             Removed Bucket: special-ossutil-test-23a60vexistbucket
+set up test:OssutilCommandSuite.TestCPObjectUnderNomodeWithEmptyAKIdAndEcsUrl
+oldConfigStr: [Credentials]
+language=EN
+endpoint=oss-cn-shenzhen.aliyuncs.com
+accessKeyID=LTAI5tEJcLhUzKES5Tyzcn3j
+accessKeySecret=pi4hMXrKblUNdGx3tmAclB4QUXcq1q
+
+                                                                             Scanned 0 objects. Removed 0 objects.                                                                             Succeed: Total 0 objects. Removed 0 objects.
+                                                                             Total 0 objects, 0 uploadIds. Removed 0 objects, 0 uploadIds. Progress: 100%                                                                             Succeed: Total 0 objects, 0 uploadIds. Removed 0 objects, 0 uploadIds.
+                                                                             Removed Bucket: ossutil-test-avyqkmnk8qmqe4db6a
+tear down test:OssutilCommandSuite.TestCPObjectUnderNomodeWithEmptyAKIdAndEcsUrl,cost:658(ms)
+tear down OssutilCommandSuite
+                                                                             Total 0 objects. Removed 0 objects. Progress: 100%                                                                             Succeed: Total 0 objects. Removed 0 objects.
+                                                                             Total 0 objects, 0 uploadIds. Removed 0 objects, 0 uploadIds. Progress: 100%                                                                             Succeed: Total 0 objects, 0 uploadIds. Removed 0 objects, 0 uploadIds.
+                                                                             Removed Bucket: special-ossutil-test-avyqkmdestbucket
+                                                                             Total 0 objects. Removed 0 objects. Progress: 100%                                                                             Succeed: Total 0 objects. Removed 0 objects.
+                                                                             Total 0 objects, 0 uploadIds. Removed 0 objects, 0 uploadIds. Progress: 100%                                                                             Succeed: Total 0 objects, 0 uploadIds. Removed 0 objects, 0 uploadIds.
+                                                                             Removed Bucket: special-ossutil-test-avyqkmexistbucket
+                                                                             Scanned 0 objects. Removed 0 objects. when error happens.
+                                                                             Scanned 0 objects, 0 uploadIds. Removed 0 objects, 0 uploadIds. when error happens.
+                                                                                    test begin
+special-ossutil-test-avyqkmexistbucket
+oss: service returned error: StatusCode=404, ErrorCode=NoSuchBucket, ErrorMessage="The specified bucket does not exist.", RequestId=60CB58E5178F8C313272EF5F, Bucket=special-ossutil-test-avyqkmexistbucket, Object=
+test end
+                                                                                    Scanned 0 objects. Removed 0 objects. when error happens.
+                                                                                    Scanned 0 objects, 0 uploadIds. Removed 0 objects, 0 uploadIds. when error happens.
+                                                                                    test begin
+special-ossutil-test-avyqkmdestbucket
+oss: service returned error: StatusCode=404, ErrorCode=NoSuchBucket, ErrorMessage="The specified bucket does not exist.", RequestId=60CB58E59ACC07353497A113, Bucket=special-ossutil-test-avyqkmdestbucket, Object=
+test end
+2021/06/17 22:15:02 command_test.go:159: test command completed
