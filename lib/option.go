@@ -251,8 +251,8 @@ var OptionMap = map[string]Option{
 		"表示客户端连接超时的时间，单位为秒, 缺省值为120",
 		"specifies the time that the client connection timed out, the unit is: s, default value is 120."},
 	OptionSTSRegion: Option{"", "--sts-region", "", OptionTypeString, "", "",
-		"指定sts endpoint，缺省值为中央endpoint，主要用于RamRoleArn模式",
-		"specifies the sts endpoint, default value is central endpoint, primarily used in RamRoleArn mode."},
+		"指定sts endpoint的地区，比如shenzhen，用于构造sts endpoint，缺省时的sts endpoint为中央endpoint，主要用于RamRoleArn模式",
+		"specifies the region of sts endpoint, such as shenzhen, to construct sts endpoint, by default, the sts endpoint is the central endpoint, primarily used in RamRoleArn mode."},
 }
 
 func (T *Option) getHelp(language string) string {

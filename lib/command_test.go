@@ -240,27 +240,15 @@ func (s *OssutilCommandSuite) configNonInteractive(c *C) {
 		"endpoint":        &endpoint,
 		"accessKeyID":     &accessKeyID,
 		"accessKeySecret": &accessKeySecret,
-		"stsToken":        &stsToken,
 		"configFile":      &configFile,
-		"ramRoleArn":      &stsARN,
 	}
-
 	showElapse, err := cm.RunCommand(command, args, options)
 	c.Assert(showElapse, Equals, false)
 	c.Assert(err, IsNil)
 
 	opts, err := LoadConfig(configFile)
 	c.Assert(err, IsNil)
-	//c.Assert(len(opts), Equals, 4)
-	// if stsToken == "" && stsARN == "" {
-	// 	c.Assert(len(opts), Equals, 4)
-	// } else if stsToken != "" && stsARN == "" {
-	// 	c.Assert(len(opts), Equals, 5)
-	// } else if stsToken == "" && stsARN != "" {
-	// 	c.Assert(len(opts), Equals, 5)
-	// } else if stsToken != "" && stsARN != "" {
-	// 	c.Assert(len(opts), Equals, 6)
-	// }
+	c.Assert(len(opts), Equals, 4)
 	c.Assert(opts[OptionLanguage], Equals, DefaultLanguage)
 	c.Assert(opts[OptionEndpoint], Equals, endpoint)
 	c.Assert(opts[OptionAccessKeyID], Equals, accessKeyID)
@@ -689,6 +677,8 @@ func (s *OssutilCommandSuite) putBucket(bucket string, c *C) {
 		"configFile":      &configFile,
 	}
 	showElapse, err := cm.RunCommand(command, args, options)
+	fmt.Printf("err:\n")
+	fmt.Println(err)
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
 }

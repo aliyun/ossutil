@@ -14,9 +14,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gofrs/go.uuid"
 	"math/rand"
-	// "workspace/ossutil/lib/util"
-	//uuid "github.com/gofrs/go.uuid"
 )
 
 // Client sts client

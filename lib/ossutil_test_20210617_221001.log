@@ -1,24 +1,0 @@
-2021/06/17 22:10:01 command_test.go:78: test command started
-Scanned 0 objects. Removed 0 objects.Succeed: Total 0 objects. Removed 0 objects.
-                                             Scanned 0 objects, 0 uploadIds. Removed 0 objects, 0 uploadIds.Succeed: Total 0 objects, 0 uploadIds. Removed 0 objects, 0 uploadIds.
-                                                                       Removed Bucket: ossutil-test-41ybltlkcoper0t7zf
-                                                                       Scanned 0 objects. Removed 0 objects.                                                                       Succeed: Total 0 objects. Removed 0 objects.
-                                                                       Total 0 objects, 0 uploadIds. Removed 0 objects, 0 uploadIds. Progress: 100%                                                                             Succeed: Total 0 objects, 0 uploadIds. Removed 0 objects, 0 uploadIds.
-                                                                             Removed Bucket: special-ossutil-test-41ybltdestbucket
-                                                                             Total 0 objects. Removed 0 objects. Progress: 100%                                                                             Succeed: Total 0 objects. Removed 0 objects.
-                                                                                                                                                          Scanned 0 objects, 0 uploadIds. Removed 0 objects, 0 uploadIds.                                                                             Succeed: Total 0 objects, 0 uploadIds. Removed 0 objects, 0 uploadIds.
-                                                                             Removed Bucket: special-ossutil-test-41ybltexistbucket
-set up test:OssutilCommandSuite.TestCPObjectUnderNomodeWithEmptyAKIdAndEcsUrl
-oldConfigStr: [Credentials]
-language=EN
-endpoint=oss-cn-shenzhen.aliyuncs.com
-accessKeyID=LTAI5tEJcLhUzKES5Tyzcn3j
-accessKeySecret=pi4hMXrKblUNdGx3tmAclB4QUXcq1q
-
-bucketName: ossutil-test-23a60vqz8o4s37dt21
-test begin
-ossutil-test-23a60vqz8o4s37dt21
-accessKeyID and ecsUrl are both empty
-test end
-tear down test:OssutilCommandSuite.TestCPObjectUnderNomodeWithEmptyAKIdAndEcsUrl,cost:373(ms)
-tear down OssutilCommandSuite
