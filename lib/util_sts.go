@@ -1,4 +1,4 @@
-package sts
+package lib
 
 import (
 	"crypto/hmac"
@@ -13,9 +13,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/gofrs/go.uuid"
-	"math/rand"
 )
 
 // Client sts client
@@ -97,12 +94,12 @@ const (
 var StsHost = "https://sts.aliyuncs.com/"
 
 // AssumeRole assume role
-func (c *Client) AssumeRole(expiredTime uint, stsRegion string) (*Response, error) {
-	if stsRegion != "" {
-		StsHost = stsRegion
+func (c *Client) AssumeRole(tokenTimeout uint, stsEndPoint string) (*Response, error) {
+	if stsEndPoint != "" {
+		StsHost = stsEndPoint
 	}
 
-	url, err := c.generateSignedURL(expiredTime)
+	url, err := c.generateSignedURL(tokenTimeout)
 	if err != nil {
 		return nil, err
 	}
@@ -113,16 +110,6 @@ func (c *Client) AssumeRole(expiredTime uint, stsRegion string) (*Response, erro
 	}
 
 	return c.handleResponse(body, status)
-}
-
-func randStr(n int) string {
-	var letters = []rune("0123456789abcdefghijklmnopqrstuvwxyz")
-	b := make([]rune, n)
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	for i := range b {
-		b[i] = letters[r.Intn(len(letters))]
-	}
-	return string(b)
 }
 
 // Private function

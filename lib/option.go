@@ -232,12 +232,12 @@ var OptionMap = map[string]Option{
 	OptionMode: Option{"", "--mode", "", OptionTypeString, "", "",
 		"表示鉴权模式，取值可以为AK，StsToken，RamRoleArn，EcsRamRole，缺省值为空",
 		"specifies the authentication mode, the value can be AK，StsToken，RamRoleArn，EcsRamRole, default value is empty."},
-	OptionRamRoleName: Option{"", "--ram-role-name", "", OptionTypeString, "", "",
+	OptionECSRoleName: Option{"", "--ecs-role-name", "", OptionTypeString, "", "",
 		"表示角色名，主要用于EcsRamRole模式",
 		"specifies the authentication mode, primarily used in EcsRamRole mode."},
-	OptionExpiredSeconds: Option{"", "--expired-seconds", "", OptionTypeInt64, "", "",
-		"表示会话超时时间，单位为秒, 缺省值为3600，主要用于RamRoleArn模式下的AssumeRole参数",
-		"specifies the session timeout period, the unit is: s, default value is 3600, primarily used for AssumeRole parameters in RamRoleArn mode"},
+	OptionTokenTimeout: Option{"", "--token-timeout", "", OptionTypeInt64, "", "",
+		"表示token的有效时间，单位为秒, 缺省值为3600，主要用于RamRoleArn模式下的AssumeRole参数",
+		"specifies the valid time of a token, the unit is: s, default value is 3600, primarily used for AssumeRole parameters in RamRoleArn mode"},
 	OptionRamRoleArn: Option{"", "--ram-role-arn", "", OptionTypeString, "", "",
 		"表示RAM角色的ARN，主要用于RamRoleArn模式",
 		"specifies the ARN of ram role, primarily used in RamRoleArn mode."},
@@ -251,8 +251,8 @@ var OptionMap = map[string]Option{
 		"表示客户端连接超时的时间，单位为秒, 缺省值为120",
 		"specifies the time that the client connection timed out, the unit is: s, default value is 120."},
 	OptionSTSRegion: Option{"", "--sts-region", "", OptionTypeString, "", "",
-		"指定sts endpoint的地区，比如shenzhen，用于构造sts endpoint，缺省时的sts endpoint为中央endpoint，主要用于RamRoleArn模式",
-		"specifies the region of sts endpoint, such as shenzhen, to construct sts endpoint, by default, the sts endpoint is the central endpoint, primarily used in RamRoleArn mode."},
+		"指定sts endpoint的地区，比如cn-shenzhen，其中，cn指代的是国家，shenzhen指代的是地区，用于构造sts endpoint，该选项缺省时，sts endpoint为中央endpoint，主要用于RamRoleArn模式",
+		"specifies the region of sts endpoint, such as cn-shenzhen, in this case, cn refers to the country and shenzhen refers to the region, to construct sts endpoint, when this option defaults, the sts endpoint is the central endpoint, primarily used in RamRoleArn mode."},
 }
 
 func (T *Option) getHelp(language string) string {

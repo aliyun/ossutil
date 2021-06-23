@@ -5030,10 +5030,6 @@ func (s *OssutilCommandSuite) TestCPObjectWithInputPassword(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestCPObjectUnderAKmode(c *C) {
-	if runtime.GOOS == "windows" {
-		return
-	}
-
 	bucketName := bucketNamePrefix + randLowStr(12)
 	s.putBucket(bucketName, c)
 
@@ -5083,9 +5079,8 @@ func (s *OssutilCommandSuite) TestCPObjectUnderAKmode(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestCPObjectUnderEcsmodeWithConfigEcsUrl(c *C) {
-	if runtime.GOOS == "windows" {
-		return
-	}
+	bucketName := bucketNamePrefix + randLowStr(12)
+	s.putBucket(bucketName, c)
 
 	oldConfigStr, err := ioutil.ReadFile(configFile)
 	c.Assert(err, IsNil)
@@ -5096,8 +5091,6 @@ func (s *OssutilCommandSuite) TestCPObjectUnderEcsmodeWithConfigEcsUrl(c *C) {
 
 	fd.WriteString(configStr)
 	fd.Close()
-
-	bucketName := "wangtw-test-shenzhen1"
 
 	// prepare file and object
 
@@ -5143,15 +5136,12 @@ func (s *OssutilCommandSuite) TestCPObjectUnderEcsmodeWithConfigEcsUrl(c *C) {
 
 	os.Remove(downFileName)
 	os.Remove(testFileName)
-
+	s.removeBucket(bucketName, true, c)
 }
 
 func (s *OssutilCommandSuite) TestCPObjectUnderEcsmodeWithEmptyEcsUrl(c *C) {
-	if runtime.GOOS == "windows" {
-		return
-	}
-
-	bucketName := "wangtw-test-shenzhen1"
+	bucketName := bucketNamePrefix + randLowStr(12)
+	s.putBucket(bucketName, c)
 
 	// prepare file and object
 
@@ -5183,14 +5173,12 @@ func (s *OssutilCommandSuite) TestCPObjectUnderEcsmodeWithEmptyEcsUrl(c *C) {
 	c.Assert(err, NotNil)
 
 	os.Remove(testFileName)
+	s.removeBucket(bucketName, true, c)
 }
 
 func (s *OssutilCommandSuite) TestCPObjectUnderEcsmodeWithRolename(c *C) {
-	if runtime.GOOS == "windows" {
-		return
-	}
-
-	bucketName := "wangtw-test-shenzhen1"
+	bucketName := bucketNamePrefix + randLowStr(12)
+	s.putBucket(bucketName, c)
 
 	// prepare file and object
 
@@ -5205,7 +5193,6 @@ func (s *OssutilCommandSuite) TestCPObjectUnderEcsmodeWithRolename(c *C) {
 
 	str := ""
 	mode := "EcsRamRole"
-	ramRoleName := "EcsRamRoleTesting"
 	routines := strconv.Itoa(Routines)
 
 	cpDir := CheckpointDir
@@ -5217,7 +5204,7 @@ func (s *OssutilCommandSuite) TestCPObjectUnderEcsmodeWithRolename(c *C) {
 		"mode":            &mode,
 		"routines":        &routines,
 		"checkpointDir":   &cpDir,
-		"ramRoleName":     &ramRoleName,
+		"ecsRoleName":     &ecsRoleName,
 	}
 
 	_, err := cm.RunCommand("cp", cpArgs, options)
@@ -5235,13 +5222,10 @@ func (s *OssutilCommandSuite) TestCPObjectUnderEcsmodeWithRolename(c *C) {
 	c.Assert(data, Equals, string(fileBody))
 	os.Remove(downFileName)
 	os.Remove(testFileName)
+	s.removeBucket(bucketName, true, c)
 }
 
 func (s *OssutilCommandSuite) TestCPObjectUnderRamRoleArnmodeWithArn(c *C) {
-	if runtime.GOOS == "windows" {
-		return
-	}
-
 	bucketName := bucketNamePrefix + randLowStr(12)
 	s.putBucket(bucketName, c)
 
@@ -5259,17 +5243,16 @@ func (s *OssutilCommandSuite) TestCPObjectUnderRamRoleArnmodeWithArn(c *C) {
 	str := ""
 	mode := "RamRoleArn"
 	routines := strconv.Itoa(Routines)
-	arn := "acs:ram::1982221944418228:role/sts"
 	cpDir := CheckpointDir
 	options := OptionMapType{
 		"endpoint":        &str,
-		"accessKeyID":     &str,
-		"accessKeySecret": &str,
+		"accessKeyID":     &stsAccessID,
+		"accessKeySecret": &stsAccessKeySecret,
 		"configFile":      &configFile,
 		"mode":            &mode,
 		"routines":        &routines,
 		"checkpointDir":   &cpDir,
-		"ramRoleArn":      &arn,
+		"ramRoleArn":      &stsARN,
 	}
 
 	_, err := cm.RunCommand("cp", cpArgs, options)
@@ -5291,20 +5274,16 @@ func (s *OssutilCommandSuite) TestCPObjectUnderRamRoleArnmodeWithArn(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestCPObjectUnderRamRoleArnmodeWithConfigArn(c *C) {
-	if runtime.GOOS == "windows" {
-		return
-	}
+	bucketName := bucketNamePrefix + randLowStr(12)
+	s.putBucket(bucketName, c)
 
 	oldConfigStr, err := ioutil.ReadFile(configFile)
 	c.Assert(err, IsNil)
 	f, err := os.OpenFile(ConfigFile, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0660)
-	configStr := "ramRoleArn=acs:ram::1982221944418228:role/sts"
+	configStr := "ramRoleArn=" + stsARN
 
 	f.WriteString(configStr)
 	f.Close()
-
-	bucketName := bucketNamePrefix + randLowStr(12)
-	s.putBucket(bucketName, c)
 
 	// prepare file and object
 
@@ -5323,8 +5302,8 @@ func (s *OssutilCommandSuite) TestCPObjectUnderRamRoleArnmodeWithConfigArn(c *C)
 	cpDir := CheckpointDir
 	options := OptionMapType{
 		"endpoint":        &str,
-		"accessKeyID":     &str,
-		"accessKeySecret": &str,
+		"accessKeyID":     &stsAccessID,
+		"accessKeySecret": &stsAccessKeySecret,
 		"configFile":      &configFile,
 		"mode":            &mode,
 		"routines":        &routines,
@@ -5356,10 +5335,6 @@ func (s *OssutilCommandSuite) TestCPObjectUnderRamRoleArnmodeWithConfigArn(c *C)
 }
 
 func (s *OssutilCommandSuite) TestCPObjectUnderRamRoleArnmodeWithEmptyArn(c *C) {
-	if runtime.GOOS == "windows" {
-		return
-	}
-
 	bucketName := bucketNamePrefix + randLowStr(12)
 	s.putBucket(bucketName, c)
 
@@ -5380,8 +5355,8 @@ func (s *OssutilCommandSuite) TestCPObjectUnderRamRoleArnmodeWithEmptyArn(c *C) 
 	cpDir := CheckpointDir
 	options := OptionMapType{
 		"endpoint":        &str,
-		"accessKeyID":     &str,
-		"accessKeySecret": &str,
+		"accessKeyID":     &stsAccessID,
+		"accessKeySecret": &stsAccessKeySecret,
 		"configFile":      &configFile,
 		"mode":            &mode,
 		"routines":        &routines,
@@ -5396,11 +5371,7 @@ func (s *OssutilCommandSuite) TestCPObjectUnderRamRoleArnmodeWithEmptyArn(c *C) 
 	s.removeBucket(bucketName, true, c)
 }
 
-func (s *OssutilCommandSuite) TestCPObjectUnderRamRoleArnmodeWithExpiredSeconds(c *C) {
-	if runtime.GOOS == "windows" {
-		return
-	}
-
+func (s *OssutilCommandSuite) TestCPObjectUnderRamRoleArnmodeWithTokenTimeout(c *C) {
 	bucketName := bucketNamePrefix + randLowStr(12)
 	s.putBucket(bucketName, c)
 
@@ -5418,19 +5389,18 @@ func (s *OssutilCommandSuite) TestCPObjectUnderRamRoleArnmodeWithExpiredSeconds(
 	str := ""
 	mode := "RamRoleArn"
 	routines := strconv.Itoa(Routines)
-	arn := "acs:ram::1982221944418228:role/sts"
-	expireSeconds := "2000"
+	tokenTimeout := "2000"
 	cpDir := CheckpointDir
 	options := OptionMapType{
 		"endpoint":        &str,
-		"accessKeyID":     &str,
-		"accessKeySecret": &str,
+		"accessKeyID":     &stsAccessID,
+		"accessKeySecret": &stsAccessKeySecret,
 		"configFile":      &configFile,
 		"mode":            &mode,
 		"routines":        &routines,
 		"checkpointDir":   &cpDir,
-		"ramRoleArn":      &arn,
-		"expiredSeconds":  &expireSeconds,
+		"ramRoleArn":      &stsARN,
+		"tokenTimeout":    &tokenTimeout,
 	}
 
 	_, err := cm.RunCommand("cp", cpArgs, options)
@@ -5452,10 +5422,6 @@ func (s *OssutilCommandSuite) TestCPObjectUnderRamRoleArnmodeWithExpiredSeconds(
 }
 
 func (s *OssutilCommandSuite) TestCPObjectUnderRamRoleArnmodeWithStsRegion(c *C) {
-	if runtime.GOOS == "windows" {
-		return
-	}
-
 	bucketName := bucketNamePrefix + randLowStr(12)
 	s.putBucket(bucketName, c)
 
@@ -5469,22 +5435,19 @@ func (s *OssutilCommandSuite) TestCPObjectUnderRamRoleArnmodeWithStsRegion(c *C)
 	// begin cp file
 	object := randLowStr(12)
 	cpArgs := []string{testFileName, CloudURLToString(bucketName, object)}
-
 	str := ""
 	mode := "RamRoleArn"
 	routines := strconv.Itoa(Routines)
-	arn := "acs:ram::1982221944418228:role/sts"
-	stsRegion := "shenzhen"
 	cpDir := CheckpointDir
 	options := OptionMapType{
 		"endpoint":        &str,
-		"accessKeyID":     &str,
-		"accessKeySecret": &str,
+		"accessKeyID":     &stsAccessID,
+		"accessKeySecret": &stsAccessKeySecret,
 		"configFile":      &configFile,
 		"mode":            &mode,
 		"routines":        &routines,
 		"checkpointDir":   &cpDir,
-		"ramRoleArn":      &arn,
+		"ramRoleArn":      &stsARN,
 		"stsRegion":       &stsRegion,
 	}
 
@@ -5507,10 +5470,6 @@ func (s *OssutilCommandSuite) TestCPObjectUnderRamRoleArnmodeWithStsRegion(c *C)
 }
 
 func (s *OssutilCommandSuite) TestCPObjectUnderNomode(c *C) {
-	if runtime.GOOS == "windows" {
-		return
-	}
-
 	bucketName := bucketNamePrefix + randLowStr(12)
 	s.putBucket(bucketName, c)
 
@@ -5556,10 +5515,6 @@ func (s *OssutilCommandSuite) TestCPObjectUnderNomode(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestCPObjectUnderNomodeWithEmptyAKIdAndEcsUrl(c *C) {
-	if runtime.GOOS == "windows" {
-		return
-	}
-
 	bucketName := bucketNamePrefix + randLowStr(12)
 	s.putBucket(bucketName, c)
 
@@ -5605,11 +5560,8 @@ func (s *OssutilCommandSuite) TestCPObjectUnderNomodeWithEmptyAKIdAndEcsUrl(c *C
 }
 
 func (s *OssutilCommandSuite) TestCPObjectUnderNomodeUsingEcsRoleAK(c *C) {
-	if runtime.GOOS == "windows" {
-		return
-	}
-
-	bucketName := "wangtw-test-shenzhen1"
+	bucketName := bucketNamePrefix + randLowStr(12)
+	s.putBucket(bucketName, c)
 
 	oldConfigStr, err := ioutil.ReadFile(configFile)
 	c.Assert(err, IsNil)
@@ -5663,55 +5615,10 @@ func (s *OssutilCommandSuite) TestCPObjectUnderNomodeUsingEcsRoleAK(c *C) {
 
 	os.Remove(downFileName)
 	os.Remove(testFileName)
-}
-
-func (s *OssutilCommandSuite) TestCPObjectUnderSTSTokenmodeWithEmptySTSToken(c *C) {
-
-	if runtime.GOOS == "windows" {
-		return
-	}
-
-	bucketName := bucketNamePrefix + randLowStr(12)
-	s.putBucket(bucketName, c)
-
-	// prepare file and object
-
-	// filename
-	testFileName := "ossutil_test_file" + randStr(5)
-	data := randStr(100)
-	s.createFile(testFileName, data, c)
-
-	// begin cp file
-	object := randLowStr(12)
-	cpArgs := []string{testFileName, CloudURLToString(bucketName, object)}
-
-	str := ""
-	mode := "StsToken"
-	routines := strconv.Itoa(Routines)
-	cpDir := CheckpointDir
-	options := OptionMapType{
-		"endpoint":        &str,
-		"accessKeyID":     &str,
-		"accessKeySecret": &str,
-		"configFile":      &configFile,
-		"routines":        &routines,
-		"checkpointDir":   &cpDir,
-		"mode":            &mode,
-		"stsToken":        &str,
-	}
-
-	_, err := cm.RunCommand("cp", cpArgs, options)
-	c.Assert(err, NotNil)
-
-	os.Remove(testFileName)
 	s.removeBucket(bucketName, true, c)
 }
 
 func (s *OssutilCommandSuite) TestCPObjectUnderNomodeWithTimeOut(c *C) {
-	if runtime.GOOS == "windows" {
-		return
-	}
-
 	bucketName := bucketNamePrefix + randLowStr(12)
 	s.putBucket(bucketName, c)
 
@@ -5757,6 +5664,117 @@ func (s *OssutilCommandSuite) TestCPObjectUnderNomodeWithTimeOut(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(data, Equals, string(fileBody))
 	os.Remove(downFileName)
+	os.Remove(testFileName)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestCPObjectUnderSTStokenmode(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(12)
+	s.putBucket(bucketName, c)
+
+	client := NewClient(stsAccessID, stsAccessKeySecret, stsARN, "sts_test")
+
+	resp, err := client.AssumeRole(900, "")
+	c.Assert(err, IsNil)
+
+	temAccessID := resp.Credentials.AccessKeyId
+	temAccessKeySecret := resp.Credentials.AccessKeySecret
+	temSTSToken := resp.Credentials.SecurityToken
+
+	c.Assert(temAccessID, Not(Equals), "")
+	c.Assert(temAccessKeySecret, Not(Equals), "")
+	c.Assert(temSTSToken, Not(Equals), "")
+
+	// prepare file and object
+
+	// filename
+	testFileName := "ossutil_test_file" + randStr(5)
+	data := randStr(100)
+	s.createFile(testFileName, data, c)
+
+	// begin cp file
+	object := randLowStr(12)
+	cpArgs := []string{testFileName, CloudURLToString(bucketName, object)}
+
+	str := ""
+	mode := "StsToken"
+	routines := strconv.Itoa(Routines)
+	cpDir := CheckpointDir
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &temAccessID,
+		"accessKeySecret": &temAccessKeySecret,
+		"configFile":      &configFile,
+		"mode":            &mode,
+		"routines":        &routines,
+		"checkpointDir":   &cpDir,
+		"stsToken":        &temSTSToken,
+	}
+
+	_, err = cm.RunCommand("cp", cpArgs, options)
+	c.Assert(err, IsNil)
+
+	// down object
+	downFileName := testFileName + ".down"
+	dwArgs := []string{CloudURLToString(bucketName, object), downFileName}
+	_, err = cm.RunCommand("cp", dwArgs, options)
+	c.Assert(err, IsNil)
+
+	//check content
+	fileBody, err := ioutil.ReadFile(downFileName)
+	c.Assert(err, IsNil)
+	c.Assert(data, Equals, string(fileBody))
+	os.Remove(downFileName)
+	os.Remove(testFileName)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestCPObjectUnderSTSTokenmodeWithEmptySTSToken(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(12)
+	s.putBucket(bucketName, c)
+
+	client := NewClient(stsAccessID, stsAccessKeySecret, stsARN, "sts_test")
+
+	resp, err := client.AssumeRole(900, "")
+	c.Assert(err, IsNil)
+
+	temAccessID := resp.Credentials.AccessKeyId
+	temAccessKeySecret := resp.Credentials.AccessKeySecret
+	temSTSToken := resp.Credentials.SecurityToken
+
+	c.Assert(temAccessID, Not(Equals), "")
+	c.Assert(temAccessKeySecret, Not(Equals), "")
+	c.Assert(temSTSToken, Not(Equals), "")
+
+	// prepare file and object
+
+	// filename
+	testFileName := "ossutil_test_file" + randStr(5)
+	data := randStr(100)
+	s.createFile(testFileName, data, c)
+
+	// begin cp file
+	object := randLowStr(12)
+	cpArgs := []string{testFileName, CloudURLToString(bucketName, object)}
+
+	str := ""
+	mode := "StsToken"
+	routines := strconv.Itoa(Routines)
+	cpDir := CheckpointDir
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &temAccessID,
+		"accessKeySecret": &temAccessKeySecret,
+		"configFile":      &configFile,
+		"mode":            &mode,
+		"routines":        &routines,
+		"checkpointDir":   &cpDir,
+		"stsToken":        &str,
+	}
+
+	_, err = cm.RunCommand("cp", cpArgs, options)
+	c.Assert(err, NotNil)
+
 	os.Remove(testFileName)
 	s.removeBucket(bucketName, true, c)
 }

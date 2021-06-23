@@ -1,25 +1,12 @@
-package sts
+package lib
 
 import (
 	"fmt"
 	"log"
-	"os"
-	"testing"
 	"time"
 
 	. "gopkg.in/check.v1"
 )
-
-var (
-	accessKeyId     = os.Getenv("STS_TEST_ACCESS_KEY_ID")
-	accessKeySecret = os.Getenv("STS_TEST_ACCESS_KEY_SECRET")
-	roleArn         = os.Getenv("STS_TEST_ROLE_ARN")
-)
-
-// Hook up gocheck into the "go test" runner.
-func Test(t *testing.T) {
-	TestingT(t)
-}
 
 type StsTestSuite struct {
 }
@@ -76,7 +63,7 @@ func (s *StsTestSuite) TestHandleResponse(c *C) {
 
 func (s *StsTestSuite) TestAssumeRoleSuccess(c *C) {
 	now := time.Now()
-	client := NewClient(accessKeyId, accessKeySecret, roleArn, "sts_test")
+	client := NewClient(accessKeyID, accessKeySecret, stsARN, "sts_test")
 
 	resp, err := client.AssumeRole(900, "")
 	if err != nil {
@@ -99,7 +86,7 @@ func (s *StsTestSuite) TestAssumeRoleSuccess(c *C) {
 
 func (s *StsTestSuite) TestAssumeRoleNegative(c *C) {
 	// AccessKeyID invalid
-	client := NewClient("", accessKeySecret, roleArn, "sts_test")
+	client := NewClient("", accessKeySecret, stsARN, "sts_test")
 	resp, err := client.AssumeRole(900, "")
 	c.Assert(resp, IsNil)
 	c.Assert(err, NotNil)
@@ -115,7 +102,7 @@ func (s *StsTestSuite) TestAssumeRoleNegative(c *C) {
 	log.Println("ServiceError:", srvErr)
 
 	// AccessKeySecret invalid
-	client = NewClient(accessKeyId, accessKeySecret+" ", roleArn, "sts_test")
+	client = NewClient(accessKeyID, accessKeySecret+" ", stsARN, "sts_test")
 	resp, err = client.AssumeRole(900, "")
 	c.Assert(resp, IsNil)
 	c.Assert(err, NotNil)
@@ -127,7 +114,7 @@ func (s *StsTestSuite) TestAssumeRoleNegative(c *C) {
 	log.Println("ServiceError:", srvErr)
 
 	// SessionName invalid
-	client = NewClient(accessKeyId, accessKeySecret, roleArn, "x")
+	client = NewClient(accessKeyID, accessKeySecret, stsARN, "x")
 
 	resp, err = client.AssumeRole(900, "")
 	c.Assert(resp, IsNil)

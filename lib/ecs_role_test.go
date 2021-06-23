@@ -89,7 +89,8 @@ func (s *OssutilCommandSuite) TestEcsRoleSuccess(c *C) {
 	oldConfigStr, err := ioutil.ReadFile(configFile)
 	c.Assert(err, IsNil)
 	fd, _ := os.OpenFile(configFile, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
-	ecsAk := "http://127.0.0.1:32915/latest/meta-data/Ram/security-credentials/EcsRamRoleTesting"
+	// ecsAk := "http://127.0.0.1:32915/latest/meta-data/Ram/security-credentials/EcsRamRoleTesting"
+	ecsAk := "http://100.100.100.200/latest/meta-data/Ram/security-credentials/EcsRamRoleTesting"
 	configStr := "[Credentials]" + "\n" + "language=CH" + "\n" + "endpoint= " + endpoint + "\n"
 	configStr = configStr + "[AkService]" + "\n" + "ecsAk=" + ecsAk
 
