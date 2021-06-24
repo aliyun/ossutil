@@ -841,5 +841,6 @@ func GetAllCommands() []interface{} {
 		&revertCommand,
 		&syncCommand,
 		&wormCommand,
+		&lrbCommand,
 	}
 }

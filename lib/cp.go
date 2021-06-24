@@ -62,6 +62,7 @@ type copyOptionType struct {
 	disableDirObject  bool
 	disableAllSymlink bool
 	tagging           string
+	opType            operationType
 	bSyncCommand      bool
 }
 
@@ -1472,6 +1473,7 @@ func (cc *CopyCommand) RunCommand() error {
 	}
 
 	cc.monitor.init(opType)
+	cc.cpOption.opType = opType
 
 	chProgressSignal = make(chan chProgressSignalType, 10)
 	go cc.progressBar()
@@ -2666,7 +2668,7 @@ func (cc *CopyCommand) objectStatistic(bucket *oss.Bucket, cloudURL CloudURL) {
 			for _, object := range lor.Objects {
 				if doesSingleObjectMatchPatterns(object.Key, cc.cpOption.filters) {
 					if cc.cpOption.partitionIndex == 0 || (cc.cpOption.partitionIndex > 0 && matchHash(fnvIns, object.Key, cc.cpOption.partitionIndex-1, cc.cpOption.partitionCount)) {
-						if strings.ToLower(object.Type) == "symlink" {
+						if strings.ToLower(object.Type) == "symlink" && cc.cpOption.opType == operationTypeGet {
 							props, err := cc.command.ossGetObjectStatRetry(bucket, object.Key, cc.cpOption.payerOptions...)
 							if err != nil {
 								LogError("ossGetObjectStatRetry error info:%s\n", err.Error())
@@ -2798,7 +2800,7 @@ func (cc *CopyCommand) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, chO
 
 			if doesSingleObjectMatchPatterns(object.Key, cc.cpOption.filters) {
 				if cc.cpOption.partitionIndex == 0 || (cc.cpOption.partitionIndex > 0 && matchHash(fnvIns, object.Key, cc.cpOption.partitionIndex-1, cc.cpOption.partitionCount)) {
-					if strings.ToLower(object.Type) == "symlink" {
+					if strings.ToLower(object.Type) == "symlink" && cc.cpOption.opType == operationTypeGet {
 						props, err := cc.command.ossGetObjectStatRetry(bucket, object.Key, cc.cpOption.payerOptions...)
 						if err != nil {
 							LogError("ossGetObjectStatRetry error info:%s\n", err.Error())
