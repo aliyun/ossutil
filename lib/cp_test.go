@@ -5566,7 +5566,7 @@ func (s *OssutilCommandSuite) TestCPObjectUnderNomodeWithEmptyAKIdAndEcsUrl(c *C
 
 	fd.WriteString(configStr)
 	fd.Close()
-    
+
 	// filename
 	testFileName := "ossutil_test_file" + randStr(5)
 	data := randStr(100)
@@ -5669,9 +5669,10 @@ func (s *OssutilCommandSuite) TestCPObjectUnderNomodeUsingEcsRoleAK(c *C) {
 		"bucket":     &ok,
 		"force":      &ok,
 		"allType":    &ok,
+		"recursive":  &ok,
 	}
 	_, err = cm.RunCommand(command, args, options)
-	c.Assert(err, NotNil)
+	c.Assert(err, IsNil)
 	s.removeBucket(bucketName, true, c)
 	s.createFile(configFile, string(oldConfigStr), c)
 }
@@ -5834,5 +5835,48 @@ func (s *OssutilCommandSuite) TestCPObjectUnderSTSTokenmodeWithEmptySTSToken(c *
 	c.Assert(err, NotNil)
 
 	os.Remove(testFileName)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestCPObjectSkipVerifyCert(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	objectContext := randLowStr(1024 * 10)
+	fileName := "ossutil_test." + randLowStr(12)
+	s.createFile(fileName, objectContext, c)
+
+	object := randLowStr(12)
+	cpArgs := []string{fileName, CloudURLToString(bucketName, object)}
+
+	str := ""
+	cpDir := CheckpointDir
+	routines := strconv.Itoa(Routines)
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+		"checkpointDir":   &cpDir,
+		"routines":        &routines,
+		"skipVerifyCert":  &str,
+	}
+
+	_, err := cm.RunCommand("cp", cpArgs, options)
+	c.Assert(err, IsNil)
+
+	//down object
+	downFileName := fileName + "-down"
+	dwArgs := []string{CloudURLToString(bucketName, object), downFileName}
+	_, err = cm.RunCommand("cp", dwArgs, options)
+	c.Assert(err, IsNil)
+
+	//compare content
+	fileBody, err := ioutil.ReadFile(downFileName)
+	c.Assert(err, IsNil)
+	c.Assert(objectContext, Equals, string(fileBody))
+
+	os.Remove(downFileName)
+	os.Remove(fileName)
 	s.removeBucket(bucketName, true, c)
 }
