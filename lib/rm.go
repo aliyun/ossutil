@@ -18,6 +18,8 @@ type removeOptionType struct {
 	recursive bool
 	force     bool
 	typeSet   int64
+	startTime   int64
+	endTime     int64
 
 	//version
 	versionId   string
@@ -323,6 +325,8 @@ var removeCommand = RemoveCommand{
 			OptionMultipart,
 			OptionAllType,
 			OptionEncodingType,
+			OptionStartTime,
+			OptionEndTime,
 			OptionInclude,
 			OptionExclude,
 			OptionVersionId,
@@ -401,6 +405,12 @@ func (rc *RemoveCommand) RunCommand() error {
 	// confirm remove objects/multiparts/allTypes before statistic
 	if !rc.confirmRemoveObject(cloudURL) {
 		return nil
+	}
+
+	rc.rmOption.startTime, _ = GetInt(OptionStartTime, rc.command.options)
+	rc.rmOption.endTime, _ = GetInt(OptionEndTime, rc.command.options)
+	if rc.rmOption.endTime > 0 && rc.rmOption.startTime > rc.rmOption.endTime {
+		return fmt.Errorf("start time %d is larger than end time %d", rc.rmOption.startTime, rc.rmOption.endTime)
 	}
 
 	// start progressbar
@@ -808,6 +818,10 @@ func (rc *RemoveCommand) removeSpecialCharacterObjects(bucket *oss.Bucket, cloud
 func (rc *RemoveCommand) getObjectsFromListResult(lor oss.ListObjectsResult) []string {
 	objects := []string{}
 	for _, object := range lor.Objects {
+		if (rc.rmOption.startTime > 0 && object.LastModified.Unix() < rc.rmOption.startTime) ||
+			(rc.rmOption.endTime > 0 && object.LastModified.Unix() > rc.rmOption.endTime) {
+			continue
+		}
 		if doesSingleObjectMatchPatterns(object.Key, rc.filters) {
 			objects = append(objects, object.Key)
 		}

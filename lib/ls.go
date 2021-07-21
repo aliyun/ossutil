@@ -360,10 +360,16 @@ Usage:
 `,
 }
 
+type listOptionType struct {
+	startTime   int64
+	endTime     int64
+}
+
 // ListCommand is the command list buckets or objects
 type ListCommand struct {
 	command     Command
 	payerOption oss.Option
+	listOption listOptionType
 	filters     []filterOptionType
 }
 
@@ -396,6 +402,8 @@ var listCommand = ListCommand{
 			OptionMarker,
 			OptionUploadIDMarker,
 			OptionEncodingType,
+			OptionStartTime,
+			OptionEndTime,
 			OptionInclude,
 			OptionExclude,
 			OptionAllversions,
@@ -447,6 +455,12 @@ func (lc *ListCommand) RunCommand() error {
 		} else {
 			lc.payerOption = oss.RequestPayer(oss.PayerType(payer))
 		}
+	}
+
+	lc.listOption.startTime, _ = GetInt(OptionStartTime, lc.command.options)
+	lc.listOption.endTime, _ = GetInt(OptionEndTime, lc.command.options)
+	if lc.listOption.endTime > 0 && lc.listOption.startTime > lc.listOption.endTime {
+		return fmt.Errorf("start time %d is larger than end time %d", lc.listOption.startTime, lc.listOption.endTime)
 	}
 
 	if cloudURL.bucket == "" {
@@ -675,7 +689,6 @@ func (lc *ListCommand) displayObjectsResult(lor oss.ListObjectsResult, bucket st
 	if i == 0 && !shortFormat && !directory && len(lor.Objects) > 0 {
 		fmt.Printf("%-30s%12s%s%12s%s%-36s%s%s\n", "LastModifiedTime", "Size(B)", "  ", "StorageClass", "   ", "ETAG", "  ", "ObjectName")
 	}
-
 	var num int64
 	if !directory {
 		num = lc.showObjects(lor, bucket, shortFormat, limitedNum)
@@ -711,6 +724,11 @@ func (lc *ListCommand) showObjects(lor oss.ListObjectsResult, bucket string, sho
 	for _, object := range lor.Objects {
 		if *limitedNum == 0 {
 			break
+		}
+
+		if (lc.listOption.startTime > 0 && object.LastModified.Unix() < lc.listOption.startTime) ||
+			(lc.listOption.endTime > 0 && object.LastModified.Unix() > lc.listOption.endTime) {
+			continue
 		}
 
 		if !doesSingleObjectMatchPatterns(object.Key, lc.filters) {
