@@ -97,6 +97,7 @@ const (
 	OptionConnectTimeout             = "connectTimeOut"
 	OptionSTSRegion                  = "stsRegion"
 	OptionSkipVerfiyCert             = "skipVerifyCert"
+	OptionItem                       = "item"
 )
 
 // the elements show in stat object
