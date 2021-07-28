@@ -350,7 +350,7 @@ func (cmd *Command) ossClient(bucket string) (*oss.Client, error) {
 		if roleSessionName == "" {
 			roleSessionName = "SessNameRand" + randStr(5)
 		}
-		// sts.NewClient(stsaccessID, stsaccessKey, stsARN, "oss_test_sess")
+
 		stsClient := NewClient(accessKeyID, accessKeySecret, ramRoleArn, roleSessionName)
 
 		if strTokenTimeout == "" {
@@ -391,6 +391,8 @@ func (cmd *Command) ossClient(bucket string) (*oss.Client, error) {
 		}
 		ecsRoleAKBuild := EcsRoleAKBuild{url: ecsUrl}
 		options = append(options, oss.SetCredentialsProvider(&ecsRoleAKBuild))
+		accessKeyID = ""
+		accessKeySecret = ""
 
 	} else if mode == "" {
 
@@ -856,5 +858,6 @@ func GetAllCommands() []interface{} {
 		&syncCommand,
 		&wormCommand,
 		&lrbCommand,
+		&replicationCommand,
 	}
 }

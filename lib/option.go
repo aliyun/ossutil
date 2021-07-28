@@ -254,11 +254,14 @@ var OptionMap = map[string]Option{
 		"表示客户端连接超时的时间，单位为秒, 缺省值为120",
 		"specifies the time that the client connection timed out, the unit is: s, default value is 120."},
 	OptionSTSRegion: Option{"", "--sts-region", "", OptionTypeString, "", "",
-		"指定sts endpoint的地区，比如cn-shenzhen，其中，cn指代的是国家，shenzhen指代的是地区，用于构造sts endpoint，该选项缺省时，sts endpoint为中央endpoint，主要用于RamRoleArn模式",
-		"specifies the region of sts endpoint, such as cn-shenzhen, in this case, cn refers to the country and shenzhen refers to the region, to construct sts endpoint, when this option defaults, the sts endpoint is the central endpoint, primarily used in RamRoleArn mode."},
+		"指定sts endpoint的地区，比如cn-shenzhen，其中，cn指代的是国家，shenzhen指代的是地区，用于构造sts endpoint，该选项缺省时，sts endpoint为sts.aliyuncs.com，主要用于RamRoleArn模式",
+		"specifies the region of sts endpoint, such as cn-shenzhen, in this case, cn refers to the country and shenzhen refers to the region, to construct sts endpoint, when this option defaults, the sts endpoint is sts.aliyuncs.com, primarily used in RamRoleArn mode."},
 	OptionSkipVerfiyCert: Option{"", "--skip-verify-cert", "", OptionTypeFlagTrue, "", "",
 		"表示不校验服务端的数字证书",
 		"specifies that the oss server's digital certificate file will not be verified"},
+	OptionItem: Option{"", "--item", "", OptionTypeString, "", "",
+		"表示命令的功能类型，取值为LOCATION、PROGRESS等",
+		"specifies the command's function type. the values ​​are LOCATION, PROGRESS, etc"},
 }
 
 func (T *Option) getHelp(language string) string {
