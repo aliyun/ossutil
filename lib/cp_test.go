@@ -3314,6 +3314,81 @@ func (s *OssutilCommandSuite) TestCPDirLimitSpeed(c *C) {
 	s.removeBucket(bucketName, true, c)
 }
 
+func (s *OssutilCommandSuite) TestCPDownloadDirLimitSpeed(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(12)
+	s.putBucket(bucketName, c)
+
+	// single dir
+	udir := "ossutil_test_" + randStr(5)
+	os.RemoveAll(udir)
+	err := os.MkdirAll(udir, 0755)
+	c.Assert(err, IsNil)
+
+	// prepare upload parameter
+	objectLen := 1024 * 1024
+	objectContext := randLowStr(objectLen)
+
+	// prepare two file
+	fileCount := 2
+	objectFirst := "ossutil-test-" + randStr(5) + "1"
+	objectSecond := "ossutil-test-" + randStr(5) + "2"
+	s.createFile(udir+string(os.PathSeparator)+objectFirst, objectContext, c)
+	s.createFile(udir+string(os.PathSeparator)+objectSecond, objectContext, c)
+
+	// begin cp dir
+	cpArgs := []string{udir, CloudURLToString(bucketName, "")}
+	str := ""
+	cpDir := CheckpointDir
+	routines := strconv.Itoa(Routines)
+	recursive := true
+	force := true
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+		"checkpointDir":   &cpDir,
+		"routines":        &routines,
+		"recursive":       &recursive,
+		"force":           &force,
+	}
+
+	_, err = cm.RunCommand("cp", cpArgs, options)
+	c.Assert(err, IsNil)
+
+	//begin download file
+	downDir := udir + "_down"
+	cpArgs = []string{CloudURLToString(bucketName, ""), downDir}
+	maxDownSpeed := int64(500)
+	options["maxdownspeed"] = &maxDownSpeed
+
+	// calculate time
+	startT := time.Now()
+	_, err = cm.RunCommand("cp", cpArgs, options)
+	c.Assert(err, IsNil)
+	endT := time.Now()
+	costSecond := endT.UnixNano()/1000/1000/1000 - startT.UnixNano()/1000/1000/1000
+
+	// KB/s
+	downloadSpeed := (float64)(fileCount*objectLen) / (float64)(costSecond) / 1024
+	c.Assert(downloadSpeed <= (float64)(maxDownSpeed)*1.2, Equals, true)
+	c.Assert(downloadSpeed >= (float64)(maxDownSpeed)*0.8, Equals, true)
+
+	//compare content
+	fileBody, err := ioutil.ReadFile(downDir + string(os.PathSeparator) + objectFirst)
+	c.Assert(err, IsNil)
+	c.Assert(objectContext, Equals, string(fileBody))
+
+	// compare content
+	fileBody, err = ioutil.ReadFile(downDir + string(os.PathSeparator) + objectSecond)
+	c.Assert(err, IsNil)
+	c.Assert(objectContext, Equals, string(fileBody))
+
+	err = os.RemoveAll(udir)
+	err = os.RemoveAll(downDir)
+	s.removeBucket(bucketName, true, c)
+}
+
 func (s *OssutilCommandSuite) TestCPPartionDownloadSuccess(c *C) {
 	bucketName := bucketNamePrefix + randLowStr(10)
 	s.putBucket(bucketName, c)

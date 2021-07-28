@@ -1289,6 +1289,7 @@ var copyCommand = CopyCommand{
 			OptionConnectTimeout,
 			OptionSTSRegion,
 			OptionSkipVerfiyCert,
+			OptionMaxDownSpeed,
 		},
 	},
 }
