@@ -49,6 +49,7 @@ const (
 	OptionRequestPayer               = "payer"
 	OptionLogLevel                   = "loglevel"
 	OptionMaxUpSpeed                 = "maxupspeed"
+	OptionMaxDownSpeed               = "maxdownspeed"
 	OptionUpload                     = "upload"
 	OptionDownload                   = "download"
 	OptionUrl                        = "url"
@@ -141,7 +142,7 @@ const (
 const (
 	Package                 string = "ossutil"
 	ChannelBuf              int    = 1000
-	Version                 string = "v1.7.5"
+	Version                 string = "v1.7.6"
 	DefaultEndpoint         string = "oss.aliyuncs.com"
 	ChineseLanguage                = "CH"
 	EnglishLanguage                = "EN"
