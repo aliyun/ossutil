@@ -476,6 +476,10 @@ func (s *OssutilCommandSuite) removeBucket(bucket string, clearObjects bool, c *
 	if err != nil {
 		bNoBucket := strings.Contains(err.Error(), "NoSuchBucket")
 		bBucketEmpty := strings.Contains(err.Error(), "BucketNotEmpty")
+
+		fmt.Printf("error:\n")
+		fmt.Println(err)
+
 		c.Assert((bBucketEmpty || bNoBucket), Equals, true)
 	} else {
 		c.Assert(showElapse, Equals, true)
