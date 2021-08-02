@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
@@ -263,10 +264,11 @@ Usage:
 
 // SetMetaCommand is the command set meta for object
 type SetMetaCommand struct {
-	monitor  Monitor //Put first for atomic op on some fileds
-	command  Command
-	smOption batchOptionType
-	filters  []filterOptionType
+	monitor   Monitor //Put first for atomic op on some fileds
+	command   Command
+	smOption  batchOptionType
+	filters   []filterOptionType
+	skipCount uint64
 }
 
 var setMetaCommand = SetMetaCommand{
@@ -389,9 +391,15 @@ func (sc *SetMetaCommand) RunCommand() error {
 	}
 
 	if !recursive {
-		return sc.setObjectMeta(bucket, cloudURL.object, headers, isUpdate, isDelete, versionId)
+		err = sc.setObjectMeta(bucket, cloudURL.object, headers, isUpdate, isDelete, versionId)
+	} else {
+		err = sc.batchSetObjectMeta(bucket, cloudURL, headers, isUpdate, isDelete, force, routines)
 	}
-	return sc.batchSetObjectMeta(bucket, cloudURL, headers, isUpdate, isDelete, force, routines)
+
+	if isUpdate {
+		LogInfo("update skip count:%d\n", sc.skipCount)
+	}
+	return err
 }
 
 func (sc *SetMetaCommand) checkArgs(cloudURL CloudURL, recursive, isUpdate, isDelete bool) error {
@@ -495,6 +503,7 @@ func (cmd *Command) parseHeaders(str string, isDelete bool) (map[string]string, 
 
 func (sc *SetMetaCommand) setObjectMeta(bucket *oss.Bucket, object string, headers map[string]string, isUpdate, isDelete bool, versionId string) error {
 	allheaders := headers
+	isSkip := false
 	if isUpdate || isDelete {
 		var options []oss.Option
 		if len(versionId) > 0 {
@@ -515,7 +524,11 @@ func (sc *SetMetaCommand) setObjectMeta(bucket *oss.Bucket, object string, heade
 		props.Set(StatACL, objectACL.ACL)
 
 		// merge
-		allheaders = sc.mergeHeader(props, headers, isUpdate, isDelete)
+		allheaders, isSkip = sc.mergeHeader(props, headers, isUpdate, isDelete)
+		if isSkip {
+			atomic.AddUint64(&sc.skipCount, uint64(1))
+			return nil
+		}
 	}
 
 	options, err := sc.command.getOSSOptions(headerOptionMap, allheaders)
@@ -528,7 +541,7 @@ func (sc *SetMetaCommand) setObjectMeta(bucket *oss.Bucket, object string, heade
 	return sc.ossSetObjectMetaRetry(bucket, object, options...)
 }
 
-func (sc *SetMetaCommand) mergeHeader(props http.Header, headers map[string]string, isUpdate, isDelete bool) map[string]string {
+func (sc *SetMetaCommand) mergeHeader(props http.Header, headers map[string]string, isUpdate, isDelete bool) (map[string]string, bool) {
 	allheaders := map[string]string{}
 	for name := range props {
 		if _, err := fetchHeaderOptionMap(headerOptionMap, name); err == nil || strings.HasPrefix(strings.ToLower(name), strings.ToLower(oss.HTTPHeaderOssMetaPrefix)) {
@@ -538,7 +551,21 @@ func (sc *SetMetaCommand) mergeHeader(props http.Header, headers map[string]stri
 			allheaders[strings.ToLower(oss.HTTPHeaderOssObjectACL)] = props.Get(name)
 		}
 	}
+
 	if isUpdate {
+		equalCount := 0
+		for name, val := range headers {
+			objectVal, ok := allheaders[strings.ToLower(name)]
+			if ok && val == objectVal {
+				equalCount += 1
+			}
+		}
+
+		if equalCount == len(headers) {
+			// skip update
+			return allheaders, true
+		}
+
 		for name, val := range headers {
 			allheaders[strings.ToLower(name)] = val
 		}
@@ -548,7 +575,7 @@ func (sc *SetMetaCommand) mergeHeader(props http.Header, headers map[string]stri
 			delete(allheaders, strings.ToLower(name))
 		}
 	}
-	return allheaders
+	return allheaders, false
 }
 
 func (sc *SetMetaCommand) ossSetObjectMetaRetry(bucket *oss.Bucket, object string, options ...oss.Option) error {
