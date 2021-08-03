@@ -485,12 +485,12 @@ func (cmd *Command) ossClient(bucket string) (*oss.Client, error) {
 		}
 	}
 
-	maxDownSpeed, errUp := GetInt(OptionMaxDownSpeed, cmd.options)
-	if errUp == nil {
+	maxDownSpeed, errDown := GetInt(OptionMaxDownSpeed, cmd.options)
+	if errDown == nil {
 		if maxDownSpeed >= 0 {
-			errUp = client.LimitDownloadSpeed(int(maxDownSpeed))
-			if errUp != nil {
-				return nil, errUp
+			errDown = client.LimitDownloadSpeed(int(maxDownSpeed))
+			if errDown != nil {
+				return nil, errDown
 			} else {
 				LogInfo("set maxdownspeed success,value is %d(KB/s)\n", maxDownSpeed)
 			}
