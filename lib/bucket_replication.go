@@ -41,7 +41,7 @@ var specChineseReplication = SpecText{
                 <Action>ALL,PUT</Action>
                 <Destination>
                     <Bucket>dest-bucket-name</Bucket>
-                    <Location>cn-hangzhou</Location>
+                    <Location>oss-cn-hangzhou</Location>
                     <TransferType>oss_acc</TransferType>
                 </Destination>
                 <HistoricalObjectReplication>enabled</HistoricalObjectReplication>
@@ -117,7 +117,7 @@ Usage:
 				<Action>ALL,PUT</Action>
 				<Destination>
 					<Bucket>dest-bucket-name</Bucket>
-					<Location>cn-hangzhou</Location>
+					<Location>oss-cn-hangzhou</Location>
 					<TransferType>oss_acc</TransferType>
 				</Destination>
 				<HistoricalObjectReplication>enabled</HistoricalObjectReplication>
