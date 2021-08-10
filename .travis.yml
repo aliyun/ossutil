@@ -2,14 +2,7 @@ language: go
 go:
 - 1.11.8
 install:
-- go get golang.org/x/tools/cmd/cover
-- go get github.com/mattn/goveralls
-- go get gopkg.in/check.v1
-- go get github.com/droundy/goopt
-- go get github.com/alyu/configparser
-- go get github.com/aliyun/aliyun-oss-go-sdk/oss
-- go get github.com/syndtr/goleveldb/leveldb
-- go get github.com/satori/go.uuid
+- go build
 script:
 # - cd lib
 # - travis_wait 120 go test -v -timeout 120m -covermode=count -coverprofile=coverage.out
