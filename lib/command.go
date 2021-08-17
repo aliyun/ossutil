@@ -859,5 +859,6 @@ func GetAllCommands() []interface{} {
 		&wormCommand,
 		&lrbCommand,
 		&replicationCommand,
+		&bucketCnameCommand,
 	}
 }
