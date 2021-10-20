@@ -102,21 +102,23 @@ const (
 
 // the elements show in stat object
 const (
-	StatName              string = "Name"
-	StatLocation                 = "Location"
-	StatCreationDate             = "CreationDate"
-	StatExtranetEndpoint         = "ExtranetEndpoint"
-	StatIntranetEndpoint         = "IntranetEndpoint"
-	StatACL                      = "ACL"
-	StatOwner                    = "Owner"
-	StatLastModified             = "Last-Modified"
-	StatContentMD5               = "Content-Md5"
-	StatCRC64                    = "X-Oss-Hash-Crc64ecma"
-	StatStorageClass             = "StorageClass"
-	StatSSEAlgorithm             = "SSEAlgorithm"
-	StatKMSMasterKeyID           = "KMSMasterKeyID"
-	StatRedundancyType           = "RedundancyType"
-	StatKMSDataEncryption        = "KMSDataEncryption"
+	StatName                   string = "Name"
+	StatLocation                      = "Location"
+	StatCreationDate                  = "CreationDate"
+	StatExtranetEndpoint              = "ExtranetEndpoint"
+	StatIntranetEndpoint              = "IntranetEndpoint"
+	StatACL                           = "ACL"
+	StatOwner                         = "Owner"
+	StatLastModified                  = "Last-Modified"
+	StatContentMD5                    = "Content-Md5"
+	StatCRC64                         = "X-Oss-Hash-Crc64ecma"
+	StatStorageClass                  = "StorageClass"
+	StatSSEAlgorithm                  = "SSEAlgorithm"
+	StatKMSMasterKeyID                = "KMSMasterKeyID"
+	StatRedundancyType                = "RedundancyType"
+	StatKMSDataEncryption             = "KMSDataEncryption"
+	StatTransferAcceleration          = "TransferAcceleration"
+	StatCrossRegionReplication        = "CrossRegionReplication"
 )
 
 // the elements show in hash file
@@ -143,7 +145,7 @@ const (
 const (
 	Package                 string = "ossutil"
 	ChannelBuf              int    = 1000
-	Version                 string = "v1.7.6"
+	Version                 string = "v1.7.7"
 	DefaultEndpoint         string = "oss.aliyuncs.com"
 	ChineseLanguage                = "CH"
 	EnglishLanguage                = "EN"

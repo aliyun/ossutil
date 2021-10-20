@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
+	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
 
 var specChineseBucketLifeCycle = SpecText{
@@ -246,13 +246,7 @@ func (blc *BucketLifeCycleCommand) PutBucketLifecycle() error {
 		return err
 	}
 	defer file.Close()
-	text, err := ioutil.ReadAll(file)
-	if err != nil {
-		return err
-	}
-
-	rulesConfig := oss.LifecycleConfiguration{}
-	err = xml.Unmarshal(text, &rulesConfig)
+	xmlBody, err := ioutil.ReadAll(file)
 	if err != nil {
 		return err
 	}
@@ -263,7 +257,8 @@ func (blc *BucketLifeCycleCommand) PutBucketLifecycle() error {
 		return err
 	}
 
-	return client.SetBucketLifecycle(blc.blOption.bucketName, rulesConfig.Rules)
+	options := []oss.Option{oss.AllowSameActionOverLap(true)}
+	return client.SetBucketLifecycleXml(blc.blOption.bucketName, string(xmlBody), options...)
 }
 
 func (blc *BucketLifeCycleCommand) confirm(str string) bool {
