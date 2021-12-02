@@ -1,6 +1,6 @@
 language: go
 go:
-- 1.11.8
+- 1.17.2
 install:
 - go get golang.org/x/tools/cmd/cover
 - go get github.com/mattn/goveralls
