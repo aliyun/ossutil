@@ -247,7 +247,7 @@ var bucketWebsiteCommand = BucketWebSiteCommand{
 			OptionConnectTimeout,
 			OptionSTSRegion,
 			OptionSkipVerfiyCert,
-            OptionUserAgent,
+			OptionUserAgent,
 		},
 	},
 }

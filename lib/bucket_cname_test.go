@@ -1,11 +1,8 @@
 package lib
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
-	"strings"
-	"time"
 
 	. "gopkg.in/check.v1"
 )
@@ -81,57 +78,6 @@ func (s *OssutilCommandSuite) TestBucketCnameNotConfirm(c *C) {
 	xmlBody, err := ioutil.ReadFile(cnameDownName)
 	c.Assert(err, IsNil)
 	c.Assert(len(xmlBody) == 0, Equals, true)
-
-	os.Remove(cnameDownName)
-	s.removeBucket(bucketName, true, c)
-}
-
-func (s *OssutilCommandSuite) TestBucketCnameConfirm(c *C) {
-	bucketName := bucketNamePrefix + randLowStr(12)
-	s.putBucket(bucketName, c)
-
-	// get cname
-	cnameDownName := "test-ossutil-cname-" + randLowStr(5)
-	strMethod := "get"
-	str := ""
-	options := OptionMapType{
-		"endpoint":        &str,
-		"accessKeyID":     &str,
-		"accessKeySecret": &str,
-		"stsToken":        &str,
-		"configFile":      &configFile,
-		"method":          &strMethod,
-	}
-
-	// create file cnameDownName
-	s.createFile(cnameDownName, "", c)
-
-	// old stdin
-	oldStdin := os.Stdin
-	os.Stdin = testLogFile
-
-	go func() {
-		for {
-			xmlBody, _ := ioutil.ReadFile(cnameDownName)
-			if strings.Contains(string(xmlBody), "bucket cname: overwrite") {
-				fmt.Printf("y\n")
-				break
-			} else {
-				time.Sleep(time.Second)
-			}
-		}
-	}()
-
-	cnameArgs := []string{CloudURLToString(bucketName, ""), cnameDownName}
-	_, err := cm.RunCommand("bucket-cname", cnameArgs, options)
-
-	c.Assert(err, IsNil)
-
-	xmlBody, err := ioutil.ReadFile(cnameDownName)
-	c.Assert(err, IsNil)
-	c.Assert(len(xmlBody) > 0, Equals, true)
-
-	os.Stdin = oldStdin
 
 	os.Remove(cnameDownName)
 	s.removeBucket(bucketName, true, c)

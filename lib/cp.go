@@ -1376,10 +1376,6 @@ func (cc *CopyCommand) RunCommand() error {
 
 	cc.cpOption.options = []oss.Option{}
 	if cc.cpOption.meta != "" {
-		if opType == operationTypeGet {
-			return fmt.Errorf("No need to set meta for download")
-		}
-
 		headers, err := cc.command.parseHeaders(cc.cpOption.meta, false)
 		if err != nil {
 			return err
