@@ -230,7 +230,7 @@ func (s *OssutilCommandSuite) TestBucketReplicationDeleteSuccess(c *C) {
 	_, err = cm.RunCommand("replication", putArgs, options)
 	c.Assert(err, IsNil)
 
-	time.Sleep(5 * time.Second)
+	time.Sleep(20 * time.Second)
 
 	// output to file
 	getFileName := "test-getfile-" + randLowStr(5)
@@ -288,7 +288,7 @@ func (s *OssutilCommandSuite) TestBucketReplicationDeleteSuccess(c *C) {
 	_, err = cm.RunCommand("replication", deleteArgs, options)
 	c.Assert(err, IsNil)
 
-	time.Sleep(5 * time.Second)
+	time.Sleep(20 * time.Second)
 
 	// output to file
 	getFileNameAgain := "test-getfile-again-" + randLowStr(5)
