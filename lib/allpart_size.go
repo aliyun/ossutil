@@ -104,6 +104,7 @@ var allPartSizeCommand = AllPartSizeCommand{
 			OptionConnectTimeout,
 			OptionSTSRegion,
 			OptionSkipVerfiyCert,
+			OptionUserAgent,
 		},
 	},
 }

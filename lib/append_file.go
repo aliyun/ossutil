@@ -159,6 +159,7 @@ var appendFileCommand = AppendFileCommand{
 			OptionConnectTimeout,
 			OptionSTSRegion,
 			OptionSkipVerfiyCert,
+			OptionUserAgent,
 		},
 	},
 }

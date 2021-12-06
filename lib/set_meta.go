@@ -312,6 +312,7 @@ var setMetaCommand = SetMetaCommand{
 			OptionConnectTimeout,
 			OptionSTSRegion,
 			OptionSkipVerfiyCert,
+			OptionUserAgent,
 		},
 	},
 }

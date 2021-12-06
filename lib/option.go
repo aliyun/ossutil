@@ -262,6 +262,9 @@ var OptionMap = map[string]Option{
 	OptionItem: Option{"", "--item", "", OptionTypeString, "", "",
 		"表示命令的功能类型，取值为LOCATION、PROGRESS等",
 		"specifies the command's function type. the values ​​are LOCATION, PROGRESS, etc"},
+	OptionUserAgent: Option{"", "--ua", "", OptionTypeString, "", "",
+		"指定http请求中的user agent, 会在缺省值后面加上指定值",
+		"Specify the user agent in the http request, and the specified value will be added after the default value"},
 }
 
 func (T *Option) getHelp(language string) string {

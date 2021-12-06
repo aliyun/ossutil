@@ -100,6 +100,7 @@ var corsOptionsCommand = OptionsCommand{
 			OptionConnectTimeout,
 			OptionSTSRegion,
 			OptionSkipVerfiyCert,
+			OptionUserAgent,
 		},
 	},
 }

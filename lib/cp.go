@@ -1290,6 +1290,7 @@ var copyCommand = CopyCommand{
 			OptionSTSRegion,
 			OptionSkipVerfiyCert,
 			OptionMaxDownSpeed,
+			OptionUserAgent,
 		},
 	},
 }

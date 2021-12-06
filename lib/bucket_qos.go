@@ -160,6 +160,7 @@ var bucketQosCommand = BucketQosCommand{
 			OptionConnectTimeout,
 			OptionSTSRegion,
 			OptionSkipVerfiyCert,
+			OptionUserAgent,
 		},
 	},
 }

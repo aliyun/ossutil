@@ -134,6 +134,7 @@ var bucketLogCommand = BucketLogCommand{
 			OptionConnectTimeout,
 			OptionSTSRegion,
 			OptionSkipVerfiyCert,
+			OptionUserAgent,
 		},
 	},
 }
