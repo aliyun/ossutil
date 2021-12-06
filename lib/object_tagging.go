@@ -154,6 +154,7 @@ var objectTagCommand = ObjectTagCommand{
 			OptionConnectTimeout,
 			OptionSTSRegion,
 			OptionSkipVerfiyCert,
+			OptionUserAgent,
 		},
 	},
 }

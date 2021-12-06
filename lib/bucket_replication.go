@@ -198,6 +198,7 @@ var replicationCommand = ReplicationCommand{
 			OptionMethod,
 			OptionItem,
 			OptionSkipVerfiyCert,
+			OptionUserAgent,
 		},
 	},
 }

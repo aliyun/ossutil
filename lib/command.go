@@ -378,7 +378,6 @@ func (cmd *Command) ossClient(bucket string) (*oss.Client, error) {
 		accessKeySecret = resp.Credentials.AccessKeySecret
 		stsToken = resp.Credentials.SecurityToken
 		options = append(options, oss.SecurityToken(stsToken))
-
 	} else if strings.EqualFold(mode, "EcsRamRole") {
 		if ecsRoleName != "" {
 			ecsUrl = "http://100.100.100.200/latest/meta-data/Ram/security-credentials/" + ecsRoleName
@@ -395,7 +394,6 @@ func (cmd *Command) ossClient(bucket string) (*oss.Client, error) {
 		accessKeySecret = ""
 
 	} else if mode == "" {
-
 		ecsUrl, _ = cmd.getEcsRamAkService()
 		if accessKeyID == "" && ecsUrl == "" {
 			return nil, fmt.Errorf("accessKeyID and ecsUrl are both empty")
@@ -431,7 +429,8 @@ func (cmd *Command) ossClient(bucket string) (*oss.Client, error) {
 		return nil, err
 	}
 
-	options = append(options, oss.UseCname(isCname), oss.UserAgent(getUserAgent()), oss.Timeout(connectTimeout, readTimeout))
+	userAgent,_ := GetString(OptionUserAgent, cmd.options)
+	options = append(options, oss.UseCname(isCname), oss.UserAgent(getUserAgent(userAgent)), oss.Timeout(connectTimeout, readTimeout))
 
 	if disableCRC64 {
 		options = append(options, oss.EnableCRC(false))

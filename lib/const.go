@@ -98,6 +98,7 @@ const (
 	OptionSTSRegion                  = "stsRegion"
 	OptionSkipVerfiyCert             = "skipVerifyCert"
 	OptionItem                       = "item"
+	OptionUserAgent                  = "userAgent"
 )
 
 // the elements show in stat object

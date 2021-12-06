@@ -124,6 +124,7 @@ var bucketTagCommand = BucketTagCommand{
 			OptionConnectTimeout,
 			OptionSTSRegion,
 			OptionSkipVerfiyCert,
+			OptionUserAgent,
 		},
 	},
 }

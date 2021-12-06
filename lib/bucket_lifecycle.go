@@ -174,6 +174,7 @@ var bucketLifeCycleCommand = BucketLifeCycleCommand{
 			OptionConnectTimeout,
 			OptionSTSRegion,
 			OptionSkipVerfiyCert,
+			OptionUserAgent,
 		},
 	},
 }

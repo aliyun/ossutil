@@ -116,6 +116,7 @@ var requestPaymentCommand = RequestPaymentCommand{
 			OptionConnectTimeout,
 			OptionSTSRegion,
 			OptionSkipVerfiyCert,
+			OptionUserAgent,
 		},
 	},
 }

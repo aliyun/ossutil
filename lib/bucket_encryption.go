@@ -144,6 +144,7 @@ var bucketEncryptionCommand = BucketEncryptionCommand{
 			OptionConnectTimeout,
 			OptionSTSRegion,
 			OptionSkipVerfiyCert,
+			OptionUserAgent,
 		},
 	},
 }

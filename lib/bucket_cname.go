@@ -93,6 +93,7 @@ var bucketCnameCommand = BucketCnameCommand{
 			OptionConnectTimeout,
 			OptionSTSRegion,
 			OptionSkipVerfiyCert,
+			OptionUserAgent,
 		},
 	},
 }

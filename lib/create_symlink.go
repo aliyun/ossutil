@@ -127,6 +127,7 @@ var createSymlinkCommand = CreateSymlinkCommand{
 			OptionConnectTimeout,
 			OptionSTSRegion,
 			OptionSkipVerfiyCert,
+			OptionUserAgent,
 		},
 	},
 }
