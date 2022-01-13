@@ -429,7 +429,7 @@ func (cmd *Command) ossClient(bucket string) (*oss.Client, error) {
 		return nil, err
 	}
 
-	userAgent,_ := GetString(OptionUserAgent, cmd.options)
+	userAgent, _ := GetString(OptionUserAgent, cmd.options)
 	options = append(options, oss.UseCname(isCname), oss.UserAgent(getUserAgent(userAgent)), oss.Timeout(connectTimeout, readTimeout))
 
 	if disableCRC64 {
@@ -782,10 +782,13 @@ func (cmd *Command) getOSSOptions(hopMap map[string]interface{}, headers map[str
 			options = append(options, oss.Meta(name[len(oss.HTTPHeaderOssMetaPrefix):], value))
 		} else {
 			option, err := getOSSOption(hopMap, name, value)
-			if err != nil {
+			if err == nil {
+				options = append(options, option)
+			} else if strings.HasPrefix(strings.ToLower(name), "x-oss-") {
+				options = append(options, oss.SetHeader(name, value))
+			} else {
 				return nil, err
 			}
-			options = append(options, option)
 		}
 	}
 	return options, nil

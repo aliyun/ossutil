@@ -376,18 +376,6 @@ func (s *OssutilCommandSuite) TestLifecyclePutOverLapSuccess(c *C) {
                 <Days>30</Days>
             </AbortMultipartUpload>
         </Rule>
-
-        <Rule>
-            <Prefix>testdelete/prefix</Prefix>
-            <Status>Enabled</Status>
-            <Expiration>
-                <Days>300</Days>
-            </Expiration>
-            <AbortMultipartUpload>
-                <Days>300</Days>
-            </AbortMultipartUpload>
-        </Rule>
-
     </LifecycleConfiguration>`
 
 	lifecycleFileName := randLowStr(12)

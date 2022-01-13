@@ -2709,12 +2709,12 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithInvalidIncludeExclude(c *C) {
 	c.Assert(err.Error() == "No need to set ACL for download", Equals, true)
 
 	cmdline = []string{"ossutil", "cp", bucketStr, downdir, "-f", "--meta", "Cache-Control:no-cache"}
-	showElapse, err = s.rawCPWithFilter(args, false, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "Cache-Control:no-cache", "")
+	showElapse, err = s.rawCPWithFilter(args, true, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "Cache-Control:no-cache", "")
 	c.Assert(err, IsNil)
 
 	cmdline = []string{"ossutil", "cp", bucketStr, downdir, "-f", "--acl", "public-read"}
 	showElapse, err = s.rawCPWithFilter(args, false, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "public-read")
-	c.Assert(err, IsNil)
+	c.Assert(err, NotNil)
 
 	// cleanup
 	os.RemoveAll(dir)
@@ -2783,7 +2783,6 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithInvalidIncludeExcludeEqual(c 
 	//0. Create dirs
 	dir := "testdir-invalid" + randLowStr(5)
 	err := os.MkdirAll(dir, 0755)
-	c.Assert(err, IsNil)
 
 	// testdir-invalid/dir1
 	subdir := "dir1" + randLowStr(5)
@@ -2841,8 +2840,7 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithInvalidIncludeExcludeEqual(c 
 
 	cmdline = []string{"ossutil", "cp", bucketStr, downdir, "-f", "--meta", "Cache-Control:no-cache"}
 	showElapse, err = s.rawCPWithFilter(args, false, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "Cache-Control:no-cache", "")
-	c.Assert(showElapse, Equals, false)
-	c.Assert(err.Error() == "No need to set meta for download", Equals, true)
+	c.Assert(err, IsNil)
 
 	cmdline = []string{"ossutil", "cp", bucketStr, downdir, "-f", "--acl", "public-read"}
 	showElapse, err = s.rawCPWithFilter(args, false, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "public-read")
