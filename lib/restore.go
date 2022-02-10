@@ -1,17 +1,22 @@
 package lib
 
 import (
+	"encoding/xml"
 	"fmt"
+	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
+	"github.com/syndtr/goleveldb/leveldb"
 	"io/ioutil"
+	"log"
 	"os"
 	"strings"
-
-	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
+	"time"
 )
 
 type batchOptionType struct {
-	ctnu     bool
-	reporter *Reporter
+	ctnu         bool
+	reporter     *Reporter
+	snapshotPath string
+	snapshotldb  *leveldb.DB
 }
 
 var specChineseRestore = SpecText{
@@ -151,13 +156,16 @@ type RestoreCommand struct {
 	restoreConfig oss.RestoreConfiguration
 	hasConfig     bool
 	configXml     string
+	hasObjFile    bool
+	objFileConfig oss.ObjectFile
+	objFilePath   string
 }
 
 var restoreCommand = RestoreCommand{
 	command: Command{
 		name:        "restore",
 		nameAlias:   []string{},
-		minArgc:     1,
+		minArgc:     0,
 		maxArgc:     2,
 		specChinese: specChineseRestore,
 		specEnglish: specEnglishRestore,
@@ -191,6 +199,9 @@ var restoreCommand = RestoreCommand{
 			OptionSTSRegion,
 			OptionSkipVerfiyCert,
 			OptionUserAgent,
+			OptionObjectFile,
+			OptionSnapshotPath,
+			OptionDisableIgnoreError,
 		},
 	},
 }
@@ -212,10 +223,10 @@ func (rc *RestoreCommand) Init(args []string, options OptionMapType) error {
 // RunCommand simulate inheritance, and polymorphism
 func (rc *RestoreCommand) RunCommand() error {
 	rc.monitor.init("Restored")
-
 	encodingType, _ := GetString(OptionEncodingType, rc.command.options)
 	recursive, _ := GetBool(OptionRecursion, rc.command.options)
 	versionid, _ := GetString(OptionVersionId, rc.command.options)
+	rc.reOption.snapshotPath, _ = GetString(OptionSnapshotPath, rc.command.options)
 
 	payer, _ := GetString(OptionRequestPayer, rc.command.options)
 	if payer != "" {
@@ -225,53 +236,68 @@ func (rc *RestoreCommand) RunCommand() error {
 		rc.commonOptions = append(rc.commonOptions, oss.RequestPayer(oss.PayerType(payer)))
 	}
 
-	cloudURL, err := CloudURLFromString(rc.command.args[0], encodingType)
-	if err != nil {
-		return err
+	var err error
+	// load snapshot
+	if rc.reOption.snapshotPath != "" {
+		if rc.reOption.snapshotldb, err = leveldb.OpenFile(rc.reOption.snapshotPath, nil); err != nil {
+			return fmt.Errorf("load snapshot error, reason: %s", err.Error())
+		}
+		defer rc.reOption.snapshotldb.Close()
 	}
 
-	if err = rc.checkArgs(cloudURL, recursive, versionid); err != nil {
-		return err
+	restoreConf := ""
+	if len(rc.command.args) == 2 && !strings.HasPrefix(strings.ToLower(rc.command.args[1]), "oss://") {
+		restoreConf = rc.command.args[1]
+	} else if len(rc.command.args) == 1 && !strings.HasPrefix(strings.ToLower(rc.command.args[0]), "oss://") {
+		restoreConf = rc.command.args[0]
+	}
+	if restoreConf != "" {
+		err := rc.checkRestoreConf(restoreConf)
+		if err != nil {
+			return err
+		}
+	} else {
+		rc.hasConfig = false
 	}
 
-	if len(rc.command.args) == 2 {
-		xmlFile := rc.command.args[1]
-		fileInfo, err := os.Stat(xmlFile)
+	if recursive && len(versionid) > 0 {
+		return fmt.Errorf("restore bucket dose not support the --version-id=%s argument.", versionid)
+	}
+
+	// check --object-file mode
+	objFileXml, _ := GetString(OptionObjectFile, rc.command.options)
+	if objFileXml != "" {
+		// check is options used correctly
+		if res, err := rc.checkObjectFileMode(recursive); res == false {
+			return err
+		}
+
+		// check objFileXml and parse it
+		if err := rc.parseObjectFile(objFileXml); err != nil {
+			return err
+		}
+
+		return rc.batchRestoreObjects(nil, CloudURL{}, &rc.objFileConfig)
+
+	} else {
+		cloudURL, err := CloudURLFromString(rc.command.args[0], encodingType)
+		if err != nil {
+			return err
+		}
+		if err = rc.checkArgs(cloudURL, recursive, versionid); err != nil {
+			return err
+		}
+
+		bucket, err := rc.command.ossBucket(cloudURL.bucket)
 		if err != nil {
 			return err
 		}
 
-		if fileInfo.IsDir() {
-			return fmt.Errorf("%s is dir,not the expected file", xmlFile)
+		if !recursive {
+			return rc.ossRestoreObject(bucket, cloudURL.object, versionid)
 		}
-
-		if fileInfo.Size() == 0 {
-			return fmt.Errorf("%s is empty file", xmlFile)
-		}
-
-		// parsing the xml file
-		file, err := os.Open(xmlFile)
-		if err != nil {
-			return err
-		}
-		defer file.Close()
-		text, err := ioutil.ReadAll(file)
-		if err != nil {
-			return err
-		}
-		rc.hasConfig = true
-		rc.configXml = string(text)
+		return rc.batchRestoreObjects(bucket, cloudURL, nil)
 	}
-
-	bucket, err := rc.command.ossBucket(cloudURL.bucket)
-	if err != nil {
-		return err
-	}
-
-	if !recursive {
-		return rc.ossRestoreObject(bucket, cloudURL.object, versionid)
-	}
-	return rc.batchRestoreObjects(bucket, cloudURL)
 }
 
 func (rc *RestoreCommand) checkArgs(cloudURL CloudURL, recursive bool, versionid string) error {
@@ -281,30 +307,73 @@ func (rc *RestoreCommand) checkArgs(cloudURL CloudURL, recursive bool, versionid
 	if !recursive && cloudURL.object == "" {
 		return fmt.Errorf("restore object invalid cloud url: %s, object empty. Restore bucket is not supported, if you mean batch restore objects, please use --recursive", rc.command.args[0])
 	}
-	if recursive && len(versionid) > 0 {
-		return fmt.Errorf("restore bucket dose not support the --version-id=%s argument.", versionid)
-	}
 	return nil
 }
 
 func (rc *RestoreCommand) ossRestoreObject(bucket *oss.Bucket, object string, versionid string) error {
-	retryTimes, _ := GetInt(OptionRetryTimes, rc.command.options)
-	for i := 1; ; i++ {
-		var options []oss.Option
-		if len(versionid) > 0 {
-			options = append(options, oss.VersionId(versionid))
-		}
-		options = append(options, rc.commonOptions...)
+	// object 是object的string，不包含bucket。
+	meta, err := bucket.GetObjectDetailedMeta(object)
+	if err != nil {
+		return err
+	}
+	storageClass := meta.Get("X-Oss-Storage-Class")
 
-		var err error
+	msg := "restore"
+	if storageClass == string(oss.StorageColdArchive) {
+		msg += "_coldArchive_to_standard_with_conf"
+	} else if storageClass == string(oss.StorageArchive) {
 		if rc.hasConfig {
-			err = bucket.RestoreObjectXML(object, rc.configXml, options...)
+			msg += "_archive_to_standard_with_conf"
 		} else {
-			err = bucket.RestoreObject(object, options...)
+			msg += "_archive_to_standard"
 		}
+	}
 
-		if err == nil {
+	nowt := time.Now().Unix()
+	spath := rc.formatSnapshotKey(bucket.BucketName, object, msg)
+	if skip := rc.skipRestore(spath); skip {
+		LogInfo("restore obj skip: %s\n", object)
+		return nil
+	}
+
+	var options []oss.Option
+	if len(versionid) > 0 {
+		options = append(options, oss.VersionId(versionid))
+	}
+	options = append(options, rc.commonOptions...)
+
+	err = rc.ossRestoreObjectRetry(bucket, object, storageClass, options...)
+	if err != nil {
+		_ = rc.updateSnapshot(err, spath, nowt)
+		return err
+	} else {
+		err = rc.updateSnapshot(err, spath, nowt)
+		if err != nil {
 			return err
+		}
+	}
+
+	return nil
+}
+
+func (rc *RestoreCommand) ossRestoreObjectRetry(bucket *oss.Bucket, object, storageClass string, options ...oss.Option) error {
+	var err error
+	retryTimes, _ := GetInt(OptionRetryTimes, rc.command.options)
+
+	for i := 1; ; i++ {
+		if storageClass == string(oss.StorageColdArchive) {
+			var restoreConfig oss.RestoreConfiguration
+			err = xml.Unmarshal([]byte(rc.configXml), &restoreConfig)
+			if err != nil {
+				return err
+			}
+			err = bucket.RestoreObjectDetail(object, restoreConfig, options...)
+		} else if storageClass == string(oss.StorageArchive) {
+			if rc.hasConfig {
+				err = bucket.RestoreObjectXML(object, rc.configXml, options...)
+			} else {
+				err = bucket.RestoreObject(object, options...)
+			}
 		}
 
 		switch err.(type) {
@@ -312,7 +381,11 @@ func (rc *RestoreCommand) ossRestoreObject(bucket *oss.Bucket, object string, ve
 			if err.(oss.ServiceError).StatusCode == 409 && err.(oss.ServiceError).Code == "RestoreAlreadyInProgress" {
 				return nil
 			}
+		case nil:
+			return nil
 		}
+
+		log.Printf(">>> oss err: %#v", err)
 
 		if int64(i) >= retryTimes {
 			return ObjectError{err, bucket.BucketName, object}
@@ -320,18 +393,28 @@ func (rc *RestoreCommand) ossRestoreObject(bucket *oss.Bucket, object string, ve
 	}
 }
 
-func (rc *RestoreCommand) batchRestoreObjects(bucket *oss.Bucket, cloudURL CloudURL) error {
+func (rc *RestoreCommand) batchRestoreObjects(bucket *oss.Bucket, cloudURL CloudURL, objectFile *oss.ObjectFile) error {
 	force, _ := GetBool(OptionForce, rc.command.options)
 	if !force {
 		var val string
-		fmt.Printf("Do you really mean to recursivlly restore objects of %s(y or N)? ", rc.command.args[0])
+		if objectFile != nil {
+			fmt.Printf("Do you really mean to recursivlly restore objects of %s(y or N)? ", objectFile.Objects)
+		} else {
+			fmt.Printf("Do you really mean to recursivlly restore objects of %s(y or N)? ", rc.command.args[0])
+		}
 		if _, err := fmt.Scanln(&val); err != nil || (strings.ToLower(val) != "yes" && strings.ToLower(val) != "y") {
 			fmt.Println("operation is canceled.")
 			return nil
 		}
 	}
 
+	recursive, _ := GetBool(OptionRecursion, rc.command.options)
+
 	rc.reOption.ctnu = true
+	if recursive || rc.hasObjFile {
+		disableIgnoreError, _ := GetBool(OptionDisableIgnoreError, rc.command.options)
+		rc.reOption.ctnu = !disableIgnoreError
+	}
 	outputDir, _ := GetString(OptionOutputDir, rc.command.options)
 
 	// init reporter
@@ -341,6 +424,9 @@ func (rc *RestoreCommand) batchRestoreObjects(bucket *oss.Bucket, cloudURL Cloud
 	}
 	defer rc.reOption.reporter.Clear()
 
+	if rc.hasObjFile {
+		return rc.restoreObjectFile(objectFile)
+	}
 	return rc.restoreObjects(bucket, cloudURL)
 }
 
@@ -357,6 +443,146 @@ func (rc *RestoreCommand) restoreObjects(bucket *oss.Bucket, cloudURL CloudURL) 
 	}
 
 	return rc.waitRoutinueComplete(chError, chListError, routines)
+}
+
+func (rc *RestoreCommand) restoreObjectFile(objectFile *oss.ObjectFile) error {
+	routines, _ := GetInt(OptionRoutines, rc.command.options)
+
+	chObjects := make(chan string, ChannelBuf)
+	chError := make(chan error, routines+1)
+	chListError := make(chan error, 1)
+	go rc.restoreStatistic(objectFile, &rc.monitor, []filterOptionType{}, rc.commonOptions...)
+	go rc.restoreProducer(objectFile, chObjects, chListError, []filterOptionType{}, rc.commonOptions...)
+	for i := 0; int64(i) < routines; i++ {
+		go rc.restoreConsumers(objectFile, chObjects, chError)
+	}
+	return rc.waitRoutinueComplete(chError, chListError, routines)
+}
+
+func (rc *RestoreCommand) restoreStatistic(objectFile *oss.ObjectFile, monitor Monitorer, filters []filterOptionType, options ...oss.Option) {
+	if monitor == nil {
+		return
+	}
+
+	encodingType, _ := GetString(OptionEncodingType, rc.command.options)
+	recursive, _ := GetBool(OptionRecursion, rc.command.options)
+	versionid, _ := GetString(OptionVersionId, rc.command.options)
+
+	for _, obj := range objectFile.Objects {
+		cloudURL, err := CloudURLFromString(obj, encodingType)
+		if err != nil {
+			monitor.setScanError(err)
+			return
+		}
+		if err = rc.checkArgs(cloudURL, recursive, versionid); err != nil {
+			monitor.setScanError(err)
+			return
+		}
+
+		bucket, err := rc.command.ossBucket(cloudURL.bucket)
+		if err != nil {
+			monitor.setScanError(err)
+			return
+		}
+
+		pre := oss.Prefix(cloudURL.object)
+		marker := oss.Marker("")
+
+		listOptions := append(options, marker, pre)
+		lor, err := rc.command.ossListObjectsRetry(bucket, listOptions...)
+		if err != nil {
+			monitor.setScanError(err)
+			return
+		}
+
+		for _, object := range lor.Objects {
+			if doesSingleObjectMatchPatterns(object.Key, filters) {
+				monitor.updateScanNum(1)
+			}
+		}
+
+		//marker = oss.Marker(lor.NextMarker)
+		//if !lor.IsTruncated {
+		//	break
+		//}
+	}
+
+	monitor.setScanEnd()
+}
+
+func (rc *RestoreCommand) restoreProducer(objectFile *oss.ObjectFile, chObjects chan<- string, chError chan<- error, filters []filterOptionType, options ...oss.Option) {
+	encodingType, _ := GetString(OptionEncodingType, rc.command.options)
+	recursive, _ := GetBool(OptionRecursion, rc.command.options)
+	versionid, _ := GetString(OptionVersionId, rc.command.options)
+
+	for _, obj := range objectFile.Objects {
+		cloudURL, err := CloudURLFromString(obj, encodingType)
+		if err != nil {
+			chError <- err
+			break
+		}
+		if err = rc.checkArgs(cloudURL, recursive, versionid); err != nil {
+			chError <- err
+			break
+		}
+
+		// todo 以下是考虑 --object-file 中是否需要支持prefix的模糊匹配
+		//bucket, err := rc.command.ossBucket(cloudURL.bucket)
+		//if err != nil {
+		//	chError <- err
+		//	break
+		//}
+		//
+		//pre := oss.Prefix(cloudURL.object)
+		//marker := oss.Marker("")
+		//
+		//listOptions := append(options, marker, pre)
+		//lor, err := rc.command.ossListObjectsRetry(bucket, listOptions...)
+		//if err != nil {
+		//	chError <- err
+		//	break
+		//}
+		//
+		//for _, object := range lor.Objects {
+		//	if doesSingleObjectMatchPatterns(object.Key, filters) {
+		//		chObjects <- bucket.BucketName + "/" + object.Key
+		//	}
+		//}
+
+		chObjects <- obj
+	}
+
+	defer close(chObjects)
+	chError <- nil
+}
+
+func (rc *RestoreCommand) restoreConsumers(objectFile *oss.ObjectFile, chObjects <-chan string, chError chan<- error) {
+	if objectFile != nil {
+		encodingType, _ := GetString(OptionEncodingType, rc.command.options)
+		for object := range chObjects {
+			cloudURL, err := CloudURLFromString(object, encodingType)
+			if err != nil {
+				chError <- err
+				break
+			}
+			bucket, err := rc.command.ossBucket(cloudURL.bucket)
+			if err != nil {
+				chError <- err
+				break
+			}
+
+			err = rc.restoreObjectWithReport(bucket, cloudURL.object)
+			if err != nil {
+				chError <- err
+				if !rc.reOption.ctnu {
+					return
+				}
+				continue
+			}
+		}
+
+		chError <- nil
+	}
 }
 
 func (rc *RestoreCommand) restoreConsumer(bucket *oss.Bucket, cloudURL CloudURL, chObjects <-chan string, chError chan<- error) {
@@ -413,4 +639,106 @@ func (rc *RestoreCommand) formatResultPrompt(err error) error {
 		return nil
 	}
 	return err
+}
+
+func (rc *RestoreCommand) checkObjectFileMode(recursive bool) (bool, error) {
+	flag1 := len(rc.command.args) == 2
+	flag2 := len(rc.command.args) == 1 && strings.HasPrefix(strings.ToLower(rc.command.args[0]), "oss://")
+
+	if recursive {
+		return false, fmt.Errorf("options -r/--recursive can't set with --object-file")
+	}
+	if flag1 || flag2 {
+		return false, fmt.Errorf("oss://bucket/.. can't set with options --object-file")
+	}
+
+	return true, nil
+}
+
+func (rc *RestoreCommand) checkRestoreConf(xmlFile string) error {
+	fileInfo, err := os.Stat(xmlFile)
+	if err != nil {
+		return err
+	}
+
+	if fileInfo.IsDir() {
+		return fmt.Errorf("%s is dir,not the expected file", xmlFile)
+	}
+
+	if fileInfo.Size() == 0 {
+		return fmt.Errorf("%s is empty file", xmlFile)
+	}
+
+	// parsing the xml file
+	file, err := os.Open(xmlFile)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	text, err := ioutil.ReadAll(file)
+	if err != nil {
+		return err
+	}
+
+	rc.hasConfig = true
+	rc.configXml = string(text)
+	return nil
+}
+
+func (rc *RestoreCommand) formatSnapshotKey(bucket, object, msg string) string {
+	return CloudURLToString(bucket, object) + SnapshotConnector + msg
+}
+
+func (rc *RestoreCommand) skipRestore(spath string) bool {
+	if rc.reOption.snapshotPath != "" {
+		_, err := rc.reOption.snapshotldb.Get([]byte(spath), nil)
+		if err == nil {
+			return true
+		}
+	}
+	return false
+}
+
+func (rc *RestoreCommand) updateSnapshot(err error, spath string, srct int64) error {
+	if rc.reOption.snapshotPath != "" && err == nil {
+		srctstr := fmt.Sprintf("%d", srct)
+		err := rc.reOption.snapshotldb.Put([]byte(spath), []byte(srctstr), nil)
+		if err != nil {
+			return fmt.Errorf("dump snapshot error: %s", err.Error())
+		}
+	}
+	return nil
+}
+
+func (rc *RestoreCommand) parseObjectFile(objFileXml string) error {
+	// check file if exists
+	fileInfo, err := os.Stat(objFileXml)
+	if err != nil {
+		return err
+	}
+	if fileInfo.IsDir() {
+		return fmt.Errorf("%s is dir, not the expected file", objFileXml)
+	}
+	if fileInfo.Size() == 0 {
+		return fmt.Errorf("%s is empty file", objFileXml)
+	}
+	rc.objFilePath = objFileXml
+
+	// parsing the xml file
+	file, err := os.Open(objFileXml)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	data, err := ioutil.ReadAll(file)
+	if err != nil {
+		return err
+	}
+
+	err = xml.Unmarshal(data, &rc.objFileConfig)
+	if err != nil {
+		return err
+	}
+	rc.hasObjFile = true
+	return nil
 }

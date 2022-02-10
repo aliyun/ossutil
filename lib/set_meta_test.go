@@ -2,16 +2,15 @@ package lib
 
 import (
 	"fmt"
+	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
+	. "gopkg.in/check.v1"
 	"net/url"
 	"os"
 	"strconv"
 	"strings"
-
-	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
-	. "gopkg.in/check.v1"
 )
 
-func (s *OssutilCommandSuite) TestSetBucketMeta(c *C) {
+func (s *OssutilCommandSuite) TestSetObjectMetaSetBucketMeta(c *C) {
 	bucketName := bucketNamePrefix + randLowStr(10)
 	s.putBucket(bucketName, c)
 
@@ -135,7 +134,290 @@ func (s *OssutilCommandSuite) TestSetObjectMetaBasic(c *C) {
 	s.removeBucket(bucketName, true, c)
 }
 
-func (s *OssutilCommandSuite) TestSetNotExistObjectMeta(c *C) {
+func (s *OssutilCommandSuite) TestSetObjectMetaObjectFile(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	object1 := "setMeta" + randStr(5)
+	object2 := "setMeta" + randStr(5)
+	s.putObject(bucketName, object1, uploadFileName, c)
+	s.putObject(bucketName, object2, uploadFileName, c)
+
+	objectStat := s.getStat(bucketName, object1, c)
+	c.Assert(objectStat[StatACL], Equals, "default")
+	_, ok := objectStat["X-Oss-Meta-A"]
+	c.Assert(ok, Equals, false)
+
+	objectStat = s.getStat(bucketName, object2, c)
+	c.Assert(objectStat[StatACL], Equals, "default")
+	_, ok = objectStat["X-Oss-Meta-A"]
+	c.Assert(ok, Equals, false)
+
+	meta := "x-oss-object-acl:private#X-Oss-Meta-A:A#Expires:2006-01-02T15:04:05Z"
+	content := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
+	<ObjectFile>
+		<Object>oss://%s/%s</Object>
+		<Object>oss://%s/%s</Object>
+	</ObjectFile>`, bucketName, object1, bucketName, object2)
+	s.createFile(objectFileName, content, c)
+
+	err := s.initSetMetaWithArgs([]string{meta}, fmt.Sprintf("--object-file %s -f", objectFileName), DefaultOutputDir)
+	c.Assert(err, IsNil)
+	err = setMetaCommand.RunCommand()
+	c.Assert(err, IsNil)
+
+	objectStat = s.getStat(bucketName, object1, c)
+	c.Assert(objectStat[StatACL], Equals, "private")
+	c.Assert(objectStat["X-Oss-Meta-A"], Equals, "A")
+	c.Assert(objectStat["Expires"], Equals, "Mon, 02 Jan 2006 15:04:05 GMT")
+
+	os.Remove(objectFileName)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestSetObjectMetaObjectFileErrMeta(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	object1 := "setMeta" + randStr(5)
+	object2 := "setMeta" + randStr(5)
+	s.putObject(bucketName, object1, uploadFileName, c)
+	s.putObject(bucketName, object2, uploadFileName, c)
+
+	objectStat := s.getStat(bucketName, object1, c)
+	_, ok := objectStat["X-Oss-Server-Side-Encryption"]
+	c.Assert(ok, Equals, false)
+
+	objectStat = s.getStat(bucketName, object2, c)
+	_, ok = objectStat["X-Oss-Server-Side-Encryption"]
+	c.Assert(ok, Equals, false)
+
+	meta := "x-oss-server-side-encryption:xxx"
+	content := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
+	<ObjectFile>
+		<Object>oss://%s/%s</Object>
+		<Object>oss://%s/%s</Object>
+	</ObjectFile>`, bucketName, object1, bucketName, object2)
+	s.createFile(objectFileName, content, c)
+
+	err := s.initSetMetaWithArgs([]string{meta}, fmt.Sprintf("--object-file %s --disable-ignore-error -f", objectFileName), DefaultOutputDir)
+	c.Assert(err, IsNil)
+	err = setMetaCommand.RunCommand()
+	c.Assert(err, NotNil)
+
+	os.Remove(objectFileName)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestSetObjectMetaObjectFileErrObj(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	object1 := "setMeta" + randStr(5)
+	object2 := "setMeta" + randStr(5)
+	s.putObject(bucketName, object1, uploadFileName, c)
+	s.putObject(bucketName, object2, uploadFileName, c)
+
+	objectStat := s.getStat(bucketName, object1, c)
+	c.Assert(objectStat[StatACL], Equals, "default")
+	_, ok := objectStat["X-Oss-Meta-A"]
+	c.Assert(ok, Equals, false)
+
+	objectStat = s.getStat(bucketName, object2, c)
+	c.Assert(objectStat[StatACL], Equals, "default")
+	_, ok = objectStat["X-Oss-Meta-A"]
+	c.Assert(ok, Equals, false)
+
+	meta := "x-oss-object-acl:private#X-Oss-Meta-A:A#Expires:2006-01-02T15:04:05Z"
+	content := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
+	<ObjectFile>
+		<Object>oss://%s/%s</Object>
+		<Object>oss://%s/%s</Object>
+	</ObjectFile>`, bucketName, object1, bucketName, object2)
+	s.createFile(objectFileName, content, c)
+
+	objStr := fmt.Sprintf("oss://%s/%s", bucketName, object1)
+	err := s.initSetMetaWithArgs([]string{objStr, meta}, fmt.Sprintf("--object-file %s -f", objectFileName), DefaultOutputDir)
+	c.Assert(err, IsNil)
+	err = setMetaCommand.RunCommand()
+	c.Assert(err, NotNil)
+
+	os.Remove(objectFileName)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestSetObjectMetaObjectFileErrRec(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	object1 := "setMeta" + randStr(5)
+	object2 := "setMeta" + randStr(5)
+	s.putObject(bucketName, object1, uploadFileName, c)
+	s.putObject(bucketName, object2, uploadFileName, c)
+
+	objectStat := s.getStat(bucketName, object1, c)
+	c.Assert(objectStat[StatACL], Equals, "default")
+	_, ok := objectStat["X-Oss-Meta-A"]
+	c.Assert(ok, Equals, false)
+
+	objectStat = s.getStat(bucketName, object2, c)
+	c.Assert(objectStat[StatACL], Equals, "default")
+	_, ok = objectStat["X-Oss-Meta-A"]
+	c.Assert(ok, Equals, false)
+
+	meta := "x-oss-object-acl:private#X-Oss-Meta-A:A#Expires:2006-01-02T15:04:05Z"
+	content := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
+	<ObjectFile>
+		<Object>oss://%s/%s</Object>
+		<Object>oss://%s/%s</Object>
+	</ObjectFile>`, bucketName, object1, bucketName, object2)
+	s.createFile(objectFileName, content, c)
+
+	err := s.initSetMetaWithArgs([]string{meta}, fmt.Sprintf("--object-file %s -r -f", objectFileName), DefaultOutputDir)
+	c.Assert(err, IsNil)
+	err = setMetaCommand.RunCommand()
+	c.Assert(err, NotNil)
+
+	os.Remove(objectFileName)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestSetObjectMetaObjectFileErrObjRec(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	object1 := "setMeta" + randStr(5)
+	object2 := "setMeta" + randStr(5)
+	s.putObject(bucketName, object1, uploadFileName, c)
+	s.putObject(bucketName, object2, uploadFileName, c)
+
+	objectStat := s.getStat(bucketName, object1, c)
+	c.Assert(objectStat[StatACL], Equals, "default")
+	_, ok := objectStat["X-Oss-Meta-A"]
+	c.Assert(ok, Equals, false)
+
+	objectStat = s.getStat(bucketName, object2, c)
+	c.Assert(objectStat[StatACL], Equals, "default")
+	_, ok = objectStat["X-Oss-Meta-A"]
+	c.Assert(ok, Equals, false)
+
+	meta := "x-oss-object-acl:private#X-Oss-Meta-A:A#Expires:2006-01-02T15:04:05Z"
+	content := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
+	<ObjectFile>
+		<Object>oss://%s/%s</Object>
+		<Object>oss://%s/%s</Object>
+	</ObjectFile>`, bucketName, object1, bucketName, object2)
+	s.createFile(objectFileName, content, c)
+
+	objStr := fmt.Sprintf("oss://%s/%s", bucketName, object1)
+	err := s.initSetMetaWithArgs([]string{objStr, meta}, fmt.Sprintf("--object-file %s -r -f", objectFileName), DefaultOutputDir)
+	c.Assert(err, IsNil)
+	err = setMetaCommand.RunCommand()
+	c.Assert(err, NotNil)
+
+	os.Remove(objectFileName)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestSetObjectMetaObjectFileSnap(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	object1 := "setMeta_1"
+	object2 := "setMeta_2"
+	object3 := "setMeta_3"
+	object4 := "setMeta_4"
+	s.putObject(bucketName, object1, uploadFileName, c)
+	s.putObject(bucketName, object2, uploadFileName, c)
+	s.putObject(bucketName, object3, uploadFileName, c)
+	s.putObject(bucketName, object4, uploadFileName, c)
+
+	objectStat := s.getStat(bucketName, object1, c)
+	c.Assert(objectStat[StatACL], Equals, "default")
+	_, ok := objectStat["X-Oss-Meta-A"]
+	c.Assert(ok, Equals, false)
+
+	objectStat = s.getStat(bucketName, object2, c)
+	c.Assert(objectStat[StatACL], Equals, "default")
+	_, ok = objectStat["X-Oss-Meta-A"]
+	c.Assert(ok, Equals, false)
+
+	objectStat = s.getStat(bucketName, object3, c)
+	c.Assert(objectStat[StatACL], Equals, "default")
+	_, ok = objectStat["X-Oss-Meta-A"]
+	c.Assert(ok, Equals, false)
+
+	objectStat = s.getStat(bucketName, object4, c)
+	c.Assert(objectStat[StatACL], Equals, "default")
+	_, ok = objectStat["X-Oss-Meta-A"]
+	c.Assert(ok, Equals, false)
+
+	meta := "x-oss-object-acl:private#X-Oss-Meta-A:A#Expires:2006-01-02T15:04:05Z"
+	content := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
+	<ObjectFile>
+		<Object>oss://%s/%s</Object>
+		<Object>oss://%s/%s</Object>
+	</ObjectFile>`, bucketName, object1, bucketName, object2)
+	s.createFile(objectFileName, content, c)
+
+	snapShotDir := "ossutil_test_snapshot" + randStr(5)
+	cmd := fmt.Sprintf("--object-file %s --snapshot-path %s -f", objectFileName, snapShotDir)
+
+	err := s.initSetMetaWithArgs([]string{meta}, cmd, DefaultOutputDir)
+	c.Assert(err, IsNil)
+	err = setMetaCommand.RunCommand()
+	c.Assert(err, IsNil)
+
+	objectStat = s.getStat(bucketName, object1, c)
+	c.Assert(objectStat[StatACL], Equals, "private")
+	c.Assert(objectStat["X-Oss-Meta-A"], Equals, "A")
+	c.Assert(objectStat["Expires"], Equals, "Mon, 02 Jan 2006 15:04:05 GMT")
+
+	objectStat = s.getStat(bucketName, object2, c)
+	c.Assert(objectStat[StatACL], Equals, "private")
+	c.Assert(objectStat["X-Oss-Meta-A"], Equals, "A")
+	c.Assert(objectStat["Expires"], Equals, "Mon, 02 Jan 2006 15:04:05 GMT")
+
+	objectStat = s.getStat(bucketName, object3, c)
+	c.Assert(objectStat[StatACL], Equals, "default")
+	_, ok = objectStat["X-Oss-Meta-A"]
+	c.Assert(ok, Equals, false)
+
+	objectStat = s.getStat(bucketName, object4, c)
+	c.Assert(objectStat[StatACL], Equals, "default")
+	_, ok = objectStat["X-Oss-Meta-A"]
+	c.Assert(ok, Equals, false)
+
+	content = fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
+	<ObjectFile>
+		<Object>oss://%s/%s</Object>
+		<Object>oss://%s/%s</Object>
+		<Object>oss://%s/%s</Object>
+		<Object>oss://%s/%s</Object>
+	</ObjectFile>`, bucketName, object1, bucketName, object2, bucketName, object3, bucketName, object4)
+	s.createFile(objectFileName, content, c)
+
+	err = s.initSetMetaWithArgs([]string{meta}, cmd, DefaultOutputDir)
+	c.Assert(err, IsNil)
+	err = setMetaCommand.RunCommand()
+	c.Assert(err, IsNil)
+
+	objectStat = s.getStat(bucketName, object3, c)
+	c.Assert(objectStat[StatACL], Equals, "private")
+	c.Assert(objectStat["X-Oss-Meta-A"], Equals, "A")
+	c.Assert(objectStat["Expires"], Equals, "Mon, 02 Jan 2006 15:04:05 GMT")
+
+	objectStat = s.getStat(bucketName, object4, c)
+	c.Assert(objectStat[StatACL], Equals, "private")
+	c.Assert(objectStat["X-Oss-Meta-A"], Equals, "A")
+	c.Assert(objectStat["Expires"], Equals, "Mon, 02 Jan 2006 15:04:05 GMT")
+
+	os.Remove(objectFileName)
+	os.Remove(snapShotDir)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestSetObjectMetaSetNotExistObjectMeta(c *C) {
 	bucketName := bucketNamePrefix + randLowStr(10)
 	s.putBucket(bucketName, c)
 
@@ -164,7 +446,7 @@ func (s *OssutilCommandSuite) TestSetNotExistObjectMeta(c *C) {
 	s.removeBucket(bucketName, true, c)
 }
 
-func (s *OssutilCommandSuite) TestErrBatchSetMeta(c *C) {
+func (s *OssutilCommandSuite) TestSetObjectMetaErrBatchSetMeta(c *C) {
 	bucketName := bucketNamePrefix + randLowStr(10)
 	s.putBucket(bucketName, c)
 
@@ -209,7 +491,7 @@ func (s *OssutilCommandSuite) TestErrBatchSetMeta(c *C) {
 	s.removeBucket(bucketName, true, c)
 }
 
-func (s *OssutilCommandSuite) TestErrSetMeta(c *C) {
+func (s *OssutilCommandSuite) TestSetObjectMetaErrSetMeta(c *C) {
 	args := []string{"os:/", ""}
 	showElapse, err := s.rawSetMetaWithArgs(args, false, false, false, true, DefaultLanguage)
 	c.Assert(err, NotNil)
@@ -267,12 +549,12 @@ func (s *OssutilCommandSuite) TestErrSetMeta(c *C) {
 	s.removeBucket(bucketName, true, c)
 }
 
-func (s *OssutilCommandSuite) TestGetOSSOption(c *C) {
+func (s *OssutilCommandSuite) TestSetObjectMetaGetOSSOption(c *C) {
 	_, err := getOSSOption(headerOptionMap, "unknown", "a")
 	c.Assert(err, NotNil)
 }
 
-func (s *OssutilCommandSuite) TestSetMetaIDKey(c *C) {
+func (s *OssutilCommandSuite) TestSetObjectMetaSetMetaIDKey(c *C) {
 	bucketName := bucketNamePrefix + randLowStr(10)
 	s.putBucket(bucketName, c)
 
@@ -320,7 +602,7 @@ func (s *OssutilCommandSuite) TestSetMetaIDKey(c *C) {
 	s.removeBucket(bucketName, true, c)
 }
 
-func (s *OssutilCommandSuite) TestSetMetaURLEncoding(c *C) {
+func (s *OssutilCommandSuite) TestSetObjectMetaSetMetaURLEncoding(c *C) {
 	bucketName := bucketNamePrefix + randLowStr(10)
 	s.putBucket(bucketName, c)
 
@@ -357,7 +639,7 @@ func (s *OssutilCommandSuite) TestSetMetaURLEncoding(c *C) {
 	s.removeBucket(bucketName, true, c)
 }
 
-func (s *OssutilCommandSuite) TestSetMetaErrArgs(c *C) {
+func (s *OssutilCommandSuite) TestSetObjectMetaSetMetaErrArgs(c *C) {
 	object := randStr(20)
 	meta := "x-oss-object-acl:public-read-write"
 
@@ -372,7 +654,7 @@ func (s *OssutilCommandSuite) TestSetMetaErrArgs(c *C) {
 	c.Assert(err, NotNil)
 }
 
-func (s *OssutilCommandSuite) TestBatchSetMetaNotExistBucket(c *C) {
+func (s *OssutilCommandSuite) TestSetObjectMetaBatchSetMetaNotExistBucket(c *C) {
 	// set acl notexist bucket
 	meta := "x-oss-object-acl:public-read-write"
 	err := s.initSetMetaWithArgs([]string{CloudURLToString(bucketNamePrefix+randLowStr(10), ""), meta}, "-rf", DefaultOutputDir)
@@ -381,7 +663,7 @@ func (s *OssutilCommandSuite) TestBatchSetMetaNotExistBucket(c *C) {
 	c.Assert(err, NotNil)
 }
 
-func (s *OssutilCommandSuite) TestBatchSetMetaErrorContinue(c *C) {
+func (s *OssutilCommandSuite) TestSetObjectMetaBatchSetMetaErrorContinue(c *C) {
 	bucketName := bucketNamePrefix + randLowStr(10)
 	s.putBucket(bucketName, c)
 
@@ -478,7 +760,7 @@ func (s *OssutilCommandSuite) TestBatchSetMetaErrorContinue(c *C) {
 	s.removeBucket(bucketName, true, c)
 }
 
-func (s *OssutilCommandSuite) TestBatchSetMetaErrorBreak(c *C) {
+func (s *OssutilCommandSuite) TestSetObjectMetaBatchSetMetaErrorBreak(c *C) {
 	bucketName := bucketNamePrefix + randLowStr(10)
 	s.putBucketWithStorageClass(bucketName, StorageArchive, c)
 
