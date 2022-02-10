@@ -1,10 +1,9 @@
 package lib
 
 import (
-	"encoding/xml"
+	"bufio"
 	"fmt"
 	"github.com/syndtr/goleveldb/leveldb"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
@@ -88,7 +87,7 @@ var specChineseSetMeta = SpecText{
 	paramText: "cloud_url [meta] [options]",
 
 	syntaxText: ` 
-    ossutil set-meta oss://bucket[/prefix] [header:value#header:value...] [--update] [--delete] [-r] [-f] [-c file] [--version-id versionId]
+    ossutil set-meta oss://bucket[/prefix] [header:value#header:value...] [--update] [--delete] [-r] [-f] [-c file] [--version-id versionId] [--object-file file] [--snapshot-path dir] [--disable-ignore-error]
 `,
 
 	detailHelpText: ` 
@@ -140,6 +139,16 @@ Headers:
         --include和--exclude选项说明，请参考cp命令帮助。
         如果--force选项被指定，则不会进行询问提示。
         --update选项和--delete选项的用法参考上文。
+
+    3) ossutil set-meta oss://bucket [header:value#header:value...] --object-file file [--snapshot-path dir] [--disable-ignore-error] [--update] [--delete] [-f]
+        如果指定了--object-file选项，ossutil会读取指定文件中的所有objects，批量设置
+    这些objects的meta信息。当一个object操作出现错误时会将出错object的错误信息记录到report
+    文件，并继续操作其他object，成功操作的object信息将不会被记录到report文件中（更多信息
+    见cp命令的帮助）。
+        如果--snapshot-path选项被指定，则会对本次操作的object进行快照，如果操作对象已经存在
+        快照，则忽略本次操作。（仅支持在-r、--object-file基础上）
+        如果--force选项被指定，则不会进行询问提示。
+        --update选项和--delete选项的用法参考上文。
 `,
 
 	sampleText: ` 
@@ -164,8 +173,14 @@ Headers:
     (7)ossutil set-meta oss://bucket1/%e4%b8%ad%e6%96%87 X-Oss-Meta-delete --delete --encoding-type url
         删除oss://bucket1/中文的X-Oss-Meta-delete头域
 
-    (6)ossutil set-meta oss://bucket1/obj1 X-Oss-Meta-delete --delete --version-id versionId
+    (8)ossutil set-meta oss://bucket1/obj1 X-Oss-Meta-delete --delete --version-id versionId
         删除指定版本obj1的X-Oss-Meta-delete头域，并生成最新版本
+
+    (9)ossutil set-meta oss://bucket1 X-Oss-Meta-empty:#Content-Type:plain/text --update --object-file file
+        批量更新file文件中所有objects的X-Oss-Meta-empty和Content-Type头域
+
+    (10)ossutil set-meta oss://bucket1 X-Oss-Meta-empty:#Content-Type:plain/text --update --object-file file --snapshot-path dir
+        批量更新file文件中所有objects的X-Oss-Meta-empty和Content-Type头域，并开启快照
 `,
 }
 
@@ -176,7 +191,7 @@ var specEnglishSetMeta = SpecText{
 	paramText: "cloud_url [meta] [options]",
 
 	syntaxText: ` 
-    ossutil set-meta oss://bucket[/prefix] [header:value#header:value...] [--update] [--delete] [-r] [-f] [-c file] [--version-id versionId]
+    ossutil set-meta oss://bucket[/prefix] [header:value#header:value...] [--update] [--delete] [-r] [-f] [-c file] [--version-id versionId] [--object-file file] [--snapshot-path dir] [--disable-ignore-error]
 `,
 
 	detailHelpText: ` 
@@ -236,6 +251,25 @@ Usage:
 	    --include and --exclude option, please refer cp command help.
         If --force option is specified, ossutil will not show prompt question.
         The usage of --update option and --delete option is showed in detailHelpText.
+
+    3) ossutil set-meta oss://bucket [header:value#header:value...] --object-file file [--snapshot-path dir] [--disable-ignore-error] [--update] [--delete] [-f]
+        如果指定了--object-file选项，ossutil会读取指定文件中的所有objects，批量设置
+    这些objects的meta信息。当一个object操作出现错误时会将出错object的错误信息记录到report
+    文件，并继续操作其他object，成功操作的object信息将不会被记录到report文件中（更多信息
+    见cp命令的帮助）。
+        如果--snapshot-path选项被指定，则会对本次操作的object进行快照，如果操作对象已经存在
+		快照，则忽略本次操作。（仅支持在-r、--object-file基础上）
+        如果--force选项被指定，则不会进行询问提示。
+        --update选项和--delete选项的用法参考上文。
+
+		If --object-file option is specified, ossutil will read objects in file, then 
+    set meta on these objects. If an error occurs, ossutil will record the error message 
+    to report file, and ossutil will continue to attempt to set acl on the remaining objects(
+    more information see help of cp command). 
+        If --snapshot-path option is specified, ossutil will create snapshot for this operation, 
+		and if the snapshot exists, then cancel this operate.
+        If --force option is specified, ossutil will not show prompt question.
+        The usage of --update option and --delete option is showed in detailHelpText.
 `,
 
 	sampleText: ` 
@@ -262,26 +296,31 @@ Usage:
     
 	(8)ossutil set-meta oss://bucket1/obj1 X-Oss-Meta-delete --delete --version-id versionId
         Delete X-Oss-Meta-delete header of a specific version of obj1，and generate the latest version obj1
+
+    (9)ossutil set-meta oss://bucket1 X-Oss-Meta-empty:#Content-Type:plain/text --update --object-file file
+        Batch update X-Oss-Meta-empty and Content-Type header on objects that in file
+
+    (10)ossutil set-meta oss://bucket1 X-Oss-Meta-empty:#Content-Type:plain/text --update --object-file file --snapshot-path dir
+        Batch update X-Oss-Meta-empty and Content-Type header on objects that in file, and open snapshot
 `,
 }
 
 // SetMetaCommand is the command set meta for object
 type SetMetaCommand struct {
-	monitor       Monitor //Put first for atomic op on some fileds
-	command       Command
-	smOption      batchOptionType
-	filters       []filterOptionType
-	skipCount     uint64
-	hasObjFile    bool
-	objFileConfig oss.ObjectFile
-	objFilePath   string
+	monitor     Monitor //Put first for atomic op on some fileds
+	command     Command
+	smOption    batchOptionType
+	filters     []filterOptionType
+	skipCount   uint64
+	hasObjFile  bool
+	objFilePath string
 }
 
 var setMetaCommand = SetMetaCommand{
 	command: Command{
 		name:        "set-meta",
 		nameAlias:   []string{"setmeta", "set_meta"},
-		minArgc:     0,
+		minArgc:     1,
 		maxArgc:     2,
 		specChinese: specChineseSetMeta,
 		specEnglish: specEnglishSetMeta,
@@ -353,24 +392,11 @@ func (sc *SetMetaCommand) RunCommand() error {
 	encodingType, _ := GetString(OptionEncodingType, sc.command.options)
 	versionId, _ := GetString(OptionVersionId, sc.command.options)
 	objFileXml, _ := GetString(OptionObjectFile, sc.command.options)
-	sc.smOption.snapshotPath, _ = GetString(OptionSnapshotPath, sc.command.options)
-
-	var res bool
-	res, sc.filters = getFilter(os.Args)
-	if !res {
-		return fmt.Errorf("--include or --exclude does not support format containing dir info")
-	}
-
-	if !recursive && len(sc.filters) > 0 {
-		return fmt.Errorf("--include or --exclude only work with --recursive")
-	}
-
-	if recursive && len(versionId) > 0 {
-		return fmt.Errorf("--version-id only work on single object")
-	}
+	snapshotPath, _ := GetString(OptionSnapshotPath, sc.command.options)
 
 	var err error
 	// load snapshot
+	sc.smOption.snapshotPath = snapshotPath
 	if sc.smOption.snapshotPath != "" {
 		if sc.smOption.snapshotldb, err = leveldb.OpenFile(sc.smOption.snapshotPath, nil); err != nil {
 			return fmt.Errorf("load snapshot error, reason: %s", err.Error())
@@ -378,10 +404,15 @@ func (sc *SetMetaCommand) RunCommand() error {
 		defer sc.smOption.snapshotldb.Close()
 	}
 
-	//if !sc.confirmOP(recursive, force, objFileXml) {
-	//	return nil
-	//}
-	if err := sc.checkOption(isUpdate, isDelete, force, language, objFileXml); err != nil {
+	cloudURL, err := CloudURLFromString(sc.command.args[0], encodingType)
+	if err != nil {
+		return err
+	}
+	if err := sc.checkOptions(cloudURL, isUpdate, isDelete, force, recursive, language, versionId, objFileXml); err != nil {
+		return err
+	}
+	bucket, err := sc.command.ossBucket(cloudURL.bucket)
+	if err != nil {
 		return err
 	}
 
@@ -394,42 +425,22 @@ func (sc *SetMetaCommand) RunCommand() error {
 		return err
 	}
 
-	sc.smOption.ctnu = false
+	sc.smOption.ctnu = true
 
 	// check --object-file mode
 	if objFileXml != "" {
-		// check is options used correctly
-		if res, err := sc.checkObjectFileMode(recursive); res == false {
-			return err
-		}
-
 		// check objFileXml and parse it
-		if err := sc.parseObjectFile(objFileXml); err != nil {
+		if err := sc.checkObjectFile(objFileXml); err != nil {
 			return err
 		}
-
-		return sc.batchSetObjFileMeta(&sc.objFileConfig, headers, isUpdate, isDelete, force, routines)
-
+		recursive = true
+		err = sc.batchSetObjectsMetaFromFile(bucket, cloudURL, headers, isUpdate, isDelete, recursive, routines)
 	} else {
-		cloudURL, err := CloudURLFromString(sc.command.args[0], encodingType)
-		if err != nil {
-			return err
-		}
-		if err = sc.checkArgs(cloudURL, recursive, isUpdate, isDelete); err != nil {
-			return err
-		}
-
-		bucket, err := sc.command.ossBucket(cloudURL.bucket)
-		if err != nil {
-			return err
-		}
-
 		if !recursive {
-			err = sc.setObjectMeta(bucket, cloudURL.object, headers, isUpdate, isDelete, versionId)
+			err = sc.setObjectMeta(bucket, cloudURL.object, headers, isUpdate, isDelete, false, versionId)
 		} else {
 			err = sc.batchSetObjectMeta(bucket, cloudURL, headers, isUpdate, isDelete, force, routines)
 		}
-
 	}
 
 	if isUpdate {
@@ -438,24 +449,48 @@ func (sc *SetMetaCommand) RunCommand() error {
 	return err
 }
 
-func (sc *SetMetaCommand) checkArgs(cloudURL CloudURL, recursive, isUpdate, isDelete bool) error {
+func (sc *SetMetaCommand) checkOptions(cloudURL CloudURL, isUpdate, isDelete, force, recursive bool, language, versionId, objFileXml string) error {
 	if cloudURL.bucket == "" {
 		return fmt.Errorf("invalid cloud url: %s, miss bucket", cloudURL.urlStr)
 	}
-	if !recursive && cloudURL.object == "" {
-		return fmt.Errorf("set object meta invalid cloud url: %s, object empty. Set bucket meta is not supported, if you mean batch set meta on objects, please use --recursive", cloudURL.urlStr)
-	}
-	return nil
-}
-
-func (sc *SetMetaCommand) checkOption(isUpdate, isDelete, force bool, language, objFileXml string) error {
-	if isUpdate && isDelete {
-		if objFileXml == "" {
-			return fmt.Errorf("--update option and --delete option are not supported for %s at the same time, please check", sc.command.args[0])
-		} else {
-			return fmt.Errorf("--update option and --delete option are not supported at the same time, please check")
+	if cloudURL.object == "" {
+		if !recursive && objFileXml == "" {
+			return fmt.Errorf("set object meta invalid cloud url: %s, object empty. Set bucket meta is not supported, if you mean batch set meta on objects, please use --recursive or --object-file", sc.command.args[0])
 		}
+	} else {
+		if objFileXml != "" {
+			return fmt.Errorf("the first arg of `ossutil set-meta` only support oss://bucket when set option --object-file")
+		}
+	}
 
+	var res bool
+	res, sc.filters = getFilter(os.Args)
+	if !res {
+		return fmt.Errorf("--include or --exclude does not support format containing dir info")
+	}
+
+	if !recursive && len(sc.filters) > 0 {
+		return fmt.Errorf("--include or --exclude only work with --recursive")
+	}
+
+	if (recursive && len(versionId) > 0) || (objFileXml != "" && len(versionId) > 0) {
+		return fmt.Errorf("--version-id only work on single object")
+	}
+
+	if !force {
+		var val string
+		if !recursive && objFileXml == "" {
+			return nil
+		}
+		fmt.Printf("Do you really mean to recursivlly set meta on objects of %s(y or N)? ", sc.command.args[0])
+		if _, err := fmt.Scanln(&val); err != nil || (strings.ToLower(val) != "yes" && strings.ToLower(val) != "y") {
+			fmt.Println("operation is canceled.")
+			return nil
+		}
+	}
+
+	if isUpdate && isDelete {
+		return fmt.Errorf("--update option and --delete option are not supported for %s at the same time, please check", sc.command.args[0])
 	}
 	if !isUpdate && !isDelete && !force {
 		if language == LEnglishLanguage {
@@ -472,27 +507,9 @@ func (sc *SetMetaCommand) checkOption(isUpdate, isDelete, force bool, language, 
 	return nil
 }
 
-func (sc *SetMetaCommand) confirmOP(recursive, force bool, objFileXml string) bool {
-	if recursive && !force {
-		var val string
-		if objFileXml != "" {
-			fmt.Printf("Do you really mean to recursivlly set meta on objects of objectFile(y or N)? ")
-		} else {
-			fmt.Printf("Do you really mean to recursivlly set meta on objects of %s(y or N)? ", sc.command.args[0])
-		}
-		if _, err := fmt.Scanln(&val); err != nil || (strings.ToLower(val) != "yes" && strings.ToLower(val) != "y") {
-			fmt.Println("operation is canceled.")
-			return false
-		}
-	}
-	return true
-}
-
 func (sc *SetMetaCommand) getMetaData(force bool, language string) (string, error) {
-	if len(sc.command.args) == 2 && !strings.HasPrefix(strings.ToLower(sc.command.args[1]), "oss://") {
+	if len(sc.command.args) > 1 {
 		return strings.TrimSpace(sc.command.args[1]), nil
-	} else if len(sc.command.args) == 1 && !strings.HasPrefix(strings.ToLower(sc.command.args[0]), "oss://") {
-		return strings.TrimSpace(sc.command.args[0]), nil
 	}
 
 	if force {
@@ -505,9 +522,9 @@ func (sc *SetMetaCommand) getMetaData(force bool, language string) (string, erro
 		fmt.Printf("你是否确定你想设置的meta信息为空（或者忘记了输入header:value对）? \n输入yes(y)使用空meta继续设置，输入no(n)来展示支持的headers，其他输入将取消操作：")
 	}
 	var str string
-	//if _, err := fmt.Scanln(&str); err != nil || (strings.ToLower(str) != "yes" && strings.ToLower(str) != "y" && strings.ToLower(str) != "no" && strings.ToLower(str) != "n") {
-	//	return "", fmt.Errorf("unknown input, operation is canceled")
-	//}
+	if _, err := fmt.Scanln(&str); err != nil || (strings.ToLower(str) != "yes" && strings.ToLower(str) != "y" && strings.ToLower(str) != "no" && strings.ToLower(str) != "n") {
+		return "", fmt.Errorf("unknown input, operation is canceled")
+	}
 	if strings.ToLower(str) == "yes" || strings.ToLower(str) == "y" {
 		return "", nil
 	}
@@ -517,9 +534,9 @@ func (sc *SetMetaCommand) getMetaData(force bool, language string) (string, erro
 	} else {
 		fmt.Printf("\n支持的headers:\n    %s\n    以及以\"%s\"开头的headers\n\n请输入你想设置的header:value#header:value...：", formatHeaderString(headerOptionMap, "\n    "), oss.HTTPHeaderOssMetaPrefix)
 	}
-	//if _, err := fmt.Scanln(&str); err != nil {
-	//	return "", fmt.Errorf("meta empty, please check, operation is canceled")
-	//}
+	if _, err := fmt.Scanln(&str); err != nil {
+		return "", fmt.Errorf("meta empty, please check, operation is canceled")
+	}
 	return strings.TrimSpace(str), nil
 }
 
@@ -548,16 +565,20 @@ func (cmd *Command) parseHeaders(str string, isDelete bool) (map[string]string, 
 	return headers, nil
 }
 
-func (sc *SetMetaCommand) setObjectMeta(bucket *oss.Bucket, object string, headers map[string]string, isUpdate, isDelete bool, versionId string) error {
+func (sc *SetMetaCommand) setObjectMeta(bucket *oss.Bucket, object string, headers map[string]string, isUpdate, isDelete, batchOperate bool, versionId string) error {
 	allheaders := headers
 	isSkip := false
+	spath := ""
+	msg := "set_meta"
 	nowt := time.Now().Unix()
 
-	msg := "set_meta"
-	spath := sc.formatSnapshotKey(bucket.BucketName, object, msg)
-	if skip := sc.skipSetMeta(spath); skip {
-		LogInfo("restore obj skip: %s\n", object)
-		return nil
+	if batchOperate && sc.smOption.snapshotPath != "" {
+		spath = sc.formatSnapshotKey(bucket.BucketName, object, msg)
+		if skip := sc.skipSetMeta(spath); skip {
+			sc.updateSkip(1)
+			LogInfo("restore obj skip: %s\n", object)
+			return nil
+		}
 	}
 
 	if isUpdate || isDelete {
@@ -596,15 +617,20 @@ func (sc *SetMetaCommand) setObjectMeta(bucket *oss.Bucket, object string, heade
 	}
 
 	err = sc.ossSetObjectMetaRetry(bucket, object, options...)
-	if err != nil {
-		_ = sc.updateSnapshot(err, spath, nowt)
-		return err
-	} else {
-		err = sc.updateSnapshot(err, spath, nowt)
+	if batchOperate && sc.smOption.snapshotPath != "" {
 		if err != nil {
+			_ = sc.updateSnapshot(err, spath, nowt)
 			return err
+		} else {
+			err = sc.updateSnapshot(err, spath, nowt)
+			if err != nil {
+				return err
+			}
 		}
+	} else {
+		return err
 	}
+
 	return nil
 }
 
@@ -661,7 +687,6 @@ func (sc *SetMetaCommand) ossSetObjectMetaRetry(bucket *oss.Bucket, object strin
 }
 
 func (sc *SetMetaCommand) batchSetObjectMeta(bucket *oss.Bucket, cloudURL CloudURL, headers map[string]string, isUpdate, isDelete, force bool, routines int64) error {
-	//sc.smOption.ctnu = true
 	outputDir, _ := GetString(OptionOutputDir, sc.command.options)
 
 	// init reporter
@@ -706,7 +731,7 @@ func (sc *SetMetaCommand) setObjectMetaConsumer(bucket *oss.Bucket, headers map[
 }
 
 func (sc *SetMetaCommand) setObjectMetaWithReport(bucket *oss.Bucket, object string, headers map[string]string, isUpdate, isDelete bool) error {
-	err := sc.setObjectMeta(bucket, object, headers, isUpdate, isDelete, "")
+	err := sc.setObjectMeta(bucket, object, headers, isUpdate, isDelete, true, "")
 	sc.command.updateMonitor(err, &sc.monitor)
 	msg := fmt.Sprintf("set meta on %s", CloudURLToString(bucket.BucketName, object))
 	sc.command.report(msg, err, &sc.smOption)
@@ -746,21 +771,7 @@ func (sc *SetMetaCommand) formatResultPrompt(err error) error {
 	return err
 }
 
-func (sc *SetMetaCommand) checkObjectFileMode(recursive bool) (bool, error) {
-	flag1 := len(sc.command.args) == 2
-	flag2 := len(sc.command.args) == 1 && strings.HasPrefix(strings.ToLower(sc.command.args[0]), "oss://")
-
-	if recursive {
-		return false, fmt.Errorf("options -r/--recursive can't set with --object-file")
-	}
-	if flag1 || flag2 {
-		return false, fmt.Errorf("oss://bucket/.. can't set with options --object-file")
-	}
-
-	return true, nil
-}
-
-func (sc *SetMetaCommand) parseObjectFile(objFileXml string) error {
+func (sc *SetMetaCommand) checkObjectFile(objFileXml string) error {
 	// check file if exists
 	fileInfo, err := os.Stat(objFileXml)
 	if err != nil {
@@ -772,33 +783,17 @@ func (sc *SetMetaCommand) parseObjectFile(objFileXml string) error {
 	if fileInfo.Size() == 0 {
 		return fmt.Errorf("%s is empty file", objFileXml)
 	}
-	sc.objFilePath = objFileXml
 
-	// parsing the xml file
-	file, err := os.Open(objFileXml)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-	data, err := ioutil.ReadAll(file)
-	if err != nil {
-		return err
-	}
-
-	err = xml.Unmarshal(data, &sc.objFileConfig)
-	if err != nil {
-		return err
-	}
 	sc.hasObjFile = true
+	sc.objFilePath = objFileXml
 	return nil
 }
 
-func (sc *SetMetaCommand) batchSetObjFileMeta(objectFile *oss.ObjectFile, headers map[string]string, isUpdate, isDelete, force bool, routines int64) error {
-	//sc.smOption.ctnu = true
-	//if sc.hasObjFile {
-	//	disableIgnoreError, _ := GetBool(OptionDisableIgnoreError, sc.command.options)
-	//	sc.smOption.ctnu = !disableIgnoreError
-	//}
+func (sc *SetMetaCommand) batchSetObjectsMetaFromFile(bucket *oss.Bucket, cloudURL CloudURL, headers map[string]string, isUpdate, isDelete, recursive bool, routines int64) error {
+	if sc.hasObjFile || recursive {
+		disableIgnoreError, _ := GetBool(OptionDisableIgnoreError, sc.command.options)
+		sc.smOption.ctnu = !disableIgnoreError
+	}
 	outputDir, _ := GetString(OptionOutputDir, sc.command.options)
 
 	// init reporter
@@ -808,151 +803,71 @@ func (sc *SetMetaCommand) batchSetObjFileMeta(objectFile *oss.ObjectFile, header
 	}
 	defer sc.smOption.reporter.Clear()
 
-	return sc.setObjFileMetas(objectFile, headers, isUpdate, isDelete, force, routines)
+	return sc.setObjectsMetaFromFile(bucket, cloudURL, sc.objFilePath, headers, isUpdate, isDelete, routines)
 }
 
-func (sc *SetMetaCommand) setObjFileMetas(objectFile *oss.ObjectFile, headers map[string]string, isUpdate, isDelete, force bool, routines int64) error {
+func (sc *SetMetaCommand) setObjectsMetaFromFile(bucket *oss.Bucket, cloudURL CloudURL, objectFile string, headers map[string]string, isUpdate, isDelete bool, routines int64) error {
 	// producer list objects
 	// consumer set meta
 	chObjects := make(chan string, ChannelBuf)
 	chError := make(chan error, routines+1)
 	chListError := make(chan error, 1)
-	go sc.objectStatistic(objectFile, &sc.monitor, sc.filters)
-	go sc.objectProducer(objectFile, chObjects, chListError, sc.filters)
-
+	go sc.setObjectMetaStatistic(objectFile, &sc.monitor, sc.filters)
+	go sc.setObjectMetaProducer(objectFile, chObjects, chListError, sc.filters)
 	for i := 0; int64(i) < routines; i++ {
-		go sc.setObjectMetaConsumers(objectFile, headers, isUpdate, isDelete, chObjects, chError)
+		go sc.setObjectMetaConsumer(bucket, headers, isUpdate, isDelete, chObjects, chError)
 	}
 
 	return sc.waitRoutinueComplete(chError, chListError, routines)
 }
 
-func (sc *SetMetaCommand) objectStatistic(objectFile *oss.ObjectFile, monitor Monitorer, filters []filterOptionType, options ...oss.Option) {
+func (sc *SetMetaCommand) setObjectMetaStatistic(objectFile string, monitor Monitorer, filters []filterOptionType, options ...oss.Option) {
 	if monitor == nil {
 		return
 	}
 
-	encodingType, _ := GetString(OptionEncodingType, sc.command.options)
-	recursive, _ := GetBool(OptionRecursion, sc.command.options)
-	isUpdate, _ := GetBool(OptionUpdate, sc.command.options)
-	isDelete, _ := GetBool(OptionDelete, sc.command.options)
+	file, err := os.Open(objectFile)
+	if err != nil {
+		monitor.setScanError(err)
+		return
+	}
+	defer file.Close()
 
-	for _, obj := range objectFile.Objects {
-		cloudURL, err := CloudURLFromString(obj, encodingType)
-		if err != nil {
-			monitor.setScanError(err)
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		object := scanner.Text()
+		object = strings.Trim(object, " ")
+		if object == "" {
+			monitor.setScanError(fmt.Errorf("object can't be '' in --object-file"))
 			return
 		}
-		if err = sc.checkArgs(cloudURL, recursive, isUpdate, isDelete); err != nil {
-			monitor.setScanError(err)
-			return
-		}
-
-		bucket, err := sc.command.ossBucket(cloudURL.bucket)
-		if err != nil {
-			monitor.setScanError(err)
-			return
-		}
-
-		pre := oss.Prefix(cloudURL.object)
-		marker := oss.Marker("")
-
-		listOptions := append(options, marker, pre)
-		lor, err := sc.command.ossListObjectsRetry(bucket, listOptions...)
-		if err != nil {
-			monitor.setScanError(err)
-			return
-		}
-
-		for _, object := range lor.Objects {
-			if doesSingleObjectMatchPatterns(object.Key, filters) {
-				monitor.updateScanNum(1)
-			}
-		}
-
-		//marker = oss.Marker(lor.NextMarker)
-		//if !lor.IsTruncated {
-		//	break
-		//}
+		monitor.updateScanNum(1)
 	}
 
 	monitor.setScanEnd()
 }
 
-func (sc *SetMetaCommand) objectProducer(objectFile *oss.ObjectFile, chObjects chan<- string, chError chan<- error, filters []filterOptionType, options ...oss.Option) {
-	encodingType, _ := GetString(OptionEncodingType, sc.command.options)
-	recursive, _ := GetBool(OptionRecursion, sc.command.options)
-	isUpdate, _ := GetBool(OptionUpdate, sc.command.options)
-	isDelete, _ := GetBool(OptionDelete, sc.command.options)
+func (sc *SetMetaCommand) setObjectMetaProducer(objectFile string, chObjects chan<- string, chError chan<- error, filters []filterOptionType, options ...oss.Option) {
+	file, err := os.Open(objectFile)
+	if err != nil {
+		chError <- err
+		return
+	}
+	defer file.Close()
 
-	for _, obj := range objectFile.Objects {
-		cloudURL, err := CloudURLFromString(obj, encodingType)
-		if err != nil {
-			chError <- err
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		object := scanner.Text()
+		object = strings.Trim(object, " ")
+		if object == "" {
+			chError <- fmt.Errorf("object can't be '' in --object-file")
 			break
 		}
-		if err = sc.checkArgs(cloudURL, recursive, isUpdate, isDelete); err != nil {
-			chError <- err
-			break
-		}
-
-		// todo 以下是考虑 --object-file 中是否需要支持prefix的模糊匹配
-		//bucket, err := sc.command.ossBucket(cloudURL.bucket)
-		//if err != nil {
-		//	chError <- err
-		//	break
-		//}
-		//
-		//pre := oss.Prefix(cloudURL.object)
-		//marker := oss.Marker("")
-		//
-		//listOptions := append(options, marker, pre)
-		//lor, err := sc.command.ossListObjectsRetry(bucket, listOptions...)
-		//if err != nil {
-		//	chError <- err
-		//	break
-		//}
-		//
-		//for _, object := range lor.Objects {
-		//	if doesSingleObjectMatchPatterns(object.Key, filters) {
-		//		chObjects <- bucket.BucketName + "/" + object.Key
-		//	}
-		//}
-
-		chObjects <- obj
+		chObjects <- object
 	}
 
 	defer close(chObjects)
 	chError <- nil
-}
-
-func (sc *SetMetaCommand) setObjectMetaConsumers(objectFile *oss.ObjectFile, headers map[string]string, isUpdate, isDelete bool, chObjects <-chan string, chError chan<- error) {
-	if objectFile != nil {
-		encodingType, _ := GetString(OptionEncodingType, sc.command.options)
-		for object := range chObjects {
-			cloudURL, err := CloudURLFromString(object, encodingType)
-			if err != nil {
-				chError <- err
-				break
-			}
-			bucket, err := sc.command.ossBucket(cloudURL.bucket)
-			if err != nil {
-				chError <- err
-				break
-			}
-
-			err = sc.setObjectMetaWithReport(bucket, cloudURL.object, headers, isUpdate, isDelete)
-			if err != nil {
-				chError <- err
-				if !sc.smOption.ctnu {
-					return
-				}
-				continue
-			}
-		}
-
-		chError <- nil
-	}
 }
 
 func (sc *SetMetaCommand) formatSnapshotKey(bucket, object, msg string) string {
@@ -978,4 +893,8 @@ func (sc *SetMetaCommand) updateSnapshot(err error, spath string, srct int64) er
 		}
 	}
 	return nil
+}
+
+func (sc *SetMetaCommand) updateSkip(num int64) {
+	atomic.AddInt64(&sc.monitor.skipNum, num)
 }
