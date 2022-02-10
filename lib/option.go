@@ -265,6 +265,9 @@ var OptionMap = map[string]Option{
 	OptionUserAgent: Option{"", "--ua", "", OptionTypeString, "", "",
 		"指定http请求中的user agent, 会在缺省值后面加上指定值",
 		"Specify the user agent in the http request, and the specified value will be added after the default value"},
+	OptionObjectFile: Option{"", "--object-file", "", OptionTypeString, "", "",
+		"表示所有待处理的objects，取值为一个存在的文件路径",
+		"Specify all the objects that need to be operated, and the specified value should be a exists file path"},
 }
 
 func (T *Option) getHelp(language string) string {
