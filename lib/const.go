@@ -99,6 +99,7 @@ const (
 	OptionSkipVerfiyCert             = "skipVerifyCert"
 	OptionItem                       = "item"
 	OptionUserAgent                  = "userAgent"
+	OptionObjectFile                 = "objectFile"
 )
 
 // the elements show in stat object
