@@ -58,6 +58,7 @@ var (
 	downloadFileName  = "ossutil_test.download_file" + randStr(5)
 	downloadDir       = "ossutil_test.download_dir" + randStr(5)
 	inputFileName     = "ossutil_test.input_file" + randStr(5)
+	objectFileName    = "ossutil_test.object_file" + randStr(5)
 	content           = "abc"
 	cm                = CommandManager{}
 	out               = os.Stdout
@@ -1415,6 +1416,16 @@ func (s *OssutilCommandSuite) initSetMetaWithArgs(args []string, cmdline string,
 		cmdline = cmdline[0:pos] + cmdline[pos+len("--delete"):]
 	}
 
+	var disableIgnoreError bool
+	if pos := strings.Index(cmdline, "--disable-ignore-error"); pos != -1 {
+		disableIgnoreError = true
+		cmdline = cmdline[0:pos] + cmdline[pos+len("--disable-ignore-error"):]
+	}
+
+	objectFile := ""
+	snapshotPath := ""
+	objectFile, snapshotPath, cmdline = s.handleObjectFileSnapshot(cmdline)
+
 	parameter := strings.Split(cmdline, "-")
 	r := false
 	f := false
@@ -1426,17 +1437,20 @@ func (s *OssutilCommandSuite) initSetMetaWithArgs(args []string, cmdline string,
 	str := ""
 	routines := strconv.Itoa(Routines)
 	options := OptionMapType{
-		"endpoint":        &str,
-		"accessKeyID":     &str,
-		"accessKeySecret": &str,
-		"stsToken":        &str,
-		"configFile":      &configFile,
-		"update":          &update,
-		"delete":          &delete,
-		"recursive":       &r,
-		"force":           &f,
-		"routines":        &routines,
-		"encodingType":    &encodingType,
+		"endpoint":           &str,
+		"accessKeyID":        &str,
+		"accessKeySecret":    &str,
+		"stsToken":           &str,
+		"configFile":         &configFile,
+		"update":             &update,
+		"delete":             &delete,
+		"recursive":          &r,
+		"force":              &f,
+		"routines":           &routines,
+		"encodingType":       &encodingType,
+		"objectFile":         &objectFile,
+		"snapshotPath":       &snapshotPath,
+		"disableIgnoreError": &disableIgnoreError,
 	}
 	err := setMetaCommand.Init(args, options)
 	return err
@@ -1582,12 +1596,49 @@ func (s *OssutilCommandSuite) getFileList(dpath string) ([]string, error) {
 	return fileList, err
 }
 
+func (s *OssutilCommandSuite) handleObjectFileSnapshot(cmdline string) (objectFile, snapshotPath, newCmdline string) {
+	cmds := strings.Split(cmdline, " ")
+	for i := 0; i < len(cmds); i++ {
+		if cmds[i] == "--object-file" && !strings.HasPrefix(cmds[i+1], "-") {
+			objectFile = cmds[i+1]
+		} else {
+			continue
+		}
+		cmds = append(cmds[:i], cmds[i+2:]...)
+	}
+	for i := 0; i < len(cmds); i++ {
+		if cmds[i] == "--snapshot-path" && !strings.HasPrefix(cmds[i+1], "-") {
+			snapshotPath = cmds[i+1]
+		} else {
+			continue
+		}
+		cmds = append(cmds[:i], cmds[i+2:]...)
+	}
+
+	// remake cmdline
+	cmdline = ""
+	for i := 0; i < len(cmds); i++ {
+		cmdline = cmdline + " " + cmds[i]
+	}
+	return objectFile, snapshotPath, cmdline
+}
+
 func (s *OssutilCommandSuite) initRestoreObject(args []string, cmdline string, outputDir string) error {
 	encodingType := ""
 	if pos := strings.Index(cmdline, "--encoding-type url"); pos != -1 {
 		encodingType = URLEncodingType
 		cmdline = cmdline[0:pos] + cmdline[pos+len("--encoding-type url"):]
 	}
+
+	var disableIgnoreError bool
+	if pos := strings.Index(cmdline, "--disable-ignore-error"); pos != -1 {
+		disableIgnoreError = true
+		cmdline = cmdline[0:pos] + cmdline[pos+len("--disable-ignore-error"):]
+	}
+
+	objectFile := ""
+	snapshotPath := ""
+	objectFile, snapshotPath, cmdline = s.handleObjectFileSnapshot(cmdline)
 
 	parameter := strings.Split(cmdline, "-")
 	r := false
@@ -1600,16 +1651,19 @@ func (s *OssutilCommandSuite) initRestoreObject(args []string, cmdline string, o
 	str := ""
 	routines := strconv.Itoa(Routines)
 	options := OptionMapType{
-		"endpoint":        &str,
-		"accessKeyID":     &str,
-		"accessKeySecret": &str,
-		"stsToken":        &str,
-		"configFile":      &configFile,
-		"recursive":       &r,
-		"force":           &f,
-		"encodingType":    &encodingType,
-		"routines":        &routines,
-		"outputDir":       &outputDir,
+		"endpoint":           &str,
+		"accessKeyID":        &str,
+		"accessKeySecret":    &str,
+		"stsToken":           &str,
+		"configFile":         &configFile,
+		"recursive":          &r,
+		"force":              &f,
+		"encodingType":       &encodingType,
+		"routines":           &routines,
+		"outputDir":          &outputDir,
+		"objectFile":         &objectFile,
+		"snapshotPath":       &snapshotPath,
+		"disableIgnoreError": &disableIgnoreError,
 	}
 	err := restoreCommand.Init(args, options)
 	return err
