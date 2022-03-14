@@ -1,7 +1,6 @@
 package lib
 
 import (
-	"encoding/xml"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -277,12 +276,7 @@ func (blc *BucketLifeCycleCommand) GetBucketLifecycle() error {
 		return err
 	}
 
-	lifeCycleRes, err := client.GetBucketLifecycle(blc.blOption.bucketName)
-	if err != nil {
-		return err
-	}
-
-	output, err := xml.MarshalIndent(lifeCycleRes, "  ", "    ")
+	output, err := client.GetBucketLifecycleXml(blc.blOption.bucketName)
 	if err != nil {
 		return err
 	}
@@ -307,8 +301,7 @@ func (blc *BucketLifeCycleCommand) GetBucketLifecycle() error {
 		outFile = os.Stdout
 	}
 
-	outFile.Write([]byte(xml.Header))
-	outFile.Write(output)
+	outFile.Write([]byte(output))
 
 	fmt.Printf("\n\n")
 
