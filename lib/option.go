@@ -261,13 +261,19 @@ var OptionMap = map[string]Option{
 		"specifies that the oss server's digital certificate file will not be verified"},
 	OptionItem: Option{"", "--item", "", OptionTypeString, "", "",
 		"表示命令的功能类型，取值为LOCATION、PROGRESS等",
-		"specifies the command's function type. the values ​​are LOCATION, PROGRESS, etc"},
+		"specifies the command's function type. the values are LOCATION, PROGRESS, etc"},
 	OptionUserAgent: Option{"", "--ua", "", OptionTypeString, "", "",
 		"指定http请求中的user agent, 会在缺省值后面加上指定值",
 		"Specify the user agent in the http request, and the specified value will be added after the default value"},
 	OptionObjectFile: Option{"", "--object-file", "", OptionTypeString, "", "",
 		"表示所有待处理的objects，取值为一个存在的文件路径",
 		"Specify all the objects that need to be operated, and the specified value should be a exists file path"},
+	OptionSignVersion: Option{"", "--sign-version", "", OptionTypeString, "", "",
+		"http请求使用的签名算法版本, 缺省为空, 表示v1版本",
+		"The version of the signature algorithm used in the HTTP request. It is empty by default, indicating the V1 version"},
+	OptionRegion: Option{"", "--region", "", OptionTypeString, "", "",
+		"bucket所在的地区, 比如cn-hangzhou, 缺省值为空, 如果使用v4签名则必须传入; 如果是云盒场景则为云盒id",
+		"The region where the bucket is located, such as cn-hangzhou. The default value is empty. If V4 signature is used, it must be inputted; If used in cloud-box, it is the cloud box ID"},
 }
 
 func (T *Option) getHelp(language string) string {

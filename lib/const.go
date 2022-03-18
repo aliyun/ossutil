@@ -100,6 +100,8 @@ const (
 	OptionItem                       = "item"
 	OptionUserAgent                  = "userAgent"
 	OptionObjectFile                 = "objectFile"
+	OptionSignVersion                = "signVersion"
+	OptionRegion                     = "region"
 )
 
 // the elements show in stat object
