@@ -306,6 +306,8 @@ func (cmd *Command) ossClient(bucket string) (*oss.Client, error) {
 
 	localHost, _ := GetString(OptionLocalHost, cmd.options)
 	bSkipVerifyCert, _ := GetBool(OptionSkipVerfiyCert, cmd.options)
+	region, _ := GetString(OptionRegion, cmd.options)
+	signVersion, _ := GetString(OptionSignVersion, cmd.options)
 
 	bPassword, _ := GetBool(OptionPassword, cmd.options)
 
@@ -322,6 +324,13 @@ func (cmd *Command) ossClient(bucket string) (*oss.Client, error) {
 	}
 
 	options := []oss.ClientOption{}
+	if region != "" {
+		options = append(options, oss.Region(region))
+	}
+
+	if signVersion != "" {
+		options = append(options, oss.AuthVersion(oss.AuthVersionType(signVersion)))
+	}
 
 	if strings.EqualFold(mode, "AK") {
 		if err := cmd.checkCredentials(endpoint, accessKeyID, accessKeySecret); err != nil {
@@ -862,5 +871,6 @@ func GetAllCommands() []interface{} {
 		&lrbCommand,
 		&replicationCommand,
 		&bucketCnameCommand,
+		&lcbCommand,
 	}
 }
