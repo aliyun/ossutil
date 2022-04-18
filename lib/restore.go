@@ -282,6 +282,9 @@ func (rc *RestoreCommand) RunCommand() error {
 		return err
 	}
 	if err = rc.checkOptions(cloudURL, recursive, force, versionid, objFileXml); err != nil {
+		if err.Error() == "operation is canceled" {
+			return nil
+		}
 		return err
 	}
 	bucket, err := rc.command.ossBucket(cloudURL.bucket)
@@ -326,7 +329,7 @@ func (rc *RestoreCommand) checkOptions(cloudURL CloudURL, recursive, force bool,
 		}
 	} else {
 		if objectFile != "" {
-			return fmt.Errorf("the first arg of `ossutil restore` only support oss://bucket when set option --object-file")
+			return fmt.Errorf("the first arg of `ossutil restore` only support oss://bucket when set option --object-file.")
 		}
 	}
 
@@ -336,13 +339,11 @@ func (rc *RestoreCommand) checkOptions(cloudURL CloudURL, recursive, force bool,
 
 	if !force {
 		var val string
-		if !recursive && objectFile == "" {
-			return nil
-		}
-		fmt.Printf("Do you really mean to recursivlly restore objects of %s(y or N)? ", rc.command.args[0])
-		if _, err := fmt.Scanln(&val); err != nil || (strings.ToLower(val) != "yes" && strings.ToLower(val) != "y") {
-			fmt.Println("operation is canceled.")
-			return nil
+		if recursive || objectFile != "" {
+			fmt.Printf("Do you really mean to recursivlly restore objects of %s(y or N)? ", rc.command.args[0])
+			if _, err := fmt.Scanln(&val); err != nil || (strings.ToLower(val) != "yes" && strings.ToLower(val) != "y") {
+				return fmt.Errorf("operation is canceled")
+			}
 		}
 	}
 

@@ -3,6 +3,7 @@ package lib
 import (
 	"fmt"
 	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
+	. "gopkg.in/check.v1"
 	"net/url"
 	"os"
 	"strconv"
@@ -161,18 +162,33 @@ func (s *OssutilCommandSuite) TestSetObjectMetaObjectFile(c *C) {
 	content := object1 + "\n" + object2
 	s.createFile(objectFileName, content, c)
 
-	err := s.initSetMetaWithArgs([]string{CloudURLToString(bucketName, ""), meta}, fmt.Sprintf("--object-file %s -f", objectFileName), DefaultOutputDir)
-	c.Assert(err, IsNil)
-	err = setMetaCommand.RunCommand()
-	c.Assert(err, IsNil)
-
 	// --object-file without -f
-	err = s.initSetMetaWithArgs([]string{CloudURLToString(bucketName, ""), meta}, fmt.Sprintf("--object-file %s", objectFileName), DefaultOutputDir)
+	err := s.initSetMetaWithArgs([]string{CloudURLToString(bucketName, ""), meta}, fmt.Sprintf("--object-file %s", objectFileName), DefaultOutputDir)
 	c.Assert(err, IsNil)
 	err = setMetaCommand.RunCommand()
-	c.Assert(err, NotNil)
+	c.Assert(err, IsNil)
 
 	objectStat = s.getStat(bucketName, object1, c)
+	c.Assert(objectStat[StatACL], Equals, "default")
+	_, ok = objectStat["X-Oss-Meta-A"]
+	c.Assert(ok, Equals, false)
+
+	objectStat = s.getStat(bucketName, object2, c)
+	c.Assert(objectStat[StatACL], Equals, "default")
+	_, ok = objectStat["X-Oss-Meta-A"]
+	c.Assert(ok, Equals, false)
+
+	err = s.initSetMetaWithArgs([]string{CloudURLToString(bucketName, ""), meta}, fmt.Sprintf("--object-file %s -f", objectFileName), DefaultOutputDir)
+	c.Assert(err, IsNil)
+	err = setMetaCommand.RunCommand()
+	c.Assert(err, IsNil)
+
+	objectStat = s.getStat(bucketName, object1, c)
+	c.Assert(objectStat[StatACL], Equals, "private")
+	c.Assert(objectStat["X-Oss-Meta-A"], Equals, "A")
+	c.Assert(objectStat["Expires"], Equals, "Mon, 02 Jan 2006 15:04:05 GMT")
+
+	objectStat = s.getStat(bucketName, object2, c)
 	c.Assert(objectStat[StatACL], Equals, "private")
 	c.Assert(objectStat["X-Oss-Meta-A"], Equals, "A")
 	c.Assert(objectStat["Expires"], Equals, "Mon, 02 Jan 2006 15:04:05 GMT")

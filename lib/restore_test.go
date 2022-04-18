@@ -157,7 +157,7 @@ func (s *OssutilCommandSuite) TestRestoreObjectFileBasic(c *C) {
 	content := object1 + "\n" + object2 + "\n" + object3 + "\n" + object4
 	s.createFile(objectFileName, content, c)
 
-	err := s.initRestoreObject([]string{CloudURLToString(bucketName, "")}, fmt.Sprintf("--object-file %s", objectFileName), DefaultOutputDir)
+	err := s.initRestoreObject([]string{CloudURLToString(bucketName, "")}, fmt.Sprintf("--object-file %s -f", objectFileName), DefaultOutputDir)
 	c.Assert(err, IsNil)
 	err = restoreCommand.RunCommand()
 	c.Assert(err, IsNil)
@@ -209,7 +209,7 @@ func (s *OssutilCommandSuite) TestRestoreObjectFileErrorObjFile(c *C) {
 	// file size 0
 	s.createFile(objectFileName, "", c)
 
-	err := s.initRestoreObject([]string{CloudURLToString(bucketName, "")}, fmt.Sprintf("--object-file %s", objectFileName), DefaultOutputDir)
+	err := s.initRestoreObject([]string{CloudURLToString(bucketName, "")}, fmt.Sprintf("--object-file %s -f", objectFileName), DefaultOutputDir)
 	c.Assert(err, IsNil)
 	err = restoreCommand.RunCommand()
 	c.Assert(err, NotNil)
@@ -219,7 +219,7 @@ func (s *OssutilCommandSuite) TestRestoreObjectFileErrorObjFile(c *C) {
 	// receive file but give dir
 	err = os.Mkdir(fmt.Sprintf("./%s", objectFileName), os.ModePerm)
 
-	err = s.initRestoreObject([]string{CloudURLToString(bucketName, "")}, fmt.Sprintf("--object-file %s", objectFileName), DefaultOutputDir)
+	err = s.initRestoreObject([]string{CloudURLToString(bucketName, "")}, fmt.Sprintf("--object-file %s -f", objectFileName), DefaultOutputDir)
 	c.Assert(err, IsNil)
 	err = restoreCommand.RunCommand()
 	c.Assert(err, NotNil)
@@ -227,10 +227,29 @@ func (s *OssutilCommandSuite) TestRestoreObjectFileErrorObjFile(c *C) {
 	os.Remove(objectFileName)
 
 	// not exist file
-	err = s.initRestoreObject([]string{CloudURLToString(bucketName, "")}, fmt.Sprintf("--object-file %s", objectFileName+"xxx"), DefaultOutputDir)
+	err = s.initRestoreObject([]string{CloudURLToString(bucketName, "")}, fmt.Sprintf("--object-file %s -f", objectFileName+"xxx"), DefaultOutputDir)
 	c.Assert(err, IsNil)
 	err = restoreCommand.RunCommand()
 	c.Assert(err, NotNil)
+
+	// without -f
+	content := object1 + "\n" + object2
+	s.createFile(objectFileName, content, c)
+
+	err = s.initRestoreObject([]string{CloudURLToString(bucketName, "")}, fmt.Sprintf("--object-file %s", objectFileName), DefaultOutputDir)
+	c.Assert(err, IsNil)
+	err = restoreCommand.RunCommand()
+	c.Assert(err, IsNil)
+
+	objectStat = s.getStat(bucketName, object1, c)
+	c.Assert(objectStat["X-Oss-Storage-Class"], Equals, StorageArchive)
+	_, ok = objectStat["X-Oss-Restore"]
+	c.Assert(ok, Equals, false)
+
+	objectStat = s.getStat(bucketNameIA, object1, c)
+	c.Assert(objectStat["X-Oss-Storage-Class"], Equals, StorageIA)
+	_, ok = objectStat["X-Oss-Restore"]
+	c.Assert(ok, Equals, false)
 
 	os.Remove(objectFileName)
 	s.removeBucket(bucketName, true, c)
@@ -313,7 +332,7 @@ func (s *OssutilCommandSuite) TestRestoreObjectFileWithConfCA(c *C) {
 	content := object1 + "\n" + object2
 	s.createFile(objectFileName, content, c)
 
-	err = s.initRestoreObject([]string{CloudURLToString(bucketName, ""), restoreConfName}, fmt.Sprintf("--object-file %s", objectFileName), DefaultOutputDir)
+	err = s.initRestoreObject([]string{CloudURLToString(bucketName, ""), restoreConfName}, fmt.Sprintf("--object-file %s -f", objectFileName), DefaultOutputDir)
 	c.Assert(err, IsNil)
 	err = restoreCommand.RunCommand()
 	c.Assert(err, IsNil)
@@ -341,7 +360,7 @@ func (s *OssutilCommandSuite) TestRestoreObjectFileWithConfCA(c *C) {
 	content = object3
 	s.createFile(objectFileName, content, c)
 
-	err = s.initRestoreObject([]string{CloudURLToString(bucketName, ""), restoreConfName}, fmt.Sprintf("--object-file %s", objectFileName), DefaultOutputDir)
+	err = s.initRestoreObject([]string{CloudURLToString(bucketName, ""), restoreConfName}, fmt.Sprintf("--object-file %s -f", objectFileName), DefaultOutputDir)
 	c.Assert(err, IsNil)
 	err = restoreCommand.RunCommand()
 	c.Assert(err, IsNil)
@@ -367,7 +386,7 @@ func (s *OssutilCommandSuite) TestRestoreObjectFileWithConfCA(c *C) {
 	content = object4
 	s.createFile(objectFileName, content, c)
 
-	err = s.initRestoreObject([]string{CloudURLToString(bucketName, ""), restoreConfName}, fmt.Sprintf("--object-file %s --disable-ignore-error", objectFileName), DefaultOutputDir)
+	err = s.initRestoreObject([]string{CloudURLToString(bucketName, ""), restoreConfName}, fmt.Sprintf("--object-file %s -f --disable-ignore-error", objectFileName), DefaultOutputDir)
 	c.Assert(err, IsNil)
 	err = restoreCommand.RunCommand()
 	c.Assert(err, NotNil)
@@ -386,7 +405,7 @@ func (s *OssutilCommandSuite) TestRestoreObjectFileWithConfCA(c *C) {
 	content = object4
 	s.createFile(objectFileName, content, c)
 
-	err = s.initRestoreObject([]string{CloudURLToString(bucketName, ""), restoreConfName}, fmt.Sprintf("--object-file %s --disable-ignore-error", objectFileName), DefaultOutputDir)
+	err = s.initRestoreObject([]string{CloudURLToString(bucketName, ""), restoreConfName}, fmt.Sprintf("--object-file %s -f --disable-ignore-error", objectFileName), DefaultOutputDir)
 	c.Assert(err, IsNil)
 	err = restoreCommand.RunCommand()
 	c.Assert(err, NotNil)
@@ -398,7 +417,7 @@ func (s *OssutilCommandSuite) TestRestoreObjectFileWithConfCA(c *C) {
 	restoreConfName = "test-ossutil-" + randLowStr(12)
 	s.createFile(restoreConfName, restoreXml, c)
 
-	err = s.initRestoreObject([]string{CloudURLToString(bucketName, ""), restoreConfName}, fmt.Sprintf("--object-file %s --disable-ignore-error", objectFileName), DefaultOutputDir)
+	err = s.initRestoreObject([]string{CloudURLToString(bucketName, ""), restoreConfName}, fmt.Sprintf("--object-file %s -f --disable-ignore-error", objectFileName), DefaultOutputDir)
 	c.Assert(err, IsNil)
 	err = restoreCommand.RunCommand()
 	c.Assert(err, NotNil)
@@ -447,7 +466,7 @@ func (s *OssutilCommandSuite) TestRestoreObjectFileWithConfAr(c *C) {
 	content := object1 + "\n" + object2
 	s.createFile(objectFileName, content, c)
 
-	err = s.initRestoreObject([]string{CloudURLToString(bucketName, ""), restoreConfName}, fmt.Sprintf("--object-file %s", objectFileName), DefaultOutputDir)
+	err = s.initRestoreObject([]string{CloudURLToString(bucketName, ""), restoreConfName}, fmt.Sprintf("--object-file %s -f", objectFileName), DefaultOutputDir)
 	c.Assert(err, IsNil)
 	err = restoreCommand.RunCommand()
 	c.Assert(err, IsNil)
@@ -478,7 +497,7 @@ func (s *OssutilCommandSuite) TestRestoreObjectFileWithConfAr(c *C) {
 	content = object3
 	s.createFile(objectFileName, content, c)
 
-	err = s.initRestoreObject([]string{CloudURLToString(bucketName, ""), restoreConfName}, fmt.Sprintf("--object-file %s --disable-ignore-error", objectFileName), DefaultOutputDir)
+	err = s.initRestoreObject([]string{CloudURLToString(bucketName, ""), restoreConfName}, fmt.Sprintf("--object-file %s -f --disable-ignore-error", objectFileName), DefaultOutputDir)
 	c.Assert(err, IsNil)
 	err = restoreCommand.RunCommand()
 	c.Assert(err, NotNil)
@@ -502,7 +521,7 @@ func (s *OssutilCommandSuite) TestRestoreObjectFileWithConfAr(c *C) {
 	content = object4
 	s.createFile(objectFileName, content, c)
 
-	err = s.initRestoreObject([]string{CloudURLToString(bucketName, ""), restoreConfName}, fmt.Sprintf("--object-file %s --disable-ignore-error", objectFileName), DefaultOutputDir)
+	err = s.initRestoreObject([]string{CloudURLToString(bucketName, ""), restoreConfName}, fmt.Sprintf("--object-file %s -f --disable-ignore-error", objectFileName), DefaultOutputDir)
 	c.Assert(err, IsNil)
 	err = restoreCommand.RunCommand()
 	c.Assert(err, NotNil)
@@ -550,7 +569,7 @@ func (s *OssutilCommandSuite) TestRestoreObjectFileSnap(c *C) {
 	s.createFile(objectFileName, content, c)
 
 	snapShotDir := "ossutil_test_snapshot" + randStr(5)
-	cmd := fmt.Sprintf("--object-file %s --snapshot-path %s", objectFileName, snapShotDir)
+	cmd := fmt.Sprintf("--object-file %s -f --snapshot-path %s", objectFileName, snapShotDir)
 
 	err := s.initRestoreObject([]string{CloudURLToString(bucketName, "")}, cmd, DefaultOutputDir)
 	c.Assert(err, IsNil)
@@ -618,7 +637,7 @@ func (s *OssutilCommandSuite) TestRestoreObjectFileErrorSnap(c *C) {
 	// create file which name same as snapshotPath
 	snapShotDir := "ossutil_test_snapshot" + randStr(5)
 	s.createFile(snapShotDir, content, c)
-	cmd := fmt.Sprintf("--object-file %s --snapshot-path %s", objectFileName, snapShotDir)
+	cmd := fmt.Sprintf("--object-file %s -f --snapshot-path %s", objectFileName, snapShotDir)
 
 	err := s.initRestoreObject([]string{CloudURLToString(bucketName, "")}, cmd, DefaultOutputDir)
 	c.Assert(err, IsNil)
@@ -634,7 +653,7 @@ func (s *OssutilCommandSuite) TestRestoreObjectFileErrorSnap(c *C) {
 
 	snapShotDir = "ossutil_test_snapshot" + randStr(5)
 
-	err = s.initRestoreObject([]string{CloudURLToString(bucketNameIA, "")}, fmt.Sprintf("--object-file %s --snapshot-path %s --disable-ignore-error", objectFileName, snapShotDir), DefaultOutputDir)
+	err = s.initRestoreObject([]string{CloudURLToString(bucketNameIA, "")}, fmt.Sprintf("--object-file %s -f --snapshot-path %s --disable-ignore-error", objectFileName, snapShotDir), DefaultOutputDir)
 	c.Assert(err, IsNil)
 	err = restoreCommand.RunCommand()
 	c.Assert(err, NotNil)

@@ -409,6 +409,9 @@ func (sc *SetMetaCommand) RunCommand() error {
 		return err
 	}
 	if err := sc.checkOptions(cloudURL, isUpdate, isDelete, force, recursive, language, versionId, objFileXml); err != nil {
+		if err.Error() == "operation is canceled by user" {
+			return nil
+		}
 		return err
 	}
 	bucket, err := sc.command.ossBucket(cloudURL.bucket)
@@ -479,13 +482,11 @@ func (sc *SetMetaCommand) checkOptions(cloudURL CloudURL, isUpdate, isDelete, fo
 
 	if !force {
 		var val string
-		if !recursive && objFileXml == "" {
-			return nil
-		}
-		fmt.Printf("Do you really mean to recursivlly set meta on objects of %s(y or N)? ", sc.command.args[0])
-		if _, err := fmt.Scanln(&val); err != nil || (strings.ToLower(val) != "yes" && strings.ToLower(val) != "y") {
-			fmt.Println("operation is canceled.")
-			return nil
+		if recursive || objFileXml != "" {
+			fmt.Printf("Do you really mean to recursivlly set meta on objects of %s(y or N)? ", sc.command.args[0])
+			if _, err := fmt.Scanln(&val); err != nil || (strings.ToLower(val) != "yes" && strings.ToLower(val) != "y") {
+				return fmt.Errorf("operation is canceled by user")
+			}
 		}
 	}
 
