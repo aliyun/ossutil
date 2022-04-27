@@ -177,8 +177,11 @@ var makeBucketCommand = MakeBucketCommand{
 			OptionReadTimeout,
 			OptionConnectTimeout,
 			OptionSTSRegion,
-			OptionSkipVerfiyCert,
+			OptionSkipVerifyCert,
 			OptionUserAgent,
+			OptionSignVersion,
+			OptionRegion,
+			OptionCloudBoxID,
 		},
 	},
 }
@@ -218,7 +221,7 @@ func (mc *MakeBucketCommand) RunCommand() error {
 	}
 
 	if len(mc.command.args) >= 2 {
-        return mc.createBucketXmlFile(client, cloudURL.bucket, mc.command.args[1])
+		return mc.createBucketXmlFile(client, cloudURL.bucket, mc.command.args[1])
 	}
 
 	aclStr, _ := GetString(OptionACL, mc.command.options)
@@ -246,7 +249,7 @@ func (mc *MakeBucketCommand) RunCommand() error {
 }
 
 func (mc *MakeBucketCommand) createBucketXmlFile(client *oss.Client, bucketName string, fileName string) error {
-    // parsing the xml file
+	// parsing the xml file
 	file, err := os.Open(fileName)
 	if err != nil {
 		return err

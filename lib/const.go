@@ -96,11 +96,12 @@ const (
 	OptionReadTimeout                = "readTimeOut"
 	OptionConnectTimeout             = "connectTimeOut"
 	OptionSTSRegion                  = "stsRegion"
-	OptionSkipVerfiyCert             = "skipVerifyCert"
+	OptionSkipVerifyCert             = "skipVerifyCert"
 	OptionItem                       = "item"
 	OptionUserAgent                  = "userAgent"
 	OptionSignVersion                = "signVersion"
 	OptionRegion                     = "region"
+	OptionCloudBoxID                 = "cloudBoxID"
 )
 
 // the elements show in stat object

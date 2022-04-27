@@ -197,8 +197,11 @@ var replicationCommand = ReplicationCommand{
 			OptionSTSRegion,
 			OptionMethod,
 			OptionItem,
-			OptionSkipVerfiyCert,
+			OptionSkipVerifyCert,
 			OptionUserAgent,
+			OptionSignVersion,
+			OptionRegion,
+			OptionCloudBoxID,
 		},
 	},
 }
