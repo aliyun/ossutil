@@ -21,7 +21,7 @@ var specChineseListCloudBox = SpecText{
 `,
 
 	sampleText: ` 
-    1) ossutil lcb --sign-version v4 --region cloudbox-id
+    1) ossutil lcb --sign-version v4 --region cn-hangzhou --cloudbox-id cb-abcdef
 `,
 }
 
@@ -40,7 +40,7 @@ var specEnglishListCloudBox = SpecText{
 `,
 
 	sampleText: ` 
-    1) ossutil lcb --sign-version v4 --region cloudbox-id
+    1) ossutil lcb --sign-version v4 --region cn-hangzhou --cloudbox-id cb-abcdef
 `,
 }
 
@@ -78,12 +78,13 @@ var lcbCommand = LcbCommand{
 			OptionReadTimeout,
 			OptionConnectTimeout,
 			OptionSTSRegion,
-			OptionSkipVerfiyCert,
+			OptionSkipVerifyCert,
 			OptionUserAgent,
 			OptionRegion,
 			OptionSignVersion,
 			OptionLimitedNum,
 			OptionMarker,
+			OptionCloudBoxID,
 		},
 	},
 }
