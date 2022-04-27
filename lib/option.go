@@ -256,7 +256,7 @@ var OptionMap = map[string]Option{
 	OptionSTSRegion: Option{"", "--sts-region", "", OptionTypeString, "", "",
 		"指定sts endpoint的地区，比如cn-shenzhen，其中，cn指代的是国家，shenzhen指代的是地区，用于构造sts endpoint，该选项缺省时，sts endpoint为sts.aliyuncs.com，主要用于RamRoleArn模式",
 		"specifies the region of sts endpoint, such as cn-shenzhen, in this case, cn refers to the country and shenzhen refers to the region, to construct sts endpoint, when this option defaults, the sts endpoint is sts.aliyuncs.com, primarily used in RamRoleArn mode."},
-	OptionSkipVerfiyCert: Option{"", "--skip-verify-cert", "", OptionTypeFlagTrue, "", "",
+	OptionSkipVerifyCert: Option{"", "--skip-verify-cert", "", OptionTypeFlagTrue, "", "",
 		"表示不校验服务端的数字证书",
 		"specifies that the oss server's digital certificate file will not be verified"},
 	OptionItem: Option{"", "--item", "", OptionTypeString, "", "",
@@ -272,8 +272,11 @@ var OptionMap = map[string]Option{
 		"http请求使用的签名算法版本, 缺省为空, 表示v1版本",
 		"The version of the signature algorithm used in the HTTP request. It is empty by default, indicating the V1 version"},
 	OptionRegion: Option{"", "--region", "", OptionTypeString, "", "",
-		"bucket所在的地区, 比如cn-hangzhou, 缺省值为空, 如果使用v4签名则必须传入; 如果是云盒场景则为云盒id",
-		"The region where the bucket is located, such as cn-hangzhou. The default value is empty. If V4 signature is used, it must be inputted; If used in cloud-box, it is the cloud box ID"},
+		"bucket所在的地区, 比如cn-hangzhou, 缺省值为空, 如果使用v4签名则必须传入",
+		"The region where the bucket is located, such as cn-hangzhou. The default value is empty. If V4 signature is used, it must be inputted"},
+	OptionCloudBoxID: Option{"", "--cloudbox-id", "", OptionTypeString, "", "",
+		"云盒的id，缺省值为空，适用于云盒场景",
+		"The ID of the cloud box. The default value is empty. It is applicable to cloud box scenarios"},
 }
 
 func (T *Option) getHelp(language string) string {

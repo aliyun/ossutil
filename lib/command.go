@@ -305,9 +305,10 @@ func (cmd *Command) ossClient(bucket string) (*oss.Client, error) {
 	ecsUrl := ""
 
 	localHost, _ := GetString(OptionLocalHost, cmd.options)
-	bSkipVerifyCert, _ := GetBool(OptionSkipVerfiyCert, cmd.options)
+	bSkipVerifyCert, _ := GetBool(OptionSkipVerifyCert, cmd.options)
 	region, _ := GetString(OptionRegion, cmd.options)
 	signVersion, _ := GetString(OptionSignVersion, cmd.options)
+	cloudBoxID, _ := GetString(OptionCloudBoxID, cmd.options)
 
 	bPassword, _ := GetBool(OptionPassword, cmd.options)
 
@@ -329,7 +330,16 @@ func (cmd *Command) ossClient(bucket string) (*oss.Client, error) {
 	}
 
 	if signVersion != "" {
+		if strings.EqualFold(signVersion, "v4") {
+			if region == "" {
+				return nil, fmt.Errorf("In the v4 signature scenario, please enter the region")
+			}
+		}
 		options = append(options, oss.AuthVersion(oss.AuthVersionType(signVersion)))
+	}
+
+	if cloudBoxID != "" {
+		options = append(options, oss.CloudBoxId(cloudBoxID))
 	}
 
 	if strings.EqualFold(mode, "AK") {

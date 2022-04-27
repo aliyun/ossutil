@@ -96,12 +96,13 @@ const (
 	OptionReadTimeout                = "readTimeOut"
 	OptionConnectTimeout             = "connectTimeOut"
 	OptionSTSRegion                  = "stsRegion"
-	OptionSkipVerfiyCert             = "skipVerifyCert"
+	OptionSkipVerifyCert             = "skipVerifyCert"
 	OptionItem                       = "item"
 	OptionUserAgent                  = "userAgent"
 	OptionObjectFile                 = "objectFile"
 	OptionSignVersion                = "signVersion"
 	OptionRegion                     = "region"
+	OptionCloudBoxID                 = "cloudBoxID"
 )
 
 // the elements show in stat object
@@ -149,7 +150,7 @@ const (
 const (
 	Package                 string = "ossutil"
 	ChannelBuf              int    = 1000
-	Version                 string = "v1.7.11"
+	Version                 string = "v1.7.12"
 	DefaultEndpoint         string = "oss.aliyuncs.com"
 	ChineseLanguage                = "CH"
 	EnglishLanguage                = "EN"
