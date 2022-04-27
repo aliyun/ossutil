@@ -421,9 +421,12 @@ var syncCommand = SyncCommand{
 			OptionReadTimeout,
 			OptionConnectTimeout,
 			OptionSTSRegion,
-			OptionSkipVerfiyCert,
+			OptionSkipVerifyCert,
 			OptionMaxDownSpeed,
 			OptionUserAgent,
+			OptionSignVersion,
+			OptionRegion,
+			OptionCloudBoxID,
 
 			// The following options are only supported by sc command, not supported by cp command
 			OptionDelete,
