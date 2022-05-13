@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
+        . "gopkg.in/check.v1"
 )
 
 func (s *OssutilCommandSuite) TestRestoreObject(c *C) {

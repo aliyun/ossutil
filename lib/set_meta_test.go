@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
+	. "gopkg.in/check.v1"
 )
 
 func (s *OssutilCommandSuite) TestSetObjectMetaSetBucketMeta(c *C) {
@@ -67,16 +68,12 @@ func (s *OssutilCommandSuite) TestSetObjectMetaBasic(c *C) {
 
 	// without update, delete and force
 	showElapse, err = s.rawSetMeta(bucketName, object, "x-oss-object-acl:default#X-Oss-Meta-A:A", false, false, false, false, DefaultLanguage)
-	c.Assert(err, NotNil)
-	c.Assert(showElapse, Equals, false)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
 
 	showElapse, err = s.rawSetMeta(bucketName, object, "x-oss-object-acl:default#X-Oss-Meta-A:A", false, false, false, false, EnglishLanguage)
-	c.Assert(err, NotNil)
-	c.Assert(showElapse, Equals, false)
-
-	showElapse, err = s.rawSetMeta(bucketName, object, "x-oss-object-acl:default#X-Oss-Meta-A:A", false, false, false, false, LEnglishLanguage)
-	c.Assert(err, NotNil)
-	c.Assert(showElapse, Equals, false)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
 
 	// with update and delete
 	showElapse, err = s.rawSetMeta(bucketName, object, "x-oss-object-acl:default#X-Oss-Meta-A:A", true, true, false, true, DefaultLanguage)

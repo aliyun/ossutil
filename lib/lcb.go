@@ -145,7 +145,7 @@ func (lc *LcbCommand) RunCommand() error {
 			if limitedNum >= 0 && num >= limitedNum {
 				break
 			}
-			fmt.Printf("%-30s %20s%s%12s%s%s\n", box.Id, box.Name, box.Owner, box.Region, box.ControlEndpoint, box.DataEndpoint)
+			fmt.Printf("%-30s %20s%s%12s%s%s\n", box.ID, box.Name, lcr.Owner, box.Region, box.ControlEndpoint, box.DataEndpoint)
 			num++
 		}
 		if !lcr.IsTruncated {

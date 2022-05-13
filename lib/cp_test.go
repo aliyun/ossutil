@@ -2840,7 +2840,7 @@ func (s *OssutilCommandSuite) TestBatchCPObjectWithInvalidIncludeExcludeEqual(c 
 
 	cmdline = []string{"ossutil", "cp", bucketStr, downdir, "-f", "--meta", "Cache-Control:no-cache"}
 	showElapse, err = s.rawCPWithFilter(args, false, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "Cache-Control:no-cache", "")
-	c.Assert(err, IsNil)
+	c.Assert(err, NotNil)
 
 	cmdline = []string{"ossutil", "cp", bucketStr, downdir, "-f", "--acl", "public-read"}
 	showElapse, err = s.rawCPWithFilter(args, false, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "public-read")
