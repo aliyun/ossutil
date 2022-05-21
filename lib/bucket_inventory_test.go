@@ -526,11 +526,7 @@ func (s *OssutilCommandSuite) TestInventoryListSuccess(c *C) {
 	_, err := cm.RunCommand("inventory", inventoryArgs, options)
 	c.Assert(err, IsNil)
 
-	inventoryBody := s.readFile(inventoryDownName, c)
-	rulesConfigDest := oss.ListInventoryConfigurationsResult{}
-	err = xml.Unmarshal([]byte(inventoryBody), &rulesConfigDest)
-
-	c.Assert(len(rulesConfigDest.InventoryConfiguration), Equals, testCount)
+	c.Assert(bucketInventoryCommand.bwOption.ruleCount, Equals, testCount)
 
 	os.Remove(inventoryFileName)
 	os.Remove(inventoryDownName)

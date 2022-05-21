@@ -1,27 +1,43 @@
 package lib
 
 import (
+	"encoding/xml"
 	"fmt"
-	"os"
 	"strings"
+
+	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
 
 var specChineseBucketCname = SpecText{
-	synopsisText: "管理bucket cname",
+	synopsisText: "管理bucket cname以及cname token配置",
 
-	paramText: "bucket_url [local_xml_file] [options]",
+	paramText: "bucket_url [options]",
 
 	syntaxText: ` 
-    ossutil bucket-cname --method get oss://bucket [local_xml_file] [options]
+	ossutil bucket-cname --method put --item token oss://bucket  test-domain.com
+    ossutil bucket-cname --method get --item token oss://bucket  test-domain.com
+	ossutil bucket-cname --method put oss://bucket  test-domain.com
+	ossutil bucket-cname --method delete oss://bucket  test-domain.com
+	ossutil bucket-cname --method get oss://bucket  
 `,
 	detailHelpText: ` 
-    cname命令通过设置method选项值为get可以查询bucket的cname配置
+    cname命令通过设置method选项值可以创建、删除、查询bucket的cname配置
 
 用法:
-    该命令只有一种种用法:
-    1) ossutil bucket-cname --method get oss://bucket  [local_xml_file] [options]
+    1) ossutil bucket-cname --method put --item token oss://bucket test-domain.com
+	    该命令会创建一个内部用的token, 设置bucket cname必须先创建这个token
+	
+	2) ossutil bucket-cname --method get --item token oss://bucket  test-domain.com
+	    该命令查询token信息
+
+	3) ossutil bucket-cname --method put oss://bucket test-domain.com
+        这个命令设置bucket的cname配置
+	    
+    4) ossutil bucket-cname --method get oss://bucket
         这个命令查询bucket的cname配置
-        如果输入参数local_xml_file，cname配置将输出到该文件，否则输出到屏幕上
+
+	5) ossutil bucket-cname --method delete oss://bucket test-domain.com
+        这个命令删除bucket的cname配置
 `,
 	sampleText: ` 
     1) 查询bucket的cname配置，结果输出到标准输出
@@ -30,23 +46,35 @@ var specChineseBucketCname = SpecText{
 }
 
 var specEnglishBucketCname = SpecText{
-	synopsisText: "get bucket cname configuration",
+	synopsisText: "manage bucket canme and cname token configuration",
 
-	paramText: "bucket_url [local_xml_file] [options]",
+	paramText: "bucket_url [options]",
 
 	syntaxText: ` 
-    ossutil bucket-cname --method get oss://bucket [local_xml_file] [options]
+	ossutil bucket-cname --method put --item token oss://bucket  test-domain.com
+    ossutil bucket-cname --method get --item token oss://bucket  test-domain.com
+	ossutil bucket-cname --method put oss://bucket  test-domain.com
+	ossutil bucket-cname --method delete oss://bucket  test-domain.com
+	ossutil bucket-cname --method get oss://bucket 
 `,
 	detailHelpText: ` 
-    bucket-cname command can get the cname configuration of the oss bucket by
-    set method option value to get
+    The command can create, delete and query the cname configuration of a bucket by setting the method option value
 
 Usage:
-    There are only one usage for this command:
-    1) ossutil bucket-cname --method get oss://bucket  [local_xml_file] [options]
-       The command gets the cname configuration of bucket
-       If you input parameter local_xml_file,the configuration will be output to local_xml_file
-       If you don't input parameter local_xml_file,the configuration will be output to stdout
+    1) ossutil bucket-cname --method put --item token oss://bucket test-domain.com
+	   This command will create an internal token, which must be created before setting bucket cname
+	
+	2) ossutil bucket-cname --method get --item token oss://bucket  test-domain.com
+	   This command queries the token information
+
+	3) ossutil bucket-cname --method put oss://bucket test-domain.com
+	   This command sets the cname configuration of the bucket
+	    
+    4) ossutil bucket-cname --method get oss://bucket
+       This command queries the cname configuration of the bucket
+
+	5) ossutil bucket-cname --method delete oss://bucket test-domain.com
+	   This command delete the cname configuration of the bucket
 `,
 	sampleText: ` 
     1) get cname configuration to stdout
@@ -56,6 +84,7 @@ Usage:
 
 type bucketCnameOptionType struct {
 	bucketName string
+	client     *oss.Client
 }
 
 type BucketCnameCommand struct {
@@ -94,6 +123,7 @@ var bucketCnameCommand = BucketCnameCommand{
 			OptionSTSRegion,
 			OptionSkipVerifyCert,
 			OptionUserAgent,
+			OptionItem,
 			OptionSignVersion,
 			OptionRegion,
 			OptionCloudBoxID,
@@ -122,63 +152,107 @@ func (bwc *BucketCnameCommand) RunCommand() error {
 		return fmt.Errorf("--method value is empty")
 	}
 
+	strItem, _ := GetString(OptionItem, bwc.command.options)
 	strMethod = strings.ToLower(strMethod)
-	if strMethod != "get" {
-		return fmt.Errorf("--method only support get")
-	}
-
 	srcBucketUrL, err := GetCloudUrl(bwc.command.args[0], "")
 	if err != nil {
 		return err
 	}
 
 	bwc.bwOption.bucketName = srcBucketUrL.bucket
-	return bwc.GetBucketCname()
-}
-
-func (bwc *BucketCnameCommand) GetBucketCname() error {
-	client, err := bwc.command.ossClient(bwc.bwOption.bucketName)
+	bwc.bwOption.client, err = bwc.command.ossClient(bwc.bwOption.bucketName)
 	if err != nil {
 		return err
 	}
 
+	err = nil
+	if strItem == "" {
+		if strings.EqualFold(strMethod, "get") {
+			err = bwc.GetBucketCname()
+		} else if strings.EqualFold(strMethod, "put") {
+			err = bwc.PutBucketCname()
+		} else if strings.EqualFold(strMethod, "delete") {
+			err = bwc.DeleteBucketCname()
+		} else {
+			err = fmt.Errorf("--method only support get,put,delete")
+		}
+	} else if strings.EqualFold(strItem, "token") {
+		if strings.EqualFold(strMethod, "get") {
+			err = bwc.GetBucketCnameToken()
+		} else if strings.EqualFold(strMethod, "put") {
+			err = bwc.PutBucketCnameToken()
+		} else {
+			err = fmt.Errorf("only support get bucket token or put bucket token")
+		}
+	} else {
+		err = fmt.Errorf("--item only support token")
+	}
+
+	return err
+}
+
+func (bwc *BucketCnameCommand) GetBucketCname() error {
+	client := bwc.bwOption.client
 	output, err := client.GetBucketCname(bwc.bwOption.bucketName)
 	if err != nil {
 		return err
 	}
-
-	var outFile *os.File
-	if len(bwc.command.args) >= 2 {
-		fileName := bwc.command.args[1]
-		_, err = os.Stat(fileName)
-		if err == nil {
-			bConitnue := bwc.confirm(fileName)
-			if !bConitnue {
-				return nil
-			}
-		}
-
-		outFile, err = os.OpenFile(fileName, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0660)
-		if err != nil {
-			return err
-		}
-		defer outFile.Close()
-	} else {
-		outFile = os.Stdout
-	}
-
-	outFile.Write([]byte(output))
-
-	fmt.Printf("\n\n")
-
+	fmt.Printf("%s\n\n", output)
 	return nil
 }
 
-func (bwc *BucketCnameCommand) confirm(str string) bool {
-	var val string
-	fmt.Printf(getClearStr(fmt.Sprintf("bucket cname: overwrite \"%s\"(y or N)? ", str)))
-	if _, err := fmt.Scanln(&val); err != nil || (strings.ToLower(val) != "yes" && strings.ToLower(val) != "y") {
-		return false
+func (bwc *BucketCnameCommand) PutBucketCname() error {
+	client := bwc.bwOption.client
+	if len(bwc.command.args) < 2 {
+		return fmt.Errorf("cname is emtpy")
 	}
-	return true
+	cname := bwc.command.args[1]
+	err := client.PutBucketCname(bwc.bwOption.bucketName, cname)
+	return err
+}
+
+func (bwc *BucketCnameCommand) DeleteBucketCname() error {
+	client := bwc.bwOption.client
+	if len(bwc.command.args) < 2 {
+		return fmt.Errorf("cname is emtpy")
+	}
+	cname := bwc.command.args[1]
+	err := client.DeleteBucketCname(bwc.bwOption.bucketName, cname)
+	return err
+}
+
+func (bwc *BucketCnameCommand) GetBucketCnameToken() error {
+	client := bwc.bwOption.client
+	if len(bwc.command.args) < 2 {
+		return fmt.Errorf("cname is emtpy")
+	}
+	cname := bwc.command.args[1]
+	out, err := client.GetBucketCnameToken(bwc.bwOption.bucketName, cname)
+	if err == nil {
+		var strXml []byte
+		var xmlError error
+		if strXml, xmlError = xml.MarshalIndent(out, "", " "); xmlError != nil {
+			return xmlError
+		}
+		fmt.Println(string(strXml))
+	}
+	return err
+}
+
+func (bwc *BucketCnameCommand) PutBucketCnameToken() error {
+	client := bwc.bwOption.client
+	if len(bwc.command.args) < 2 {
+		return fmt.Errorf("cname is emtpy")
+	}
+	cname := bwc.command.args[1]
+	out, err := client.CreateBucketCnameToken(bwc.bwOption.bucketName, cname)
+	if err == nil {
+		var strXml []byte
+		var xmlError error
+		if strXml, xmlError = xml.MarshalIndent(out, "", " "); xmlError != nil {
+			return xmlError
+		}
+		fmt.Println(string(strXml))
+	}
+	return err
 }
