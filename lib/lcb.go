@@ -138,14 +138,18 @@ func (lc *LcbCommand) RunCommand() error {
 		}
 		pre = oss.Prefix(lcr.Prefix)
 		marker = oss.Marker(lcr.NextMarker)
-		if num == 0 && len(lcr.CloudBoxes) > 0 {
-			fmt.Printf("%-30s %20s%s%12s%s%s\n", "ID", "Name", "Owner", "Region", "ControlEndpoint", "DataEndpoint")
-		}
 		for _, box := range lcr.CloudBoxes {
 			if limitedNum >= 0 && num >= limitedNum {
 				break
 			}
-			fmt.Printf("%-30s %20s%s%12s%s%s\n", box.ID, box.Name, lcr.Owner, box.Region, box.ControlEndpoint, box.DataEndpoint)
+			fmt.Printf("%-15s:%d\n", "No", num)
+			fmt.Printf("%-15s:%s\n", "Id", box.ID)
+			fmt.Printf("%-15s:%s\n", "Name", box.Name)
+			fmt.Printf("%-15s:%s\n", "Owner", lcr.Owner)
+			fmt.Printf("%-15s:%s\n", "Region", box.Region)
+			fmt.Printf("%-15s:%s\n", "ControlEndpoint", box.ControlEndpoint)
+			fmt.Printf("%-15s:%s\n", "DataEndpoint", box.DataEndpoint)
+			fmt.Printf("----------------------------------------------------------------------\n")
 			num++
 		}
 		if !lcr.IsTruncated {
