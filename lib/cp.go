@@ -1904,6 +1904,10 @@ func (cc *CopyCommand) getFileList(dpath string, chFiles chan<- fileInfoType) er
 		}
 
 		if f.IsDir() {
+			if !doesSingleFileMatchPatterns(fpath, cc.cpOption.filters) {
+				return nil
+			}
+
 			if fpath != dpath {
 				if strings.HasSuffix(fileName, "\\") || strings.HasSuffix(fileName, "/") {
 					chFiles <- fileInfoType{fileName, name}
