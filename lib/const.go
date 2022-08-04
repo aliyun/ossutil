@@ -44,7 +44,9 @@ const (
 	OptionDisableCRC64               = "disableCRC64"
 	OptionTimeout                    = "timeout"
 	OptionInclude                    = "include"
+	OptionIncludeRegexp              = "includeRegexp"
 	OptionExclude                    = "exclude"
+	OptionExcludeRegexp              = "excludeRegexp"
 	OptionMeta                       = "meta"
 	OptionRequestPayer               = "payer"
 	OptionLogLevel                   = "loglevel"
@@ -203,7 +205,9 @@ const (
 	MaxTimeout                     = MaxInt64
 	DefaultNonePattern             = ""
 	IncludePrompt                  = "--include"
+	IncludeRegexpPrompt            = "--include-regexp"
 	ExcludePrompt                  = "--exclude"
+	ExcludeRegexpPrompt            = "--exclude-regexp"
 	MaxAppendObjectSize     int64  = 5368709120
 	MaxBatchCount           int    = 100
 )

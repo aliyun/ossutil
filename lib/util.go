@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"os/user"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
@@ -90,9 +91,9 @@ func getSysInfo() sysInfo {
 func getUserAgent(ua string) string {
 	sys := getSysInfo()
 	if ua == "" {
-	    return fmt.Sprintf("aliyun-sdk-go/%s (%s/%s/%s;%s)/%s-%s", oss.Version, sys.name, sys.release, sys.machine, runtime.Version(), Package, Version)
+		return fmt.Sprintf("aliyun-sdk-go/%s (%s/%s/%s;%s)/%s-%s", oss.Version, sys.name, sys.release, sys.machine, runtime.Version(), Package, Version)
 	}
-	return fmt.Sprintf("aliyun-sdk-go/%s (%s/%s/%s;%s)/%s-%s/%s", oss.Version, sys.name, sys.release, sys.machine, runtime.Version(), Package, Version,ua)
+	return fmt.Sprintf("aliyun-sdk-go/%s (%s/%s/%s;%s)/%s-%s/%s", oss.Version, sys.name, sys.release, sys.machine, runtime.Version(), Package, Version, ua)
 }
 
 func utcToLocalTime(utc time.Time) time.Time {
@@ -192,7 +193,11 @@ func getFilter(cmdline []string) (bool, []filterOptionType) {
 	filters := make([]filterOptionType, 0)
 	for i, item := range cmdline {
 		var strTag = ""
-		if strings.Index(item, IncludePrompt) == 0 {
+		if strings.Index(item, IncludeRegexpPrompt) == 0 {
+			strTag = IncludeRegexpPrompt
+		} else if strings.Index(item, ExcludeRegexpPrompt) == 0 {
+			strTag = ExcludeRegexpPrompt
+		} else if strings.Index(item, IncludePrompt) == 0 {
 			strTag = IncludePrompt
 		} else if strings.Index(item, ExcludePrompt) == 0 {
 			strTag = ExcludePrompt
@@ -250,6 +255,16 @@ func filterSingleStr(v, p string, include bool) bool {
 	}
 }
 
+func filterRegexp(v, p string, include bool) bool {
+	res, _ := regexp.MatchString(p, v)
+
+	if include {
+		return res
+	} else {
+		return !res
+	}
+}
+
 func filterStrsWithInclude(vs []string, p string) []string {
 	vsf := make([]string, 0)
 	for _, v := range vs {
@@ -281,18 +296,43 @@ func matchFiltersForStr(str string, filters []filterOptionType) bool {
 		return true
 	}
 
-	var res bool
-	if filters[0].name == IncludePrompt {
-		res = filterSingleStr(str, filters[0].pattern, true)
-	} else {
-		res = filterSingleStr(str, filters[0].pattern, false)
+	var fileNameFilters = make([]filterOptionType, 0)
+	var regexpFilters = make([]filterOptionType, 0)
+	for _, filter := range filters {
+		if strings.EqualFold(filter.name, IncludePrompt) || strings.EqualFold(filter.name, ExcludePrompt) {
+			fileNameFilters = append(fileNameFilters, filter)
+		} else if strings.EqualFold(filter.name, IncludeRegexpPrompt) || strings.EqualFold(filter.name, ExcludeRegexpPrompt) {
+			regexpFilters = append(regexpFilters, filter)
+		}
 	}
 
-	for _, filter := range filters[1:] {
-		if filter.name == IncludePrompt {
-			res = res || filterSingleStr(str, filter.pattern, true)
+	var res bool
+
+	if len(fileNameFilters) > 0 {
+		if filters[0].name == IncludePrompt {
+			res = filterSingleStr(str, fileNameFilters[0].pattern, true)
 		} else {
-			res = res && filterSingleStr(str, filter.pattern, false)
+			res = filterSingleStr(str, fileNameFilters[0].pattern, false)
+		}
+
+		for _, filter := range fileNameFilters[1:] {
+			if filter.name == IncludePrompt {
+				res = res || filterSingleStr(str, filter.pattern, true)
+			} else {
+				res = res && filterSingleStr(str, filter.pattern, false)
+			}
+		}
+	} else {
+		res = true
+	}
+
+	if len(regexpFilters) > 0 {
+		for _, filter := range regexpFilters {
+			if filter.name == IncludeRegexpPrompt {
+				res = res || filterRegexp(str, filter.pattern, true)
+			} else {
+				res = res && filterRegexp(str, filter.pattern, false)
+			}
 		}
 	}
 
