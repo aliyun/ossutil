@@ -3181,6 +3181,82 @@ func (s *OssutilCommandSuite) TestBatchCPObjectBetweenOssWithMetaAcl(c *C) {
 	s.removeBucket(bucketName, true, c)
 }
 
+// Test for copy objects html with --meta
+func (s *OssutilCommandSuite) TestCpObjectHtmlWithMetaContentType(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	dstBucketName := bucketName + "-dest"
+	s.putBucket(bucketName, c)
+	bucketStr := CloudURLToString(bucketName, "")
+	s.putBucket(dstBucketName, c)
+	dstBucketStr := CloudURLToString(dstBucketName, "")
+	maxUpSpeed := int64(2) // 2KB/s
+	upSecond := 5
+	fileName := "ossutil_test" + randLowStr(12)+".html"
+	objectContext := randLowStr(int(maxUpSpeed) * upSecond * 1024)
+	s.createFile(fileName, objectContext, c)
+
+	// upload local.html upload
+	// e.g., ossutil cp ossutil_test***.html oss://tempb4
+	args := []string{fileName, bucketStr}
+	cmdline := []string{"ossutil", "cp", fileName, bucketStr}
+	showElapse, err := s.rawCPWithFilter(args, true, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+	objectStat := s.getStat(bucketName, fileName, c)
+	c.Assert(objectStat["Content-Type"], Equals, "text/html")
+
+	// upload local.css upload
+	// e.g., ossutil cp ossutil_test***.css oss://tempb4
+	fileName = "ossutil_test" + randLowStr(12)+".css"
+	objectContext = randLowStr(int(maxUpSpeed) * upSecond * 1024)
+	s.createFile(fileName, objectContext, c)
+	args = []string{fileName, bucketStr}
+	cmdline = []string{"ossutil", "cp", fileName, bucketStr}
+	showElapse, err = s.rawCPWithFilter(args, true, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+	objectStat = s.getStat(bucketName, fileName, c)
+	c.Assert(objectStat["Content-Type"], Equals, "text/css")
+
+	// upload local.html with --meta
+	// e.g., ossutil cp ossutil_test***.html oss://tempb4 --meta=content-type:text/plain
+	args = []string{fileName, bucketStr}
+	cmdline = []string{"ossutil", "cp", fileName, bucketStr}
+	showElapse, err = s.rawCPWithFilter(args, true, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "content-type:text/plain", "")
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+	objectStat = s.getStat(bucketName, fileName, c)
+	c.Assert(objectStat["Content-Type"], Equals, "text/plain")
+
+	// upload bucket.html to dstBucketName
+	// e.g., ossutil cp oss://tempb4/ossutil_test***.html oss://tempb4-dest
+	bucketStr = CloudURLToString(bucketName, fileName)
+	args = []string{bucketStr, dstBucketStr}
+	cmdline = []string{"ossutil", "cp", bucketStr, dstBucketStr}
+	showElapse, err = s.rawCPWithFilter(args, true, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "","")
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+	objectStat = s.getStat(dstBucketName, fileName, c)
+	c.Assert(objectStat["Content-Type"], Equals, "text/plain")
+	// upload bucket.html to dstBucketName
+	// e.g., ossutil cp oss://tempb4/ossutil_test***.html oss://tempb4-dest --meta=
+	args = []string{bucketStr, dstBucketStr}
+	cmdline = []string{"ossutil", "cp", bucketStr, dstBucketStr}
+	showElapse, err = s.rawCPWithFilter(args, true, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "content-type:demo/bb", "")
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+	objectStat = s.getStat(dstBucketName, fileName, c)
+	c.Assert(objectStat["Content-Type"], Equals, "demo/bb")
+
+
+
+
+	// cleanup
+	os.RemoveAll(fileName)
+	s.removeBucket(dstBucketName, true, c)
+	s.removeBucket(bucketName, true, c)
+}
+
 func (s *OssutilCommandSuite) TestCPObjectLimitSpeed(c *C) {
 	bucketName := bucketNamePrefix + randLowStr(10)
 	s.putBucket(bucketName, c)
