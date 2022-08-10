@@ -562,7 +562,7 @@ func (cmd *Command) parseHeaders(str string, isDelete bool) (map[string]string, 
 		if isDelete && value != "" {
 			return nil, fmt.Errorf("delete meta for object do no support value for header:%s, please set value:%s to empty", name, value)
 		}
-		if _, err := fetchHeaderOptionMap(headerOptionMap, name); err != nil && !strings.HasPrefix(strings.ToLower(name), strings.ToLower(oss.HTTPHeaderOssMetaPrefix)) {
+		if _, err := fetchHeaderOptionMap(headerOptionMap, name); err != nil && !strings.HasPrefix(strings.ToLower(name), "x-oss-") {
 			return nil, fmt.Errorf("unsupported header:%s, please try \"help %s\" to see supported headers", name, cmd.name)
 		}
 		headers[name] = value
