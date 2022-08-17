@@ -357,6 +357,7 @@ func (s *OssutilCommandSuite) TestRevertEndTimeFilter(c *C) {
 	bucketName := bucketNamePrefix + randLowStr(10)
 	s.putBucket(bucketName, c)
 	s.putBucketVersioning(bucketName, "enabled", c)
+	time.Sleep(3 * time.Second)
 
 	// create file
 	testFileName := "ossutil_test_file" + randStr(5)

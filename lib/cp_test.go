@@ -680,7 +680,7 @@ func (s *OssutilCommandSuite) TestBatchCPObject(c *C) {
 	c.Assert(err, IsNil)
 
 	// copy files
-	destBucket := bucketNamePrefix + randLowStr(10)
+	destBucket := bucketName + "-" + randLowStr(4)
 	showElapse, err = s.rawCP(CloudURLToString(bucketName, ""), CloudURLToString(destBucket, "123"), true, true, false, DefaultBigFileThreshold, CheckpointDir)
 	c.Assert(err, NotNil)
 	c.Assert(showElapse, Equals, false)
@@ -5148,14 +5148,12 @@ func (s *OssutilCommandSuite) TestCPObjectUnderAKmode(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestCPObjectUnderEcsmodeWithConfigEcsUrl(c *C) {
-	oldConfigStr, err := ioutil.ReadFile(configFile)
-	c.Assert(err, IsNil)
-	fd, _ := os.OpenFile(configFile, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
 	ecsAk := "http://100.100.100.200/latest/meta-data/Ram/security-credentials/" + ecsRoleName
 	configStr := "[Credentials]" + "\n" + "language=EN" + "\n" + "endpoint=" + endpoint + "\n"
 	configStr = configStr + "[AkService]" + "\n" + "ecsAk=" + ecsAk
-	fd.WriteString(configStr)
-	fd.Close()
+
+	cfile := randStr(10)
+	s.createFile(cfile, configStr, c)
 
 	// create bucket
 	mode := "EcsRamRole"
@@ -5167,9 +5165,9 @@ func (s *OssutilCommandSuite) TestCPObjectUnderEcsmodeWithConfigEcsUrl(c *C) {
 	options := OptionMapType{
 		"endpoint":   &str,
 		"mode":       &mode,
-		"configFile": &configFile,
+		"configFile": &cfile,
 	}
-	_, err = cm.RunCommand(command, args, options)
+	_, err := cm.RunCommand(command, args, options)
 	c.Assert(err, IsNil)
 
 	// filename
@@ -5185,7 +5183,7 @@ func (s *OssutilCommandSuite) TestCPObjectUnderEcsmodeWithConfigEcsUrl(c *C) {
 	cpDir := CheckpointDir
 	options = OptionMapType{
 		"endpoint":      &str,
-		"configFile":    &configFile,
+		"configFile":    &cfile,
 		"mode":          &mode,
 		"routines":      &routines,
 		"checkpointDir": &cpDir,
@@ -5205,9 +5203,7 @@ func (s *OssutilCommandSuite) TestCPObjectUnderEcsmodeWithConfigEcsUrl(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(data, Equals, string(fileBody))
 
-	err = ioutil.WriteFile(configFile, []byte(oldConfigStr), 0664)
-	c.Assert(err, IsNil)
-
+	os.Remove(cfile)
 	os.Remove(downFileName)
 	os.Remove(testFileName)
 
@@ -5225,8 +5221,6 @@ func (s *OssutilCommandSuite) TestCPObjectUnderEcsmodeWithConfigEcsUrl(c *C) {
 	}
 	_, err = cm.RunCommand(command, args, options)
 	c.Assert(err, NotNil)
-
-	s.createFile(configFile, string(oldConfigStr), c)
 }
 
 func (s *OssutilCommandSuite) TestCPObjectUnderEcsmodeWithEmptyEcsUrl(c *C) {
@@ -5388,14 +5382,10 @@ func (s *OssutilCommandSuite) TestCPObjectUnderRamRoleArnmodeWithConfigArn(c *C)
 	bucketName := bucketNamePrefix + randLowStr(12)
 	s.putBucket(bucketName, c)
 
-	oldConfigStr, err := ioutil.ReadFile(configFile)
-	c.Assert(err, IsNil)
-	f, err := os.OpenFile(ConfigFile, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0660)
-	configStr := "ramRoleArn=" + stsARN
-
-	f.WriteString(configStr)
-	f.Close()
-
+	configStr := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n", endpoint, stsAccessID, stsAccessKeySecret)
+	configStr = configStr + "ramRoleArn=" + stsARN
+	cfile := randStr(10)
+	s.createFile(cfile, configStr, c)
 	// prepare file and object
 
 	// filename
@@ -5413,16 +5403,16 @@ func (s *OssutilCommandSuite) TestCPObjectUnderRamRoleArnmodeWithConfigArn(c *C)
 	cpDir := CheckpointDir
 	options := OptionMapType{
 		"endpoint":        &str,
-		"accessKeyID":     &stsAccessID,
-		"accessKeySecret": &stsAccessKeySecret,
-		"configFile":      &configFile,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &cfile,
 		"mode":            &mode,
 		"routines":        &routines,
 		"checkpointDir":   &cpDir,
 		"ramRoleArn":      &str,
 	}
 
-	_, err = cm.RunCommand("cp", cpArgs, options)
+	_, err := cm.RunCommand("cp", cpArgs, options)
 	c.Assert(err, IsNil)
 
 	// down object
@@ -5436,9 +5426,7 @@ func (s *OssutilCommandSuite) TestCPObjectUnderRamRoleArnmodeWithConfigArn(c *C)
 	c.Assert(err, IsNil)
 	c.Assert(data, Equals, string(fileBody))
 
-	err = ioutil.WriteFile(configFile, []byte(oldConfigStr), 0664)
-	c.Assert(err, IsNil)
-
+	os.Remove(cfile)
 	os.Remove(downFileName)
 	os.Remove(testFileName)
 	s.removeBucket(bucketName, true, c)
@@ -5629,13 +5617,9 @@ func (s *OssutilCommandSuite) TestCPObjectUnderNomodeWithEmptyAKIdAndEcsUrl(c *C
 	bucketName := bucketNamePrefix + randLowStr(12)
 	s.putBucket(bucketName, c)
 
-	oldConfigStr, err := ioutil.ReadFile(configFile)
-	c.Assert(err, IsNil)
-	fd, _ := os.OpenFile(configFile, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
 	configStr := "[Credentials]" + "\n" + "language=EN" + "\n" + "endpoint=oss-cn-shenzhen.aliyuncs.com" + "\n"
-
-	fd.WriteString(configStr)
-	fd.Close()
+	cfile := randStr(10)
+	s.createFile(cfile, configStr, c)
 
 	// filename
 	testFileName := "ossutil_test_file" + randStr(5)
@@ -5653,30 +5637,25 @@ func (s *OssutilCommandSuite) TestCPObjectUnderNomodeWithEmptyAKIdAndEcsUrl(c *C
 		"endpoint":        &str,
 		"accessKeyID":     &str,
 		"accessKeySecret": &str,
-		"configFile":      &configFile,
+		"configFile":      &cfile,
 		"routines":        &routines,
 		"checkpointDir":   &cpDir,
 	}
 
-	_, err = cm.RunCommand("cp", cpArgs, options)
+	_, err := cm.RunCommand("cp", cpArgs, options)
 	c.Assert(err, NotNil)
 
-	err = ioutil.WriteFile(configFile, []byte(oldConfigStr), 0664)
-	c.Assert(err, IsNil)
-
+	os.Remove(cfile)
 	os.Remove(testFileName)
 	s.removeBucket(bucketName, true, c)
 }
 
 func (s *OssutilCommandSuite) TestCPObjectUnderNomodeUsingEcsRoleAK(c *C) {
-	oldConfigStr, err := ioutil.ReadFile(configFile)
-	c.Assert(err, IsNil)
-	fd, _ := os.OpenFile(configFile, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
 	ecsAk := "http://100.100.100.200/latest/meta-data/Ram/security-credentials/" + ecsRoleName
 	configStr := "[Credentials]" + "\n" + "language=EN" + "\n" + "endpoint=" + endpoint + "\n"
 	configStr = configStr + "[AkService]" + "\n" + "ecsAk=" + ecsAk
-	fd.WriteString(configStr)
-	fd.Close()
+	cfile := randStr(10)
+	s.createFile(cfile, configStr, c)
 
 	// create bucket
 	mode := "EcsRamRole"
@@ -5687,9 +5666,9 @@ func (s *OssutilCommandSuite) TestCPObjectUnderNomodeUsingEcsRoleAK(c *C) {
 	options := OptionMapType{
 		"endpoint":   &str,
 		"mode":       &mode,
-		"configFile": &configFile,
+		"configFile": &cfile,
 	}
-	_, err = cm.RunCommand(command, args, options)
+	_, err := cm.RunCommand(command, args, options)
 	c.Assert(err, IsNil)
 
 	// prepare file and object
@@ -5707,7 +5686,7 @@ func (s *OssutilCommandSuite) TestCPObjectUnderNomodeUsingEcsRoleAK(c *C) {
 		"endpoint":        &str,
 		"accessKeyID":     &str,
 		"accessKeySecret": &str,
-		"configFile":      &configFile,
+		"configFile":      &cfile,
 		"routines":        &routines,
 		"checkpointDir":   &cpDir,
 	}
@@ -5734,7 +5713,7 @@ func (s *OssutilCommandSuite) TestCPObjectUnderNomodeUsingEcsRoleAK(c *C) {
 	ok := true
 	options = OptionMapType{
 		"endpoint":   &str,
-		"configFile": &configFile,
+		"configFile": &cfile,
 		"mode":       &mode,
 		"bucket":     &ok,
 		"force":      &ok,
@@ -5744,7 +5723,7 @@ func (s *OssutilCommandSuite) TestCPObjectUnderNomodeUsingEcsRoleAK(c *C) {
 	_, err = cm.RunCommand(command, args, options)
 	c.Assert(err, IsNil)
 	s.removeBucket(bucketName, true, c)
-	s.createFile(configFile, string(oldConfigStr), c)
+	os.Remove(cfile)
 }
 
 func (s *OssutilCommandSuite) TestCPObjectUnderNomodeWithTimeOut(c *C) {

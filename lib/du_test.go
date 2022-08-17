@@ -3,6 +3,7 @@ package lib
 import (
 	"os"
 	"strings"
+	"time"
 
 	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 	. "gopkg.in/check.v1"
@@ -364,6 +365,7 @@ func (s *OssutilCommandSuite) TestDuVersionsObjectAndStorageClass(c *C) {
 	versioningArgs := []string{CloudURLToString(bucketName, ""), "enabled"}
 	_, err = cm.RunCommand("bucket-versioning", versioningArgs, versionsOptions)
 	c.Assert(err, IsNil)
+	time.Sleep(3 * time.Second)
 
 	// put object
 	content_len := 100

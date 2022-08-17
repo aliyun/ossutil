@@ -139,10 +139,9 @@ func (s *OssutilCommandSuite) TestMakeBucketIDKey(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestMakeBucketStorageClass(c *C) {
-	bucketName := bucketNamePrefix + randLowStr(10)
-
 	result := []string{StorageStandard, StorageIA, StorageArchive}
 	for i, class := range []string{StorageStandard, StorageIA, StorageArchive, strings.ToUpper(StorageStandard), strings.ToLower(StorageIA), "arCHIvE"} {
+		bucketName := bucketNamePrefix + randLowStr(10)
 		err := s.initPutBucketWithStorageClass([]string{CloudURLToString(bucketName, "")}, class)
 		c.Assert(err, IsNil)
 		err = makeBucketCommand.RunCommand()
@@ -169,6 +168,7 @@ func (s *OssutilCommandSuite) TestMakeBucketStorageClass(c *C) {
 	c.Assert(err, NotNil)
 
 	// test error make bucket
+	bucketName := bucketNamePrefix + randLowStr(10)
 	err = s.initPutBucketWithStorageClass([]string{CloudURLToString(bucketName, "abc")}, StorageStandard)
 	c.Assert(err, IsNil)
 	err = makeBucketCommand.RunCommand()
@@ -220,7 +220,7 @@ func (s *OssutilCommandSuite) TestMbCreateBucketWithConfigFile(c *C) {
 	command := "mb"
 	args := []string{CloudURLToString(bucketName, ""), inputFile}
 	str := ""
-	retryCount:="1"
+	retryCount := "1"
 	options := OptionMapType{
 		"endpoint":        &str,
 		"accessKeyID":     &str,
