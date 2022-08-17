@@ -737,7 +737,7 @@ func (s *OssutilCommandSuite) TestBatchRestoreObject(c *C) {
 	objectStat = s.getStat(bucketName, objectNames[0], c)
 	c.Assert(objectStat["X-Oss-Storage-Class"], Equals, StorageArchive)
 	_, ok = objectStat["X-Oss-Restore"]
-	c.Assert(ok, Equals, false)
+	c.Assert(ok, Equals, true)
 
 	// batch restore with encoding
 	prefix := url.QueryEscape("恢复")

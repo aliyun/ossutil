@@ -14,8 +14,6 @@ type OssutilConfigSuite struct{}
 
 var _ = Suite(&OssutilConfigSuite{})
 
-var token = stsToken
-
 // Run once when the suite starts running
 func (s *OssutilConfigSuite) SetUpSuite(c *C) {
 	fmt.Printf("set up OssutilConfigSuite\n")
@@ -37,16 +35,12 @@ func (s *OssutilConfigSuite) TearDownSuite(c *C) {
 // Run after each test or benchmark runs
 func (s *OssutilConfigSuite) SetUpTest(c *C) {
 	fmt.Printf("set up test:%s\n", c.TestName())
-	if stsToken == "" {
-		stsToken = "ststoken"
-	}
 	os.Remove(configFile)
 }
 
 // Run once after all tests or benchmarks have finished running
 func (s *OssutilConfigSuite) TearDownTest(c *C) {
 	fmt.Printf("tear down test:%s\n", c.TestName())
-	stsToken = token
 	os.Remove(configFile)
 }
 
@@ -54,6 +48,11 @@ func (s *OssutilConfigSuite) TearDownTest(c *C) {
 func (s *OssutilConfigSuite) TestConfigNonInteractive(c *C) {
 	command := "config"
 	var args []string
+	configFile := randStr(10)
+	endpoint := "oss-cn-hangzhou.aliyuncs.com"
+	accessKeyID := "ak"
+	accessKeySecret := "sk"
+	stsToken := "token"
 	options := OptionMapType{
 		"endpoint":        &endpoint,
 		"accessKeyID":     &accessKeyID,
@@ -77,12 +76,16 @@ func (s *OssutilConfigSuite) TestConfigNonInteractive(c *C) {
 	c.Assert(opts[OptionAccessKeyID], Equals, accessKeyID)
 	c.Assert(opts[OptionAccessKeySecret], Equals, accessKeySecret)
 	c.Assert(opts[OptionSTSToken], Equals, stsToken)
+	os.Remove(configFile)
 }
 
 func (s *OssutilConfigSuite) TestConfigNonInteractiveLanguage(c *C) {
 	command := "config"
 	var args []string
 	for _, language := range []string{DefaultLanguage, EnglishLanguage, LEnglishLanguage} {
+		configFile := randStr(10)
+		endpoint := "oss-cn-hangzhou.aliyuncs.com"
+		stsToken := "token"
 		options := OptionMapType{
 			"endpoint":   &endpoint,
 			"stsToken":   &stsToken,
@@ -103,12 +106,14 @@ func (s *OssutilConfigSuite) TestConfigNonInteractiveLanguage(c *C) {
 		c.Assert(opts[OptionEndpoint], Equals, endpoint)
 		c.Assert(opts[OptionSTSToken], Equals, stsToken)
 		c.Assert(opts[OptionLanguage], Equals, language)
+		os.Remove(configFile)
 	}
 }
 
 func (s *OssutilConfigSuite) TestConfigInteractive(c *C) {
 	command := "config"
 	var args []string
+	configFile := randStr(10)
 	options := OptionMapType{
 		"configFile": &configFile,
 	}
@@ -124,11 +129,13 @@ func (s *OssutilConfigSuite) TestConfigInteractive(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(len(opts), Equals, 1)
 	c.Assert(opts[OptionLanguage], Equals, DefaultLanguage)
+	os.Remove(configFile)
 }
 
 func (s *OssutilConfigSuite) TestConfigInteractiveLanguage(c *C) {
 	command := "config"
 	var args []string
+	configFile := randStr(10)
 	for _, language := range []string{DefaultLanguage, EnglishLanguage, LEnglishLanguage} {
 		options := OptionMapType{
 			"configFile": &configFile,
@@ -146,11 +153,13 @@ func (s *OssutilConfigSuite) TestConfigInteractiveLanguage(c *C) {
 	opts, err := LoadConfig(configFile)
 	c.Assert(err, IsNil)
 	c.Assert(len(opts), Equals, 1)
+	os.Remove(configFile)
 }
 
 func (s *OssutilConfigSuite) TestConfigLanguageEN(c *C) {
 	command := "config"
 	var args []string
+	configFile := randStr(10)
 	language := "En"
 	options := OptionMapType{
 		"configFile": &configFile,
@@ -168,11 +177,13 @@ func (s *OssutilConfigSuite) TestConfigLanguageEN(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(len(opts), Equals, 1)
 	c.Assert(opts[OptionLanguage], Equals, language)
+	os.Remove(configFile)
 }
 
 func (s *OssutilConfigSuite) TestConfigLanguageCH(c *C) {
 	command := "config"
 	var args []string
+	configFile := randStr(10)
 	language := "CH"
 	options := OptionMapType{
 		"configFile": &configFile,
@@ -190,14 +201,18 @@ func (s *OssutilConfigSuite) TestConfigLanguageCH(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(len(opts), Equals, 1)
 	c.Assert(opts[OptionLanguage], Equals, language)
+	os.Remove(configFile)
 }
 
 // test option empty value
 func (s *OssutilConfigSuite) TestConfigOptionEmptyValue(c *C) {
 	command := "config"
 	var args []string
+	configFile := randStr(10)
 	endp := ""
 	id := ""
+	accessKeySecret := "sk"
+	stsToken := "token"
 	options := OptionMapType{
 		"endpoint":        &endp,
 		"accessKeyID":     &id,
@@ -221,6 +236,7 @@ func (s *OssutilConfigSuite) TestConfigOptionEmptyValue(c *C) {
 	c.Assert(opts[OptionLanguage], Equals, DefaultLanguage)
 	c.Assert(opts[OptionAccessKeySecret], Equals, accessKeySecret)
 	c.Assert(opts[OptionSTSToken], Equals, stsToken)
+	os.Remove(configFile)
 }
 
 // test invalid option
