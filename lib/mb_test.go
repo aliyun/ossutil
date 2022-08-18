@@ -201,11 +201,15 @@ func (s *OssutilCommandSuite) TestMbCreateBucketWithRedundancy(c *C) {
 	s.removeBucket(bucketName, true, c)
 
 	// redundancyType is error
+	bucketName = bucketNamePrefix + randLowStr(10)
+	args = []string{CloudURLToString(bucketName, "")}
 	strRedundancy = "LLL"
 	_, err = cm.RunCommand(command, args, options)
 	c.Assert(err, NotNil)
 
 	// create without redundancyType
+	bucketName = bucketNamePrefix + randLowStr(10)
+	args = []string{CloudURLToString(bucketName, "")}
 	delete(options, "redundancyType")
 	_, err = cm.RunCommand(command, args, options)
 	c.Assert(err, IsNil)

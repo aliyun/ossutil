@@ -368,7 +368,7 @@ func (s *OssutilCommandSuite) TestAppendFileWithPayer(c *C) {
 		"accessKeyID":     &str,
 		"accessKeySecret": &str,
 		"stsToken":        &str,
-		"configFile":      &configFile,
+		"configFile":      &payerConfigFile,
 		"payer":           &requester,
 	}
 
@@ -387,7 +387,7 @@ func (s *OssutilCommandSuite) TestAppendFileWithPayer(c *C) {
 		"accessKeySecret": &str,
 		"stsToken":        &str,
 		"checkpointDir":   &cpDir,
-		"configFile":      &configFile,
+		"configFile":      &payerConfigFile,
 		"payer":           &requester,
 	}
 	downFileName := randLowStr(10) + "-download"

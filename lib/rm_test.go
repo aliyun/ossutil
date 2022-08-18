@@ -695,7 +695,7 @@ func (s *OssutilCommandSuite) TestRmSpecialCharacterKey(c *C) {
 	s.removeBucket(bucketName, true, c)
 }
 
-//versions
+// versions
 func (s *OssutilCommandSuite) TestRemoveObjectInVersioningBucket(c *C) {
 	bucketName := bucketNamePrefix + randLowStr(10)
 	s.putBucket(bucketName, c)
@@ -1066,7 +1066,7 @@ func (s *OssutilCommandSuite) TestRmObjectWithPayer(c *C) {
 		"endpoint":        &payerBucketEndPoint,
 		"accessKeyID":     &str,
 		"accessKeySecret": &str,
-		"configFile":      &configFile,
+		"configFile":      &payerConfigFile,
 		"force":           &bForce,
 		"payer":           &requester,
 	}
@@ -1099,7 +1099,7 @@ func (s *OssutilCommandSuite) TestRmBatchObjectWithPayer(c *C) {
 		"endpoint":        &payerBucketEndPoint,
 		"accessKeyID":     &str,
 		"accessKeySecret": &str,
-		"configFile":      &configFile,
+		"configFile":      &payerConfigFile,
 		"force":           &bForce,
 		"recursive":       &recursive,
 		"payer":           &requester,
@@ -1139,7 +1139,7 @@ func (s *OssutilCommandSuite) TestRmBatchPartsWithPayer(c *C) {
 		"endpoint":        &payerBucketEndPoint,
 		"accessKeyID":     &str,
 		"accessKeySecret": &str,
-		"configFile":      &configFile,
+		"configFile":      &payerConfigFile,
 		"force":           &bForce,
 		"recursive":       &recursive,
 		"allType":         &allType,

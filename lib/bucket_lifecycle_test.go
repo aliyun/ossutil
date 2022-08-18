@@ -3,6 +3,7 @@ package lib
 import (
 	"encoding/xml"
 	"os"
+	"time"
 
 	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 	. "gopkg.in/check.v1"
@@ -303,6 +304,7 @@ func (s *OssutilCommandSuite) TestLifecycleDelete(c *C) {
 	lifecycleArgs := []string{CloudURLToString(bucketName, ""), lifecycleFileName}
 	_, err := cm.RunCommand("lifecycle", lifecycleArgs, options)
 	c.Assert(err, IsNil)
+	time.Sleep(3 * time.Second)
 
 	// get lifecycle
 	lifecycleDownName := lifecycleFileName + "-down"
@@ -330,6 +332,7 @@ func (s *OssutilCommandSuite) TestLifecycleDelete(c *C) {
 	lifecycleArgs = []string{CloudURLToString(bucketName, ""), lifecycleDownName}
 	_, err = cm.RunCommand("lifecycle", lifecycleArgs, options)
 	c.Assert(err, IsNil)
+	time.Sleep(3 * time.Second)
 
 	// get again
 	strMethod = "get"

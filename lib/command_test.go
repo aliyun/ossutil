@@ -29,21 +29,21 @@ var _ = Suite(&OssutilCommandSuite{})
 
 var (
 	// Update before running test
-	endpoint            = ""
-	accessKeyID         = ""
-	accessKeySecret     = ""
-	stsToken            = ""
-	payerBucket         = ""
-	payerBucketEndPoint = ""
-	proxyHost           = ""
-	proxyUser           = ""
-	proxyPwd            = ""
-	accountID           = ""
-	stsAccessID         = ""
-	stsAccessKeySecret  = ""
-	stsARN              = ""
-	ecsRoleName         = ""
-	stsRegion           = ""
+	endpoint             = ""
+	accessKeyID          = ""
+	accessKeySecret      = ""
+	proxyHost            = ""
+	proxyUser            = ""
+	proxyPwd             = ""
+	accountID            = ""
+	stsAccessID          = ""
+	stsAccessKeySecret   = ""
+	stsARN               = ""
+	ecsRoleName          = ""
+	stsRegion            = ""
+	payerAccessKeyID     = ""
+	payerAccessKeySecret = ""
+	payerAccountID       = ""
 )
 
 var (
@@ -74,6 +74,12 @@ var (
 	bucketNameNotExist = "nodelete-ossutil-test-notexist"
 )
 
+var (
+	payerBucket         = bucketNamePrefix + "-payer"
+	payerConfigFile     = ConfigFile + "-payer"
+	payerBucketEndPoint = ""
+)
+
 // Run once when the suite starts running
 func (s *OssutilCommandSuite) SetUpSuite(c *C) {
 	fmt.Printf("set up OssutilCommandSuite\n")
@@ -86,6 +92,7 @@ func (s *OssutilCommandSuite) SetUpSuite(c *C) {
 	s.configNonInteractive(c)
 	s.createFile(uploadFileName, content, c)
 	s.SetUpBucketEnv(c)
+	s.SetUpPayerEnv(c)
 }
 
 func SetUpCredential() {
@@ -104,9 +111,6 @@ func SetUpCredential() {
 	if accessKeySecret == "" {
 		accessKeySecret = os.Getenv("OSS_TEST_ACCESS_KEY_SECRET")
 	}
-	if payerBucket == "" {
-		payerBucket = os.Getenv("OSS_TEST_PAYER_BUCKET")
-	}
 	if ue := os.Getenv("OSS_TEST_UPDATE_ENDPOINT"); ue != "" {
 		vUpdateEndpoint = ue
 	}
@@ -119,16 +123,6 @@ func SetUpCredential() {
 	if strings.HasPrefix(vUpdateEndpoint, "http://") {
 		vUpdateEndpoint = vUpdateEndpoint[7:]
 	}
-	if payerBucketEndPoint == "" {
-		payerBucketEndPoint = os.Getenv("OSS_TEST_PAYER_ENDPOINT")
-		if strings.HasPrefix(payerBucketEndPoint, "https://") {
-			payerBucketEndPoint = payerBucketEndPoint[8:]
-		}
-		if strings.HasPrefix(payerBucketEndPoint, "http://") {
-			payerBucketEndPoint = payerBucketEndPoint[7:]
-		}
-	}
-
 	if proxyHost == "" {
 		proxyHost = os.Getenv("OSS_TEST_PROXY_HOST")
 	}
@@ -140,9 +134,6 @@ func SetUpCredential() {
 	}
 	if accountID == "" {
 		accountID = os.Getenv("OSS_TEST_ACCOUNT_ID")
-	}
-	if stsToken == "" {
-		stsToken = os.Getenv("OSS_TEST_STS_TOKEN")
 	}
 	if stsAccessID == "" {
 		stsAccessID = os.Getenv("OSS_TEST_STS_ID")
@@ -159,12 +150,45 @@ func SetUpCredential() {
 	if stsRegion == "" {
 		stsRegion = os.Getenv("OSS_TEST_STS_REGION")
 	}
+	if payerAccessKeyID == "" {
+		payerAccessKeyID = os.Getenv("OSS_TEST_PAYER_ACCESS_KEY_ID")
+	}
+	if payerAccessKeySecret == "" {
+		payerAccessKeySecret = os.Getenv("OSS_TEST_PAYER_ACCESS_KEY_SECRET")
+	}
+	if payerAccountID == "" {
+		payerAccountID = os.Getenv("OSS_TEST_PAYER_UID")
+	}
 }
 
 func (s *OssutilCommandSuite) SetUpBucketEnv(c *C) {
 	s.removeBuckets(commonNamePrefix, c)
 	s.putBucket(bucketNameExist, c)
 	s.putBucket(bucketNameDest, c)
+}
+
+func (s *OssutilCommandSuite) SetUpPayerEnv(c *C) {
+	s.putBucket(payerBucket, c)
+	payerBucketEndPoint = endpoint
+	policy := `
+	{
+		"Version":"1",
+		"Statement":[
+			{
+				"Action":[
+					"oss:*"
+				],
+				"Effect":"Allow",
+				"Principal":["` + payerAccountID + `"],
+				"Resource":["acs:oss:*:*:` + payerBucket + `", "acs:oss:*:*:` + payerBucket + `/*"]
+			}
+		]
+	}`
+	s.putBucketPolicy(payerBucket, policy, c)
+
+	//set payerConfigfile
+	data := fmt.Sprintf("[Credentials]\nlanguage=EN\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n", payerBucketEndPoint, payerAccessKeyID, payerAccessKeySecret)
+	s.createFile(payerConfigFile, data, c)
 }
 
 // Run before each test or benchmark starts running
@@ -181,6 +205,7 @@ func (s *OssutilCommandSuite) TearDownSuite(c *C) {
 	os.Remove(downloadFileName)
 	os.RemoveAll(downloadDir)
 	os.RemoveAll(DefaultOutputDir)
+	os.Remove(payerConfigFile)
 	os.Stdout = out
 	os.Stderr = errout
 }
@@ -738,6 +763,27 @@ func (s *OssutilCommandSuite) putBucketWithStorageClass(bucket string, storageCl
 	c.Assert(err, IsNil)
 	err = makeBucketCommand.RunCommand()
 	return err
+}
+
+func (s *OssutilCommandSuite) putBucketPolicy(bucket string, policyJson string, c *C) {
+	command := "bucket-policy"
+	policyFileName := randLowStr(12)
+	s.createFile(policyFileName, policyJson, c)
+	args := []string{CloudURLToString(bucket, ""), policyFileName}
+	str := ""
+	strMethod := "put"
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"stsToken":        &str,
+		"configFile":      &configFile,
+		"method":          &strMethod,
+	}
+	showElapse, err := cm.RunCommand(command, args, options)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+	os.Remove(policyFileName)
 }
 
 func (s *OssutilCommandSuite) initPutBucketWithStorageClass(args []string, storageClass string) error {

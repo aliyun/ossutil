@@ -236,7 +236,7 @@ func (s *OssutilCommandSuite) TestCatObjectWithPayer(c *C) {
 		"accessKeyID":     &str,
 		"accessKeySecret": &str,
 		"stsToken":        &str,
-		"configFile":      &configFile,
+		"configFile":      &payerConfigFile,
 		"payer":           &requester,
 	}
 
