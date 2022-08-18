@@ -23,6 +23,7 @@ func (s *OssutilCommandSuite) TestWormInitiateBucketWormSuccess(c *C) {
 	wormArgs := []string{"init", CloudURLToString(bucketName, ""), "10"}
 	_, err := cm.RunCommand("worm", wormArgs, options)
 	c.Assert(err, IsNil)
+	time.Sleep(3 * time.Second)
 
 	wormArgs = []string{"get", CloudURLToString(bucketName, "")}
 	_, err = cm.RunCommand("worm", wormArgs, options)

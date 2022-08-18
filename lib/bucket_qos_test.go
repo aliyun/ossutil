@@ -243,6 +243,7 @@ func (s *OssutilCommandSuite) TestBucketQosGetConfirm(c *C) {
 	qosArgs := []string{CloudURLToString(bucketName, ""), qosFileName}
 	_, err := cm.RunCommand("bucket-qos", qosArgs, options)
 	c.Assert(err, IsNil)
+	time.Sleep(3 * time.Second)
 
 	// get qos
 	qosDownName := qosFileName + "-down"

@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
-        . "gopkg.in/check.v1"
+	. "gopkg.in/check.v1"
 )
 
 func (s *OssutilCommandSuite) TestRestoreObject(c *C) {
@@ -1034,7 +1034,7 @@ func (s *OssutilCommandSuite) TestRestoreObjectWithPayerError400(c *C) {
 		"accessKeyID":     &str,
 		"accessKeySecret": &str,
 		"stsToken":        &str,
-		"configFile":      &configFile,
+		"configFile":      &payerConfigFile,
 		"payer":           &requester,
 	}
 	_, err = cm.RunCommand(command, args, options)
@@ -1043,8 +1043,23 @@ func (s *OssutilCommandSuite) TestRestoreObjectWithPayerError400(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestRestoreObjectWithPayer(c *C) {
-	bucketName := bucketNamePrefix + randLowStr(10)
+	bucketName := payerBucket + randLowStr(10)
 	s.putBucketWithStorageClass(bucketName, StorageArchive, c)
+	policy := `
+	{
+		"Version":"1",
+		"Statement":[
+			{
+				"Action":[
+					"oss:*"
+				],
+				"Effect":"Allow",
+				"Principal":["` + payerAccountID + `"],
+				"Resource":["acs:oss:*:*:` + bucketName + `", "acs:oss:*:*:` + bucketName + `/*"]
+			}
+		]
+	}`
+	s.putBucketPolicy(bucketName, policy, c)
 	s.createFile(uploadFileName, content, c)
 
 	//put object, with --payer=requester
@@ -1063,7 +1078,7 @@ func (s *OssutilCommandSuite) TestRestoreObjectWithPayer(c *C) {
 		"accessKeyID":     &str,
 		"accessKeySecret": &str,
 		"stsToken":        &str,
-		"configFile":      &configFile,
+		"configFile":      &payerConfigFile,
 		"payer":           &requester,
 	}
 	_, err = cm.RunCommand(command, args, options)
@@ -1082,7 +1097,7 @@ func (s *OssutilCommandSuite) TestRestoreObjectWithPayer(c *C) {
 		"accessKeyID":     &str,
 		"accessKeySecret": &str,
 		"stsToken":        &str,
-		"configFile":      &configFile,
+		"configFile":      &payerConfigFile,
 		"payer":           &requester,
 	}
 	_, err = cm.RunCommand(command, args, options)

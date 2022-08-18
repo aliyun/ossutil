@@ -441,7 +441,7 @@ func (s *OssutilCommandSuite) TestSignUrlWithRequestPayer(c *C) {
 		"accessKeyID":     &str,
 		"accessKeySecret": &str,
 		"stsToken":        &str,
-		"configFile":      &configFile,
+		"configFile":      &payerConfigFile,
 		"payer":           &payer,
 		"timeout":         &timeOut,
 	}

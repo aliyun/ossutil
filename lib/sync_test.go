@@ -1031,7 +1031,7 @@ func (s *OssutilCommandSuite) TestSyncWithPayerSucess(c *C) {
 		"endpoint":        &payerBucketEndPoint,
 		"accessKeyID":     &str,
 		"accessKeySecret": &str,
-		"configFile":      &configFile,
+		"configFile":      &payerConfigFile,
 		"checkpointDir":   &cpDir,
 		"routines":        &routines,
 		"force":           &bForce,

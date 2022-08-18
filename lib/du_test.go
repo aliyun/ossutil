@@ -251,7 +251,7 @@ func (s *OssutilCommandSuite) TestDuPayerObject(c *C) {
 		"accessKeyID":     &str,
 		"accessKeySecret": &str,
 		"stsToken":        &str,
-		"configFile":      &ConfigFile,
+		"configFile":      &payerConfigFile,
 		"payer":           &requester,
 	}
 	srcUrl := CloudURLToString(bucketName, objectName)
@@ -278,7 +278,7 @@ func (s *OssutilCommandSuite) TestDuPayerErrorObject(c *C) {
 		"accessKeyID":     &str,
 		"accessKeySecret": &str,
 		"stsToken":        &str,
-		"configFile":      &ConfigFile,
+		"configFile":      &payerConfigFile,
 		"payer":           &requester,
 	}
 	srcUrl := CloudURLToString(bucketName, objectName)
@@ -318,7 +318,7 @@ func (s *OssutilCommandSuite) TestDuPayerPart(c *C) {
 		"accessKeyID":     &str,
 		"accessKeySecret": &str,
 		"stsToken":        &str,
-		"configFile":      &ConfigFile,
+		"configFile":      &payerConfigFile,
 		"payer":           &requester,
 	}
 	srcUrl := CloudURLToString(bucketName, object)

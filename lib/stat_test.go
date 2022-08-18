@@ -275,7 +275,7 @@ func (s *OssutilCommandSuite) TestStatObjectWithPayer(c *C) {
 		"accessKeyID":     &str,
 		"accessKeySecret": &str,
 		"stsToken":        &str,
-		"configFile":      &configFile,
+		"configFile":      &payerConfigFile,
 		"payer":           &requester,
 	}
 
