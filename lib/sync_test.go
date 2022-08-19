@@ -1615,6 +1615,21 @@ func (s *OssutilCommandSuite) TestSyncMovePathError(c *C) {
 	os.RemoveAll(fileName)
 }
 
+func (s *OssutilCommandSuite) TestSyncMoveFileToPath(c *C) {
+	fileName := "/Users/apple/testdir1-" + randLowStr(3)
+	s.createFile(fileName, "123", c)
+	newFileName := "/Users/apple" + string(os.PathSeparator) + "new.txt"
+	err := syncCommand.moveFileToPath(fileName, newFileName)
+	c.Assert(err, IsNil)
+
+	newFileName2 := "/Users/apple" + string(os.PathSeparator) + "root" + string(os.PathSeparator) + "new.txt"
+	err = syncCommand.movePath(fileName, newFileName2)
+	c.Assert(err, NotNil)
+	os.RemoveAll(fileName)
+	os.RemoveAll(newFileName)
+	os.RemoveAll(newFileName2)
+}
+
 func (s *OssutilCommandSuite) TestSyncReadDirLimitError(c *C) {
 	dirName := "d:" + string(os.PathSeparator) + "root" + string(os.PathSeparator) + "new.txt"
 	_, err := syncCommand.readDirLimit(dirName, 10)
