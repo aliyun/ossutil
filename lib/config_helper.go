@@ -47,6 +47,7 @@ var CredOptionList = []string{
 	OptionSTSToken,
 	OptionOutputDir,
 	OptionRamRoleArn,
+	OptionUserAgent,
 }
 
 // CredOptionMap allows alias name for options in Credentials section
