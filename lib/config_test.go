@@ -79,6 +79,37 @@ func (s *OssutilConfigSuite) TestConfigNonInteractive(c *C) {
 	os.Remove(configFile)
 }
 
+func (s *OssutilConfigSuite) TestConfigNonInteractiveWithAgent(c *C) {
+	command := "config"
+	var args []string
+	userAgent := "demo-walker"
+	options := OptionMapType{
+		"endpoint":        &endpoint,
+		"accessKeyID":     &accessKeyID,
+		"accessKeySecret": &accessKeySecret,
+		"userAgent":       &userAgent,
+		"stsToken":        &stsToken,
+		"configFile":      &configFile,
+	}
+	showElapse, err := cm.RunCommand(command, args, options)
+	c.Assert(showElapse, Equals, false)
+	c.Assert(err, IsNil)
+
+	f, err := os.Stat(configFile)
+	c.Assert(err, IsNil)
+	c.Assert(f.Size() > 0, Equals, true)
+
+	opts, err := LoadConfig(configFile)
+	c.Assert(err, IsNil)
+	c.Assert(len(opts), Equals, 6)
+	c.Assert(opts[OptionLanguage], Equals, DefaultLanguage)
+	c.Assert(opts[OptionEndpoint], Equals, endpoint)
+	c.Assert(opts[OptionAccessKeyID], Equals, accessKeyID)
+	c.Assert(opts[OptionAccessKeySecret], Equals, accessKeySecret)
+	c.Assert(opts[OptionUserAgent], Equals, userAgent)
+	c.Assert(opts[OptionSTSToken], Equals, stsToken)
+}
+
 func (s *OssutilConfigSuite) TestConfigNonInteractiveLanguage(c *C) {
 	command := "config"
 	var args []string
