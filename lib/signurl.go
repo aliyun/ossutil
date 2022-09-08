@@ -128,6 +128,15 @@ var signURLCommand = SignurlCommand{
 			OptionTrafficLimit,
 			OptionDisableEncodeSlash,
 			OptionRequestPayer,
+			//General options
+			OptionPassword,
+			OptionMode,
+			OptionECSRoleName,
+			OptionTokenTimeout,
+			OptionRamRoleArn,
+			OptionRoleSessionName,
+			OptionSTSRegion,
+			OptionUserAgent,
 		},
 	},
 }
