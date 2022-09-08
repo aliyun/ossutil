@@ -28,14 +28,16 @@ func init() {
 	sys_release = "-"
 	sys_machine = runtime.GOARCH
 
-	if out, err := exec.Command("uname", "-s").CombinedOutput(); err == nil {
-		sys_name = string(bytes.TrimSpace(out))
-	}
-	if out, err := exec.Command("uname", "-r").CombinedOutput(); err == nil {
-		sys_release = string(bytes.TrimSpace(out))
-	}
-	if out, err := exec.Command("uname", "-m").CombinedOutput(); err == nil {
-		sys_machine = string(bytes.TrimSpace(out))
+	if !strings.EqualFold(sys_name, "windows") {
+		if out, err := exec.Command("uname", "-s").CombinedOutput(); err == nil {
+			sys_name = string(bytes.TrimSpace(out))
+		}
+		if out, err := exec.Command("uname", "-r").CombinedOutput(); err == nil {
+			sys_release = string(bytes.TrimSpace(out))
+		}
+		if out, err := exec.Command("uname", "-m").CombinedOutput(); err == nil {
+			sys_machine = string(bytes.TrimSpace(out))
+		}
 	}
 }
 
@@ -90,9 +92,9 @@ func getSysInfo() sysInfo {
 func getUserAgent(ua string) string {
 	sys := getSysInfo()
 	if ua == "" {
-	    return fmt.Sprintf("aliyun-sdk-go/%s (%s/%s/%s;%s)/%s-%s", oss.Version, sys.name, sys.release, sys.machine, runtime.Version(), Package, Version)
+		return fmt.Sprintf("aliyun-sdk-go/%s (%s/%s/%s;%s)/%s-%s", oss.Version, sys.name, sys.release, sys.machine, runtime.Version(), Package, Version)
 	}
-	return fmt.Sprintf("aliyun-sdk-go/%s (%s/%s/%s;%s)/%s-%s/%s", oss.Version, sys.name, sys.release, sys.machine, runtime.Version(), Package, Version,ua)
+	return fmt.Sprintf("aliyun-sdk-go/%s (%s/%s/%s;%s)/%s-%s/%s", oss.Version, sys.name, sys.release, sys.machine, runtime.Version(), Package, Version, ua)
 }
 
 func utcToLocalTime(utc time.Time) time.Time {
