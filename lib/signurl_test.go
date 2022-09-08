@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"io/ioutil"
 	"net/url"
 	"os"
 	"strconv"
@@ -463,4 +464,496 @@ func (s *OssutilCommandSuite) TestSignUrlWithRequestPayer(c *C) {
 
 	os.Remove(uploadFileName)
 	os.Remove(downFileName)
+}
+
+func (s *OssutilCommandSuite) TestSignHelpInfo(c *C) {
+	// mkdir command test
+	options := OptionMapType{}
+
+	mkArgs := []string{"sign"}
+	_, err := cm.RunCommand("help", mkArgs, options)
+	c.Assert(err, IsNil)
+
+	mkArgs = []string{}
+	_, err = cm.RunCommand("help", mkArgs, options)
+	c.Assert(err, IsNil)
+}
+
+func (s *OssutilCommandSuite) TestSignWithInputPassword(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	// prepare file and object
+	objectContext := randLowStr(1024)
+	fileName := "ossutil_test." + randLowStr(12)
+	s.createFile(fileName, objectContext, c)
+
+	object := randLowStr(12)
+	s.putObject(bucketName, object, fileName, c)
+
+	str := ""
+	bPassword := accessKeySecret
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+		"password":        &bPassword,
+	}
+	args := []string{CloudURLToString(bucketName, object)}
+	_, err := cm.RunCommand("sign", args, options)
+	c.Assert(err, IsNil)
+
+	c.Assert(strings.Contains(signURLCommand.signUrl, "Expires"), Equals, true)
+	c.Assert(strings.Contains(signURLCommand.signUrl, "OSSAccessKeyId"), Equals, true)
+	c.Assert(strings.Contains(signURLCommand.signUrl, "Signature"), Equals, true)
+	c.Assert(strings.Contains(signURLCommand.signUrl, object), Equals, true)
+
+	bucket, err := signURLCommand.command.ossBucket(bucketName)
+	c.Assert(err, IsNil)
+
+	// get object with url
+	downFileName := "ossutil-test-file" + randStr(5)
+	err = bucket.GetObjectToFileWithURL(signURLCommand.signUrl, downFileName)
+	c.Assert(err, IsNil)
+	str = s.readFile(downFileName, c)
+	c.Assert(str, Equals, objectContext)
+
+	os.Remove(downFileName)
+	os.Remove(fileName)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestSignWithModeAk(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	// prepare file and object
+	objectContext := randLowStr(1024)
+	fileName := "ossutil_test." + randLowStr(12)
+	s.createFile(fileName, objectContext, c)
+
+	object := randLowStr(12)
+	s.putObject(bucketName, object, fileName, c)
+	command := "sign"
+	str := ""
+	timeOut := strconv.FormatInt(60, 10)
+	mode := "AK"
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+		"mode":            &mode,
+		"timeout":         &timeOut,
+	}
+
+	srcUrl := CloudURLToString(bucketName, object)
+	args := []string{srcUrl}
+	_, err := cm.RunCommand(command, args, options)
+	c.Assert(err, IsNil)
+
+	c.Assert(strings.Contains(signURLCommand.signUrl, "Expires"), Equals, true)
+	c.Assert(strings.Contains(signURLCommand.signUrl, "OSSAccessKeyId"), Equals, true)
+	c.Assert(strings.Contains(signURLCommand.signUrl, "Signature"), Equals, true)
+	c.Assert(strings.Contains(signURLCommand.signUrl, object), Equals, true)
+
+	bucket, err := signURLCommand.command.ossBucket(bucketName)
+	c.Assert(err, IsNil)
+
+	// get object with url
+	downFileName := "ossutil-test-file" + randStr(5)
+	err = bucket.GetObjectToFileWithURL(signURLCommand.signUrl, downFileName)
+	c.Assert(err, IsNil)
+	str = s.readFile(downFileName, c)
+	c.Assert(str, Equals, objectContext)
+
+	os.Remove(downFileName)
+	os.Remove(fileName)
+	s.removeBucket(bucketName, true, c)
+
+}
+
+func (s *OssutilCommandSuite) TestSignWithModeEcsRamRole(c *C) {
+	accessKeyID = ""
+	accessKeySecret = ""
+	stsToken = ""
+
+	svr := startHttpServer(StsHttpHandlerOk)
+	time.Sleep(time.Duration(1) * time.Second)
+
+	//set endpoint emtpy
+	_, err := ioutil.ReadFile(configFile)
+	c.Assert(err, IsNil)
+	fd, _ := os.OpenFile(configFile, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
+	ecsAk := "http://127.0.0.1:32915/latest/meta-data/Ram/security-credentials/EcsRamRoleTesting"
+	configStr := "[Credentials]" + "\n" + "language=CH" + "\n" + "endpoint= " + endpoint + "\n"
+	configStr = configStr + "[AkService]" + "\n" + "ecsAk=" + ecsAk
+
+	fd.WriteString(configStr)
+	fd.Close()
+
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	// prepare file and object
+	objectContext := randLowStr(1024)
+	fileName := "ossutil_test." + randLowStr(12)
+	s.createFile(fileName, objectContext, c)
+
+	object := randLowStr(12)
+	s.putObject(bucketName, object, fileName, c)
+	command := "sign"
+	str := ""
+	timeOut := strconv.FormatInt(600, 10)
+	mode := "EcsRamRole"
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+		"mode":            &mode,
+		"timeout":         &timeOut,
+	}
+
+	srcUrl := CloudURLToString(bucketName, object)
+	args := []string{srcUrl}
+	_, err = cm.RunCommand(command, args, options)
+	c.Assert(err, IsNil)
+
+	c.Assert(strings.Contains(signURLCommand.signUrl, "Expires"), Equals, true)
+	c.Assert(strings.Contains(signURLCommand.signUrl, "OSSAccessKeyId"), Equals, true)
+	c.Assert(strings.Contains(signURLCommand.signUrl, "Signature"), Equals, true)
+	c.Assert(strings.Contains(signURLCommand.signUrl, object), Equals, true)
+
+	bucket, err := signURLCommand.command.ossBucket(bucketName)
+	c.Assert(err, IsNil)
+
+	// get object with url
+	downFileName := "ossutil-test-file" + randStr(5)
+	err = bucket.GetObjectToFileWithURL(signURLCommand.signUrl, downFileName)
+	c.Assert(err, IsNil)
+	str = s.readFile(downFileName, c)
+	c.Assert(str, Equals, objectContext)
+
+	os.Remove(downFileName)
+	os.Remove(fileName)
+	s.removeBucket(bucketName, true, c)
+
+	svr.Close()
+}
+
+func (s *OssutilCommandSuite) TestSignWithModeStsToken(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(12)
+	s.putBucket(bucketName, c)
+
+	// prepare file and object
+	objectContext := randLowStr(1024)
+	fileName := "ossutil_test." + randLowStr(12)
+	s.createFile(fileName, objectContext, c)
+
+	object := randLowStr(12)
+	s.putObject(bucketName, object, fileName, c)
+
+	client := NewClient(stsAccessID, stsAccessKeySecret, stsARN, "sts_test")
+
+	resp, err := client.AssumeRole(3600, "https://sts.cn-hangzhou.aliyuncs.com")
+	c.Assert(err, IsNil)
+
+	temAccessID := resp.Credentials.AccessKeyId
+	temAccessKeySecret := resp.Credentials.AccessKeySecret
+	temSTSToken := resp.Credentials.SecurityToken
+
+	c.Assert(temAccessID, Not(Equals), "")
+	c.Assert(temAccessKeySecret, Not(Equals), "")
+	c.Assert(temSTSToken, Not(Equals), "")
+
+	str := ""
+	mode := "StsToken"
+	timeOut := strconv.FormatInt(3600, 10)
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &temAccessID,
+		"accessKeySecret": &temAccessKeySecret,
+		"configFile":      &configFile,
+		"mode":            &mode,
+		"stsToken":        &temSTSToken,
+		"timeout":         &timeOut,
+	}
+
+	srcUrl := CloudURLToString(bucketName, object)
+	args := []string{srcUrl}
+	_, err = cm.RunCommand("sign", args, options)
+	c.Assert(err, IsNil)
+
+	c.Assert(strings.Contains(signURLCommand.signUrl, "Expires"), Equals, true)
+	c.Assert(strings.Contains(signURLCommand.signUrl, "OSSAccessKeyId"), Equals, true)
+	c.Assert(strings.Contains(signURLCommand.signUrl, "Signature"), Equals, true)
+	c.Assert(strings.Contains(signURLCommand.signUrl, object), Equals, true)
+
+	bucket, err := signURLCommand.command.ossBucket(bucketName)
+	c.Assert(err, IsNil)
+
+	// get object with url
+	downFileName := "ossutil-test-file" + randStr(5)
+	err = bucket.GetObjectToFileWithURL(signURLCommand.signUrl, downFileName)
+	c.Assert(err, IsNil)
+	str = s.readFile(downFileName, c)
+	c.Assert(str, Equals, objectContext)
+
+	os.Remove(downFileName)
+	os.Remove(fileName)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestSignWithModeRamRoleArn(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(12)
+	s.putBucket(bucketName, c)
+
+	// prepare file and object
+	objectContext := randLowStr(1024)
+	fileName := "ossutil_test." + randLowStr(12)
+	s.createFile(fileName, objectContext, c)
+
+	object := randLowStr(12)
+	s.putObject(bucketName, object, fileName, c)
+
+	str := ""
+	mode := "RamRoleArn"
+	timeOut := strconv.FormatInt(3600, 10)
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &stsAccessID,
+		"accessKeySecret": &stsAccessKeySecret,
+		"configFile":      &configFile,
+		"mode":            &mode,
+		"ramRoleArn":      &stsARN,
+		"timeout":         &timeOut,
+	}
+
+	srcUrl := CloudURLToString(bucketName, object)
+	args := []string{srcUrl}
+	_, err := cm.RunCommand("sign", args, options)
+	c.Assert(err, IsNil)
+
+	c.Assert(strings.Contains(signURLCommand.signUrl, "Expires"), Equals, true)
+	c.Assert(strings.Contains(signURLCommand.signUrl, "OSSAccessKeyId"), Equals, true)
+	c.Assert(strings.Contains(signURLCommand.signUrl, "Signature"), Equals, true)
+	c.Assert(strings.Contains(signURLCommand.signUrl, object), Equals, true)
+
+	bucket, err := signURLCommand.command.ossBucket(bucketName)
+	c.Assert(err, IsNil)
+
+	// get object with url
+	downFileName := "ossutil-test-file" + randStr(5)
+	err = bucket.GetObjectToFileWithURL(signURLCommand.signUrl, downFileName)
+	c.Assert(err, IsNil)
+	str = s.readFile(downFileName, c)
+	c.Assert(str, Equals, objectContext)
+
+	os.Remove(downFileName)
+	os.Remove(fileName)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestSignWithModeRamRoleArnTokenTimeOut(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(12)
+	s.putBucket(bucketName, c)
+
+	// prepare file and object
+	objectContext := randLowStr(1024)
+	fileName := "ossutil_test." + randLowStr(12)
+	s.createFile(fileName, objectContext, c)
+
+	object := randLowStr(12)
+	s.putObject(bucketName, object, fileName, c)
+
+	str := ""
+	mode := "RamRoleArn"
+	timeOut := strconv.FormatInt(3600, 10)
+	tokenTimeout := 20
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &stsAccessID,
+		"accessKeySecret": &stsAccessKeySecret,
+		"configFile":      &configFile,
+		"mode":            &mode,
+		"ramRoleArn":      &stsARN,
+		"timeout":         &timeOut,
+		"tokenTimeout":    &tokenTimeout,
+	}
+
+	srcUrl := CloudURLToString(bucketName, object)
+	args := []string{srcUrl}
+	_, err := cm.RunCommand("sign", args, options)
+	c.Assert(err, IsNil)
+
+	c.Assert(strings.Contains(signURLCommand.signUrl, "Expires"), Equals, true)
+	c.Assert(strings.Contains(signURLCommand.signUrl, "OSSAccessKeyId"), Equals, true)
+	c.Assert(strings.Contains(signURLCommand.signUrl, "Signature"), Equals, true)
+	c.Assert(strings.Contains(signURLCommand.signUrl, object), Equals, true)
+
+	bucket, err := signURLCommand.command.ossBucket(bucketName)
+	c.Assert(err, IsNil)
+
+	// get object with url
+	downFileName := "ossutil-test-file" + randStr(5)
+	err = bucket.GetObjectToFileWithURL(signURLCommand.signUrl, downFileName)
+	c.Assert(err, IsNil)
+	str = s.readFile(downFileName, c)
+	c.Assert(str, Equals, objectContext)
+
+	os.Remove(downFileName)
+	os.Remove(fileName)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestSignWithModeRamRoleArnStsRegion(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(12)
+	s.putBucket(bucketName, c)
+
+	// prepare file and object
+	objectContext := randLowStr(1024)
+	fileName := "ossutil_test." + randLowStr(12)
+	s.createFile(fileName, objectContext, c)
+
+	object := randLowStr(12)
+	s.putObject(bucketName, object, fileName, c)
+
+	str := ""
+	mode := "RamRoleArn"
+	timeOut := strconv.FormatInt(3600, 10)
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &stsAccessID,
+		"accessKeySecret": &stsAccessKeySecret,
+		"configFile":      &configFile,
+		"mode":            &mode,
+		"ramRoleArn":      &stsARN,
+		"stsRegion":       &stsRegion,
+		"timeout":         &timeOut,
+	}
+
+	srcUrl := CloudURLToString(bucketName, object)
+	args := []string{srcUrl}
+	_, err := cm.RunCommand("sign", args, options)
+	c.Assert(err, IsNil)
+
+	c.Assert(strings.Contains(signURLCommand.signUrl, "Expires"), Equals, true)
+	c.Assert(strings.Contains(signURLCommand.signUrl, "OSSAccessKeyId"), Equals, true)
+	c.Assert(strings.Contains(signURLCommand.signUrl, "Signature"), Equals, true)
+	c.Assert(strings.Contains(signURLCommand.signUrl, object), Equals, true)
+
+	bucket, err := signURLCommand.command.ossBucket(bucketName)
+	c.Assert(err, IsNil)
+
+	// get object with url
+	downFileName := "ossutil-test-file" + randStr(5)
+	err = bucket.GetObjectToFileWithURL(signURLCommand.signUrl, downFileName)
+	c.Assert(err, IsNil)
+	str = s.readFile(downFileName, c)
+	c.Assert(str, Equals, objectContext)
+
+	os.Remove(downFileName)
+	os.Remove(fileName)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestSignWithRoleSessionName(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(12)
+	s.putBucket(bucketName, c)
+
+	// prepare file and object
+	objectContext := randLowStr(1024)
+	fileName := "ossutil_test." + randLowStr(12)
+	s.createFile(fileName, objectContext, c)
+
+	object := randLowStr(12)
+	s.putObject(bucketName, object, fileName, c)
+
+	str := ""
+	mode := "RamRoleArn"
+	timeOut := strconv.FormatInt(3600, 10)
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &stsAccessID,
+		"accessKeySecret": &stsAccessKeySecret,
+		"configFile":      &configFile,
+		"mode":            &mode,
+		"ramRoleArn":      &stsARN,
+		"roleSessionName": "demo-role",
+		"timeout":         &timeOut,
+	}
+
+	srcUrl := CloudURLToString(bucketName, object)
+	args := []string{srcUrl}
+	_, err := cm.RunCommand("sign", args, options)
+	c.Assert(err, IsNil)
+
+	c.Assert(strings.Contains(signURLCommand.signUrl, "Expires"), Equals, true)
+	c.Assert(strings.Contains(signURLCommand.signUrl, "OSSAccessKeyId"), Equals, true)
+	c.Assert(strings.Contains(signURLCommand.signUrl, "Signature"), Equals, true)
+	c.Assert(strings.Contains(signURLCommand.signUrl, object), Equals, true)
+
+	bucket, err := signURLCommand.command.ossBucket(bucketName)
+	c.Assert(err, IsNil)
+
+	// get object with url
+	downFileName := "ossutil-test-file" + randStr(5)
+	err = bucket.GetObjectToFileWithURL(signURLCommand.signUrl, downFileName)
+	c.Assert(err, IsNil)
+	str = s.readFile(downFileName, c)
+	c.Assert(str, Equals, objectContext)
+
+	os.Remove(downFileName)
+	os.Remove(fileName)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestSignWithUserAgent(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	// prepare file and object
+	objectContext := randLowStr(1024)
+	fileName := "ossutil_test." + randLowStr(12)
+	s.createFile(fileName, objectContext, c)
+
+	object := randLowStr(12)
+	s.putObject(bucketName, object, fileName, c)
+	command := "sign"
+	str := ""
+	timeOut := strconv.FormatInt(3600, 10)
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+		"timeout":         &timeOut,
+		"userAgent":       &str,
+	}
+
+	srcUrl := CloudURLToString(bucketName, object)
+	args := []string{srcUrl}
+	_, err := cm.RunCommand(command, args, options)
+	c.Assert(err, IsNil)
+
+	c.Assert(strings.Contains(signURLCommand.signUrl, "Expires"), Equals, true)
+	c.Assert(strings.Contains(signURLCommand.signUrl, "OSSAccessKeyId"), Equals, true)
+	c.Assert(strings.Contains(signURLCommand.signUrl, "Signature"), Equals, true)
+	c.Assert(strings.Contains(signURLCommand.signUrl, object), Equals, true)
+
+	bucket, err := signURLCommand.command.ossBucket(bucketName)
+	c.Assert(err, IsNil)
+
+	// get object with url
+	downFileName := "ossutil-test-file" + randStr(5)
+	err = bucket.GetObjectToFileWithURL(signURLCommand.signUrl, downFileName)
+	c.Assert(err, IsNil)
+	str = s.readFile(downFileName, c)
+	c.Assert(str, Equals, objectContext)
+
+	os.Remove(downFileName)
+	os.Remove(fileName)
+	s.removeBucket(bucketName, true, c)
 }
