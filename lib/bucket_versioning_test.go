@@ -2,6 +2,7 @@ package lib
 
 import (
 	"os"
+	"time"
 
 	. "gopkg.in/check.v1"
 )
@@ -32,6 +33,7 @@ func (s *OssutilCommandSuite) TestBucketVersioningPutSuccess(c *C) {
 	versioningArgs = []string{CloudURLToString(bucketName, ""), "enabled"}
 	_, err = cm.RunCommand("bucket-versioning", versioningArgs, options)
 	c.Assert(err, IsNil)
+	time.Sleep(time.Second * 3)
 
 	// check
 	strMethod = "get"
@@ -39,12 +41,14 @@ func (s *OssutilCommandSuite) TestBucketVersioningPutSuccess(c *C) {
 	_, err = cm.RunCommand("bucket-versioning", versioningArgs, options)
 	c.Assert(err, IsNil)
 	c.Assert(bucketVersioningCommand.versioningResult.Status, Equals, "Enabled")
+	time.Sleep(time.Second * 3)
 
 	// set bucket versioning suspend
 	strMethod = "put"
 	versioningArgs = []string{CloudURLToString(bucketName, ""), "suspended"}
 	_, err = cm.RunCommand("bucket-versioning", versioningArgs, options)
 	c.Assert(err, IsNil)
+	time.Sleep(time.Second * 3)
 
 	// check
 	strMethod = "get"

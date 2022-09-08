@@ -1,7 +1,6 @@
 package lib
 
 import (
-	"io/ioutil"
 	"net/url"
 	"os"
 	"strconv"
@@ -577,21 +576,16 @@ func (s *OssutilCommandSuite) TestSignWithModeAk(c *C) {
 func (s *OssutilCommandSuite) TestSignWithModeEcsRamRole(c *C) {
 	accessKeyID = ""
 	accessKeySecret = ""
-	stsToken = ""
 
 	svr := startHttpServer(StsHttpHandlerOk)
 	time.Sleep(time.Duration(1) * time.Second)
 
 	//set endpoint emtpy
-	_, err := ioutil.ReadFile(configFile)
-	c.Assert(err, IsNil)
-	fd, _ := os.OpenFile(configFile, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
+	cfile := randStr(10)
 	ecsAk := "http://127.0.0.1:32915/latest/meta-data/Ram/security-credentials/EcsRamRoleTesting"
 	configStr := "[Credentials]" + "\n" + "language=CH" + "\n" + "endpoint= " + endpoint + "\n"
 	configStr = configStr + "[AkService]" + "\n" + "ecsAk=" + ecsAk
-
-	fd.WriteString(configStr)
-	fd.Close()
+	s.createFile(cfile, configStr, c)
 
 	bucketName := bucketNamePrefix + randLowStr(10)
 	s.putBucket(bucketName, c)
@@ -611,14 +605,14 @@ func (s *OssutilCommandSuite) TestSignWithModeEcsRamRole(c *C) {
 		"endpoint":        &str,
 		"accessKeyID":     &str,
 		"accessKeySecret": &str,
-		"configFile":      &configFile,
+		"configFile":      &cfile,
 		"mode":            &mode,
 		"timeout":         &timeOut,
 	}
 
 	srcUrl := CloudURLToString(bucketName, object)
 	args := []string{srcUrl}
-	_, err = cm.RunCommand(command, args, options)
+	_, err := cm.RunCommand(command, args, options)
 	c.Assert(err, IsNil)
 
 	c.Assert(strings.Contains(signURLCommand.signUrl, "Expires"), Equals, true)
