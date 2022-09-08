@@ -268,6 +268,7 @@ Credential File Format:
         accessKeySecret = your_key_secret
         stsToken = your_sts_token
         outputDir = your_output_dir
+        userAgent = your-user-agent
     [Bucket-Endpoint]
         bucket1 = endpoint1
         bucket2 = endpoint2
@@ -307,6 +308,7 @@ var configCommand = ConfigCommand{
 			OptionOutputDir,
 			OptionLanguage,
 			OptionLogLevel,
+			OptionUserAgent,
 		},
 	},
 }
