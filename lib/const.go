@@ -124,6 +124,7 @@ const (
 	StatKMSDataEncryption             = "KMSDataEncryption"
 	StatTransferAcceleration          = "TransferAcceleration"
 	StatCrossRegionReplication        = "CrossRegionReplication"
+	StatAccessMonitor                 = "AccessMonitor"
 )
 
 // the elements show in hash file

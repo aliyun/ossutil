@@ -882,5 +882,6 @@ func GetAllCommands() []interface{} {
 		&replicationCommand,
 		&bucketCnameCommand,
 		&lcbCommand,
+		&bucketAccessMonitorCommand,
 	}
 }
