@@ -108,6 +108,7 @@ const (
 // the elements show in stat object
 const (
 	StatName                   string = "Name"
+	StatAccessMonitor                 = "AccessMonitor"
 	StatLocation                      = "Location"
 	StatCreationDate                  = "CreationDate"
 	StatExtranetEndpoint              = "ExtranetEndpoint"

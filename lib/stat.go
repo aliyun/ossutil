@@ -184,6 +184,7 @@ func (sc *StatCommand) bucketStat(bucket *oss.Bucket, cloudURL CloudURL) error {
 	}
 
 	fmt.Printf("%-22s: %s\n", StatName, gbar.BucketInfo.Name)
+	fmt.Printf("%-22s: %s\n", StatAccessMonitor, gbar.BucketInfo.AccessMonitor)
 	fmt.Printf("%-22s: %s\n", StatLocation, gbar.BucketInfo.Location)
 	fmt.Printf("%-22s: %s\n", StatCreationDate, utcToLocalTime(gbar.BucketInfo.CreationDate))
 	fmt.Printf("%-22s: %s\n", StatExtranetEndpoint, gbar.BucketInfo.ExtranetEndpoint)

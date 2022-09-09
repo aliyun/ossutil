@@ -39,6 +39,7 @@ func (s *OssutilCommandSuite) TestGetBucketStat(c *C) {
 	// get bucket stat
 	bucketStat := s.getStat(bucketName, "", c)
 	c.Assert(bucketStat[StatName], Equals, bucketName)
+	c.Assert(bucketStat[StatAccessMonitor] != "", Equals, true)
 	c.Assert(bucketStat[StatLocation] != "", Equals, true)
 	c.Assert(bucketStat[StatCreationDate] != "", Equals, true)
 	c.Assert(bucketStat[StatExtranetEndpoint] != "", Equals, true)
