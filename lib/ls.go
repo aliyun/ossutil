@@ -716,7 +716,8 @@ func (lc *ListCommand) showObjects(lor oss.ListObjectsResult, bucket string, sho
 		if *limitedNum == 0 {
 			break
 		}
-
+		encodingType, _ := GetString(OptionEncodingType, lc.command.options)
+		object.Key = EncodeString(object.Key, encodingType)
 		if !doesSingleObjectMatchPatterns(object.Key, lc.filters) {
 			continue
 		}
@@ -739,7 +740,8 @@ func (lc *ListCommand) showObjectVersions(lor oss.ListObjectVersionsResult, buck
 		if *limitedNum == 0 {
 			break
 		}
-
+		encodingType, _ := GetString(OptionEncodingType, lc.command.options)
+		object.Key = EncodeString(object.Key, encodingType)
 		if !doesSingleObjectMatchPatterns(object.Key, lc.filters) {
 			continue
 		}
@@ -776,7 +778,8 @@ func (lc *ListCommand) showObjectVersions(lor oss.ListObjectVersionsResult, buck
 		if *limitedNum == 0 {
 			break
 		}
-
+		encodingType, _ := GetString(OptionEncodingType, lc.command.options)
+		object.Key = EncodeString(object.Key, encodingType)
 		if !doesSingleObjectMatchPatterns(object.Key, lc.filters) {
 			continue
 		}
@@ -928,7 +931,8 @@ func (lc *ListCommand) showMultipartUploads(lmr oss.ListMultipartUploadResult, b
 		if *limitedNum == 0 {
 			break
 		}
-
+		encodingType, _ := GetString(OptionEncodingType, lc.command.options)
+		upload.Key = EncodeString(upload.Key, encodingType)
 		if !doesSingleObjectMatchPatterns(upload.Key, lc.filters) {
 			continue
 		}

@@ -664,7 +664,7 @@ func (s *OssutilCommandSuite) TestListURLEncoding(c *C) {
 
 	objects = s.listLimitedMarker(bucketName, urlObject, "ls --encoding-type url -as", -1, "", "", c)
 	c.Assert(len(objects), Equals, 1)
-	c.Assert(objects[0], Equals, object)
+	c.Assert(objects[0], Equals, urlObject)
 
 	// remove object
 	_, err := s.removeWrapper("rm -f", bucketName, urlObject, c)
@@ -672,7 +672,7 @@ func (s *OssutilCommandSuite) TestListURLEncoding(c *C) {
 
 	objects = s.listLimitedMarker(bucketName, urlObject, "ls --encoding-type url -s", -1, "", "", c)
 	c.Assert(len(objects), Equals, 1)
-	c.Assert(objects[0], Equals, object)
+	c.Assert(objects[0], Equals, urlObject)
 
 	// remove object
 	_, err = s.removeWrapper("rm --encoding-type url -f", bucketName, urlObject, c)
@@ -695,7 +695,7 @@ func (s *OssutilCommandSuite) TestListURLEncoding(c *C) {
 
 	objects = s.listLimitedMarker(bucketName, "", "ls --encoding-type url -as", -1, urlObject, "", c)
 	c.Assert(len(objects), Equals, 1)
-	c.Assert(objects[0], Equals, object1)
+	c.Assert(objects[0], Equals, urlObject1)
 
 	_, err = s.rawListLimitedMarker([]string{"oss%3a%2f%2f"}, "ls --encoding-type url", -1, "", "")
 	c.Assert(err, NotNil)
@@ -706,6 +706,63 @@ func (s *OssutilCommandSuite) TestListURLEncoding(c *C) {
 
 	_, err = s.rawListLimitedMarker([]string{"oss://" + bucketName}, "ls --encoding-type url", -1, "", "")
 	c.Assert(err, IsNil)
+
+	objectPrefix := "中文"
+	for i := 0; i < 5; i++ {
+		s.putObject(bucketName, fmt.Sprintf("%s%d", objectPrefix, i), uploadFileName, c)
+	}
+
+	bucket, err := listCommand.command.ossBucket(bucketName)
+
+	for i := 0; i < 5; i++ {
+		_, err = bucket.InitiateMultipartUpload(fmt.Sprintf("%s%d", objectPrefix, 0))
+		c.Assert(err, IsNil)
+	}
+
+	lmr, err := bucket.ListMultipartUploads(oss.Prefix(fmt.Sprintf("%s%d", objectPrefix, 0)))
+	c.Assert(err, IsNil)
+	uploadIDs := []string{}
+	for _, uploadID := range lmr.Uploads {
+		uploadIDs = append(uploadIDs, uploadID.UploadID)
+	}
+	c.Assert(len(uploadIDs), Equals, 5)
+
+	sort.Strings(uploadIDs)
+	objects = s.listLimitedMarker(bucketName, "", "ls -m --encoding-type url", 10, "", url.QueryEscape(uploadIDs[1]), c)
+	c.Assert(len(objects), Equals, 5)
+	c.Assert(objects[0], Equals, url.QueryEscape(fmt.Sprintf("%s%d", objectPrefix, 0)))
+
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestListURLEncodingWithVersion(c *C) {
+
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	s.putBucketVersioning(bucketName, "enabled", c)
+
+	object := "^M特殊字符 加上空格 test"
+	s.putObject(bucketName, object, uploadFileName, c)
+
+	urlObject := url.QueryEscape(object)
+	c.Assert(object != urlObject, Equals, true)
+
+	// list object
+	objects := s.listLimitedMarker(bucketName, "", "ls --all-versions", -1, "", "", c)
+	c.Assert(len(objects), Equals, 1)
+	c.Assert(objects[0], Equals, object)
+
+	_, err := s.removeWrapper("rm --encoding-type url -f", bucketName, urlObject, c)
+	c.Assert(err, IsNil)
+
+	// list object
+	objects = s.listLimitedMarker(bucketName, "", "ls --all-versions", -1, "", "", c)
+	c.Assert(len(objects), Equals, 2)
+	c.Assert(objects[0], Equals, object)
+	objects = s.listLimitedMarker(bucketName, "", "ls --all-versions --encoding-type url", -1, "", "", c)
+	c.Assert(len(objects), Equals, 2)
+	c.Assert(objects[0], Equals, urlObject)
 
 	s.removeBucket(bucketName, true, c)
 }
@@ -1483,4 +1540,10 @@ func (s *OssutilCommandSuite) TestListDirectoryfilterIncludeVersions(c *C) {
 	os.RemoveAll(dir1)
 	os.RemoveAll(dir2)
 	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestListDirectoryfilterIncludeVersions1(c *C) {
+	object := "oss://bucket/%^&%*&)*.jpg"
+	cloudURL, _ := CloudURLFromString(object, "url")
+	fmt.Printf("%#v\n", cloudURL)
 }

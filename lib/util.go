@@ -6,6 +6,7 @@ import (
 	"hash"
 	"io/ioutil"
 	"math/rand"
+	"net/url"
 	"os"
 	"os/exec"
 	"os/user"
@@ -714,4 +715,16 @@ func GetPassword(prompt string) ([]byte, error) {
 	}
 	fmt.Fprint(os.Stderr, prompt)
 	return terminal.ReadPassword(fd)
+}
+
+// EncodeString Encode string by encodingType
+func EncodeString(key string, encodingType string) string {
+	out := ""
+	switch encodingType {
+	case "url":
+		out = url.QueryEscape(key)
+	default:
+		out = key
+	}
+	return out
 }

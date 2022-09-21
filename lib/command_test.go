@@ -399,6 +399,11 @@ func (s *OssutilCommandSuite) rawListLimitedMarker(args []string, cmdline string
 		array[1] = array[1][0:pos] + array[1][pos+len("--encoding-type url"):]
 	}
 
+	allVersions := false
+	if pos := strings.Index(array[1], "--all-versions"); pos != -1 {
+		allVersions = true
+	}
+
 	parameter := strings.Split(array[1], "-")
 	sf := false
 	d := false
@@ -427,6 +432,7 @@ func (s *OssutilCommandSuite) rawListLimitedMarker(args []string, cmdline string
 		"marker":          &marker,
 		"uploadIDMarker":  &uploadIDMarker,
 		"encodingType":    &encodingType,
+		"allVersions":     &allVersions,
 	}
 	showElapse, err := cm.RunCommand(command, args, options)
 	return showElapse, err
