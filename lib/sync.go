@@ -547,9 +547,9 @@ func (sc *SyncCommand) RunCommand() error {
 	srcKeys := make(map[string]string)
 	destKeys := make(map[string]string)
 	if srcURL.IsFileURL() {
-		err = sc.GetLocalFileKeys(srcURL, srcKeys)
+		err = sc.GetLocalFileKeys(srcURL, srcKeys, false)
 	} else {
-		err = sc.GetOssKeys(srcURL, srcKeys)
+		err = sc.GetOssKeys(srcURL, srcKeys, false)
 	}
 
 	if err != nil {
@@ -557,9 +557,9 @@ func (sc *SyncCommand) RunCommand() error {
 	}
 
 	if destURL.IsFileURL() {
-		err = sc.GetLocalFileKeys(destURL, destKeys)
+		err = sc.GetLocalFileKeys(destURL, destKeys, true)
 	} else {
-		err = sc.GetOssKeys(destURL, destKeys)
+		err = sc.GetOssKeys(destURL, destKeys, true)
 	}
 
 	if err != nil {
@@ -737,7 +737,7 @@ func (sc *SyncCommand) getCommandType(srcURL StorageURLer, destURL StorageURLer)
 	return operationTypePut
 }
 
-func (sc *SyncCommand) GetLocalFileKeys(sUrl StorageURLer, keys map[string]string) error {
+func (sc *SyncCommand) GetLocalFileKeys(sUrl StorageURLer, keys map[string]string, dest bool) error {
 	strPath := sUrl.ToString()
 	if !strings.HasSuffix(strPath, string(os.PathSeparator)) {
 		// for symlink dir
@@ -747,7 +747,7 @@ func (sc *SyncCommand) GetLocalFileKeys(sUrl StorageURLer, keys map[string]strin
 	chFiles := make(chan fileInfoType, ChannelBuf)
 	chFinish := make(chan error, 2)
 	go sc.ReadLocalFileKeys(chFiles, chFinish, keys)
-	go sc.GetFileList(strPath, chFiles, chFinish)
+	go sc.GetFileList(strPath, chFiles, chFinish, dest)
 	select {
 	case err := <-chFinish:
 		if err != nil {
@@ -757,9 +757,9 @@ func (sc *SyncCommand) GetLocalFileKeys(sUrl StorageURLer, keys map[string]strin
 	return nil
 }
 
-func (sc *SyncCommand) GetFileList(strPath string, chFiles chan<- fileInfoType, chFinish chan<- error) {
+func (sc *SyncCommand) GetFileList(strPath string, chFiles chan<- fileInfoType, chFinish chan<- error, dest bool) {
 	err := getFileListCommon(strPath, chFiles, sc.syncOption.onlyCurrentDir,
-		sc.syncOption.disableAllSymlink, sc.syncOption.enableSymlinkDir, sc.syncOption.filters)
+		sc.syncOption.disableAllSymlink, sc.syncOption.enableSymlinkDir, sc.syncOption.filters, dest)
 	if err != nil {
 		chFinish <- err
 	}
@@ -862,7 +862,7 @@ func (sc *SyncCommand) CheckDestBackupDir(sUrl StorageURLer) error {
 	return nil
 }
 
-func (sc *SyncCommand) GetOssKeys(sUrl StorageURLer, keys map[string]string) error {
+func (sc *SyncCommand) GetOssKeys(sUrl StorageURLer, keys map[string]string, dest bool) error {
 	bucketName := sUrl.(CloudURL).bucket
 	bucket, err := sc.command.ossBucket(bucketName)
 	if err != nil {
@@ -872,7 +872,7 @@ func (sc *SyncCommand) GetOssKeys(sUrl StorageURLer, keys map[string]string) err
 	chFiles := make(chan objectInfoType, ChannelBuf)
 	chFinish := make(chan error, 2)
 	go sc.ReadOssKeys(keys, sUrl, chFiles, chFinish)
-	go sc.GetOssKeyList(bucket, sUrl, chFiles, chFinish)
+	go sc.GetOssKeyList(bucket, sUrl, chFiles, chFinish, dest)
 	select {
 	case err := <-chFinish:
 		if err != nil {
@@ -882,10 +882,10 @@ func (sc *SyncCommand) GetOssKeys(sUrl StorageURLer, keys map[string]string) err
 	return nil
 }
 
-func (sc *SyncCommand) GetOssKeyList(bucket *oss.Bucket, sURL StorageURLer, chObjects chan<- objectInfoType, chFinish chan<- error) {
+func (sc *SyncCommand) GetOssKeyList(bucket *oss.Bucket, sURL StorageURLer, chObjects chan<- objectInfoType, chFinish chan<- error, dest bool) {
 	cloudURL := sURL.(CloudURL)
 	err := getObjectListCommon(bucket, cloudURL, chObjects, sc.syncOption.onlyCurrentDir,
-		sc.syncOption.filters, sc.syncOption.payerOptions)
+		sc.syncOption.filters, sc.syncOption.payerOptions, dest)
 	if err != nil {
 		chFinish <- err
 	}
@@ -941,7 +941,7 @@ func (sc *SyncCommand) readDirLimit(dirName string, limitCount int) ([]os.FileIn
 	return list, nil
 }
 func (sc *SyncCommand) movePath(srcName, destName string) error {
-	err := sc.moveFileToPath(srcName,destName)
+	err := sc.moveFileToPath(srcName, destName)
 	if err != nil {
 		LogError("rename %s %s error,%s\n", srcName, destName, err.Error())
 	} else {
@@ -951,11 +951,11 @@ func (sc *SyncCommand) movePath(srcName, destName string) error {
 	}
 	return err
 }
-func (sc *SyncCommand)moveFileToPath(srcName, destName string) error {
-	err := os.Rename(srcName,destName)
+func (sc *SyncCommand) moveFileToPath(srcName, destName string) error {
+	err := os.Rename(srcName, destName)
 	if err == nil {
 		return nil
-	}else{
+	} else {
 		inputFile, err := os.Open(srcName)
 		defer inputFile.Close()
 		if err != nil {

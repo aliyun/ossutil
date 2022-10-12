@@ -69,6 +69,7 @@ type copyOptionType struct {
 type filterOptionType struct {
 	name    string
 	pattern string
+	isDir   bool
 }
 
 type fileInfoType struct {
@@ -210,7 +211,6 @@ var specChineseCopy = SpecText{
     ?：匹配单个字符
     [sequence]：匹配sequence的任意字符
     [!sequence]：匹配不在sequence的任意字符
-    注意：规则不支持带目录的格式，e.g.，--include "/usr/*/test/*.jpg"。
 
     --include和--exclude可以出现多次。当多个规则出现时，这些规则按从左往右的顺序应用。例如：
     当前目录下包含3个文件：
@@ -229,6 +229,23 @@ var specChineseCopy = SpecText{
     $ ossutil cp . oss://my-bucket/path --exclude '*.jpg' --include 'testfile*.jpg' --exclude 'testfile?.jpg'
     上传testfile2.txt到oss://my-bucket/path/testfile2.txt
     上传testfile33.jpg到oss://my-bucket/path/testfile33.jpg
+	
+    当前目录下包含3个文件一个目录：
+    testfile1.jpg
+    testfiel2.txt
+    testfile33.jpg
+	testdir1
+		-testfile1.txt
+		-testfile2.txt
+		-testfile3.txt
+	$ ossutil cp . oss://my-bucket/path --include 'testdir1/*'
+    上传testdir1目录下的文件到oss://my-bucket/path/testdir1/
+    
+	$ ossutil cp . oss://my-bucket/path --exclude 'testdir1/*'
+	上传testfile1.jpg到oss://my-bucket/path/testfile1.jpg
+	上传testfile2.txt到oss://my-bucket/path/testfile2.txt
+    上传testfile33.jpg到oss://my-bucket/path/testfile33.jpg
+	
 
 --meta选项
 
@@ -736,7 +753,6 @@ var specEnglishCopy = SpecText{
     ?: Matches any single character
     [sequence]: Matches any character in sequence
     [!sequence]: Matches any character not in sequence
-    Note: does not support patterns containing directory info. e.g., --include "/usr/*/test/*.jpg" 
 
     Any number of these parameters can be passed to a command. You can do this by providing an --exclude
     or --include argument multiple times, e.g.,
@@ -765,6 +781,22 @@ var specEnglishCopy = SpecText{
 
     $ ossutil cp . oss://my-bucket/path --exclude '*.jpg' --include 'testfile*.jpg' --exclude 'testfile?.jpg'
     upload testfile2.txt to oss://my-bucket/path/testfile2.txt
+    upload testfile33.jpg to oss://my-bucket/path/testfile33.jpg
+
+    e.g., 3 files in current dir and 1 sub directory
+    testfile1.jpg
+    testfiel2.txt
+    testfile33.jpg
+	testdir1
+		-testfile1.txt
+		-testfile2.txt
+		-testfile3.txt
+	$ ossutil cp . oss://my-bucket/path --include 'testdir1/*'
+    upload files in testdir1 directory to oss://my-bucket/path/testdir1/
+    
+	$ ossutil cp . oss://my-bucket/path --exclude 'testdir1/*'
+	upload testfile1.jpg to oss://my-bucket/path/testfile1.jpg
+	upload testfile2.txt to oss://my-bucket/path/testfile2.txt
     upload testfile33.jpg to oss://my-bucket/path/testfile33.jpg
 
 --meta option
@@ -1769,7 +1801,10 @@ func (cc *CopyCommand) getFileListStatistic(dpath string) error {
 
 		if f.IsDir() {
 			if fpath != dpath {
-				cc.monitor.updateScanNum(1)
+				if doesSingleFileMatchPatterns(fpath, cc.cpOption.filters) {
+					cc.monitor.updateScanNum(1)
+				}
+
 			}
 			return nil
 		}
@@ -1803,7 +1838,7 @@ func (cc *CopyCommand) getFileListStatistic(dpath string) error {
 				return nil
 			}
 		}
-		if doesSingleFileMatchPatterns(f.Name(), cc.cpOption.filters) {
+		if doesSingleFileMatchPatterns(fpath, cc.cpOption.filters) {
 			cc.monitor.updateScanSizeNum(realFileSize, 1)
 		}
 		return nil
@@ -1903,11 +1938,14 @@ func (cc *CopyCommand) getFileList(dpath string, chFiles chan<- fileInfoType) er
 
 		if f.IsDir() {
 			if fpath != dpath {
-				if strings.HasSuffix(fileName, "\\") || strings.HasSuffix(fileName, "/") {
-					chFiles <- fileInfoType{fileName, name}
-				} else {
-					chFiles <- fileInfoType{fileName + string(os.PathSeparator), name}
+				if doesSingleFileMatchPatterns(fpath, cc.cpOption.filters) {
+					if strings.HasSuffix(fileName, "\\") || strings.HasSuffix(fileName, "/") {
+						chFiles <- fileInfoType{fileName, name}
+					} else {
+						chFiles <- fileInfoType{fileName + string(os.PathSeparator), name}
+					}
 				}
+
 			}
 			return nil
 		}
@@ -1934,8 +1972,7 @@ func (cc *CopyCommand) getFileList(dpath string, chFiles chan<- fileInfoType) er
 				return nil
 			}
 		}
-
-		if doesSingleFileMatchPatterns(fileName, cc.cpOption.filters) {
+		if doesSingleFileMatchPatterns(fpath, cc.cpOption.filters) {
 			chFiles <- fileInfoType{fileName, name}
 		}
 		return nil
@@ -2369,7 +2406,6 @@ func (cc *CopyCommand) downloadFiles(srcURL CloudURL, destURL FileURL) error {
 			prefix = srcURL.object[:index+1]
 			relativeKey = srcURL.object[index+1:]
 		}
-
 		go cc.objectStatistic(bucket, srcURL)
 		err := cc.downloadSingleFileWithReport(bucket, objectInfoType{prefix, relativeKey, -1, time.Now()}, filePath)
 		return cc.formatResultPrompt(err)

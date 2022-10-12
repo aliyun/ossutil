@@ -52,7 +52,7 @@ func (s *OssutilCommandSuite) TestSetBucketErrorACL(c *C) {
 func (s *OssutilCommandSuite) TestSetNotExistBucketACL(c *C) {
 	bucketName := bucketNamePrefix + randLowStr(10)
 
-	// set bucket acl will be invalid when bucket not exist 
+	// set bucket acl will be invalid when bucket not exist
 	showElapse, err := s.rawSetBucketACL(bucketName, "public-read", true)
 	c.Assert(err, NotNil)
 
@@ -1035,7 +1035,44 @@ func (s *OssutilCommandSuite) TestSetObjectAclWithMultiNormalIncludeExclude(c *C
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
 
-	fts := []filterOptionType{{"--include", "*.txt"}, {"--exclude", "*2*"}}
+	fts := []filterOptionType{{"--include", "*.txt", false}, {"--exclude", "*2*", false}}
+	matchedObjs := matchFiltersForStrs(objs, fts)
+
+	for _, obj := range matchedObjs {
+		objectStat := s.getStat(bucketName, obj, c)
+		c.Assert(objectStat["ACL"], Equals, "public-read")
+	}
+
+	for _, obj := range objs {
+		if !containsInStrsSlice(matchedObjs, obj) {
+			objectStat := s.getStat(bucketName, obj, c)
+			c.Assert(objectStat["ACL"], Equals, "default")
+		}
+	}
+
+	os.RemoveAll(dir)
+	s.removeBucket(bucketName, true, c)
+}
+
+// Test: --include subdir/* --exclude "*2*"
+func (s *OssutilCommandSuite) TestSetObjectAclWithMultiNormalIncludeExcludeDir(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	bucketStr := CloudURLToString(bucketName, "")
+
+	dir := "test-setacl-inc-exc-normal"
+	subdir := "subdir"
+	objs := s.createTestObjects(dir, subdir, bucketStr, c)
+
+	acl := "public-read"
+	args := []string{bucketStr, acl}
+	cmdline := []string{"ossutil", "set-acl", bucketStr, acl, "-rf", "--include", dir + "/" + subdir + "/*", "--exclude", "*2*"}
+
+	showElapse, err := s.rawSetAclWithFilter(args, true, true, cmdline)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	fts := []filterOptionType{{"--include", dir + "/" + subdir + "/*", true}, {"--exclude", "*2*", false}}
 	matchedObjs := matchFiltersForStrs(objs, fts)
 
 	for _, obj := range matchedObjs {
@@ -1072,7 +1109,7 @@ func (s *OssutilCommandSuite) TestSetObjectAclWithMultiRepeatedIncludeExclude(c 
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
 
-	fts := []filterOptionType{{"--include", "*.txt"}, {"--exclude", "*2*"}, {"--include", "*.txt"}, {"--exclude", "*2*"}}
+	fts := []filterOptionType{{"--include", "*.txt", false}, {"--exclude", "*2*", false}, {"--include", "*.txt", false}, {"--exclude", "*2*", false}}
 	matchedObjs := matchFiltersForStrs(objs, fts)
 
 	for _, obj := range matchedObjs {
@@ -1109,7 +1146,7 @@ func (s *OssutilCommandSuite) TestSetObjectAclWithMultiFullIncludeExclude(c *C) 
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
 
-	fts := []filterOptionType{{"--include", "*"}, {"--exclude", "*"}}
+	fts := []filterOptionType{{"--include", "*", false}, {"--exclude", "*", false}}
 	matchedObjs := matchFiltersForStrs(objs, fts)
 
 	for _, obj := range matchedObjs {
@@ -1146,7 +1183,44 @@ func (s *OssutilCommandSuite) TestSetObjectAclWithMultiFullExcludeInclude(c *C) 
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
 
-	fts := []filterOptionType{{"--exclude", "*"}, {"--include", "*"}}
+	fts := []filterOptionType{{"--exclude", "*", false}, {"--include", "*", false}}
+	matchedObjs := matchFiltersForStrs(objs, fts)
+
+	for _, obj := range matchedObjs {
+		objectStat := s.getStat(bucketName, obj, c)
+		c.Assert(objectStat["ACL"], Equals, "public-read")
+	}
+
+	for _, obj := range objs {
+		if !containsInStrsSlice(matchedObjs, obj) {
+			objectStat := s.getStat(bucketName, obj, c)
+			c.Assert(objectStat["ACL"], Equals, "default")
+		}
+	}
+
+	os.RemoveAll(dir)
+	s.removeBucket(bucketName, true, c)
+}
+
+// Test: --exclude 'dir/subdir/*' --include "dir/subdir/*"
+func (s *OssutilCommandSuite) TestSetObjectAclWithMultiFullExcludeIncludeDir(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	bucketStr := CloudURLToString(bucketName, "")
+
+	dir := "test-setacl-exc-inc-full"
+	subdir := "subdir"
+	objs := s.createTestObjects(dir, subdir, bucketStr, c)
+
+	acl := "public-read"
+	args := []string{bucketStr, acl}
+	cmdline := []string{"ossutil", "set-acl", bucketStr, acl, "-rf", "--exclude", dir + "/" + subdir + "/*", "--include", dir + "/" + subdir + "/*"}
+
+	showElapse, err := s.rawSetAclWithFilter(args, true, true, cmdline)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	fts := []filterOptionType{{"--exclude", dir + "/" + subdir + "/*", true}, {"--include", dir + "/" + subdir + "/*", true}}
 	matchedObjs := matchFiltersForStrs(objs, fts)
 
 	for _, obj := range matchedObjs {
@@ -1194,10 +1268,9 @@ func (s *OssutilCommandSuite) TestSetObjectAclWithInvalidIncExc(c *C) {
 	c.Assert(showElapse, Equals, false)
 	c.Assert(err.Error() == "--include or --exclude only work with --recursive", Equals, true)
 
-	cmdline = []string{"ossutil", "set-acl", bucketStr, acl, "-f", "--include", "/*.txt", "--exclude", "*2*"}
-	showElapse, err = s.rawSetAclWithFilter(args, false, true, cmdline)
-	c.Assert(showElapse, Equals, false)
-	c.Assert(err.Error() == "--include or --exclude does not support format containing dir info", Equals, true)
+	cmdline = []string{"ossutil", "set-acl", bucketStr, acl, "-rf", "--include", "/*.txt", "--exclude", "*2*"}
+	showElapse, err = s.rawSetAclWithFilter(args, true, true, cmdline)
+	c.Assert(showElapse, Equals, true)
 
 	os.RemoveAll(dir)
 	s.removeBucket(bucketName, true, c)
@@ -1206,7 +1279,7 @@ func (s *OssutilCommandSuite) TestSetObjectAclWithInvalidIncExc(c *C) {
 func (s *OssutilCommandSuite) TestSetObjectAclWithVersion(c *C) {
 	bucketName := bucketNamePrefix + "-set-alc-" + randLowStr(10)
 	objectName := randStr(12)
-	
+
 	s.putBucket(bucketName, c)
 	s.putBucketVersioning(bucketName, "enabled", c)
 

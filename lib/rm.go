@@ -70,7 +70,6 @@ var specChineseRemove = SpecText{
     ?：匹配单个字符
     [sequence]：匹配sequence的任意字符
     [!sequence]：匹配不在sequence的任意字符
-    注意：规则不支持带目录的格式，e.g.，--include "/usr/*/test/*.jpg"。
 
     --include和--exclude可以出现多次。当多个规则出现时，这些规则按从左往右的顺序应用
 
@@ -136,7 +135,7 @@ var specChineseRemove = SpecText{
     ossutil rm oss://bucket2 -r -b -f
     ossutil rm oss://bucket2 -a -r -b -f
     ossutil rm oss://bucket2/%e4%b8%ad%e6%96%87 --encoding-type url
-    ossutil rm oss://bucket1/objdir -r --include "*.jpg" --include "*.png" --exclude "*.avi" --exclude "*.mp4"
+    ossutil rm oss://bucket1/objdir -r --include "*.jpg" --include "dir1/*" --exclude "*.avi" --exclude "*.mp4"
     ossutil rm oss://bucket1/obj1 --version-id versionId
     ossutil rm oss://bucket1/obj1 --all-versions
     ossutil rm oss://bucket1/objdir -r  --all-versions
@@ -198,7 +197,6 @@ var specEnglishRemove = SpecText{
     ?: Matches any single character
     [sequence]: Matches any character in sequence
     [!sequence]: Matches any character not in sequence
-    Note: does not support patterns containing directory info. e.g., --include "/usr/*/test/*.jpg" 
 
     Any number of these parameters can be passed to a command. You can do this by providing an --exclude
     or --include argument multiple times, e.g.,
@@ -279,7 +277,7 @@ Usage:
     ossutil rm oss://bucket2 -r -b -f
     ossutil rm oss://bucket2 -a -r -b -f
     ossutil rm oss://bucket2/%e4%b8%ad%e6%96%87 --encoding-type url
-    ossutil rm oss://bucket1/objdir -r --include "*.jpg" --include "*.png" --exclude "*.avi" --exclude "*.mp4"
+    ossutil rm oss://bucket1/objdir -r --include "*.jpg" --include "dir1/*" --exclude "*.avi" --exclude "*.mp4"
     ossutil rm oss://bucket1/obj1 --version-id versionId
     ossutil rm oss://bucket1/obj1 --all-versions
     ossutil rm oss://bucket1/objdir -r  --all-versions

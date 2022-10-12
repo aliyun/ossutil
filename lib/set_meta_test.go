@@ -1502,7 +1502,91 @@ func (s *OssutilCommandSuite) TestSetObjectMetaWithMultiNormalIncludeExclude(c *
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
 
-	fts := []filterOptionType{{"--include", "*.txt"}, {"--exclude", "*2*"}}
+	fts := []filterOptionType{{"--include", "*.txt", false}, {"--exclude", "*2*", false}}
+	matchedObjs := matchFiltersForStrs(objs, fts)
+
+	for _, obj := range matchedObjs {
+		objectStat := s.getStat(bucketName, obj, c)
+		c.Assert(objectStat["Content-Type"], Equals, "xyz")
+		c.Assert(objectStat["X-Oss-Meta-Test"], Equals, "with-filter-inc-exc")
+	}
+
+	for _, obj := range objs {
+		if !containsInStrsSlice(matchedObjs, obj) {
+			objectStat := s.getStat(bucketName, obj, c)
+			c.Assert(objectStat["Content-Type"] != "xyz", Equals, true)
+			_, ok := objectStat["X-Oss-Meta-Test"]
+			c.Assert(ok, Equals, false)
+		}
+	}
+
+	// cleanup
+	os.RemoveAll(dir)
+	s.removeBucket(bucketName, true, c)
+}
+
+// Test: --include 'dir/subdir/*' --exclude "*2*"
+func (s *OssutilCommandSuite) TestSetObjectMetaWithMultiNormalIncludeDirExclude(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	bucketStr := CloudURLToString(bucketName, "")
+
+	dir := "test-setmeta-inc-exc-normal"
+	subdir := "subdir"
+	objs := s.createTestObjects(dir, subdir, bucketStr, c)
+
+	// Set meta
+	meta := "content-type:xyz#X-Oss-Meta-test:with-filter-inc-exc"
+	args := []string{bucketStr, meta}
+	cmdline := []string{"ossutil", "set-meta", bucketStr, meta, "-rf", "--include", dir + "/" + subdir + "/*", "--exclude", "*2*"}
+
+	showElapse, err := s.rawSetMetaWithFilter(args, true, false, true, true, DefaultLanguage, cmdline)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	fts := []filterOptionType{{"--include", dir + "/" + subdir + "/*", true}, {"--exclude", "*2*", false}}
+	matchedObjs := matchFiltersForStrs(objs, fts)
+
+	for _, obj := range matchedObjs {
+		objectStat := s.getStat(bucketName, obj, c)
+		c.Assert(objectStat["Content-Type"], Equals, "xyz")
+		c.Assert(objectStat["X-Oss-Meta-Test"], Equals, "with-filter-inc-exc")
+	}
+
+	for _, obj := range objs {
+		if !containsInStrsSlice(matchedObjs, obj) {
+			objectStat := s.getStat(bucketName, obj, c)
+			c.Assert(objectStat["Content-Type"] != "xyz", Equals, true)
+			_, ok := objectStat["X-Oss-Meta-Test"]
+			c.Assert(ok, Equals, false)
+		}
+	}
+
+	// cleanup
+	os.RemoveAll(dir)
+	s.removeBucket(bucketName, true, c)
+}
+
+// Test: --include '*2*' --exclude "dir/subdir/*"
+func (s *OssutilCommandSuite) TestSetObjectMetaWithMultiNormalIncludeDirExcludeDir(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	bucketStr := CloudURLToString(bucketName, "")
+
+	dir := "test-setmeta-inc-exc-normal"
+	subdir := "subdir"
+	objs := s.createTestObjects(dir, subdir, bucketStr, c)
+
+	// Set meta
+	meta := "content-type:xyz#X-Oss-Meta-test:with-filter-inc-exc"
+	args := []string{bucketStr, meta}
+	cmdline := []string{"ossutil", "set-meta", bucketStr, meta, "-rf", "--include", "*2*", "--exclude", dir + "/" + subdir + "/*"}
+
+	showElapse, err := s.rawSetMetaWithFilter(args, true, false, true, true, DefaultLanguage, cmdline)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	fts := []filterOptionType{{"--include", "*2*", false}, {"--exclude", dir + "/" + subdir + "/*", true}}
 	matchedObjs := matchFiltersForStrs(objs, fts)
 
 	for _, obj := range matchedObjs {
@@ -1544,7 +1628,7 @@ func (s *OssutilCommandSuite) TestSetObjectMetaWithMultiRepeatedIncludeExclude(c
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
 
-	fts := []filterOptionType{{"--include", "*.txt"}, {"--exclude", "*2*"}, {"--include", "*.txt"}, {"--exclude", "*2*"}}
+	fts := []filterOptionType{{"--include", "*.txt", false}, {"--exclude", "*2*", false}, {"--include", "*.txt", false}, {"--exclude", "*2*", false}}
 	matchedObjs := matchFiltersForStrs(objs, fts)
 
 	for _, obj := range matchedObjs {
@@ -1586,7 +1670,7 @@ func (s *OssutilCommandSuite) TestSetObjectMetaWithMultiFullIncludeExclude(c *C)
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
 
-	fts := []filterOptionType{{"--include", "*"}, {"--exclude", "*"}}
+	fts := []filterOptionType{{"--include", "*", false}, {"--exclude", "*", false}}
 	matchedObjs := matchFiltersForStrs(objs, fts)
 
 	for _, obj := range matchedObjs {
@@ -1628,7 +1712,7 @@ func (s *OssutilCommandSuite) TestSetObjectMetaWithMultiFullExcludeInclude(c *C)
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
 
-	fts := []filterOptionType{{"--exclude", "*"}, {"--include", "*"}}
+	fts := []filterOptionType{{"--exclude", "*", false}, {"--include", "*", false}}
 	matchedObjs := matchFiltersForStrs(objs, fts)
 
 	for _, obj := range matchedObjs {
@@ -1678,10 +1762,9 @@ func (s *OssutilCommandSuite) TestSetObjectMetaWithInvalidIncExc(c *C) {
 	c.Assert(showElapse, Equals, false)
 	c.Assert(err.Error() == "--include or --exclude only work with --recursive", Equals, true)
 
-	cmdline = []string{"ossutil", "cp", dir, bucketStr, "-f", "--include", "*.txt", "--exclude", "/*2*"}
-	showElapse, err = s.rawCPWithFilter(args, false, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
-	c.Assert(showElapse, Equals, false)
-	c.Assert(err.Error() == "--include or --exclude does not support format containing dir info", Equals, true)
+	cmdline = []string{"ossutil", "cp", dir, bucketStr, "-rf", "--include", "*.txt", "--exclude", "/*2*"}
+	showElapse, err = s.rawCPWithFilter(args, true, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
+	c.Assert(showElapse, Equals, true)
 
 	// cleanup
 	os.RemoveAll(dir)

@@ -880,7 +880,55 @@ func (s *OssutilCommandSuite) createTestFiles(dir, subdir string, c *C, contents
 
 	return filenames
 }
+func (s *OssutilCommandSuite) createTestFilesDir(dir, subdir string, c *C, contents map[string]string) []string {
+	// Create dirs
+	err := os.MkdirAll(dir, 0755)
+	c.Assert(err, IsNil)
 
+	err = os.MkdirAll(dir+string(os.PathSeparator)+subdir, 0755)
+	c.Assert(err, IsNil)
+
+	filenames := make([]string, 0)
+
+	// Create files
+	num := 3
+	for i := 1020; i < 1020+num; i++ {
+		filename := subdir + "/" + fmt.Sprintf("testfile%d.txt", i)
+		content := fmt.Sprintf("include测试文件：%d内容", i)
+		filenames = append(filenames, filename)
+		contents[filename] = content
+		filename = dir + "/" + filename
+		s.createFile(filename, content, c)
+	}
+
+	num = 2
+	for i := 2; i < 2+num; i++ {
+		filename := subdir + "/" + fmt.Sprintf("test%d.jpg", i)
+		content := fmt.Sprintf("include test jpg\n%dcontent", i)
+		filenames = append(filenames, filename)
+		contents[filename] = content
+		filename = dir + "/" + filename
+		s.createFile(filename, content, c)
+	}
+
+	num = 2
+	for i := 103; i < 103+num; i++ {
+		filename := fmt.Sprintf("testfile%d.txt", i)
+		content := fmt.Sprintf("include测试文件：%d内容", i)
+		filenames = append(filenames, filename)
+		contents[filename] = content
+		filename = dir + "/" + filename
+		s.createFile(filename, content, c)
+	}
+	filename := subdir + "/" + "my.rtf"
+	content := fmt.Sprintf("include测试文件：%s内容", "my.rtf")
+	filenames = append(filenames, filename)
+	contents[filename] = content
+	filename = dir + "/" + filename
+	s.createFile(filename, content, c)
+
+	return filenames
+}
 func (s *OssutilCommandSuite) prepareTestFiles(dir, subdir, filePrefix, fileSuffix string, num int, c *C) []string {
 	// Create dirs
 	f, err := os.Stat(dir)
@@ -2001,7 +2049,12 @@ func matchFiltersForFiles(files []fileInfoType, filters []filterOptionType) []fi
 
 	for i, filter := range filters {
 		if filter.name == IncludePrompt {
-			res := filterFilesWithInclude(files, filter.pattern)
+			res := make([]fileInfoType, 0)
+			if filter.isDir {
+				res = filterFilesDirWithInclude(files, filter.pattern)
+			} else {
+				res = filterFilesWithInclude(files, filter.pattern)
+			}
 			for _, v := range res {
 				if containsInFileSlice(vsf, v) {
 					continue
@@ -2009,11 +2062,20 @@ func matchFiltersForFiles(files []fileInfoType, filters []filterOptionType) []fi
 				vsf = append(vsf, v)
 			}
 		} else {
-			if i == 0 {
-				vsf = append(vsf, filterFilesWithExclude(files, filter.pattern)...)
+			if filter.isDir {
+				if i == 0 {
+					vsf = append(vsf, filterFilesDirWithExclude(files, filter.pattern)...)
+				} else {
+					vsf = filterFilesDirWithExclude(vsf, filter.pattern)
+				}
 			} else {
-				vsf = filterFilesWithExclude(vsf, filter.pattern)
+				if i == 0 {
+					vsf = append(vsf, filterFilesWithExclude(files, filter.pattern)...)
+				} else {
+					vsf = filterFilesWithExclude(vsf, filter.pattern)
+				}
 			}
+
 		}
 	}
 
@@ -2179,7 +2241,7 @@ func (s *OssutilCommandSuite) TestFilterObjectsFromChanWithPattern(c *C) {
 func (s *OssutilCommandSuite) TestGetFilter(c *C) {
 	//e.g., ossutil cp oss://tempb4/ . -rf --include "*.txt" --exclude "*.jpg"
 	cmdline := []string{"ossutil", "cp", "oss://tempb4", ".", "-rf", "--include", "*.txt", "--exclude", "*.jpg"}
-	expect := []filterOptionType{{"--include", "*.txt"}, {"--exclude", "*.jpg"}}
+	expect := []filterOptionType{{"--include", "*.txt", false}, {"--exclude", "*.jpg", false}}
 	res, fts := getFilter(cmdline)
 	same := reflect.DeepEqual(fts, expect)
 	c.Assert(same, Equals, true)
@@ -2268,6 +2330,23 @@ func (s *OssutilCommandSuite) TestFilterSingleStr(c *C) {
 	c.Assert(res, Equals, true)
 }
 
+func (s *OssutilCommandSuite) TestFilterSingleDir(c *C) {
+	res := filterSingleDir("dir1/dir2/test18.txt", "dir1/*", true)
+	c.Assert(res, Equals, true)
+
+	res = filterSingleDir("dir1/dir2/test18.txt", "*dir2/*", true)
+	c.Assert(res, Equals, true)
+
+	res = filterSingleDir("dir1/dir2/test18.txt", "dir2/*", true)
+	c.Assert(res, Equals, false)
+
+	res = filterSingleDir("dir1/dir2/test39.txt", "dir1/dir2/*", false)
+	c.Assert(res, Equals, false)
+
+	res = filterSingleDir("dir1/dir2/test28.txt", "demo/*", false)
+	c.Assert(res, Equals, true)
+}
+
 func (s *OssutilCommandSuite) TestFilterStrsWithInclude(c *C) {
 	strs := []string{"test11.jpg", "test18.txt", "test28.txt", "testfile"}
 
@@ -2307,7 +2386,7 @@ func (s *OssutilCommandSuite) TestFilterStrsWithExclude(c *C) {
 }
 
 func (s *OssutilCommandSuite) TestMatchFiltersForStr(c *C) {
-	fts := []filterOptionType{{"--include", "*.txt"}}
+	fts := []filterOptionType{{"--include", "*.txt", false}}
 	res := matchFiltersForStr("test18.txt", fts)
 	c.Assert(res, Equals, true)
 	res = matchFiltersForStr("test28.txt", fts)
@@ -2317,7 +2396,7 @@ func (s *OssutilCommandSuite) TestMatchFiltersForStr(c *C) {
 	res = matchFiltersForStr("testfile", fts)
 	c.Assert(res, Equals, false)
 
-	fts = []filterOptionType{{"--exclude", "*.txt"}}
+	fts = []filterOptionType{{"--exclude", "*.txt", false}}
 	res = matchFiltersForStr("test11.jpg", fts)
 	c.Assert(res, Equals, true)
 	res = matchFiltersForStr("testfile", fts)
@@ -2327,7 +2406,7 @@ func (s *OssutilCommandSuite) TestMatchFiltersForStr(c *C) {
 	res = matchFiltersForStr("test28.txt", fts)
 	c.Assert(res, Equals, false)
 
-	fts = []filterOptionType{{"--include", "*.txt"}, {"--exclude", "*2*"}}
+	fts = []filterOptionType{{"--include", "*.txt", false}, {"--exclude", "*2*", false}}
 	res = matchFiltersForStr("test18.txt", fts)
 	c.Assert(res, Equals, true)
 	res = matchFiltersForStr("test11.jpg", fts)
@@ -2348,22 +2427,54 @@ func (s *OssutilCommandSuite) TestMatchFiltersForStr(c *C) {
 	c.Assert(res, Equals, true)
 }
 
+func (s *OssutilCommandSuite) TestMatchFiltersForStrDir(c *C) {
+	fts := []filterOptionType{{"--include", "dir1/*", true}}
+	res := matchFiltersForStr("dir1/test18.txt", fts)
+	c.Assert(res, Equals, true)
+	res = matchFiltersForStr("dir1/dir2/test28.txt", fts)
+	c.Assert(res, Equals, true)
+	res = matchFiltersForStr("dir3/dir2/dir3344/test11.jpg", fts)
+	c.Assert(res, Equals, false)
+	res = matchFiltersForStr("dir2/dir4/testfile", fts)
+	c.Assert(res, Equals, false)
+
+	fts = []filterOptionType{{"--exclude", "*dir2/*", true}}
+	res = matchFiltersForStr("dir1/dir2/test11.jpg", fts)
+	c.Assert(res, Equals, false)
+	res = matchFiltersForStr("die/dir2/testfile", fts)
+	c.Assert(res, Equals, false)
+	res = matchFiltersForStr("/hi11/hi22/dir33/test18.txt", fts)
+	c.Assert(res, Equals, true)
+	res = matchFiltersForStr("hi/s/s/s/test28.txt", fts)
+	c.Assert(res, Equals, true)
+
+	fts = []filterOptionType{{"--include", "/dir2/dir3/*", true}, {"--exclude", "/dir2/dir3/dir4/*", true}}
+	res = matchFiltersForStr("/dir2/dir3/test18.txt", fts)
+	c.Assert(res, Equals, true)
+	res = matchFiltersForStr("/dir2/dir3/dir4/test11.jpg", fts)
+	c.Assert(res, Equals, false)
+	res = matchFiltersForStr("/dir2/dir3/dir4/test28.txt", fts)
+	c.Assert(res, Equals, false)
+	res = matchFiltersForStr("/dir2/dir3/dir4/testfile", fts)
+	c.Assert(res, Equals, false)
+}
+
 func (s *OssutilCommandSuite) TestMatchFiltersForStrs(c *C) {
 	strs := []string{"test11.jpg", "test18.txt", "test28.txt", "testfile"}
 
-	fts := []filterOptionType{{"--include", "*.txt"}}
+	fts := []filterOptionType{{"--include", "*.txt", false}}
 	res := matchFiltersForStrs(strs, fts)
 	expect := []string{"test18.txt", "test28.txt"}
 	same := reflect.DeepEqual(res, expect)
 	c.Assert(same, Equals, true)
 
-	fts = []filterOptionType{{"--exclude", "*.txt"}}
+	fts = []filterOptionType{{"--exclude", "*.txt", false}}
 	res = matchFiltersForStrs(strs, fts)
 	expect = []string{"test11.jpg", "testfile"}
 	same = reflect.DeepEqual(res, expect)
 	c.Assert(same, Equals, true)
 
-	fts = []filterOptionType{{"--include", "*.txt"}, {"--exclude", "*2*"}}
+	fts = []filterOptionType{{"--include", "*.txt", false}, {"--exclude", "*2*", false}}
 	res = matchFiltersForStrs(strs, fts)
 	expect = []string{"test18.txt"}
 	same = reflect.DeepEqual(res, expect)
@@ -2372,6 +2483,40 @@ func (s *OssutilCommandSuite) TestMatchFiltersForStrs(c *C) {
 	fts = []filterOptionType{}
 	res = matchFiltersForStrs(strs, fts)
 	expect = []string{"test11.jpg", "test18.txt", "test28.txt", "testfile"}
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+}
+
+func (s *OssutilCommandSuite) TestMatchFiltersForStrsDir(c *C) {
+	strs := []string{"/dir1/dir2/dir3/test11.jpg", "/dir1/dir2/dir3/test11/test18.txt", "/dir1/dir2/dir3/test28.txt", "dir1/dir2/dir3/testfile", "hi1/dir2/hi3/testhihi"}
+
+	fts := []filterOptionType{{"--include", "/dir1/*", true}}
+	res := matchFiltersForStrs(strs, fts)
+	expect := []string{"/dir1/dir2/dir3/test11.jpg", "/dir1/dir2/dir3/test11/test18.txt", "/dir1/dir2/dir3/test28.txt"}
+	same := reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	fts = []filterOptionType{{"--exclude", "/dir1/*", true}}
+	res = matchFiltersForStrs(strs, fts)
+	expect = []string{"dir1/dir2/dir3/testfile"}
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	fts = []filterOptionType{{"--include", "*dir2/*", true}, {"--exclude", "*hi3/*", false}}
+	res = matchFiltersForStrs(strs, fts)
+	expect = []string{"/dir1/dir2/dir3/test11.jpg", "/dir1/dir2/dir3/test11/test18.txt", "/dir1/dir2/dir3/test28.txt", "dir1/dir2/dir3/testfile"}
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	fts = []filterOptionType{{"--include", "*dir2/*", true}, {"--exclude", "*hi3/*", false}}
+	res = matchFiltersForStrs(strs, fts)
+	expect = []string{"/dir1/dir2/dir3/test11.jpg", "/dir1/dir2/dir3/test11/test18.txt", "/dir1/dir2/dir3/test28.txt", "dir1/dir2/dir3/testfile"}
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	fts = []filterOptionType{{"--include", "/dir1/*.jpg", true}}
+	res = matchFiltersForStrs(strs, fts)
+	expect = []string{"/dir1/dir2/dir3/test11.jpg"}
 	same = reflect.DeepEqual(res, expect)
 	c.Assert(same, Equals, true)
 }
@@ -2379,19 +2524,19 @@ func (s *OssutilCommandSuite) TestMatchFiltersForStrs(c *C) {
 func (s *OssutilCommandSuite) TestMatchFiltersForStrsInArray(c *C) {
 	strs := []string{"test11.jpg", "test18.txt", "test28.txt", "testfile"}
 
-	fts := []filterOptionType{{"--include", "*.txt"}}
+	fts := []filterOptionType{{"--include", "*.txt", false}}
 	res := matchFiltersForStrsInArray(strs, fts)
 	expect := []string{"test18.txt", "test28.txt"}
 	same := reflect.DeepEqual(res, expect)
 	c.Assert(same, Equals, true)
 
-	fts = []filterOptionType{{"--exclude", "*.txt"}}
+	fts = []filterOptionType{{"--exclude", "*.txt", false}}
 	res = matchFiltersForStrsInArray(strs, fts)
 	expect = []string{"test11.jpg", "testfile"}
 	same = reflect.DeepEqual(res, expect)
 	c.Assert(same, Equals, true)
 
-	fts = []filterOptionType{{"--include", "*.txt"}, {"--exclude", "*2*"}}
+	fts = []filterOptionType{{"--include", "*.txt", false}, {"--exclude", "*2*", false}}
 	res = matchFiltersForStrsInArray(strs, fts)
 	expect = []string{"test18.txt"}
 	same = reflect.DeepEqual(res, expect)
@@ -2400,6 +2545,28 @@ func (s *OssutilCommandSuite) TestMatchFiltersForStrsInArray(c *C) {
 	fts = []filterOptionType{}
 	res = matchFiltersForStrsInArray(strs, fts)
 	expect = []string{"test11.jpg", "test18.txt", "test28.txt", "testfile"}
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+}
+
+func (s *OssutilCommandSuite) TestMatchFiltersForDirsInArray(c *C) {
+	strs := []string{"/dir1/dir2/dir3/test11.jpg", "/dir1/dir2/dir3/test11/test18.txt", "/dir1/dir2/dir3/test28.txt", "dir1/dir2/dir3/testfile", "hi1/dir2/hi3/testhihi"}
+
+	fts := []filterOptionType{{"--include", "*dir3/*.txt", true}}
+	res := matchFiltersForStrsInArray(strs, fts)
+	expect := []string{"/dir1/dir2/dir3/test11/test18.txt", "/dir1/dir2/dir3/test28.txt"}
+	same := reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	fts = []filterOptionType{{"--exclude", "*dir3/*.txt", true}}
+	res = matchFiltersForStrsInArray(strs, fts)
+	expect = []string{"/dir1/dir2/dir3/test11.jpg", "dir1/dir2/dir3/testfile", "hi1/dir2/hi3/testhihi"}
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	fts = []filterOptionType{{"--include", "*dir2/*", true}, {"--exclude", "*dir3/*.txt", true}}
+	res = matchFiltersForStrsInArray(strs, fts)
+	expect = []string{"/dir1/dir2/dir3/test11.jpg", "dir1/dir2/dir3/testfile", "hi1/dir2/hi3/testhihi"}
 	same = reflect.DeepEqual(res, expect)
 	c.Assert(same, Equals, true)
 }
@@ -2411,22 +2578,22 @@ func (s *OssutilCommandSuite) TestDoesSingleFileMatchPatterns(c *C) {
 	c.Assert(res, Equals, true)
 
 	filename = "dir1/testfile1.txt"
-	fts = []filterOptionType{{"--include", "*.txt"}}
+	fts = []filterOptionType{{"--include", "*.txt", false}}
 	res = doesSingleFileMatchPatterns(filename, fts)
 	c.Assert(res, Equals, true)
 
 	filename = "dir1/testfile2.txt"
-	fts = []filterOptionType{{"--include", "*.jpg"}}
+	fts = []filterOptionType{{"--include", "*.jpg", false}}
 	res = doesSingleFileMatchPatterns(filename, fts)
 	c.Assert(res, Equals, false)
 
 	filename = "dir1/testfile3.txt"
-	fts = []filterOptionType{{"--exclude", "*.txt"}}
+	fts = []filterOptionType{{"--exclude", "*.txt", false}}
 	res = doesSingleFileMatchPatterns(filename, fts)
 	c.Assert(res, Equals, false)
 
 	filename = "dir1/testfile3.txt"
-	fts = []filterOptionType{{"--include", "*.txt"}, {"--include", "*.jpg"}, {"--exclude", "*2*"}}
+	fts = []filterOptionType{{"--include", "*.txt", false}, {"--include", "*.jpg", false}, {"--exclude", "*2*", false}}
 	res = doesSingleFileMatchPatterns(filename, fts)
 	c.Assert(res, Equals, true)
 }
@@ -2451,7 +2618,7 @@ func (s *OssutilCommandSuite) TestGetFilesFromChanToArray(c *C) {
 	c.Assert(same, Equals, true)
 }
 
-func (s *OssutilCommandSuite) TestcontainsInFileSlice(c *C) {
+func (s *OssutilCommandSuite) TestContainsInFileSlice(c *C) {
 	files := []fileInfoType{{"dir1/my.rtf", "testdir/"}, {"dir1/testfile103.txt", "testdir/"}, {"testfile1021.txt", "testdir/"}}
 
 	tar := fileInfoType{"dir1/my.rtf", "testdir/"}
@@ -2493,6 +2660,35 @@ func (s *OssutilCommandSuite) TestFilterFilesWithInclude(c *C) {
 	c.Assert(same, Equals, true)
 }
 
+func (s *OssutilCommandSuite) TestFilterFilesDirWithInclude(c *C) {
+	files := []fileInfoType{{"dir1/my.rtf", "testdir/"}, {"dir1/testfile103.txt", "testdir/"}, {"testfile1021.txt", "testdir/"}}
+
+	expect := []fileInfoType{{"dir1/my.rtf", "testdir/"}}
+	res := filterFilesDirWithInclude(files, "*dir1/*.rtf")
+	same := reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	expect = []fileInfoType{}
+	res = filterFilesDirWithInclude(files, "dir1/*.jpg")
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	expect = []fileInfoType{{"dir1/my.rtf", "testdir/"}, {"dir1/testfile103.txt", "testdir/"}, {"testfile1021.txt", "testdir/"}}
+	res = filterFilesDirWithInclude(files, "*")
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	expect = []fileInfoType{{"dir1/my.rtf", "testdir/"}, {"dir1/testfile103.txt", "testdir/"}, {"testfile1021.txt", "testdir/"}}
+	res = filterFilesDirWithInclude(files, "testdir/*")
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	expect = []fileInfoType{}
+	res = filterFilesDirWithInclude(files, "")
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+}
+
 func (s *OssutilCommandSuite) TestFilterFilesWithExclude(c *C) {
 	files := []fileInfoType{{"dir1/my.rtf", "testdir/"}, {"dir1/testfile103.txt", "testdir/"}, {"testfile1021.txt", "testdir/"}}
 
@@ -2512,6 +2708,30 @@ func (s *OssutilCommandSuite) TestFilterFilesWithExclude(c *C) {
 	c.Assert(same, Equals, true)
 }
 
+func (s *OssutilCommandSuite) TestFilterFilesDirWithExclude(c *C) {
+	files := []fileInfoType{{"dir1/my.rtf", "testdir/"}, {"dir1/testfile103.txt", "testdir/"}, {"testfile1021.txt", "testdir/"}}
+
+	expect := []fileInfoType{{"dir1/my.rtf", "testdir/"}, {"dir1/testfile103.txt", "testdir/"}, {"testfile1021.txt", "testdir/"}}
+	res := filterFilesDirWithExclude(files, "testdir2/*")
+	same := reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	expect = []fileInfoType{}
+	res = filterFilesDirWithExclude(files, "testdir/*")
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	expect = []fileInfoType{}
+	res = filterFilesDirWithExclude(files, "*")
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	expect = []fileInfoType{{"dir1/my.rtf", "testdir/"}, {"dir1/testfile103.txt", "testdir/"}, {"testfile1021.txt", "testdir/"}}
+	res = filterFilesDirWithExclude(files, "")
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+}
+
 func (s *OssutilCommandSuite) TestMatchFiltersForFiles(c *C) {
 	files := []fileInfoType{{"dir1/my.rtf", "testdir/"}, {"dir1/testfile103.txt", "testdir/"}, {"testfile1021.txt", "testdir/"}}
 
@@ -2521,19 +2741,47 @@ func (s *OssutilCommandSuite) TestMatchFiltersForFiles(c *C) {
 	same := reflect.DeepEqual(res, expect)
 	c.Assert(same, Equals, true)
 
-	fts = []filterOptionType{{"--include", "*.txt"}}
+	fts = []filterOptionType{{"--include", "*.txt", false}}
 	res = matchFiltersForFiles(files, fts)
 	expect = []fileInfoType{{"dir1/testfile103.txt", "testdir/"}, {"testfile1021.txt", "testdir/"}}
 	same = reflect.DeepEqual(res, expect)
 	c.Assert(same, Equals, true)
 
-	fts = []filterOptionType{{"--exclude", "*.txt"}}
+	fts = []filterOptionType{{"--exclude", "*.txt", false}}
 	res = matchFiltersForFiles(files, fts)
 	expect = []fileInfoType{{"dir1/my.rtf", "testdir/"}}
 	same = reflect.DeepEqual(res, expect)
 	c.Assert(same, Equals, true)
 
-	fts = []filterOptionType{{"--include", "*.txt"}, {"--exclude", "*2*"}}
+	fts = []filterOptionType{{"--include", "*.txt", false}, {"--exclude", "*2*", false}}
+	res = matchFiltersForFiles(files, fts)
+	expect = []fileInfoType{{"dir1/testfile103.txt", "testdir/"}}
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+}
+
+func (s *OssutilCommandSuite) TestMatchFiltersForFilesWithDir(c *C) {
+	files := []fileInfoType{{"dir1/my.rtf", "testdir/"}, {"dir1/testfile103.txt", "testdir/"}, {"testfile1021.txt", "testdir/"}}
+
+	fts := []filterOptionType{}
+	res := matchFiltersForFiles(files, fts)
+	expect := []fileInfoType{{"dir1/my.rtf", "testdir/"}, {"dir1/testfile103.txt", "testdir/"}, {"testfile1021.txt", "testdir/"}}
+	same := reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	fts = []filterOptionType{{"--include", "testdir/*.txt", true}}
+	res = matchFiltersForFiles(files, fts)
+	expect = []fileInfoType{{"dir1/testfile103.txt", "testdir/"}, {"testfile1021.txt", "testdir/"}}
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	fts = []filterOptionType{{"--exclude", "testdir/*.txt", true}}
+	res = matchFiltersForFiles(files, fts)
+	expect = []fileInfoType{{"dir1/my.rtf", "testdir/"}}
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	fts = []filterOptionType{{"--include", "testdir/*.txt", true}, {"--exclude", "testdir/*2*", true}}
 	res = matchFiltersForFiles(files, fts)
 	expect = []fileInfoType{{"dir1/testfile103.txt", "testdir/"}}
 	same = reflect.DeepEqual(res, expect)
@@ -2560,7 +2808,7 @@ func (s *OssutilCommandSuite) TestFilterFileFromChanWithPatterns(c *C) {
 	chFiles <- fileInfoType{"dir1/testfile103.txt", "testdir/"}
 	chFiles <- fileInfoType{"testfile1021.txt", "testdir/"}
 	close(chFiles)
-	fts := []filterOptionType{{"--include", "*.txt"}}
+	fts := []filterOptionType{{"--include", "*.txt", false}}
 	dstFiles := make(chan fileInfoType, ChannelBuf)
 	filterFilesFromChanWithPatterns(chFiles, fts, dstFiles)
 	c.Assert(len(dstFiles), Equals, 2)
@@ -2570,7 +2818,7 @@ func (s *OssutilCommandSuite) TestFilterFileFromChanWithPatterns(c *C) {
 	chFiles <- fileInfoType{"dir1/testfile103.txt", "testdir/"}
 	chFiles <- fileInfoType{"testfile1021.txt", "testdir/"}
 	close(chFiles)
-	fts = []filterOptionType{{"--exclude", "*.txt"}}
+	fts = []filterOptionType{{"--exclude", "*.txt", false}}
 	dstFiles2 := make(chan fileInfoType, ChannelBuf)
 	filterFilesFromChanWithPatterns(chFiles, fts, dstFiles2)
 	c.Assert(len(dstFiles2), Equals, 1)
@@ -2580,7 +2828,39 @@ func (s *OssutilCommandSuite) TestFilterFileFromChanWithPatterns(c *C) {
 	chFiles <- fileInfoType{"dir1/testfile103.txt", "testdir/"}
 	chFiles <- fileInfoType{"testfile1021.txt", "testdir/"}
 	close(chFiles)
-	fts = []filterOptionType{{"--include", "*.txt"}, {"--exclude", "*2*"}}
+	fts = []filterOptionType{{"--include", "*.txt", false}, {"--exclude", "*2*", false}}
+	dstFiles3 := make(chan fileInfoType, ChannelBuf)
+	filterFilesFromChanWithPatterns(chFiles, fts, dstFiles3)
+	c.Assert(len(dstFiles3), Equals, 1)
+}
+
+func (s *OssutilCommandSuite) TestFilterFileFromChanWithPatternsDir(c *C) {
+	chFiles := make(chan fileInfoType, ChannelBuf)
+	chFiles <- fileInfoType{"dir1/my.rtf", "testdir/"}
+	chFiles <- fileInfoType{"dir1/testfile103.txt", "testdir/"}
+	chFiles <- fileInfoType{"testfile1021.txt", "testdir/"}
+	close(chFiles)
+	fts := []filterOptionType{{"--include", "testdir/*.txt", true}}
+	dstFiles := make(chan fileInfoType, ChannelBuf)
+	filterFilesFromChanWithPatterns(chFiles, fts, dstFiles)
+	c.Assert(len(dstFiles), Equals, 2)
+
+	chFiles = make(chan fileInfoType, ChannelBuf)
+	chFiles <- fileInfoType{"dir1/my.rtf", "testdir/"}
+	chFiles <- fileInfoType{"dir1/testfile103.txt", "testdir/"}
+	chFiles <- fileInfoType{"testfile1021.txt", "testdir/"}
+	close(chFiles)
+	fts = []filterOptionType{{"--exclude", "testdir/*.txt", true}}
+	dstFiles2 := make(chan fileInfoType, ChannelBuf)
+	filterFilesFromChanWithPatterns(chFiles, fts, dstFiles2)
+	c.Assert(len(dstFiles2), Equals, 1)
+
+	chFiles = make(chan fileInfoType, ChannelBuf)
+	chFiles <- fileInfoType{"dir1/my.rtf", "testdir/"}
+	chFiles <- fileInfoType{"dir1/testfile103.txt", "testdir/"}
+	chFiles <- fileInfoType{"testfile1021.txt", "testdir/"}
+	close(chFiles)
+	fts = []filterOptionType{{"--include", "testdir/*.txt", true}, {"--exclude", "testdir/*2*", true}}
 	dstFiles3 := make(chan fileInfoType, ChannelBuf)
 	filterFilesFromChanWithPatterns(chFiles, fts, dstFiles3)
 	c.Assert(len(dstFiles3), Equals, 1)
@@ -2593,22 +2873,49 @@ func (s *OssutilCommandSuite) TestDoesSingleObjectMatchPatterns(c *C) {
 	c.Assert(res, Equals, true)
 
 	object = "dir1/testfile1.txt"
-	fts = []filterOptionType{{"--include", "*.txt"}}
+	fts = []filterOptionType{{"--include", "*.txt", false}}
 	res = doesSingleObjectMatchPatterns(object, fts)
 	c.Assert(res, Equals, true)
 
 	object = "dir1/testfile2.txt"
-	fts = []filterOptionType{{"--include", "*.jpg"}}
+	fts = []filterOptionType{{"--include", "*.jpg", false}}
 	res = doesSingleObjectMatchPatterns(object, fts)
 	c.Assert(res, Equals, false)
 
 	object = "dir1/testfile3.txt"
-	fts = []filterOptionType{{"--exclude", "*.txt"}}
+	fts = []filterOptionType{{"--exclude", "*.txt", false}}
 	res = doesSingleObjectMatchPatterns(object, fts)
 	c.Assert(res, Equals, false)
 
 	object = "dir1/testfile4.txt"
-	fts = []filterOptionType{{"--include", "*.txt"}, {"--include", "*.jpg"}, {"--exclude", "*2*"}}
+	fts = []filterOptionType{{"--include", "*.txt", false}, {"--include", "*.jpg", false}, {"--exclude", "*2*", false}}
+	res = doesSingleObjectMatchPatterns(object, fts)
+	c.Assert(res, Equals, true)
+}
+
+func (s *OssutilCommandSuite) TestDoesSingleObjectMatchPatternsDir(c *C) {
+	object := "dir1/testfile3.jpg"
+	fts := []filterOptionType{}
+	res := doesSingleObjectMatchPatterns(object, fts)
+	c.Assert(res, Equals, true)
+
+	object = "dir1/testfile1.txt"
+	fts = []filterOptionType{{"--include", "dir1/*.txt", true}}
+	res = doesSingleObjectMatchPatterns(object, fts)
+	c.Assert(res, Equals, true)
+
+	object = "dir1/testfile2.txt"
+	fts = []filterOptionType{{"--include", "dir1/*.jpg", true}}
+	res = doesSingleObjectMatchPatterns(object, fts)
+	c.Assert(res, Equals, false)
+
+	object = "dir1/testfile3.txt"
+	fts = []filterOptionType{{"--exclude", "dir1/*.txt", true}}
+	res = doesSingleObjectMatchPatterns(object, fts)
+	c.Assert(res, Equals, false)
+
+	object = "dir1/testfile4.txt"
+	fts = []filterOptionType{{"--include", "dir1/*.txt", true}, {"--include", "dir1/*.jpg", false}, {"--exclude", "dir1/*2*", true}}
 	res = doesSingleObjectMatchPatterns(object, fts)
 	c.Assert(res, Equals, true)
 }
@@ -2669,6 +2976,43 @@ func (s *OssutilCommandSuite) TestFilterObjectsWithInclude(c *C) {
 	c.Assert(same, Equals, true)
 }
 
+func (s *OssutilCommandSuite) TestFilterObjectsWithIncludeDir(c *C) {
+	objects := []objectInfoType{
+		{"dir1/", "my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)},
+		{"dir1/", "testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)},
+		{"", "testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)},
+	}
+
+	expect := []objectInfoType{{"dir1/", "my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)}}
+	res := filterObjectsWithIncludeDir(objects, "dir1/*.rtf")
+	same := reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	expect = []objectInfoType{}
+	res = filterObjectsWithIncludeDir(objects, "dir1/*.jpg")
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	expect = []objectInfoType{
+		{"dir1/", "my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)},
+		{"dir1/", "testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)},
+		{"", "testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)},
+	}
+	res = filterObjectsWithIncludeDir(objects, "*")
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	expect = []objectInfoType{}
+	res = filterObjectsWithIncludeDir(objects, "")
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	expect = []objectInfoType{{"dir1/", "testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)}}
+	res = filterObjectsWithIncludeDir(objects, "dir1/test*")
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+}
+
 func (s *OssutilCommandSuite) TestFilterObjectsWithExclude(c *C) {
 	objects := []objectInfoType{
 		{"dir1/", "my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)},
@@ -2699,6 +3043,43 @@ func (s *OssutilCommandSuite) TestFilterObjectsWithExclude(c *C) {
 	c.Assert(same, Equals, true)
 }
 
+func (s *OssutilCommandSuite) TestFilterObjectsWithExcludeDir(c *C) {
+	objects := []objectInfoType{
+		{"dir1/", "my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)},
+		{"dir1/", "testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)},
+		{"", "testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)},
+	}
+
+	expect := []objectInfoType{
+		{"dir1/", "testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)},
+		{"", "testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)},
+	}
+	res := filterObjectsWithExcludeDir(objects, "dir1/*.rtf")
+	same := reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	expect = []objectInfoType{}
+	res = filterObjectsWithExcludeDir(objects, "*")
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	expect = []objectInfoType{
+		{"dir1/", "my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)},
+		{"dir1/", "testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)},
+		{"", "testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)},
+	}
+	res = filterObjectsWithExcludeDir(objects, "")
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	expect = []objectInfoType{
+		{"", "testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)},
+	}
+	res = filterObjectsWithExcludeDir(objects, "dir1/*")
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+}
+
 func (s *OssutilCommandSuite) TestMatchFiltersForObjects(c *C) {
 	objects := []objectInfoType{
 		{"dir1/", "my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)},
@@ -2716,7 +3097,7 @@ func (s *OssutilCommandSuite) TestMatchFiltersForObjects(c *C) {
 	same := reflect.DeepEqual(res, expect)
 	c.Assert(same, Equals, true)
 
-	fts = []filterOptionType{{"--include", "*.txt"}}
+	fts = []filterOptionType{{"--include", "*.txt", false}}
 	res = matchFiltersForObjects(objects, fts)
 	expect = []objectInfoType{
 		{"dir1/", "testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)},
@@ -2725,7 +3106,7 @@ func (s *OssutilCommandSuite) TestMatchFiltersForObjects(c *C) {
 	same = reflect.DeepEqual(res, expect)
 	c.Assert(same, Equals, true)
 
-	fts = []filterOptionType{{"--exclude", "*.txt"}}
+	fts = []filterOptionType{{"--exclude", "*.txt", false}}
 	res = matchFiltersForObjects(objects, fts)
 	expect = []objectInfoType{
 		{"dir1/", "my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)},
@@ -2733,10 +3114,58 @@ func (s *OssutilCommandSuite) TestMatchFiltersForObjects(c *C) {
 	same = reflect.DeepEqual(res, expect)
 	c.Assert(same, Equals, true)
 
-	fts = []filterOptionType{{"--include", "*.txt"}, {"--exclude", "*2*"}}
+	fts = []filterOptionType{{"--include", "*.txt", false}, {"--exclude", "*2*", false}}
 	res = matchFiltersForObjects(objects, fts)
 	expect = []objectInfoType{
 		{"dir1/", "testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)},
+	}
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+}
+
+func (s *OssutilCommandSuite) TestMatchFiltersForObjectsWithDir(c *C) {
+	objects := []objectInfoType{
+		{"dir1/", "my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)},
+		{"dir1/", "testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)},
+		{"", "testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)},
+		{"dir1/", "demo.jpg", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)},
+	}
+
+	fts := []filterOptionType{{"--include", "*", true}}
+	res := matchFiltersForObjects(objects, fts)
+	expect := []objectInfoType{
+		{"dir1/", "my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)},
+		{"dir1/", "testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)},
+		{"", "testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)},
+		{"dir1/", "demo.jpg", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)},
+	}
+	same := reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	fts = []filterOptionType{{"--include", "dir1/*.txt", true}}
+	res = matchFiltersForObjects(objects, fts)
+	expect = []objectInfoType{
+		{"dir1/", "testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)},
+	}
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	fts = []filterOptionType{{"--exclude", "dir1/*.txt", true}}
+	res = matchFiltersForObjects(objects, fts)
+	expect = []objectInfoType{
+		{"dir1/", "my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)},
+		{"", "testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)},
+		{"dir1/", "demo.jpg", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)},
+	}
+	same = reflect.DeepEqual(res, expect)
+	c.Assert(same, Equals, true)
+
+	fts = []filterOptionType{{"--include", "dir1/*", true}, {"--exclude", "*2*", true}}
+	res = matchFiltersForObjects(objects, fts)
+	expect = []objectInfoType{
+		{"dir1/", "my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)},
+		{"dir1/", "testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)},
+		{"dir1/", "demo.jpg", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)},
 	}
 	same = reflect.DeepEqual(res, expect)
 	c.Assert(same, Equals, true)
@@ -2766,7 +3195,7 @@ func (s *OssutilCommandSuite) TestFilterObjectFromChanWithPatterns(c *C) {
 	chObjects <- objectInfoType{"dir1/", "testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)}
 	chObjects <- objectInfoType{"", "testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)}
 	close(chObjects)
-	fts := []filterOptionType{{"--include", "*.txt"}}
+	fts := []filterOptionType{{"--include", "*.txt", false}}
 	dstObjects := make(chan objectInfoType, ChannelBuf)
 	filterObjectsFromChanWithPatterns(chObjects, fts, dstObjects)
 	c.Assert(len(dstObjects), Equals, 2)
@@ -2776,7 +3205,7 @@ func (s *OssutilCommandSuite) TestFilterObjectFromChanWithPatterns(c *C) {
 	chObjects <- objectInfoType{"dir1/", "testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)}
 	chObjects <- objectInfoType{"", "testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)}
 	close(chObjects)
-	fts = []filterOptionType{{"--exclude", "*.txt"}}
+	fts = []filterOptionType{{"--exclude", "*.txt", false}}
 	dstObjects2 := make(chan objectInfoType, ChannelBuf)
 	filterObjectsFromChanWithPatterns(chObjects, fts, dstObjects2)
 	c.Assert(len(dstObjects2), Equals, 1)
@@ -2786,8 +3215,43 @@ func (s *OssutilCommandSuite) TestFilterObjectFromChanWithPatterns(c *C) {
 	chObjects <- objectInfoType{"dir1/", "testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)}
 	chObjects <- objectInfoType{"", "testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)}
 	close(chObjects)
-	fts = []filterOptionType{{"--include", "*.txt"}, {"--exclude", "*2*"}}
+	fts = []filterOptionType{{"--include", "*.txt", false}, {"--exclude", "*2*", false}}
 	dstObjects3 := make(chan objectInfoType, ChannelBuf)
 	filterObjectsFromChanWithPatterns(chObjects, fts, dstObjects3)
 	c.Assert(len(dstObjects3), Equals, 1)
+}
+
+func (s *OssutilCommandSuite) TestFilterObjectFromChanWithPatternsDir(c *C) {
+	chObjects := make(chan objectInfoType, ChannelBuf)
+	chObjects <- objectInfoType{"dir1/", "my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)}
+	chObjects <- objectInfoType{"dir1/", "testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)}
+	chObjects <- objectInfoType{"", "testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)}
+	chObjects <- objectInfoType{"dir1/", "demo.jpg", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)}
+	close(chObjects)
+	fts := []filterOptionType{{"--include", "dir1/*.txt", true}}
+	dstObjects := make(chan objectInfoType, ChannelBuf)
+	filterObjectsFromChanWithPatterns(chObjects, fts, dstObjects)
+	c.Assert(len(dstObjects), Equals, 1)
+
+	chObjects = make(chan objectInfoType, ChannelBuf)
+	chObjects <- objectInfoType{"dir1/", "my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)}
+	chObjects <- objectInfoType{"dir1/", "testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)}
+	chObjects <- objectInfoType{"", "testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)}
+	chObjects <- objectInfoType{"dir1/", "demo.jpg", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)}
+	close(chObjects)
+	fts = []filterOptionType{{"--exclude", "dir1/*.txt", true}}
+	dstObjects2 := make(chan objectInfoType, ChannelBuf)
+	filterObjectsFromChanWithPatterns(chObjects, fts, dstObjects2)
+	c.Assert(len(dstObjects2), Equals, 3)
+
+	chObjects = make(chan objectInfoType, ChannelBuf)
+	chObjects <- objectInfoType{"dir1/", "my.rtf", 10240, time.Date(2017, 10, 1, 7, 0, 0, 0, time.Local)}
+	chObjects <- objectInfoType{"dir1/", "testfile103.txt", 1040, time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)}
+	chObjects <- objectInfoType{"", "testfile1021.txt", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)}
+	chObjects <- objectInfoType{"dir1/", "demo.jpg", 1024, time.Date(2017, 1, 19, 7, 10, 35, 0, time.UTC)}
+	close(chObjects)
+	fts = []filterOptionType{{"--include", "dir1/*", true}, {"--exclude", "dir1/*3*", true}}
+	dstObjects3 := make(chan objectInfoType, ChannelBuf)
+	filterObjectsFromChanWithPatterns(chObjects, fts, dstObjects3)
+	c.Assert(len(dstObjects3), Equals, 2)
 }
