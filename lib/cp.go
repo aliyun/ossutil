@@ -2675,19 +2675,11 @@ func (cc *CopyCommand) objectStatistic(bucket *oss.Bucket, cloudURL CloudURL) {
 				if doesSingleObjectMatchPatterns(object.Key, cc.cpOption.filters) {
 					if cc.cpOption.partitionIndex == 0 || (cc.cpOption.partitionIndex > 0 && matchHash(fnvIns, object.Key, cc.cpOption.partitionIndex-1, cc.cpOption.partitionCount)) {
 						if strings.ToLower(object.Type) == "symlink" && cc.cpOption.opType == operationTypeGet {
-							props, err := cc.command.ossGetObjectStatRetry(bucket, object.Key, cc.cpOption.payerOptions...)
-							if err != nil {
-								LogError("ossGetObjectStatRetry error info:%s\n", err.Error())
-								cc.monitor.setScanError(err)
-								return
-							}
+							props, _ := cc.command.ossGetObjectStatRetry(bucket, object.Key, cc.cpOption.payerOptions...)
 							size, err := strconv.ParseInt(props.Get(oss.HTTPHeaderContentLength), 10, 64)
-							if err != nil {
-								LogError("strconv.ParseInt error info:%s\n", err.Error())
-								cc.monitor.setScanError(err)
-								return
+							if err == nil {
+								object.Size = size
 							}
-							object.Size = size
 						}
 						cc.monitor.updateScanSizeNum(cc.getRangeSize(object.Size), 1)
 					}
@@ -2807,19 +2799,11 @@ func (cc *CopyCommand) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, chO
 			if doesSingleObjectMatchPatterns(object.Key, cc.cpOption.filters) {
 				if cc.cpOption.partitionIndex == 0 || (cc.cpOption.partitionIndex > 0 && matchHash(fnvIns, object.Key, cc.cpOption.partitionIndex-1, cc.cpOption.partitionCount)) {
 					if strings.ToLower(object.Type) == "symlink" && cc.cpOption.opType == operationTypeGet {
-						props, err := cc.command.ossGetObjectStatRetry(bucket, object.Key, cc.cpOption.payerOptions...)
-						if err != nil {
-							LogError("ossGetObjectStatRetry error info:%s\n", err.Error())
-							chError <- err
-							break
-						}
+						props, _ := cc.command.ossGetObjectStatRetry(bucket, object.Key, cc.cpOption.payerOptions...)
 						size, err := strconv.ParseInt(props.Get(oss.HTTPHeaderContentLength), 10, 64)
-						if err != nil {
-							LogError("strconv.ParseInt error info:%s\n", err.Error())
-							chError <- err
-							break
+						if err == nil {
+							object.Size = size
 						}
-						object.Size = size
 					}
 					chObjects <- objectInfoType{prefix, relativeKey, int64(object.Size), object.LastModified}
 				}
