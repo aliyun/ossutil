@@ -5063,6 +5063,74 @@ func (s *OssutilCommandSuite) TestBatchDownloadSymlinkObject(c *C) {
 	s.removeBucket(bucketName, true, c)
 }
 
+func (s *OssutilCommandSuite) TestBatchDownloadSymlinkObjectWithMultilevelAndEmptyObject(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	object := randStr(12)
+	bucketStr := CloudURLToString(bucketName, object)
+
+	// put object
+	testFileName := "ossutil-test-" + randStr(10)
+	len := 1024 * 1024
+	content := randStr(len)
+	s.createFile(testFileName, content, c)
+
+	// upload files
+	args := []string{testFileName, bucketStr}
+	cmdline := []string{"ossutil", "cp", testFileName, bucketStr}
+	_, err := s.rawCPWithFilter(args, false, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
+	c.Assert(err, IsNil)
+
+	// create symlink object
+	symObject := object + "-link"
+	strCmdline := fmt.Sprintf("%s %s", CloudURLToString(bucketName, symObject), CloudURLToString(bucketName, object))
+	err = s.initCreateSymlink(strCmdline)
+	c.Assert(err, IsNil)
+	err = createSymlinkCommand.RunCommand()
+	c.Assert(err, IsNil)
+
+	// create symlink to symlink
+	symObject2 := object + "-link2"
+	strCmdline = fmt.Sprintf("%s %s", CloudURLToString(bucketName, symObject2), CloudURLToString(bucketName, symObject))
+	err = s.initCreateSymlink(strCmdline)
+	c.Assert(err, IsNil)
+	err = createSymlinkCommand.RunCommand()
+	c.Assert(err, IsNil)
+
+	// batch download symlink object
+	args = []string{CloudURLToString(bucketName, symObject2), "." + string(os.PathSeparator)}
+	cmdline = []string{"ossutil", "cp", CloudURLToString(bucketName, symObject2), "." + string(os.PathSeparator)}
+	_, err = s.rawCPWithFilter(args, true, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
+	c.Assert(err, IsNil)
+
+	_, err = os.Stat(symObject2)
+	c.Assert(err, NotNil)
+
+	//delete object
+	command := "rm"
+	args = []string{CloudURLToString(bucketName, object)}
+	testLogger.Print(configFile)
+	options := OptionMapType{
+		"endpoint":        &endpoint,
+		"accessKeyID":     &accessKeyID,
+		"accessKeySecret": &accessKeySecret,
+	}
+	_, err = cm.RunCommand(command, args, options)
+	c.Assert(err, IsNil)
+
+	// download symlink object with deleted object
+	args = []string{CloudURLToString(bucketName, symObject), "." + string(os.PathSeparator)}
+	cmdline = []string{"ossutil", "cp", CloudURLToString(bucketName, symObject), "." + string(os.PathSeparator)}
+	_, err = s.rawCPWithFilter(args, true, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
+	c.Assert(err, IsNil)
+
+	_, err = os.Stat(symObject)
+	c.Assert(err, NotNil)
+
+	s.removeBucket(bucketName, true, c)
+	os.Remove(testFileName)
+}
+
 func (s *OssutilCommandSuite) TestCPObjectWithInputPassword(c *C) {
 	bucketName := bucketNamePrefix + randLowStr(10)
 	s.putBucket(bucketName, c)
