@@ -3,7 +3,7 @@ module github.com/aliyun/ossutil
 go 1.13
 
 require (
-	github.com/aliyun/aliyun-oss-go-sdk v2.2.5+incompatible
+	github.com/aliyun/aliyun-oss-go-sdk v2.2.6+incompatible
 	github.com/alyu/configparser v0.0.0-20191103060215-744e9a66e7bc
 	github.com/droundy/goopt v0.0.0-20220217183150-48d6390ad4d1
 	github.com/syndtr/goleveldb v1.0.0
