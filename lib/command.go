@@ -865,6 +865,7 @@ func GetAllCommands() []interface{} {
 		&bucketTagCommand,
 		&bucketEncryptionCommand,
 		&corsOptionsCommand,
+		&bucketStyleCommand,
 		&bucketLifeCycleCommand,
 		&bucketWebsiteCommand,
 		&bucketQosCommand,
