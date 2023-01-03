@@ -133,6 +133,14 @@ var specChineseConfig = SpecText{
         bucket1 = cname1
         bucket2 = cname2
         ...
+    [Default]
+        userAgent = user_agent
+        proxyHost = proxy_host
+        proxyUser = proxy_user
+        proxyPwd = proxy_pwd
+        readTimeOut = read_time_out
+        connectTimeOut = connect_time_out
+        retryTimes = retry_times
 `,
 
 	sampleText: ` 
@@ -277,6 +285,14 @@ Credential File Format:
         bucket1 = cname1
         bucket2 = cname2
         ...
+    [Default]
+        userAgent = user_agent
+        proxyHost = proxy_host
+        proxyUser = proxy_user
+        proxyPwd = proxy_pwd
+        readTimeOut = read_time_out
+        connectTimeOut = connect_time_out
+        retryTimes = retry_times
 `,
 
 	sampleText: ` 
@@ -307,8 +323,6 @@ var configCommand = ConfigCommand{
 			OptionSTSToken,
 			OptionOutputDir,
 			OptionLanguage,
-			OptionLogLevel,
-			OptionUserAgent,
 		},
 	},
 }
