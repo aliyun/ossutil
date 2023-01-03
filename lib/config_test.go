@@ -353,3 +353,111 @@ func (s *OssutilCommandSuite) TestConfigHelpInfo(c *C) {
 	c.Assert(err, IsNil)
 
 }
+
+func (s *OssutilConfigSuite) TestConfigNonInteractiveWithCommonOption(c *C) {
+	cfile := randStr(10)
+	userAgent := "demo-walker"
+	stsToken := "stsToken"
+	logLevel := "info"
+	proxyHost = "http://120.220.220.95:8085"
+	proxyUser = "test"
+	proxyPwd = "test1234"
+	mode := "AK"
+	ecsRoleName = "ossTest"
+	tokenTimeout := "300"
+	ramRoleArn := "acs:ram::150*******52:role/ramosssts"
+	roleSessionName := "roleTest"
+	readTimeout := "10"
+	connectTimeOut := "10"
+	stsRegion = "sts.cn-qingdao.aliyuncs.com"
+	signVersion := "v4"
+	region := "oss-cn-chengdu.aliyuncs.com"
+	cloudboxId := "12124123"
+	retryTimes := "400"
+	data := "[Credentials]" + "\n" + "language=" + DefaultLanguage + "\n" + "accessKeyID=" + accessKeyID + "\n" + "accessKeySecret=" + accessKeySecret + "\n" + "endpoint=" +
+		endpoint + "\n" + "stsToken=" + stsToken + "\n" + "[Default]" + "\n" + "loglevel=" + logLevel + "\n" + "userAgent=" + userAgent + "\n" + "proxyHost=" + proxyHost + "\n" + "proxyUser=" + proxyUser + "\n" + "proxyPwd=" + proxyPwd + "\n" + "mode=" + mode + "\n" + "ecsRoleName=" + ecsRoleName + "\n" + "tokenTimeout=" + tokenTimeout + "\n" + "ramRoleArn=" + ramRoleArn + "\n" + "roleSessionName=" + roleSessionName + "\n" + "readTimeOut=" + readTimeout + "\n" + "connectTimeOut=" + connectTimeOut + "\n" + "stsRegion=" + stsRegion + "\n" + "signVersion=" + signVersion + "\n" + "region=" + region + "\n" + "cloudBoxID=" + cloudboxId + "\n" + "retryTimes=" + retryTimes
+	s.createFile(cfile, data, c)
+
+	f, err := os.Stat(cfile)
+	c.Assert(err, IsNil)
+	c.Assert(f.Size() > 0, Equals, true)
+
+	opts, err := LoadConfig(cfile)
+	testLogger.Print(opts)
+	c.Assert(err, IsNil)
+	c.Assert(len(opts), Equals, 22)
+	c.Assert(opts[OptionLanguage], Equals, DefaultLanguage)
+	c.Assert(opts[OptionEndpoint], Equals, endpoint)
+	c.Assert(opts[OptionAccessKeyID], Equals, accessKeyID)
+	c.Assert(opts[OptionAccessKeySecret], Equals, accessKeySecret)
+
+	c.Assert(opts[OptionUserAgent], Equals, userAgent)
+	c.Assert(opts[OptionSTSToken], Equals, stsToken)
+
+	c.Assert(opts[OptionProxyHost], Equals, proxyHost)
+	c.Assert(opts[OptionProxyUser], Equals, proxyUser)
+	c.Assert(opts[OptionProxyPwd], Equals, proxyPwd)
+	c.Assert(opts[OptionMode], Equals, mode)
+	c.Assert(opts[OptionLogLevel], Equals, logLevel)
+	c.Assert(opts[OptionECSRoleName], Equals, ecsRoleName)
+
+	c.Assert(opts[OptionRamRoleArn], Equals, ramRoleArn)
+	c.Assert(opts[OptionTokenTimeout], Equals, tokenTimeout)
+	c.Assert(opts[OptionRoleSessionName], Equals, roleSessionName)
+	c.Assert(opts[OptionReadTimeout], Equals, readTimeout)
+	c.Assert(opts[OptionConnectTimeout], Equals, connectTimeOut)
+	c.Assert(opts[OptionSTSRegion], Equals, stsRegion)
+	c.Assert(opts[OptionSignVersion], Equals, signVersion)
+	c.Assert(opts[OptionRegion], Equals, region)
+	c.Assert(opts[OptionCloudBoxID], Equals, cloudboxId)
+
+	os.Remove(cfile)
+
+	tokenTimeout1 := "301"
+	ramRoleArn1 := "acs:ram::150*******52:role/ramosssts1"
+	roleSessionName1 := "roleTest1"
+	ecsRoleName1 := "ossTest1"
+	stsRegion1 := "sts.cn-hangzhou.aliyuncs.com"
+	data = "[Credentials]" + "\n" + "language=" + DefaultLanguage + "\n" + "accessKeyID=" + accessKeyID + "\n" + "accessKeySecret=" + accessKeySecret + "\n" + "endpoint=" +
+		endpoint + "\n" + "stsToken=" + stsToken + "\n" + "ecsRoleName=" + ecsRoleName1 + "\n" + "tokenTimeout=" + tokenTimeout1 + "\n" + "ramRoleArn=" + ramRoleArn1 + "\n" + "roleSessionName=" + roleSessionName1 + "\n" + "stsRegion=" + stsRegion1 + "\n" + "[Default]" + "\n" + "loglevel=" + logLevel + "\n" + "userAgent=" + userAgent + "\n" + "proxyHost=" + proxyHost + "\n" + "proxyUser=" + proxyUser + "\n" + "proxyPwd=" + proxyPwd + "\n" + "mode=" + mode + "\n" + "ecsRoleName=" + ecsRoleName + "\n" + "tokenTimeout=" + tokenTimeout + "\n" + "ramRoleArn=" + ramRoleArn + "\n" + "roleSessionName=" + roleSessionName + "\n" + "readTimeOut=" + readTimeout + "\n" + "connectTimeOut=" + connectTimeOut + "\n" + "stsRegion=" + stsRegion + "\n" + "signVersion=" + signVersion + "\n" + "region=" + region + "\n" + "cloudBoxID=" + cloudboxId
+	s.createFile(cfile, data, c)
+
+	opts, err = LoadConfig(cfile)
+	testLogger.Print(opts)
+	c.Assert(err, IsNil)
+	c.Assert(len(opts), Equals, 21)
+	c.Assert(opts[OptionLanguage], Equals, DefaultLanguage)
+	c.Assert(opts[OptionEndpoint], Equals, endpoint)
+	c.Assert(opts[OptionAccessKeyID], Equals, accessKeyID)
+	c.Assert(opts[OptionAccessKeySecret], Equals, accessKeySecret)
+
+	c.Assert(opts[OptionUserAgent], Equals, userAgent)
+	c.Assert(opts[OptionSTSToken], Equals, stsToken)
+
+	c.Assert(opts[OptionProxyHost], Equals, proxyHost)
+	c.Assert(opts[OptionProxyUser], Equals, proxyUser)
+	c.Assert(opts[OptionProxyPwd], Equals, proxyPwd)
+	c.Assert(opts[OptionMode], Equals, mode)
+	c.Assert(opts[OptionLogLevel], Equals, logLevel)
+	c.Assert(opts[OptionECSRoleName], Equals, ecsRoleName1)
+
+	c.Assert(opts[OptionRamRoleArn], Equals, ramRoleArn1)
+	c.Assert(opts[OptionTokenTimeout], Equals, tokenTimeout1)
+	c.Assert(opts[OptionRoleSessionName], Equals, roleSessionName1)
+	c.Assert(opts[OptionReadTimeout], Equals, readTimeout)
+	c.Assert(opts[OptionConnectTimeout], Equals, connectTimeOut)
+	c.Assert(opts[OptionSTSRegion], Equals, stsRegion1)
+	c.Assert(opts[OptionSignVersion], Equals, signVersion)
+	c.Assert(opts[OptionRegion], Equals, region)
+	c.Assert(opts[OptionCloudBoxID], Equals, cloudboxId)
+
+	os.Remove(cfile)
+}
+
+func (s *OssutilConfigSuite) createFile(fileName, content string, c *C) {
+	fout, err := os.Create(fileName)
+	defer fout.Close()
+	c.Assert(err, IsNil)
+	_, err = fout.WriteString(content)
+	c.Assert(err, IsNil)
+}

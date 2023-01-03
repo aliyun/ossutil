@@ -133,6 +133,24 @@ var specChineseConfig = SpecText{
         bucket1 = cname1
         bucket2 = cname2
         ...
+	[Default]
+		userAgent = user_agent
+		loglevel = log_level
+		proxyHost = proxy_host
+		proxyUser = proxy_user
+		proxyPwd = proxy_pwd
+		mode = AK|StsToken|RamRoleArn|EcsRamRole
+		ecsRoleName = ecs_role_name
+		ramRoleArn = ram_role_arn
+		roleSessionName = role_session_name
+		tokenTimeOut = token_time_out
+		readTimeOut = read_time_out
+		connectTimeOut = connect_time_out
+		stsRegion = sts_region
+		signVersion = sign_version
+		region = region
+		cloudBoxID = cloud_box_id
+		retryTimes = retry_times
 `,
 
 	sampleText: ` 
@@ -277,6 +295,24 @@ Credential File Format:
         bucket1 = cname1
         bucket2 = cname2
         ...
+	[Default]
+		userAgent = user_agent
+		loglevel = log_level
+		proxyHost = proxy_host
+		proxyUser = proxy_user
+		proxyPwd = proxy_pwd
+		mode = AK|StsToken|RamRoleArn|EcsRamRole
+		ecsRoleName = ecs_role_name
+		ramRoleArn = ram_role_arn
+		roleSessionName = role_session_name
+		tokenTimeOut = token_time_out
+		readTimeOut = read_time_out
+		connectTimeOut = connect_time_out
+		stsRegion = sts_region
+		signVersion = sign_version
+		region = region
+		cloudBoxID = cloud_box_id
+		retryTimes = retry_times
 `,
 
 	sampleText: ` 
@@ -307,8 +343,6 @@ var configCommand = ConfigCommand{
 			OptionSTSToken,
 			OptionOutputDir,
 			OptionLanguage,
-			OptionLogLevel,
-			OptionUserAgent,
 		},
 	},
 }
