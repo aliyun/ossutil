@@ -2791,3 +2791,97 @@ func (s *OssutilCommandSuite) TestFilterObjectFromChanWithPatterns(c *C) {
 	filterObjectsFromChanWithPatterns(chObjects, fts, dstObjects3)
 	c.Assert(len(dstObjects3), Equals, 1)
 }
+
+func (s *OssutilCommandSuite) TestCommandLoglevel(c *C) {
+	cfile := "ossutil-config" + randLowStr(8)
+	level := "info"
+	data := "[Credentials]" + "\n" + "language=" + DefaultLanguage + "\n" + "accessKeyID=" + accessKeyID + "\n" + "accessKeySecret=" + accessKeySecret + "\n" + "endpoint=" +
+		endpoint + "\n" + "[Default]" + "\n" + "loglevel=" + level + "\n"
+	s.createFile(cfile, data, c)
+
+	f, err := os.Stat(cfile)
+	c.Assert(err, IsNil)
+	c.Assert(f.Size() > 0, Equals, true)
+	os.Args = []string{"ossutil", "ls", "oss://", "--config-file=" + cfile}
+	os.Remove(logName)
+	err = ParseAndRunCommand()
+	c.Assert(err, IsNil)
+	f, err = os.Stat(logName)
+	c.Assert(err, IsNil)
+	c.Assert(f.Size() > 0, Equals, true)
+	strContent := s.readFile(logName, c)
+	c.Assert(strings.Contains(strContent, "[info]"), Equals, true)
+
+	os.Remove(logName)
+	os.Remove(cfile)
+}
+
+func (s *OssutilCommandSuite) TestGetLoglevelFromOptions(c *C) {
+	level := "info"
+	level2 := "debug"
+	str := ""
+	data := "[Credentials]" + "\n" + "language=" + DefaultLanguage + "\n" + "accessKeyID=" + accessKeyID + "\n" + "accessKeySecret=" + accessKeySecret + "\n" + "endpoint=" +
+		endpoint + "\n" + "[Default]" + "\n" + "loglevel=" + level + "\n"
+	s.createFile(configFile, data, c)
+	options := OptionMapType{
+		"loglevel": &level,
+	}
+
+	strLevel, err := getLoglevelFromOptions(options)
+	c.Assert(err, IsNil)
+	c.Assert(strLevel, Equals, level)
+	testLogger.Print("loglevel 1" + strLevel)
+
+	options = OptionMapType{
+		"configFile": &configFile,
+		"loglevel":   &level,
+	}
+	strLevel, err = getLoglevelFromOptions(options)
+	c.Assert(err, IsNil)
+	c.Assert(strLevel, Equals, level)
+	testLogger.Print("loglevel 2" + strLevel)
+
+	options = OptionMapType{
+		"configFile": &configFile,
+		"loglevel":   &level2,
+	}
+	strLevel, err = getLoglevelFromOptions(options)
+	c.Assert(err, IsNil)
+	c.Assert(strLevel, Equals, level2)
+	testLogger.Print("loglevel 3" + strLevel)
+
+	options = OptionMapType{
+		"configFile": &configFile,
+		"loglevel":   &str,
+	}
+	strLevel, err = getLoglevelFromOptions(options)
+	c.Assert(err, IsNil)
+	c.Assert(strLevel, Equals, level)
+	testLogger.Print("loglevel 4" + strLevel)
+
+	os.Remove(configFile)
+	data = "[Credentials]" + "\n" + "language=" + DefaultLanguage + "\n" + "accessKeyID=" + accessKeyID + "\n" + "accessKeySecret=" + accessKeySecret + "\n" + "endpoint=" +
+		endpoint + "\n" + "loglevel=" + level2 + "\n" + "[Default]" + "\n" + "loglevel=" + level + "\n"
+	s.createFile(configFile, data, c)
+	options = OptionMapType{
+		"configFile": &configFile,
+		"loglevel":   &str,
+	}
+	strLevel, err = getLoglevelFromOptions(options)
+	c.Assert(err, IsNil)
+	c.Assert(strLevel, Equals, level2)
+	testLogger.Print("loglevel 5" + strLevel)
+
+	os.Remove(configFile)
+	data = "[Credentials]" + "\n" + "language=" + DefaultLanguage + "\n" + "accessKeyID=" + accessKeyID + "\n" + "accessKeySecret=" + accessKeySecret + "\n" + "endpoint=" +
+		endpoint + "\n" + "log-level=" + level2 + "\n" + "[Default]" + "\n" + "loglevel=" + level + "\n"
+	s.createFile(configFile, data, c)
+	options = OptionMapType{
+		"configFile": &configFile,
+		"loglevel":   &str,
+	}
+	strLevel, err = getLoglevelFromOptions(options)
+	c.Assert(err, IsNil)
+	c.Assert(strLevel, Equals, level2)
+	testLogger.Print("loglevel 5" + strLevel)
+}
