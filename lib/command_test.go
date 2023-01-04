@@ -2791,3 +2791,82 @@ func (s *OssutilCommandSuite) TestFilterObjectFromChanWithPatterns(c *C) {
 	filterObjectsFromChanWithPatterns(chObjects, fts, dstObjects3)
 	c.Assert(len(dstObjects3), Equals, 1)
 }
+
+func (s *OssutilCommandSuite) TestCommandLoglevel(c *C) {
+	cfile := "ossutil-config" + randLowStr(8)
+	level := "info"
+	data := "[Credentials]" + "\n" + "language=" + DefaultLanguage + "\n" + "accessKeyID=" + accessKeyID + "\n" + "accessKeySecret=" + accessKeySecret + "\n" + "endpoint=" +
+		endpoint + "\n" + "[Default]" + "\n" + "loglevel=" + level + "\n"
+	s.createFile(cfile, data, c)
+
+	f, err := os.Stat(cfile)
+	c.Assert(err, IsNil)
+	c.Assert(f.Size() > 0, Equals, true)
+
+	os.Remove(logName)
+	os.Args = []string{"ossutil", "ls", "oss://", "--config-file=" + cfile, "--loglevel=debug"}
+	err = ParseAndRunCommand()
+	c.Assert(err, IsNil)
+
+	f, err = os.Stat(logName)
+	c.Assert(err, IsNil)
+	c.Assert(f.Size() > 0, Equals, true)
+
+	strContent := s.readFile(logName, c)
+	testLogger.Print("debug:" + strContent)
+	c.Assert(strings.Contains(strContent, "[debug]"), Equals, true)
+
+	os.Args = []string{"ossutil", "ls", "oss://", "--config-file=" + cfile}
+	err = ParseAndRunCommand()
+	c.Assert(err, IsNil)
+	c.Assert(err, IsNil)
+
+	f, err = os.Stat(logName)
+	c.Assert(err, IsNil)
+	c.Assert(f.Size() > 0, Equals, true)
+
+	strContent = s.readFile(logName, c)
+	testLogger.Print(strContent)
+	c.Assert(strings.Contains(strContent, "[info]"), Equals, true)
+
+	os.Remove(logName)
+	os.Remove(cfile)
+
+}
+
+func (s *OssutilCommandSuite) TestCommandLoglevel2(c *C) {
+	cfile := "ossutil-config" + randLowStr(8)
+	level := "info"
+	level2 := "debug"
+	data := "[Credentials]" + "\n" + "language=" + DefaultLanguage + "\n" + "accessKeyID=" + accessKeyID + "\n" + "accessKeySecret=" + accessKeySecret + "\n" + "endpoint=" +
+		endpoint + "\n" + "loglevel=" + level2 + "\n" + "[Default]" + "\n" + "loglevel=" + level + "\n"
+	s.createFile(cfile, data, c)
+
+	os.Args = []string{"ossutil", "ls", "oss://", "--config-file=" + cfile}
+	err := ParseAndRunCommand()
+	c.Assert(err, IsNil)
+
+	f, err := os.Stat(logName)
+	c.Assert(err, IsNil)
+	c.Assert(f.Size() > 0, Equals, true)
+
+	strContent := s.readFile(logName, c)
+	testLogger.Print("debug:" + strContent)
+	c.Assert(strings.Contains(strContent, "[debug]"), Equals, true)
+	os.Remove(logName)
+
+	os.Args = []string{"ossutil", "ls", "oss://", "--config-file=" + cfile, "--loglevel=info"}
+	err = ParseAndRunCommand()
+	c.Assert(err, IsNil)
+
+	f, err = os.Stat(logName)
+	c.Assert(err, IsNil)
+	c.Assert(f.Size() > 0, Equals, true)
+
+	strContent = s.readFile(logName, c)
+	testLogger.Print("info:" + strContent)
+	c.Assert(strings.Contains(strContent, "[info]"), Equals, true)
+	os.Remove(logName)
+
+	os.Remove(cfile)
+}

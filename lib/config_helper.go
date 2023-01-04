@@ -175,6 +175,34 @@ func readConfigFromFile(configFile string) (OptionMapType, error) {
 	return configMap, nil
 }
 
+// get loglevel from config file
+func readLoglevelFromFile(configFile string) (string, error) {
+	configFile = DecideConfigFile(configFile)
+	config, err := configparser.Read(configFile)
+	if err != nil {
+		return "", err
+	}
+	var sectionList []*configparser.Section
+	credSection, err := config.Section(CREDSection)
+	if err == nil {
+		sectionList = append(sectionList, credSection)
+	}
+	defaultSection, err := config.Section(DefaultSection)
+	if err == nil {
+		sectionList = append(sectionList, defaultSection)
+	}
+	logConfig := DefaultOptionMap[OptionLogLevel]
+	for _, section := range sectionList {
+		for _, name := range logConfig.showNames {
+			val := section.ValueOf(name)
+			if val != "" {
+				return val, nil
+			}
+		}
+	}
+	return "", nil
+}
+
 func getOptionNameByStr(name string) (string, bool) {
 	for optionName, option := range CredOptionMap {
 		for _, val := range option.showNames {
