@@ -1,6 +1,8 @@
 package lib
 
 import (
+	"io/ioutil"
+	"net/http"
 	"net/url"
 	"os"
 	"strconv"
@@ -946,8 +948,102 @@ func (s *OssutilCommandSuite) TestSignWithUserAgent(c *C) {
 	c.Assert(err, IsNil)
 	str = s.readFile(downFileName, c)
 	c.Assert(str, Equals, objectContext)
-
 	os.Remove(downFileName)
 	os.Remove(fileName)
 	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestSignUrlWithQueryProcess(c *C) {
+	localFile := "demo.jpg"
+	object := "demo.jpg"
+	imgUrl := "https://www.twle.cn/static/i/img1.jpg"
+	resp, _ := http.Get(imgUrl)
+	defer resp.Body.Close()
+
+	data, _ := ioutil.ReadAll(resp.Body)
+	ioutil.WriteFile(localFile, data, 0644)
+	bucketName := bucketNamePrefix + randLowStr(6)
+	s.putBucket(bucketName, c)
+	s.putObject(bucketName, object, localFile, c)
+
+	bucketStr := CloudURLToString(bucketName, object)
+	os.Args = []string{"ossutil", "sign", bucketStr, "--query-param", "x-oss-process:image/resize,m_fixed,w_100,h_100/rotate,90", "--query-param=name:peter"}
+	command := "sign"
+	options := OptionMapType{
+		"endpoint":        &endpoint,
+		"accessKeyID":     &accessKeyID,
+		"accessKeySecret": &accessKeySecret,
+	}
+	srcUrl := CloudURLToString(bucketName, object)
+	args := []string{srcUrl}
+	_, err := cm.RunCommand(command, args, options)
+	os.Args = []string{}
+	c.Assert(err, IsNil)
+
+	signUrl, err := url.QueryUnescape(signURLCommand.signUrl)
+	testLogger.Print(signUrl)
+	c.Assert(err, IsNil)
+	c.Assert(strings.Contains(signUrl, "x-oss-process=image/resize,m_fixed,w_100,h_100/rotate,90"), Equals, true)
+
+	bucket, err := signURLCommand.command.ossBucket(bucketName)
+	c.Assert(err, IsNil)
+
+	// get object with url
+	downFileName := "ossutil-test-file" + randStr(5) + ".jpg"
+	err = bucket.GetObjectToFileWithURL(signURLCommand.signUrl, downFileName)
+	c.Assert(err, IsNil)
+	str := s.readFile(downFileName, c)
+	c.Assert(str != "", Equals, true)
+	os.Remove(downFileName)
+
+	// test many query
+	os.Args = []string{"ossutil", "sign", bucketStr, "--query-param", "x-oss-process:image/resize,m_fixed,w_100,h_100/rotate,90", "--query-param=name:peter", "--query-param=device:ABESSF0023"}
+	options = OptionMapType{
+		"endpoint":        &endpoint,
+		"accessKeyID":     &accessKeyID,
+		"accessKeySecret": &accessKeySecret,
+	}
+	srcUrl = CloudURLToString(bucketName, object)
+	args = []string{srcUrl}
+	_, err = cm.RunCommand(command, args, options)
+	os.Args = []string{}
+	c.Assert(err, IsNil)
+
+	signUrl, err = url.QueryUnescape(signURLCommand.signUrl)
+	c.Assert(err, IsNil)
+	c.Assert(strings.Contains(signUrl, "x-oss-process=image/resize,m_fixed,w_100,h_100/rotate,90"), Equals, true)
+	c.Assert(strings.Contains(signUrl, "name=peter"), Equals, true)
+	c.Assert(strings.Contains(signUrl, "device=ABESSF0023"), Equals, true)
+	downFileName = "ossutil-test-file" + randStr(5) + ".jpg"
+	err = bucket.GetObjectToFileWithURL(signURLCommand.signUrl, downFileName)
+	c.Assert(err, IsNil)
+	str = s.readFile(downFileName, c)
+	c.Assert(str != "", Equals, true)
+	os.Remove(downFileName)
+	os.Remove(localFile)
+}
+
+func (s *OssutilCommandSuite) TestGetFilterStrings(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	bucketStr := CloudURLToString(bucketName, "")
+	cmdline := []string{"ossutil", "sign", bucketStr, "--query-param", "x-oss-process:image/resize,m_fixed,w_100,h_100/rotate,90"}
+
+	param := GetFilterStrings(cmdline, OptionMap[OptionQueryParam].nameAlias)
+	c.Assert(len(param), Equals, 1)
+	c.Assert(param[0], Equals, "x-oss-process:image/resize,m_fixed,w_100,h_100/rotate,90")
+
+	cmdline = []string{"ossutil", "sign", bucketStr, "--query-param", "x-oss-process:image/resize,m_fixed,w_100,h_100/rotate,90", "--query-param", "name:walker"}
+
+	param = GetFilterStrings(cmdline, OptionMap[OptionQueryParam].nameAlias)
+	c.Assert(len(param), Equals, 2)
+	c.Assert(param[0], Equals, "x-oss-process:image/resize,m_fixed,w_100,h_100/rotate,90")
+	c.Assert(param[1], Equals, "name:walker")
+
+	cmdline = []string{"ossutil", "sign", bucketStr, "--query-param", "x-oss-process:image/resize,m_fixed,w_100,h_100/rotate,90", "--query-param", "name:walker", "--query-param=fileName:ossutil.log", "--query-param=local:127.0.0.1"}
+
+	param = GetFilterStrings(cmdline, OptionMap[OptionQueryParam].nameAlias)
+	c.Assert(len(param), Equals, 4)
+	c.Assert(param[3], Equals, "local:127.0.0.1")
+	c.Assert(param[2], Equals, "fileName:ossutil.log")
 }

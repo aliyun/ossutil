@@ -2,6 +2,7 @@ package lib
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
@@ -48,6 +49,9 @@ var specChineseSignurl = SpecText{
     
     ossutil sign oss://bucket1/object1  --payer requester
         生成oss://bucket1/dir/object1的签名url, 使用访问者付费模式
+
+    ossutil sign oss://bucket1/object1.jpg  --query-param x-oss-process:image/resize,m_fixed,w_100,h_100/rotate,90
+        生成处理过的图片 oss://bucket1/dir/object1.jpg的签名url 
 `,
 }
 
@@ -97,6 +101,9 @@ Usage:
     
     ossutil sign oss://bucket1/object1  --payer requester
         Generate the signature of oss://bucket1/object1, use requester payment
+
+    ossutil sign oss://bucket1/object1.jpg  --query-param x-oss-process:image/resize,m_fixed,w_100,h_100/rotate,90
+		Generate the signature of processed picture oss://bucket1/dir/object1.jpg
 `,
 }
 
@@ -137,6 +144,7 @@ var signURLCommand = SignurlCommand{
 			OptionRoleSessionName,
 			OptionSTSRegion,
 			OptionUserAgent,
+			OptionQueryParam,
 		},
 	},
 }
@@ -174,7 +182,7 @@ func (sc *SignurlCommand) RunCommand() error {
 	if payer != "" && payer != strings.ToLower(string(oss.Requester)) {
 		return fmt.Errorf("invalid request payer: %s, please check", payer)
 	}
-
+	query := GetFilterStrings(os.Args, OptionMap[OptionQueryParam].nameAlias)
 	bucket, err := sc.command.ossBucket(cloudURL.bucket)
 	if err != nil {
 		return err
@@ -191,6 +199,13 @@ func (sc *SignurlCommand) RunCommand() error {
 
 	if payer != "" {
 		options = append(options, oss.RequestPayerParam(oss.PayerType(payer)))
+	}
+
+	if len(query) > 0 {
+		options, err = AddStringsToOption(query, options)
+		if err != nil {
+			return err
+		}
 	}
 
 	str, err := sc.ossSign(bucket, cloudURL.object, timeout, options...)

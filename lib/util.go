@@ -715,3 +715,50 @@ func GetPassword(prompt string) ([]byte, error) {
 	fmt.Fprint(os.Stderr, prompt)
 	return terminal.ReadPassword(fd)
 }
+
+// GetFilterStrings get strings from cmdline
+func GetFilterStrings(cmdline []string, prompt string) []string {
+	var param []string
+	for i, item := range cmdline {
+		var strTag = ""
+		if strings.Index(item, prompt) == 0 {
+			strTag = prompt
+		}
+
+		if strTag != "" {
+			var strArg string
+			if item == strTag {
+				strArg = cmdline[i+1]
+			} else if item[len(strTag)] == '=' {
+				strArg = item[len(strTag)+1:]
+			}
+			if strArg == "" {
+				continue
+			}
+			param = append(param, strArg)
+		}
+	}
+
+	return param
+}
+
+// AddStringsToOption add strings option to oss option
+func AddStringsToOption(params []string, options []oss.Option) ([]oss.Option, error) {
+	if params == nil {
+		return options, nil
+	}
+	paramsMap := map[string]string{}
+	for _, s := range params {
+		pair := strings.SplitN(s, ":", 2)
+		name := pair[0]
+		value := ""
+		if len(pair) > 1 {
+			value = pair[1]
+		}
+		paramsMap[name] = value
+	}
+	for key, value := range paramsMap {
+		options = append(options, oss.AddParam(key, value))
+	}
+	return options, nil
+}

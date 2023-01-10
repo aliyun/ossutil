@@ -277,6 +277,9 @@ var OptionMap = map[string]Option{
 	OptionCloudBoxID: Option{"", "--cloudbox-id", "", OptionTypeString, "", "",
 		"云盒的id，缺省值为空，适用于云盒场景",
 		"The ID of the cloud box. The default value is empty. It is applicable to cloud box scenarios"},
+	OptionQueryParam: Option{"", "--query-param", "", OptionTypeString, "", "",
+		"自定义参数",
+		"Custom parameters"},
 }
 
 func (T *Option) getHelp(language string) string {
