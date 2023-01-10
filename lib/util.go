@@ -715,3 +715,24 @@ func GetPassword(prompt string) ([]byte, error) {
 	fmt.Fprint(os.Stderr, prompt)
 	return terminal.ReadPassword(fd)
 }
+
+// AddStringsToOption add strings option to oss option
+func AddStringsToOption(params []string, options []oss.Option) ([]oss.Option, error) {
+	if params == nil {
+		return options, nil
+	}
+	paramsMap := map[string]string{}
+	for _, s := range params {
+		pair := strings.SplitN(s, ":", 2)
+		name := pair[0]
+		value := ""
+		if len(pair) > 1 {
+			value = pair[1]
+		}
+		paramsMap[name] = value
+	}
+	for key, value := range paramsMap {
+		options = append(options, oss.AddParam(key, value))
+	}
+	return options, nil
+}

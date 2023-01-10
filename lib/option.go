@@ -17,6 +17,7 @@ const (
 	OptionTypeInt64
 	OptionTypeFlagTrue
 	OptionTypeAlternative
+	OptionTypeStrings
 )
 
 // Option describe the component of a option
@@ -277,6 +278,9 @@ var OptionMap = map[string]Option{
 	OptionCloudBoxID: Option{"", "--cloudbox-id", "", OptionTypeString, "", "",
 		"云盒的id，缺省值为空，适用于云盒场景",
 		"The ID of the cloud box. The default value is empty. It is applicable to cloud box scenarios"},
+	OptionQueryParam: Option{"", "--query-param", "", OptionTypeStrings, "", "",
+		"设置请求的query参数",
+		"Set the query parameters for the request"},
 }
 
 func (T *Option) getHelp(language string) string {
@@ -319,6 +323,9 @@ func initOption() OptionMapType {
 		case OptionTypeAlternative:
 			val, _ := stringOption(option)
 			m[name] = val
+		case OptionTypeStrings:
+			val, _ := stringsOption(option)
+			m[name] = val
 		default:
 			val, _ := stringOption(option)
 			m[name] = val
@@ -332,6 +339,14 @@ func stringOption(option Option) (*string, error) {
 	if err == nil {
 		// ignore option.def, set it to "", will assemble it after
 		return goopt.String(names, "", option.getHelp(DefaultLanguage)), nil
+	}
+	return nil, err
+}
+
+func stringsOption(option Option) (*[]string, error) {
+	names, err := makeNames(option)
+	if err == nil {
+		return goopt.Strings(names, "", option.getHelp(DefaultLanguage)), nil
 	}
 	return nil, err
 }
@@ -445,4 +460,15 @@ func GetString(name string, options OptionMapType) (string, error) {
 		return "", fmt.Errorf("Error: Option value of %s is not string", name)
 	}
 	return "", fmt.Errorf("Error: There is no option for %s", name)
+}
+
+// GetStrings is used to get slice option from option map parsed by ParseArgOptions
+func GetStrings(name string, options OptionMapType) ([]string, error) {
+	if option, ok := options[name]; ok {
+		if val, ook := option.(*[]string); ook {
+			return *val, nil
+		}
+		return nil, fmt.Errorf("Error: Option value of %s is not []string", name)
+	}
+	return nil, fmt.Errorf("Error: There is no option for %s", name)
 }

@@ -146,6 +146,12 @@ func (cmd *Command) checkOptions() error {
 					return CommandError{cmd.name, msg}
 				}
 			}
+		case OptionTypeStrings:
+			if val, _ := GetStrings(name, cmd.options); len(val) > 0 {
+				if FindPos(name, cmd.validOptionNames) == -1 {
+					return CommandError{cmd.name, msg}
+				}
+			}
 		default:
 			if val, _ := GetString(name, cmd.options); val != "" {
 				if FindPos(name, cmd.validOptionNames) == -1 {

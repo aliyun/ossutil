@@ -103,6 +103,7 @@ const (
 	OptionSignVersion                = "signVersion"
 	OptionRegion                     = "region"
 	OptionCloudBoxID                 = "cloudBoxID"
+	OptionQueryParam                 = "queryParam"
 )
 
 // the elements show in stat object
