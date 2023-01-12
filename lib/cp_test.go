@@ -1042,6 +1042,7 @@ func (s *OssutilCommandSuite) TestPreparePartOption(c *C) {
 
 	p := 7
 	parallel := strconv.Itoa(p)
+	copyCommand.command.options = make(OptionMapType, len(OptionMap))
 	copyCommand.command.options[OptionParallel] = &parallel
 	partSize, routines = copyCommand.preparePartOption(1)
 	c.Assert(routines, Equals, p)
