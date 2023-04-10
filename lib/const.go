@@ -136,16 +136,19 @@ const (
 )
 
 const (
-	updateEndpoint       string = "oss-cn-hangzhou.aliyuncs.com"
-	updateBucket                = "ossutil-version-update"
-	updateVersionObject         = "ossutilversion"
-	updateBinaryLinux32         = "ossutil32"
-	updateBinaryLinux64         = "ossutil64"
-	updateBinaryWindow32        = "ossutil32.exe"
-	updateBinaryWindow64        = "ossutil64.exe"
-	updateBinaryMac32           = "ossutilmac32"
-	updateBinaryMac64           = "ossutilmac64"
-	updateTmpVersionFile        = ".ossutil_tmp_vsersion"
+	updateEndpoint         string = "oss-cn-hangzhou.aliyuncs.com"
+	updateBucket                  = "ossutil-version-update"
+	updateVersionObject           = "ossutilversion"
+	updateBinaryLinux32           = "ossutil32"
+	updateBinaryLinux64           = "ossutil64"
+	updateBinaryLinuxArm32        = "ossutilarm32"
+	updateBinaryLinuxArm64        = "ossutilarm64"
+	updateBinaryWindow32          = "ossutil32.exe"
+	updateBinaryWindow64          = "ossutil64.exe"
+	updateBinaryMac32             = "ossutilmac32"
+	updateBinaryMac64             = "ossutilmac64"
+	updateBinaryMacArm64          = "ossutilmacarm64"
+	updateTmpVersionFile          = ".ossutil_tmp_vsersion"
 )
 
 // global public variable
