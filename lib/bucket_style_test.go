@@ -270,6 +270,7 @@ func (s *OssutilCommandSuite) TestGetBucketStyleConfirm(c *C) {
 	_, err := cm.RunCommand(command, styleArgs, options)
 	c.Assert(err, IsNil)
 
+	time.Sleep(time.Second * 5)
 	// get resource group
 	styleDownName := styleFileName + "-down"
 	strMethod = "get"
