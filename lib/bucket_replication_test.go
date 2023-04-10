@@ -816,10 +816,38 @@ func (s *OssutilCommandSuite) TestBucketReplicationGetProgressWithRuleID(c *C) {
 	c.Assert(progressResult.Rules[0].Destination.Bucket, Equals, secondDestinationBucketName)
 	c.Assert(progressResult.Rules[0].HistoricalObjectReplication, Equals, "enabled")
 
+	// replication command and put rtc
+	rtcPutXml := `<?xml version="1.0" encoding="UTF-8"?>
+<ReplicationRule>
+    <RTC>
+        <Status>disabled</Status>
+    </RTC>
+    <ID>` + ruleID + `</ID>
+</ReplicationRule>`
+
+	rtcPutFileName := "test-putRtc-" + randLowStr(5)
+	s.createFile(rtcPutFileName, rtcPutXml, c)
+	strMethod = "put"
+	item = "rtc"
+	options = OptionMapType{
+		"endpoint":        &sourceEndpoint,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"stsToken":        &str,
+		"configFile":      &configFile,
+		"method":          &strMethod,
+		"item":            &item,
+	}
+
+	getArgs = []string{CloudURLToString(sourceBucketName, ""), rtcPutFileName}
+	_, err = cm.RunCommand("replication", getArgs, options)
+	c.Assert(err, IsNil)
+
 	os.Remove(firstPutFileName)
 	os.Remove(secondPutFileName)
 	os.Remove(getFileName)
 	os.Remove(getProgressFileName)
+	os.Remove(rtcPutFileName)
 
 	// use rm command to rm sourceBucket
 	ok := true
