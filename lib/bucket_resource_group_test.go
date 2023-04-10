@@ -181,17 +181,11 @@ func (s *OssutilCommandSuite) TestGetBucketResourceGroupConfirm(c *C) {
 	bucketName := bucketNamePrefix + randLowStr(12)
 	s.putBucket(bucketName, c)
 
-	resourceXml := `<?xml version="1.0" encoding="UTF-8"?>
-<BucketResourceGroupConfiguration>
-  <ResourceGroupId>rg-acfmy7mo47b3adq</ResourceGroupId>
-</BucketResourceGroupConfiguration>`
-
 	resourceFileName := inputFileName + randLowStr(5)
-	s.createFile(resourceFileName, resourceXml, c)
-
-	// resource group command test
+	// get resource group
+	resourceDownName := resourceFileName + "-down"
 	var str string
-	strMethod := "put"
+	strMethod := "get"
 	options := OptionMapType{
 		"endpoint":        &str,
 		"accessKeyID":     &str,
@@ -201,21 +195,36 @@ func (s *OssutilCommandSuite) TestGetBucketResourceGroupConfirm(c *C) {
 	}
 
 	command := "resource-group"
-
-	resourceArgs := []string{CloudURLToString(bucketName, ""), resourceFileName}
+	resourceArgs := []string{CloudURLToString(bucketName, ""), resourceDownName}
 	_, err := cm.RunCommand(command, resourceArgs, options)
+	c.Assert(err, IsNil)
+	accessBody := s.readFile(resourceDownName, c)
+
+	var out oss.GetBucketResourceGroupResult
+	err = xml.Unmarshal([]byte(accessBody), &out)
+	c.Assert(err, IsNil)
+	id := out.ResourceGroupId
+
+	os.Remove(resourceDownName)
+
+	resourceXml := `<?xml version="1.0" encoding="UTF-8"?>
+<BucketResourceGroupConfiguration>
+  <ResourceGroupId>` + id + `</ResourceGroupId>
+</BucketResourceGroupConfiguration>`
+
+	s.createFile(resourceFileName, resourceXml, c)
+
+	// resource group command test
+	options[OptionMethod] = &strMethod
+
+	command = "resource-group"
+	resourceArgs = []string{CloudURLToString(bucketName, ""), resourceFileName}
+	_, err = cm.RunCommand(command, resourceArgs, options)
 	c.Assert(err, IsNil)
 
 	// get resource group
-	resourceDownName := resourceFileName + "-down"
 	strMethod = "get"
-	options = OptionMapType{
-		"endpoint":        &str,
-		"accessKeyID":     &str,
-		"accessKeySecret": &str,
-		"configFile":      &configFile,
-		"method":          &strMethod,
-	}
+	options[OptionMethod] = &strMethod
 
 	resourceArgs = []string{CloudURLToString(bucketName, ""), resourceDownName}
 	_, err = cm.RunCommand(command, resourceArgs, options)
