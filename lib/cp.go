@@ -1600,7 +1600,7 @@ func (cc *CopyCommand) closeProgress() {
 	signalNum = -1
 }
 
-//function for upload files
+// function for upload files
 func (cc *CopyCommand) uploadFiles(srcURLList []StorageURLer, destURL CloudURL) error {
 	if err := destURL.checkObjectPrefix(); err != nil {
 		return err
@@ -1832,6 +1832,7 @@ func (cc *CopyCommand) fileProducer(srcURLList []StorageURLer, chFiles chan<- fi
 		f, err := os.Stat(name)
 		if err != nil {
 			chListError <- err
+			fmt.Printf("Error in fileProducer::Stat: %s\n", err)
 			return
 		}
 		if f.IsDir() {
@@ -1842,6 +1843,7 @@ func (cc *CopyCommand) fileProducer(srcURLList []StorageURLer, chFiles chan<- fi
 
 			err := cc.getFileList(name, chFiles)
 			if err != nil {
+				fmt.Printf("Error in fileProducer::getFileList: %s\n", err)
 				chListError <- err
 				return
 			}
@@ -2339,7 +2341,7 @@ func (cc *CopyCommand) filterError(err error) bool {
 	return true
 }
 
-//function for download files
+// function for download files
 func (cc *CopyCommand) downloadFiles(srcURL CloudURL, destURL FileURL) error {
 	bucket, err := cc.command.ossBucket(srcURL.bucket)
 	if err != nil {
@@ -2862,7 +2864,7 @@ func (cc *CopyCommand) waitRoutinueComplete(chError, chListError <-chan error, o
 	return cc.formatResultPrompt(ferr)
 }
 
-//function for copy objects
+// function for copy objects
 func (cc *CopyCommand) copyFiles(srcURL, destURL CloudURL) error {
 	bucket, err := cc.command.ossBucket(srcURL.bucket)
 	if err != nil {
