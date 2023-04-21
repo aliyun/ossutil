@@ -852,13 +852,13 @@ func (sc *SetMetaCommand) setObjectMetaStatistic(objectFile string, monitor Moni
 }
 
 func (sc *SetMetaCommand) setObjectMetaProducer(objectFile string, chObjects chan<- string, chError chan<- error, filters []filterOptionType, options ...oss.Option) {
+	defer close(chObjects)
 	file, err := os.Open(objectFile)
 	if err != nil {
 		chError <- err
 		return
 	}
 	defer file.Close()
-
 	encodingType, _ := GetString(OptionEncodingType, sc.command.options)
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
@@ -866,19 +866,17 @@ func (sc *SetMetaCommand) setObjectMetaProducer(objectFile string, chObjects cha
 		object = strings.Trim(object, " ")
 		if object == "" {
 			chError <- fmt.Errorf("object can't be '' in --object-file")
-			break
+			return
 		}
 		if encodingType == URLEncodingType {
 			oldObject := object
 			if object, err = url.QueryUnescape(oldObject); err != nil {
 				chError <- fmt.Errorf("invalid object url: %s, object name is not url encoded, %s", oldObject, err.Error())
-				break
+				return
 			}
 		}
 		chObjects <- object
 	}
-
-	defer close(chObjects)
 	chError <- nil
 }
 

@@ -720,6 +720,7 @@ func (cmd *Command) objectStatistic(bucket *oss.Bucket, cloudURL CloudURL, monit
 }
 
 func (cmd *Command) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, chObjects chan<- string, chError chan<- error, filters []filterOptionType, options ...oss.Option) {
+	defer close(chObjects)
 	pre := oss.Prefix(cloudURL.object)
 	marker := oss.Marker("")
 	for {
@@ -727,9 +728,8 @@ func (cmd *Command) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, chObje
 		lor, err := cmd.ossListObjectsRetry(bucket, listOptions...)
 		if err != nil {
 			chError <- err
-			break
+			return
 		}
-
 		for _, object := range lor.Objects {
 			if doesSingleObjectMatchPatterns(object.Key, filters) {
 				chObjects <- object.Key
@@ -742,7 +742,6 @@ func (cmd *Command) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, chObje
 			break
 		}
 	}
-	defer close(chObjects)
 	chError <- nil
 }
 
