@@ -2,6 +2,7 @@ package lib
 
 import (
 	"fmt"
+	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"os"
 	"strings"
 
@@ -246,6 +247,52 @@ func (s *OssutilCommandSuite) TestMbCreateBucketWithConfigFile(c *C) {
 
 	bucketStat := s.getStat(bucketName, "", c)
 	c.Assert(bucketStat["StorageClass"], Equals, "IA")
+	s.removeBucket(bucketName, true, c)
+	os.Remove(inputFile)
+}
+
+func (s *OssutilCommandSuite) TestMbCreateBucketWithServerEncryption(c *C) {
+	client, err := oss.New(endpoint, accessKeyID, accessKeySecret)
+	c.Assert(err, IsNil)
+
+	bucketName := bucketNamePrefix + randLowStr(10)
+	inputFile := "test-ossutil-file-" + randLowStr(5)
+	command := "mb"
+	xmlBody := `
+	<?xml version="1.0" encoding="UTF-8"?>
+	<CreateBucketConfiguration>
+		<StorageClass>IA</StorageClass>
+	</CreateBucketConfiguration>
+	`
+	s.createFile(inputFile, xmlBody, c)
+	args := []string{CloudURLToString(bucketName, ""), inputFile}
+	encryption := "X-Oss-Server-Side-Encryption:KMS#X-Oss-Server-Side-Encryption-Key-Id:kms-id#X-Oss-Server-Side-Data-Encryption:SM4"
+	options := OptionMapType{
+		"endpoint":        &endpoint,
+		"accessKeyID":     &accessKeyID,
+		"accessKeySecret": &accessKeySecret,
+		"meta":            &encryption,
+	}
+	_, err = cm.RunCommand(command, args, options)
+	c.Assert(err, IsNil)
+
+	rs, err := client.GetBucketEncryption(bucketName)
+	c.Assert(err, IsNil)
+	c.Assert(rs.SSEDefault.SSEAlgorithm, Equals, "KMS")
+	c.Assert(rs.SSEDefault.KMSMasterKeyID, Equals, "kms-id")
+	c.Assert(rs.SSEDefault.KMSDataEncryption, Equals, "SM4")
+	s.removeBucket(bucketName, true, c)
+	os.Remove(inputFile)
+
+	encryption1 := "X-Oss-Server-Side-Encryption:AES256"
+	options[OptionMeta] = &encryption1
+	args = []string{CloudURLToString(bucketName, "")}
+	_, err = cm.RunCommand(command, args, options)
+	c.Assert(err, IsNil)
+
+	rs, err = client.GetBucketEncryption(bucketName)
+	c.Assert(err, IsNil)
+	c.Assert(rs.SSEDefault.SSEAlgorithm, Equals, "AES256")
 	s.removeBucket(bucketName, true, c)
 	os.Remove(inputFile)
 }
