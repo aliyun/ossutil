@@ -439,3 +439,39 @@ func (s *OssutilCommandSuite) TestDuUploadIdNotExist(c *C) {
 	c.Assert(err, IsNil)
 	s.removeBucket(bucketName, true, c)
 }
+
+func (s *OssutilCommandSuite) TestUploadIdProducer(c *C) {
+	chObjects := make(chan MultiPartObject, ChannelBuf)
+	chListError := make(chan error, 1)
+	client, err := oss.New(endpoint, accessKeyID, accessKeySecret)
+	c.Assert(err, IsNil)
+	bucket, err := client.Bucket(bucketNameNotExist)
+	c.Assert(err, IsNil)
+	duSizeCommand.uploadIdProducer(bucket, chObjects, chListError)
+	err = <-chListError
+	c.Assert(err, NotNil)
+	select {
+	case _, ok := <-chObjects:
+		testLogger.Printf("chObjects channel has closed")
+		c.Assert(ok, Equals, false)
+	default:
+		testLogger.Printf("chObjects no data")
+		c.Assert(true, Equals, false)
+	}
+
+	chObjects2 := make(chan MultiPartObject, ChannelBuf)
+	chListError2 := make(chan error, 1)
+	bucket2, err := client.Bucket(bucketNameExist)
+	c.Assert(err, IsNil)
+	duSizeCommand.uploadIdProducer(bucket2, chObjects2, chListError2)
+	err = <-chListError2
+	c.Assert(err, IsNil)
+	select {
+	case _, ok := <-chObjects:
+		testLogger.Printf("chObjects channel has closed")
+		c.Assert(ok, Equals, false)
+	default:
+		testLogger.Printf("chObjects no data")
+		c.Assert(true, Equals, false)
+	}
+}
