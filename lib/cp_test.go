@@ -1644,6 +1644,85 @@ func (s *OssutilCommandSuite) TestCopyFunction(c *C) {
 	c.Assert(str, Equals, "a")
 }
 
+//test fileProducer
+func (s *OssutilCommandSuite) TestFileProducer(c *C) {
+	chFiles := make(chan fileInfoType, ChannelBuf)
+	chListError := make(chan error, 1)
+	storageURL, err := StorageURLFromString("&~", "")
+	c.Assert(err, IsNil)
+	copyCommand.fileProducer([]StorageURLer{storageURL}, chFiles, chListError)
+	err = <-chListError
+	c.Assert(err, NotNil)
+
+	select {
+	case _, ok := <-chFiles:
+		testLogger.Printf("chFiles channel has closed")
+		c.Assert(ok, Equals, false)
+	}
+
+	chFiles2 := make(chan fileInfoType, ChannelBuf)
+	chListError2 := make(chan error, 1)
+	storageURL, err = StorageURLFromString("cp_test.go", "")
+	c.Assert(err, IsNil)
+	copyCommand.fileProducer([]StorageURLer{storageURL}, chFiles2, chListError2)
+	err = <-chListError2
+	c.Assert(err, IsNil)
+
+	select {
+	case i, ok := <-chFiles2:
+		testLogger.Printf("%#v\n", i)
+		c.Assert(ok, Equals, true)
+		c.Assert(i, Equals, fileInfoType{filePath: "cp_test.go", dir: ""})
+	}
+
+	select {
+	case _, ok := <-chFiles:
+		testLogger.Printf("chFiles channel has closed")
+		c.Assert(ok, Equals, false)
+	}
+}
+
+//test objectProducer
+func (s *OssutilCommandSuite) TestCpObjectProducer(c *C) {
+	chObjects := make(chan objectInfoType, ChannelBuf)
+	chListError := make(chan error, 1)
+	cloudURL, err := CloudURLFromString(CloudURLToString(bucketNameNotExist, "demo.txt"), "")
+	c.Assert(err, IsNil)
+	client, err := oss.New(endpoint, accessKeyID, accessKeySecret)
+	c.Assert(err, IsNil)
+	bucket, err := client.Bucket(bucketNameNotExist)
+	c.Assert(err, IsNil)
+	copyCommand.objectProducer(bucket, cloudURL, chObjects, chListError)
+	err = <-chListError
+	c.Assert(err, NotNil)
+	select {
+	case _, ok := <-chObjects:
+		testLogger.Printf("chObjects channel has closed")
+		c.Assert(ok, Equals, false)
+	default:
+		testLogger.Printf("chObjects no data")
+		c.Assert(true, Equals, false)
+	}
+
+	chObjects2 := make(chan objectInfoType, ChannelBuf)
+	chListError2 := make(chan error, 1)
+	storageURL2, err := CloudURLFromString(CloudURLToString(bucketNameExist, ""), "")
+	c.Assert(err, IsNil)
+	bucket2, err := client.Bucket(bucketNameExist)
+	c.Assert(err, IsNil)
+	copyCommand.objectProducer(bucket2, storageURL2, chObjects2, chListError2)
+	err = <-chListError2
+	c.Assert(err, IsNil)
+	select {
+	case _, ok := <-chObjects:
+		testLogger.Printf("chObjects channel has closed")
+		c.Assert(ok, Equals, false)
+	default:
+		testLogger.Printf("chObjects no data")
+		c.Assert(true, Equals, false)
+	}
+}
+
 func (s *OssutilCommandSuite) TestCPURLEncoding(c *C) {
 	bucketName := bucketNamePrefix + randLowStr(10)
 	s.putBucket(bucketName, c)

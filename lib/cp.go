@@ -1827,6 +1827,7 @@ func (cc *CopyCommand) getFileListStatistic(dpath string) error {
 }
 
 func (cc *CopyCommand) fileProducer(srcURLList []StorageURLer, chFiles chan<- fileInfoType, chListError chan<- error) {
+	defer close(chFiles)
 	for _, url := range srcURLList {
 		name := url.ToString()
 		f, err := os.Stat(name)
@@ -1850,8 +1851,6 @@ func (cc *CopyCommand) fileProducer(srcURLList []StorageURLer, chFiles chan<- fi
 			chFiles <- fileInfoType{fname, dir}
 		}
 	}
-
-	defer close(chFiles)
 	chListError <- nil
 }
 
@@ -2767,6 +2766,7 @@ func (cc *CopyCommand) parseRange(str string, size int64) (int64, error) {
 }
 
 func (cc *CopyCommand) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, chObjects chan<- objectInfoType, chError chan<- error) {
+	defer close(chObjects)
 	pre := oss.Prefix(cloudURL.object)
 	marker := oss.Marker("")
 	//while the src object is end with "/", use object key as marker, exclude the object itself
@@ -2779,14 +2779,13 @@ func (cc *CopyCommand) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, chO
 	}
 
 	listOptions := append(cc.cpOption.payerOptions, pre, marker, del)
+	fnvIns := fnv.New64()
 	for {
 		lor, err := cc.command.ossListObjectsRetry(bucket, listOptions...)
 		if err != nil {
 			chError <- err
-			break
+			return
 		}
-
-		fnvIns := fnv.New64()
 		for _, object := range lor.Objects {
 			prefix := ""
 			relativeKey := object.Key
@@ -2817,7 +2816,7 @@ func (cc *CopyCommand) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, chO
 			break
 		}
 	}
-	defer close(chObjects)
+
 	chError <- nil
 }
 
