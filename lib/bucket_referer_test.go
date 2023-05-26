@@ -69,6 +69,107 @@ func (s *OssutilCommandSuite) TestBucketRefererPutSuccess(c *C) {
 	s.removeBucket(bucketName, true, c)
 }
 
+func (s *OssutilCommandSuite) TestBucketRefererPutSuccessV2(c *C) {
+	// put referer
+	bucketName := bucketNamePrefix + randLowStr(12)
+	s.putBucket(bucketName, c)
+
+	// referer command test
+	var str string
+	strMethod := "put"
+	item := "raw"
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"stsToken":        &str,
+		"configFile":      &configFile,
+		"method":          &strMethod,
+		"item":            &item,
+	}
+
+	refer1 := "http://www.aliyun.com"
+
+	refer2 := "https://www.?.aliyuncs.com"
+
+	blackRefer1 := "http://www.refuse.com"
+
+	blackRefer2 := "http://ban.*.com"
+
+	setXml := `<?xml version="1.0" encoding="UTF-8"?>
+<RefererConfiguration>
+  <AllowEmptyReferer>false</AllowEmptyReferer>
+  <AllowTruncateQueryString>false</AllowTruncateQueryString>
+  <RefererList>
+        <Referer>` + refer1 + `</Referer>
+        <Referer>https://www.aliyun.com</Referer>
+        <Referer>http://www.*.com</Referer>
+        <Referer>` + refer2 + `</Referer>
+  </RefererList>
+  <RefererBlacklist>
+        <Referer>` + blackRefer1 + `</Referer>
+        <Referer>https://*.hack.com</Referer>
+        <Referer>` + blackRefer2 + `</Referer>
+    		<Referer>https://www.?.deny.com</Referer>
+  </RefererBlacklist>
+</RefererConfiguration>`
+
+	setFileName := "test-setfile-" + randLowStr(5)
+	s.createFile(setFileName, setXml, c)
+
+	refererArgs := []string{CloudURLToString(bucketName, ""), setFileName}
+	_, err := cm.RunCommand("referer", refererArgs, options)
+	c.Assert(err, IsNil)
+	os.Remove(setFileName)
+
+	// check,get referer
+	refererDownName := randLowStr(12) + "-referer-down"
+	strMethod = "get"
+	options[OptionMethod] = &strMethod
+
+	refererArgs = []string{CloudURLToString(bucketName, ""), refererDownName}
+	_, err = cm.RunCommand("referer", refererArgs, options)
+	c.Assert(err, IsNil)
+
+	// check referer
+	_, err = os.Stat(refererDownName)
+	c.Assert(err, IsNil)
+
+	refererBody := s.readFile(refererDownName, c)
+	referXml := oss.GetBucketRefererResult{}
+	err = xml.Unmarshal([]byte(refererBody), &referXml)
+
+	c.Assert(err, IsNil)
+	c.Assert(referXml.AllowEmptyReferer, Equals, false)
+	c.Assert(*referXml.AllowTruncateQueryString, Equals, false)
+	c.Assert(len(referXml.RefererList), Equals, 4)
+	c.Assert(referXml.RefererList[0], Equals, refer1)
+	c.Assert(referXml.RefererList[3], Equals, refer2)
+	c.Assert(len(referXml.RefererBlacklist.Referer), Equals, 4)
+	c.Assert(referXml.RefererBlacklist.Referer[0], Equals, blackRefer1)
+	c.Assert(referXml.RefererBlacklist.Referer[2], Equals, blackRefer2)
+
+	strMethod = "put"
+	options[OptionMethod] = &strMethod
+
+	setXml = `<?xml version="1.0" encoding="UTF-8"?>
+<RefererConfiguration>
+  <AllowEmptyReferer>true</AllowEmptyReferer>
+  <RefererList>
+  </RefererList>
+</RefererConfiguration>`
+
+	setFileName = "test-setfile-" + randLowStr(5)
+	s.createFile(setFileName, setXml, c)
+	refererArgs = []string{CloudURLToString(bucketName, ""), setFileName}
+	_, err = cm.RunCommand("referer", refererArgs, options)
+	c.Assert(err, IsNil)
+	os.Remove(setFileName)
+
+	os.Remove(refererDownName)
+	s.removeBucket(bucketName, true, c)
+}
+
 func (s *OssutilCommandSuite) TestBucketRefererDisableEmpty(c *C) {
 	// put referer
 	bucketName := bucketNamePrefix + randLowStr(12)
