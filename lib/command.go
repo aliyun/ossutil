@@ -890,5 +890,6 @@ func GetAllCommands() []interface{} {
 		&lcbCommand,
 		&bucketAccessMonitorCommand,
 		&bucketResourceGroupCommand,
+		&bucketAccessPointCommand,
 	}
 }
