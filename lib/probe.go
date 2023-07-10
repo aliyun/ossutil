@@ -365,6 +365,7 @@ var probeCommand = ProbeCommand{
 			OptionSignVersion,
 			OptionRegion,
 			OptionCloudBoxID,
+			OptionProfile,
 		},
 	},
 }

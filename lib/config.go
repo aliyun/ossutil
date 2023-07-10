@@ -323,6 +323,8 @@ var configCommand = ConfigCommand{
 			OptionSTSToken,
 			OptionOutputDir,
 			OptionLanguage,
+			OptionUserAgent,
+			OptionProfile,
 		},
 	},
 }
@@ -375,14 +377,21 @@ func (cc *ConfigCommand) RunCommand() error {
 	language, _ := GetString(OptionLanguage, cc.command.options)
 	delete(cc.command.options, OptionLanguage)
 
+	profile, _ := GetString(OptionProfile, cc.command.options)
+	delete(cc.command.options, OptionProfile)
+
+	if profile != "" && (profile == BucketEndpointSection || profile == BucketCnameSection || profile == AkServiceSection || profile == DefaultSection) {
+		return fmt.Errorf("--profile value is can not be in the optional value:%s|%s|%s|%s", BucketEndpointSection, BucketCnameSection, AkServiceSection, DefaultSection)
+	}
+
 	// filter user input options
 	cc.filterNonInputOptions()
 
 	var err error
 	if len(cc.command.options) == 0 {
-		err = cc.runCommandInteractive(configFile, language)
+		err = cc.runCommandInteractive(configFile, language, profile)
 	} else {
-		err = cc.runCommandNonInteractive(configFile, language)
+		err = cc.runCommandNonInteractive(configFile, language, profile)
 	}
 	return err
 }
@@ -395,7 +404,7 @@ func (cc *ConfigCommand) filterNonInputOptions() {
 	}
 }
 
-func (cc *ConfigCommand) runCommandInteractive(configFile, language string) error {
+func (cc *ConfigCommand) runCommandInteractive(configFile, language, profile string) error {
 	llanguage := strings.ToLower(language)
 	if llanguage == LEnglishLanguage {
 		fmt.Println("The command creates a configuration file and stores credentials.")
@@ -426,33 +435,32 @@ func (cc *ConfigCommand) runCommandInteractive(configFile, language string) erro
 		fmt.Println("对于下述配置，回车将跳过相关配置项的设置，配置项的具体含义，请使用\"help config\"命令查看。")
 	}
 
-	if err := cc.configInteractive(configFile, language); err != nil {
+	if err := cc.configInteractive(configFile, language, profile); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (cc *ConfigCommand) configInteractive(configFile, language string) error {
+func (cc *ConfigCommand) configInteractive(configFile, language, profile string) error {
 	var val string
-	config := configparser.NewConfiguration()
-	section := config.NewSection(CREDSection)
-
+	config, section, err := ParseConfigFile(configFile, profile)
+	if err != nil {
+		return err
+	}
 	// if config file not exist, config Language
 	llanguage := strings.ToLower(language)
 	section.Add(OptionLanguage, language)
-	if _, err := os.Stat(configFile); err != nil {
-		if llanguage == LEnglishLanguage {
-			fmt.Printf("Please enter language(%s, default is:%s, the configuration will go into effect after the command successfully executed):", OptionMap[OptionLanguage].minVal, DefaultLanguage)
-		} else {
-			fmt.Printf("请输入语言(%s，默认为：%s，该配置项将在此次config命令成功结束后生效)：", OptionMap[OptionLanguage].minVal, DefaultLanguage)
+	if llanguage == LEnglishLanguage {
+		fmt.Printf("Please enter language(%s, default is:%s, the configuration will go into effect after the command successfully executed):", OptionMap[OptionLanguage].minVal, DefaultLanguage)
+	} else {
+		fmt.Printf("请输入语言(%s，默认为：%s，该配置项将在此次config命令成功结束后生效)：", OptionMap[OptionLanguage].minVal, DefaultLanguage)
+	}
+	if _, err := fmt.Scanln(&val); err == nil {
+		vals := strings.Split(OptionMap[OptionLanguage].minVal, "/")
+		if FindPosCaseInsen(val, vals) == -1 {
+			return fmt.Errorf("invalid option value of %s, the value: %s is not anyone of %s", OptionLanguage, val, OptionMap[OptionLanguage].minVal)
 		}
-		if _, err := fmt.Scanln(&val); err == nil {
-			vals := strings.Split(OptionMap[OptionLanguage].minVal, "/")
-			if FindPosCaseInsen(val, vals) == -1 {
-				return fmt.Errorf("invalid option value of %s, the value: %s is not anyone of %s", OptionLanguage, val, OptionMap[OptionLanguage].minVal)
-			}
-			section.Add(OptionLanguage, val)
-		}
+		section.Add(OptionLanguage, val)
 	}
 
 	for name, option := range CredOptionMap {
@@ -489,23 +497,24 @@ func (cc *ConfigCommand) configInteractive(configFile, language string) error {
 		}
 	}
 
-	if err := configparser.Save(config, configFile); err != nil {
+	if err = configparser.Save(config, configFile); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (cc *ConfigCommand) runCommandNonInteractive(configFile, language string) error {
-	configFile = DecideConfigFile(configFile)
-	config := configparser.NewConfiguration()
-	section := config.NewSection(CREDSection)
+func (cc *ConfigCommand) runCommandNonInteractive(configFile, language, profile string) error {
+	config, section, err := ParseConfigFile(configFile, profile)
+	if err != nil {
+		return err
+	}
 	section.Add(OptionLanguage, language)
 	for name := range CredOptionMap {
 		if val, _ := GetString(name, cc.command.options); val != "" {
 			section.Add(name, val)
 		}
 	}
-	if err := configparser.Save(config, configFile); err != nil {
+	if err = configparser.Save(config, configFile); err != nil {
 		return err
 	}
 	return nil

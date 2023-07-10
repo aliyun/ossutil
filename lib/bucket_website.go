@@ -251,6 +251,7 @@ var bucketWebsiteCommand = BucketWebSiteCommand{
 			OptionSignVersion,
 			OptionRegion,
 			OptionCloudBoxID,
+			OptionProfile,
 		},
 	},
 }

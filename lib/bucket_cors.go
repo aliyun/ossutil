@@ -159,6 +159,7 @@ var corsCommand = CorsCommand{
 			OptionSignVersion,
 			OptionRegion,
 			OptionCloudBoxID,
+			OptionProfile,
 		},
 	},
 }

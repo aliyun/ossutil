@@ -164,6 +164,7 @@ var bucketQosCommand = BucketQosCommand{
 			OptionSignVersion,
 			OptionRegion,
 			OptionCloudBoxID,
+			OptionProfile,
 		},
 	},
 }

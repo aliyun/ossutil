@@ -73,6 +73,7 @@ const (
 	OptionProxyHost                  = "proxyHost"
 	OptionProxyUser                  = "proxyUser"
 	OptionProxyPwd                   = "proxyPwd"
+	OptionProfile                    = "profile"
 	OptionLocalHost                  = "localHost"
 	OptionEnableSymlinkDir           = "enableSymlinkDir"
 	OptionOnlyCurrentDir             = "onlyCurrentDir"

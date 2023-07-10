@@ -221,6 +221,7 @@ var bucketInventoryCommand = BucketInventoryCommand{
 			OptionSignVersion,
 			OptionRegion,
 			OptionCloudBoxID,
+			OptionProfile,
 		},
 	},
 }

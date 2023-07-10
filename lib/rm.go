@@ -342,6 +342,7 @@ var removeCommand = RemoveCommand{
 			OptionSignVersion,
 			OptionRegion,
 			OptionCloudBoxID,
+			OptionProfile,
 		},
 	},
 }

@@ -76,39 +76,82 @@ func (s *OssutilConfigSuite) TestConfigNonInteractive(c *C) {
 	c.Assert(opts[OptionAccessKeyID], Equals, accessKeyID)
 	c.Assert(opts[OptionAccessKeySecret], Equals, accessKeySecret)
 	c.Assert(opts[OptionSTSToken], Equals, stsToken)
-	os.Remove(configFile)
-}
 
-func (s *OssutilConfigSuite) TestConfigNonInteractiveWithAgent(c *C) {
-	command := "config"
-	var args []string
-	userAgent := "demo-walker"
-	stsToken := "token"
-	options := OptionMapType{
-		"endpoint":        &endpoint,
-		"accessKeyID":     &accessKeyID,
-		"accessKeySecret": &accessKeySecret,
-		"userAgent":       &userAgent,
-		"stsToken":        &stsToken,
-		"configFile":      &configFile,
-	}
-	showElapse, err := cm.RunCommand(command, args, options)
+	errProfile := BucketEndpointSection
+	options[OptionProfile] = &errProfile
+	showElapse, err = cm.RunCommand(command, args, options)
+	c.Assert(showElapse, Equals, false)
+	c.Assert(err, NotNil)
+	c.Assert(strings.Contains(err.Error(), "--profile value is can not be in the optional value"), Equals, true)
+
+	errProfile = BucketCnameSection
+	options[OptionProfile] = &errProfile
+	showElapse, err = cm.RunCommand(command, args, options)
+	c.Assert(showElapse, Equals, false)
+	c.Assert(err, NotNil)
+	c.Assert(strings.Contains(err.Error(), "--profile value is can not be in the optional value"), Equals, true)
+
+	errProfile = AkServiceSection
+	options[OptionProfile] = &errProfile
+	showElapse, err = cm.RunCommand(command, args, options)
+	c.Assert(showElapse, Equals, false)
+	c.Assert(err, NotNil)
+	c.Assert(strings.Contains(err.Error(), "--profile value is can not be in the optional value"), Equals, true)
+
+	errProfile = DefaultSection
+	options[OptionProfile] = &errProfile
+	showElapse, err = cm.RunCommand(command, args, options)
+	c.Assert(showElapse, Equals, false)
+	c.Assert(err, NotNil)
+	c.Assert(strings.Contains(err.Error(), "--profile value is can not be in the optional value"), Equals, true)
+
+	profile := "profile"
+	options[OptionProfile] = &profile
+	options[OptionConfigFile] = &configFile
+	showElapse, err = cm.RunCommand(command, args, options)
 	c.Assert(showElapse, Equals, false)
 	c.Assert(err, IsNil)
-
-	f, err := os.Stat(configFile)
+	f, err = os.Stat(configFile)
 	c.Assert(err, IsNil)
 	c.Assert(f.Size() > 0, Equals, true)
 
-	opts, err := LoadConfig(configFile)
+	opts, err = LoadConfigByProfile(configFile, profile)
 	c.Assert(err, IsNil)
 	c.Assert(len(opts), Equals, 5)
 	c.Assert(opts[OptionLanguage], Equals, DefaultLanguage)
 	c.Assert(opts[OptionEndpoint], Equals, endpoint)
 	c.Assert(opts[OptionAccessKeyID], Equals, accessKeyID)
 	c.Assert(opts[OptionAccessKeySecret], Equals, accessKeySecret)
-	c.Assert(opts[OptionUserAgent], Equals, nil)
 	c.Assert(opts[OptionSTSToken], Equals, stsToken)
+
+	profile1 := "profile1"
+	options[OptionProfile] = &profile1
+	options[OptionConfigFile] = &configFile
+	showElapse, err = cm.RunCommand(command, args, options)
+	c.Assert(showElapse, Equals, false)
+	c.Assert(err, IsNil)
+	f, err = os.Stat(configFile)
+	c.Assert(err, IsNil)
+	c.Assert(f.Size() > 0, Equals, true)
+
+	opts, err = LoadConfigByProfile(configFile, profile1)
+	c.Assert(err, IsNil)
+	c.Assert(len(opts), Equals, 5)
+	c.Assert(opts[OptionLanguage], Equals, DefaultLanguage)
+	c.Assert(opts[OptionEndpoint], Equals, endpoint)
+	c.Assert(opts[OptionAccessKeyID], Equals, accessKeyID)
+	c.Assert(opts[OptionAccessKeySecret], Equals, accessKeySecret)
+	c.Assert(opts[OptionSTSToken], Equals, stsToken)
+
+	content, err := os.ReadFile(configFile)
+	c.Assert(err, IsNil)
+
+	c.Assert(strings.Contains(string(content), CREDSection), Equals, true)
+	c.Assert(strings.Contains(string(content), profile), Equals, true)
+	c.Assert(strings.Contains(string(content), profile1), Equals, true)
+
+	os.Remove(configFile)
+	os.Remove(configFile + ".bak")
 }
 
 func (s *OssutilConfigSuite) TestConfigNonInteractiveLanguage(c *C) {
@@ -139,6 +182,37 @@ func (s *OssutilConfigSuite) TestConfigNonInteractiveLanguage(c *C) {
 		c.Assert(opts[OptionSTSToken], Equals, stsToken)
 		c.Assert(opts[OptionLanguage], Equals, language)
 		os.Remove(configFile)
+		os.Remove(configFile + ".bak")
+	}
+
+	for _, language := range []string{DefaultLanguage, EnglishLanguage, LEnglishLanguage} {
+		configFile := randStr(10)
+		endpoint := "oss-cn-hangzhou.aliyuncs.com"
+		stsToken := "token"
+		profile := "profile"
+		options := OptionMapType{
+			"endpoint":   &endpoint,
+			"stsToken":   &stsToken,
+			"configFile": &configFile,
+			"language":   &language,
+			"profile":    &profile,
+		}
+		showElapse, err := cm.RunCommand(command, args, options)
+		c.Assert(showElapse, Equals, false)
+		c.Assert(err, IsNil)
+
+		f, err := os.Stat(configFile)
+		c.Assert(err, IsNil)
+		c.Assert(f.Size() > 0, Equals, true)
+
+		opts, err := LoadConfigByProfile(configFile, profile)
+		c.Assert(err, IsNil)
+		c.Assert(len(opts), Equals, 3)
+		c.Assert(opts[OptionEndpoint], Equals, endpoint)
+		c.Assert(opts[OptionSTSToken], Equals, stsToken)
+		c.Assert(opts[OptionLanguage], Equals, language)
+		os.Remove(configFile)
+		os.Remove(configFile + ".bak")
 	}
 }
 
@@ -161,6 +235,23 @@ func (s *OssutilConfigSuite) TestConfigInteractive(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(len(opts), Equals, 1)
 	c.Assert(opts[OptionLanguage], Equals, DefaultLanguage)
+
+	profile := "profile"
+	options[OptionProfile] = &profile
+	options[OptionConfigFile] = &configFile
+	showElapse, err = cm.RunCommand(command, args, options)
+	c.Assert(showElapse, Equals, false)
+	c.Assert(err, IsNil)
+
+	f, err = os.Stat(configFile)
+	c.Assert(err, IsNil)
+	c.Assert(f.Size() > 0, Equals, true)
+
+	opts, err = LoadConfigByProfile(configFile, profile)
+	c.Assert(err, IsNil)
+	c.Assert(len(opts), Equals, 1)
+	c.Assert(opts[OptionLanguage], Equals, DefaultLanguage)
+
 	os.Remove(configFile)
 }
 
@@ -185,7 +276,28 @@ func (s *OssutilConfigSuite) TestConfigInteractiveLanguage(c *C) {
 	opts, err := LoadConfig(configFile)
 	c.Assert(err, IsNil)
 	c.Assert(len(opts), Equals, 1)
+
+	profile := "profile"
+	for _, language := range []string{DefaultLanguage, EnglishLanguage, LEnglishLanguage} {
+		options := OptionMapType{
+			"configFile":  &configFile,
+			"language":    &language,
+			OptionProfile: &profile,
+		}
+		showElapse, err := cm.RunCommand(command, args, options)
+		c.Assert(showElapse, Equals, false)
+		c.Assert(err, IsNil)
+	}
+
+	f, err = os.Stat(configFile)
+	c.Assert(err, IsNil)
+	c.Assert(f.Size() > 0, Equals, true)
+
+	opts, err = LoadConfigByProfile(configFile, profile)
+	c.Assert(err, IsNil)
+	c.Assert(len(opts), Equals, 1)
 	os.Remove(configFile)
+	os.Remove(configFile + ".bak")
 }
 
 func (s *OssutilConfigSuite) TestConfigLanguageEN(c *C) {
@@ -209,7 +321,29 @@ func (s *OssutilConfigSuite) TestConfigLanguageEN(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(len(opts), Equals, 1)
 	c.Assert(opts[OptionLanguage], Equals, language)
+
+	profile := "profile"
+	options = OptionMapType{
+		"configFile":  &configFile,
+		"language":    &language,
+		OptionProfile: &profile,
+	}
+
+	showElapse, err = cm.RunCommand(command, args, options)
+	c.Assert(showElapse, Equals, false)
+	c.Assert(err, IsNil)
+
+	f, err = os.Stat(configFile)
+	c.Assert(err, IsNil)
+	c.Assert(f.Size() > 0, Equals, true)
+
+	opts, err = LoadConfigByProfile(configFile, profile)
+	c.Assert(err, IsNil)
+	c.Assert(len(opts), Equals, 1)
+	c.Assert(opts[OptionLanguage], Equals, language)
+
 	os.Remove(configFile)
+	os.Remove(configFile + ".bak")
 }
 
 func (s *OssutilConfigSuite) TestConfigLanguageCH(c *C) {
@@ -233,7 +367,29 @@ func (s *OssutilConfigSuite) TestConfigLanguageCH(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(len(opts), Equals, 1)
 	c.Assert(opts[OptionLanguage], Equals, language)
+
+	profile := "profile"
+	options = OptionMapType{
+		"configFile":  &configFile,
+		"language":    &language,
+		OptionProfile: &profile,
+	}
+
+	showElapse, err = cm.RunCommand(command, args, options)
+	c.Assert(showElapse, Equals, false)
+	c.Assert(err, IsNil)
+
+	f, err = os.Stat(configFile)
+	c.Assert(err, IsNil)
+	c.Assert(f.Size() > 0, Equals, true)
+
+	opts, err = LoadConfigByProfile(configFile, profile)
+	c.Assert(err, IsNil)
+	c.Assert(len(opts), Equals, 1)
+	c.Assert(opts[OptionLanguage], Equals, language)
+
 	os.Remove(configFile)
+	os.Remove(configFile + ".bak")
 }
 
 // test option empty value
@@ -300,12 +456,12 @@ func (s *OssutilConfigSuite) TestConfigInvalidOption(c *C) {
 }
 
 func (s *OssutilConfigSuite) TestConfigNotConfigFile(c *C) {
-	configCommand.runCommandInteractive("", LEnglishLanguage)
+	configCommand.runCommandInteractive("", LEnglishLanguage, "")
 	contents, _ := ioutil.ReadFile(logPath)
 	LogContent := string(contents)
 	c.Assert(strings.Contains(LogContent, "Please enter the config file name"), Equals, true)
 
-	configCommand.runCommandInteractive("", ChineseLanguage)
+	configCommand.runCommandInteractive("", ChineseLanguage, "")
 	contents, _ = ioutil.ReadFile(logPath)
 	LogContent = string(contents)
 	c.Assert(strings.Contains(LogContent, "请输入配置文件名"), Equals, true)
@@ -326,7 +482,7 @@ func (s *OssutilConfigSuite) TestConfigConfigInteractive(c *C) {
 	oldStdin := os.Stdin
 	os.Stdin = inputFile
 
-	err := configCommand.configInteractive(configFileName, LEnglishLanguage)
+	err := configCommand.configInteractive(configFileName, LEnglishLanguage, "")
 	c.Assert(err, IsNil)
 
 	fileData, err := ioutil.ReadFile(configFileName)
@@ -463,6 +619,147 @@ func (s *OssutilConfigSuite) TestConfigNonInteractiveWithCommonOption(c *C) {
 	s.createFile(cfile, data, c)
 
 	opts, err = LoadConfig(cfile)
+	testLogger.Print(opts)
+	c.Assert(err, IsNil)
+	c.Assert(len(opts), Equals, 21)
+	c.Assert(opts[OptionLanguage], Equals, DefaultLanguage)
+	c.Assert(opts[OptionEndpoint], Equals, endpoint)
+	c.Assert(opts[OptionAccessKeyID], Equals, accessKeyID)
+	c.Assert(opts[OptionAccessKeySecret], Equals, accessKeySecret)
+
+	c.Assert(opts[OptionSTSToken], Equals, stsToken)
+
+	c.Assert(opts[OptionUserAgent], Equals, userAgent)
+	c.Assert(opts[OptionLogLevel], Equals, logLevel)
+	c.Assert(opts[OptionProxyHost], Equals, proxyHost)
+	c.Assert(opts[OptionProxyUser], Equals, proxyUser)
+	c.Assert(opts[OptionProxyPwd], Equals, proxyPwd)
+	c.Assert(opts[OptionReadTimeout], Equals, readTimeout)
+	c.Assert(opts[OptionConnectTimeout], Equals, connectTimeOut)
+
+	c.Assert(opts[OptionMode], Equals, mode)
+	c.Assert(opts[OptionRamRoleArn], Equals, ramRoleArn1)
+	c.Assert(opts[OptionTokenTimeout], Equals, tokenTimeout1)
+	c.Assert(opts[OptionRoleSessionName], Equals, roleSessionName1)
+	c.Assert(opts[OptionSTSRegion], Equals, stsRegion1)
+	c.Assert(opts[OptionECSRoleName], Equals, ecsRoleName1)
+	c.Assert(opts[OptionSignVersion], Equals, signVersion)
+	c.Assert(opts[OptionRegion], Equals, region)
+	c.Assert(opts[OptionCloudBoxID], Equals, cloudboxId)
+
+	os.Remove(cfile)
+}
+
+func (s *OssutilConfigSuite) TestConfigNonInteractiveWithCommonOptionAndProfile(c *C) {
+	cfile := randStr(10)
+	profile := "profile"
+	userAgent := "demo-walker"
+	stsToken := "stsToken"
+	logLevel := "info"
+	proxyHost = "http://192.168.0.1:8085"
+	proxyUser = "test"
+	proxyPwd = "test1234"
+	mode := "AK"
+	ecsRoleName = "ossTest"
+	tokenTimeout := "300"
+	ramRoleArn := "acs:ram::123*******123:role/ramosssts"
+	roleSessionName := "roleTest"
+	readTimeout := "10"
+	connectTimeOut := "10"
+	stsRegion = "sts.cn-qingdao.aliyuncs.com"
+	signVersion := "v4"
+	region := "oss-cn-chengdu.aliyuncs.com"
+	cloudboxId := "12124123"
+	retryTimes := "400"
+	data := "[" + profile + "]" + "\n" +
+		"language=" + DefaultLanguage + "\n" +
+		"accessKeyID=" + accessKeyID + "\n" +
+		"accessKeySecret=" + accessKeySecret + "\n" +
+		"endpoint=" + endpoint + "\n" +
+		"stsToken=" + stsToken + "\n" +
+		"[Default]" + "\n" +
+		"loglevel=" + logLevel + "\n" +
+		"userAgent=" + userAgent + "\n" +
+		"proxyHost=" + proxyHost + "\n" +
+		"proxyUser=" + proxyUser + "\n" +
+		"proxyPwd=" + proxyPwd + "\n" +
+		"readTimeOut=" + readTimeout + "\n" +
+		"connectTimeOut=" + connectTimeOut + "\n" +
+		"retryTimes=" + retryTimes + "\n" +
+		"mode=" + mode + "\n" +
+		"ecsRoleName=" + ecsRoleName
+	s.createFile(cfile, data, c)
+
+	f, err := os.Stat(cfile)
+	c.Assert(err, IsNil)
+	c.Assert(f.Size() > 0, Equals, true)
+
+	opts, err := LoadConfigByProfile(cfile, profile)
+	testLogger.Print(opts)
+	c.Assert(err, IsNil)
+	c.Assert(len(opts), Equals, 13)
+	c.Assert(opts[OptionLanguage], Equals, DefaultLanguage)
+	c.Assert(opts[OptionEndpoint], Equals, endpoint)
+	c.Assert(opts[OptionAccessKeyID], Equals, accessKeyID)
+	c.Assert(opts[OptionAccessKeySecret], Equals, accessKeySecret)
+
+	c.Assert(opts[OptionSTSToken], Equals, stsToken)
+
+	c.Assert(opts[OptionLogLevel], Equals, logLevel)
+	c.Assert(opts[OptionUserAgent], Equals, userAgent)
+	c.Assert(opts[OptionProxyHost], Equals, proxyHost)
+	c.Assert(opts[OptionProxyUser], Equals, proxyUser)
+	c.Assert(opts[OptionProxyPwd], Equals, proxyPwd)
+	c.Assert(opts[OptionReadTimeout], Equals, readTimeout)
+	c.Assert(opts[OptionConnectTimeout], Equals, connectTimeOut)
+
+	c.Assert(opts[OptionMode], Equals, nil)
+	c.Assert(opts[OptionRamRoleArn], Equals, nil)
+	c.Assert(opts[OptionTokenTimeout], Equals, nil)
+	c.Assert(opts[OptionRoleSessionName], Equals, nil)
+	c.Assert(opts[OptionSTSRegion], Equals, nil)
+	c.Assert(opts[OptionECSRoleName], Equals, nil)
+	c.Assert(opts[OptionSignVersion], Equals, nil)
+	c.Assert(opts[OptionRegion], Equals, nil)
+	c.Assert(opts[OptionCloudBoxID], Equals, nil)
+
+	os.Remove(cfile)
+
+	tokenTimeout1 := "301"
+	ramRoleArn1 := "acs:ram::123*******123:role/ramosssts1"
+	roleSessionName1 := "roleTest1"
+	ecsRoleName1 := "ossTest1"
+	stsRegion1 := "sts.cn-hangzhou.aliyuncs.com"
+	data = "[" + profile + "]" + "\n" +
+		"language=" + DefaultLanguage + "\n" +
+		"accessKeyID=" + accessKeyID + "\n" +
+		"accessKeySecret=" + accessKeySecret + "\n" +
+		"endpoint=" + endpoint + "\n" +
+		"stsToken=" + stsToken + "\n" +
+		"ecsRoleName=" + ecsRoleName1 + "\n" +
+		"tokenTimeout=" + tokenTimeout1 + "\n" +
+		"ramRoleArn=" + ramRoleArn1 + "\n" +
+		"roleSessionName=" + roleSessionName1 + "\n" +
+		"mode=" + mode + "\n" +
+		"stsRegion=" + stsRegion1 + "\n" +
+		"signVersion=" + signVersion + "\n" +
+		"region=" + region + "\n" +
+		"cloudBoxID=" + cloudboxId + "\n" +
+		"[Default]" + "\n" +
+		"loglevel=" + logLevel + "\n" +
+		"userAgent=" + userAgent + "\n" +
+		"proxyHost=" + proxyHost + "\n" +
+		"proxyUser=" + proxyUser + "\n" +
+		"proxyPwd=" + proxyPwd + "\n" +
+		"ecsRoleName=" + ecsRoleName + "\n" +
+		"tokenTimeout=" + tokenTimeout + "\n" +
+		"ramRoleArn=" + ramRoleArn + "\n" +
+		"roleSessionName=" + roleSessionName + "\n" +
+		"readTimeOut=" + readTimeout + "\n" +
+		"connectTimeOut=" + connectTimeOut
+	s.createFile(cfile, data, c)
+
+	opts, err = LoadConfigByProfile(cfile, profile)
 	testLogger.Print(opts)
 	c.Assert(err, IsNil)
 	c.Assert(len(opts), Equals, 21)

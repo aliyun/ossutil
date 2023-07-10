@@ -138,6 +138,7 @@ var bucketLogCommand = BucketLogCommand{
 			OptionSignVersion,
 			OptionRegion,
 			OptionCloudBoxID,
+			OptionProfile,
 		},
 	},
 }

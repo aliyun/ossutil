@@ -144,6 +144,7 @@ var bucketRefererCommand = BucketRefererCommand{
 			OptionSignVersion,
 			OptionRegion,
 			OptionCloudBoxID,
+			OptionProfile,
 		},
 	},
 }

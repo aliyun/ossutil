@@ -133,6 +133,7 @@ var bucketAccessMonitorCommand = BucketAccessMonitorCommand{
 			OptionSignVersion,
 			OptionRegion,
 			OptionCloudBoxID,
+			OptionProfile,
 		},
 	},
 }

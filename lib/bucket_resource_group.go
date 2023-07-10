@@ -133,6 +133,7 @@ var bucketResourceGroupCommand = BucketResourceGroupCommand{
 			OptionSignVersion,
 			OptionRegion,
 			OptionCloudBoxID,
+			OptionProfile,
 		},
 	},
 }
