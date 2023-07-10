@@ -1294,6 +1294,7 @@ var copyCommand = CopyCommand{
 			OptionSignVersion,
 			OptionRegion,
 			OptionCloudBoxID,
+			OptionProfile,
 		},
 	},
 }

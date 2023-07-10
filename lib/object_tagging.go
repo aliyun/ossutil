@@ -158,6 +158,7 @@ var objectTagCommand = ObjectTagCommand{
 			OptionSignVersion,
 			OptionRegion,
 			OptionCloudBoxID,
+			OptionProfile,
 		},
 	},
 }

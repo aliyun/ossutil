@@ -111,6 +111,20 @@ func LoadConfig(configFile string) (OptionMapType, error) {
 	return configMap, nil
 }
 
+// LoadConfigByProfile load the specified config file
+func LoadConfigByProfile(configFile, profile string) (OptionMapType, error) {
+	var configMap OptionMapType
+	var err error
+	configMap, err = readConfigFromFileByProfile(configFile, profile)
+	if err != nil {
+		return nil, fmt.Errorf("Read config file error: %s, please try \"help config\" to set configuration or use \"--config-file\" option", err)
+	}
+	if err = checkConfig(configMap); err != nil {
+		return nil, err
+	}
+	return configMap, nil
+}
+
 func readConfigFromFile(configFile string) (OptionMapType, error) {
 	configFile = DecideConfigFile(configFile)
 
@@ -133,9 +147,80 @@ func readConfigFromFile(configFile string) (OptionMapType, error) {
 	}
 
 	// get options in cred section
-	credSection, err := config.Section(CREDSection)
+	var credSection *configparser.Section
+	credSection, err = config.Section(CREDSection)
+	if err == nil {
+		credOptions := credSection.Options()
+
+		//added
+		//configMap[CREDSection] = map[string]string{}
+
+		for name, option := range credOptions {
+			if opName, ok := getOptionNameByStr(strings.TrimSpace(name)); ok {
+				configMap[strings.TrimSpace(opName)] = strings.TrimSpace(option)
+			} else {
+				configMap[strings.TrimSpace(name)] = strings.TrimSpace(option)
+			}
+		}
+	}
+
+	// get options in pair sections
+	for _, sec := range []string{BucketEndpointSection, BucketCnameSection} {
+		if section, err := config.Section(sec); err == nil {
+			configMap[sec] = map[string]string{}
+			options := section.Options()
+			for bucket, host := range options {
+				(configMap[sec]).(map[string]string)[strings.TrimSpace(bucket)] = strings.TrimSpace(host)
+			}
+		}
+	}
+
+	// get options in AKService for user-defined GetAk
+	sec := AkServiceSection
+	if section, err := config.Section(sec); err == nil {
+		configMap[sec] = map[string]string{}
+		options := section.Options()
+		for ecsUrl, strUrl := range options {
+			(configMap[sec]).(map[string]string)[strings.TrimSpace(ecsUrl)] = strings.TrimSpace(strUrl)
+		}
+	}
+
+	return configMap, nil
+}
+
+func readConfigFromFileByProfile(configFile, profile string) (OptionMapType, error) {
+	configFile = DecideConfigFile(configFile)
+
+	config, err := configparser.Read(configFile)
 	if err != nil {
 		return nil, err
+	}
+
+	configMap := OptionMapType{}
+
+	// get options in Default Section
+	defaultSection, err := config.Section(DefaultSection)
+	if err == nil {
+		defaultOptions := defaultSection.Options()
+		for name, option := range defaultOptions {
+			if opName, ok := getOptionNameByDefault(strings.TrimSpace(name)); ok {
+				configMap[strings.TrimSpace(opName)] = strings.TrimSpace(option)
+			}
+		}
+	}
+
+	// get options in cred section
+	var credSection *configparser.Section
+	if profile == "" {
+		credSection, err = config.Section(CREDSection)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		credSection, err = config.Section(profile)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	credOptions := credSection.Options()
@@ -238,4 +323,39 @@ func checkConfig(configMap OptionMapType) error {
 		}
 	}
 	return nil
+}
+
+func ParseConfigFile(configFile, profile string) (*configparser.Configuration, *configparser.Section, error) {
+	configFile = DecideConfigFile(configFile)
+	var section *configparser.Section
+	var config *configparser.Configuration
+	_, err := os.Stat(configFile)
+	if err == nil {
+		config, err = configparser.Read(configFile)
+		if err != nil {
+			return config, section, err
+		}
+	} else {
+		config = configparser.NewConfiguration()
+	}
+	if profile == "" {
+		sections, _ := config.Find("^" + CREDSection + "$")
+		if len(sections) > 0 {
+			_, err = config.Delete("^" + CREDSection + "$")
+			if err != nil {
+				return config, section, err
+			}
+		}
+		section = config.NewSection(CREDSection)
+	} else {
+		sections, _ := config.Find("^" + profile + "$")
+		if len(sections) > 0 {
+			_, err = config.Delete("^" + profile + "$")
+			if err != nil {
+				return config, section, err
+			}
+		}
+		section = config.NewSection(profile)
+	}
+	return config, section, nil
 }

@@ -116,13 +116,21 @@ func (cmd *Command) checkArgs() error {
 }
 
 func (cmd *Command) loadConfig(configFile string, cmder interface{}) error {
+	profile, _ := GetString(OptionProfile, cmd.options)
 	if cmdder, ok := cmder.(RewriteLoadConfiger); ok {
 		return cmdder.rewriteLoadConfig(configFile)
 	}
 	var err error
-	if cmd.configOptions, err = LoadConfig(configFile); err != nil && cmd.needConfigFile() {
-		return err
+	if cmd.name == "config" {
+		if cmd.configOptions, err = LoadConfig(configFile); err != nil && cmd.needConfigFile() {
+			return err
+		}
+	} else {
+		if cmd.configOptions, err = LoadConfigByProfile(configFile, profile); err != nil && cmd.needConfigFile() {
+			return err
+		}
 	}
+
 	return nil
 }
 

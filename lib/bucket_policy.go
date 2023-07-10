@@ -175,6 +175,7 @@ var bucketPolicyCommand = BucketPolicyCommand{
 			OptionSignVersion,
 			OptionRegion,
 			OptionCloudBoxID,
+			OptionProfile,
 		},
 	},
 }

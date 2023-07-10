@@ -160,6 +160,7 @@ var bucketStyleCommand = BucketStyleCommand{
 			OptionSignVersion,
 			OptionRegion,
 			OptionCloudBoxID,
+			OptionProfile,
 		},
 	},
 }

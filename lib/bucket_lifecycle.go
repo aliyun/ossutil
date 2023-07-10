@@ -177,6 +177,7 @@ var bucketLifeCycleCommand = BucketLifeCycleCommand{
 			OptionSignVersion,
 			OptionRegion,
 			OptionCloudBoxID,
+			OptionProfile,
 		},
 	},
 }

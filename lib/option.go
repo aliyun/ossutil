@@ -281,6 +281,9 @@ var OptionMap = map[string]Option{
 	OptionQueryParam: Option{"", "--query-param", "", OptionTypeStrings, "", "",
 		"设置请求的query参数",
 		"Set the query parameters for the request"},
+	OptionProfile: Option{"", "--profile", "", OptionTypeString, "", "",
+		"在config文件中设置多个ak/sk",
+		"Set multiple ak/sk in the config file"},
 }
 
 func (T *Option) getHelp(language string) string {

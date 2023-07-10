@@ -128,6 +128,7 @@ var bucketTagCommand = BucketTagCommand{
 			OptionSignVersion,
 			OptionRegion,
 			OptionCloudBoxID,
+			OptionProfile,
 		},
 	},
 }

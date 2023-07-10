@@ -427,6 +427,7 @@ var syncCommand = SyncCommand{
 			OptionSignVersion,
 			OptionRegion,
 			OptionCloudBoxID,
+			OptionProfile,
 
 			// The following options are only supported by sc command, not supported by cp command
 			OptionDelete,
@@ -941,7 +942,7 @@ func (sc *SyncCommand) readDirLimit(dirName string, limitCount int) ([]os.FileIn
 	return list, nil
 }
 func (sc *SyncCommand) movePath(srcName, destName string) error {
-	err := sc.moveFileToPath(srcName,destName)
+	err := sc.moveFileToPath(srcName, destName)
 	if err != nil {
 		LogError("rename %s %s error,%s\n", srcName, destName, err.Error())
 	} else {
@@ -951,11 +952,11 @@ func (sc *SyncCommand) movePath(srcName, destName string) error {
 	}
 	return err
 }
-func (sc *SyncCommand)moveFileToPath(srcName, destName string) error {
-	err := os.Rename(srcName,destName)
+func (sc *SyncCommand) moveFileToPath(srcName, destName string) error {
+	err := os.Rename(srcName, destName)
 	if err == nil {
 		return nil
-	}else{
+	} else {
 		inputFile, err := os.Open(srcName)
 		defer inputFile.Close()
 		if err != nil {

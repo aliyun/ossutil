@@ -89,9 +89,10 @@ var updateCommand = UpdateCommand{
 
 // function for RewriteLoadConfiger interface
 func (uc *UpdateCommand) rewriteLoadConfig(configFile string) error {
+	profile, _ := GetString(OptionProfile, uc.command.options)
 	// read config file, if error exist, do not print error
 	var err error
-	if uc.command.configOptions, err = LoadConfig(configFile); err != nil {
+	if uc.command.configOptions, err = LoadConfigByProfile(configFile, profile); err != nil {
 		uc.command.configOptions = OptionMapType{}
 	}
 	return nil
