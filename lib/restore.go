@@ -374,7 +374,17 @@ func (rc *RestoreCommand) ossRestoreObject(bucket *oss.Bucket, object, versionid
 	}
 	options = append(options, rc.commonOptions...)
 
-	err := rc.ossRestoreObjectRetry(bucket, object, options...)
+	header, err := rc.command.ossGetObjectStatRetry(bucket, object, options...)
+	if err != nil {
+		return err
+	}
+	if header.Get("X-Oss-Storage-Class") == StorageIA || header.Get("X-Oss-Storage-Class") == StorageStandard {
+		rc.updateSkip(1)
+		LogInfo("restore obj skip: %s\n", object)
+		return nil
+	}
+
+	err = rc.ossRestoreObjectRetry(bucket, object, options...)
 	if batchOperate && rc.reOption.snapshotPath != "" {
 		if err != nil {
 			_ = rc.updateSnapshot(err, spath, nowt)
@@ -526,7 +536,19 @@ func (rc *RestoreCommand) restoreProducer(objectFile string, chObjects chan<- st
 
 func (rc *RestoreCommand) restoreConsumer(bucket *oss.Bucket, cloudURL CloudURL, chObjects <-chan string, chError chan<- error) {
 	for object := range chObjects {
-		err := rc.restoreObjectWithReport(bucket, object)
+		header, err := rc.command.ossGetObjectStatRetry(bucket, object)
+		if err != nil {
+			chError <- err
+			if !rc.reOption.ctnu {
+				return
+			}
+			continue
+		}
+		if header.Get("X-Oss-Storage-Class") == StorageIA || header.Get("X-Oss-Storage-Class") == StorageStandard {
+			rc.updateSkip(1)
+			LogInfo("restore obj skip: %s\n", object)
+		}
+		err = rc.restoreObjectWithReport(bucket, object)
 		if err != nil {
 			chError <- err
 			if !rc.reOption.ctnu {
