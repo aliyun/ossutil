@@ -76,6 +76,75 @@ func (s *OssutilCommandSuite) TestDuObjectSize(c *C) {
 	s.removeBucket(bucketName, true, c)
 }
 
+func (s *OssutilCommandSuite) TestDuObjectSizeWithListObjectV2(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	dir := "ossutil-test-dir-" + randLowStr(5)
+	subDir := "dir1"
+	contents := map[string]string{}
+	s.createTestFiles(dir, subDir, c, contents)
+	filePathList, _ := getFileList(dir)
+
+	allObjectSize := int64(0)
+	subDirSize := int64(0)
+
+	for _, filename := range filePathList {
+		fileInfo, err := os.Stat(filename)
+		c.Assert(err, IsNil)
+		if fileInfo.IsDir() {
+			continue
+		}
+
+		allObjectSize += fileInfo.Size()
+		if strings.Contains(filename, subDir) {
+			subDirSize += fileInfo.Size()
+		}
+	}
+
+	// upload files
+	bucketStr := CloudURLToString(bucketName, "")
+	args := []string{dir, bucketStr}
+	cmdline := []string{"ossutil", "cp", dir, bucketStr, "-rf"}
+	showElapse, err := s.rawCPWithFilter(args, true, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	// du size,all bucket
+	command := "du"
+	str := ""
+	item := "v2"
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &ConfigFile,
+		OptionItem:        &item,
+	}
+	srcUrl := CloudURLToString(bucketName, "")
+	args = []string{srcUrl}
+	_, err = cm.RunCommand(command, args, options)
+	c.Assert(err, IsNil)
+
+	c.Assert(duSizeCommand.duOption.totalObjectCount, Equals, int64(len(filePathList)))
+	c.Assert(duSizeCommand.duOption.sumObjectSize, Equals, allObjectSize)
+	c.Assert(duSizeCommand.duOption.totalPartCount, Equals, int64(0))
+	c.Assert(duSizeCommand.duOption.sumPartSize, Equals, int64(0))
+
+	//du size:directory
+	srcUrl = CloudURLToString(bucketName, subDir)
+	args = []string{srcUrl}
+	_, err = cm.RunCommand(command, args, options)
+	c.Assert(err, IsNil)
+
+	c.Assert(duSizeCommand.duOption.sumObjectSize, Equals, subDirSize)
+	c.Assert(duSizeCommand.duOption.totalPartCount, Equals, int64(0))
+	c.Assert(duSizeCommand.duOption.sumPartSize, Equals, int64(0))
+
+	os.RemoveAll(dir)
+	s.removeBucket(bucketName, true, c)
+}
+
 func (s *OssutilCommandSuite) TestDuObjectSizeWithBlockSize(c *C) {
 	bucketName := bucketNamePrefix + randLowStr(10)
 	s.putBucket(bucketName, c)

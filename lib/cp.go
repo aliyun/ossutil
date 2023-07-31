@@ -1294,6 +1294,7 @@ var copyCommand = CopyCommand{
 			OptionSignVersion,
 			OptionRegion,
 			OptionCloudBoxID,
+			OptionItem,
 		},
 	},
 }
@@ -2651,17 +2652,18 @@ func (cc *CopyCommand) objectStatistic(bucket *oss.Bucket, cloudURL CloudURL) {
 	if cc.cpOption.recursive {
 		pre := oss.Prefix(cloudURL.object)
 		marker := oss.Marker("")
+		startAfter := oss.StartAfter("")
 		//while the src object is end with "/", use object key as marker, exclude the object itself
 		if strings.HasSuffix(cloudURL.object, "/") {
 			marker = oss.Marker(cloudURL.object)
+			startAfter = oss.StartAfter(cloudURL.object)
 		}
 
 		del := oss.Delimiter("")
 		if cc.cpOption.onlyCurrentDir {
 			del = oss.Delimiter("/")
 		}
-		listOptions := append(cc.cpOption.payerOptions, pre, marker, del)
-
+		listOptions := append(cc.cpOption.payerOptions, pre, marker, del, startAfter)
 		fnvIns := fnv.New64()
 		for {
 			lor, err := cc.command.ossListObjectsRetry(bucket, listOptions...)
@@ -2686,7 +2688,8 @@ func (cc *CopyCommand) objectStatistic(bucket *oss.Bucket, cloudURL CloudURL) {
 			}
 			pre = oss.Prefix(lor.Prefix)
 			marker = oss.Marker(lor.NextMarker)
-			listOptions = append(cc.cpOption.payerOptions, pre, marker)
+			token := oss.ContinuationToken(lor.NextContinuationToken)
+			listOptions = append(cc.cpOption.payerOptions, pre, marker, token)
 			if !lor.IsTruncated {
 				break
 			}
@@ -2769,16 +2772,18 @@ func (cc *CopyCommand) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, chO
 	defer close(chObjects)
 	pre := oss.Prefix(cloudURL.object)
 	marker := oss.Marker("")
+	startAfter := oss.StartAfter("")
 	//while the src object is end with "/", use object key as marker, exclude the object itself
 	if strings.HasSuffix(cloudURL.object, "/") {
 		marker = oss.Marker(cloudURL.object)
+		startAfter = oss.StartAfter(cloudURL.object)
 	}
+
 	del := oss.Delimiter("")
 	if cc.cpOption.onlyCurrentDir {
 		del = oss.Delimiter("/")
 	}
-
-	listOptions := append(cc.cpOption.payerOptions, pre, marker, del)
+	listOptions := append(cc.cpOption.payerOptions, pre, marker, del, startAfter)
 	fnvIns := fnv.New64()
 	for {
 		lor, err := cc.command.ossListObjectsRetry(bucket, listOptions...)
@@ -2811,7 +2816,8 @@ func (cc *CopyCommand) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, chO
 
 		pre = oss.Prefix(lor.Prefix)
 		marker = oss.Marker(lor.NextMarker)
-		listOptions = append(cc.cpOption.payerOptions, pre, marker)
+		token := oss.ContinuationToken(lor.NextContinuationToken)
+		listOptions = append(cc.cpOption.payerOptions, pre, marker, token)
 		if !lor.IsTruncated {
 			break
 		}
