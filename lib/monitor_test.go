@@ -2,6 +2,7 @@ package lib
 
 import (
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	"os"
 	"strings"
@@ -372,7 +373,12 @@ func (s *OssutilCommandSuite) TestProgressBarContinueErr(c *C) {
 
 	cfile := configFile
 	configFile = randStr(10)
-	data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n", "abc", accessKeyID, accessKeySecret)
+	aesKey := AesKey
+	entAccessKeyID, _ := EncryptSecret(strings.TrimSpace(accessKeyID), aesKey)
+	entAccessKeySecret, _ := EncryptSecret(strings.TrimSpace(accessKeySecret), aesKey)
+	aesKeyBase64 := base64.StdEncoding.EncodeToString([]byte(AesKey))
+	data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\naesKey=%s\n", "abc", entAccessKeyID, entAccessKeySecret, aesKeyBase64)
+
 	s.createFile(configFile, data, c)
 
 	err = s.initCopyCommand(udir, CloudURLToString(bucketName, ""), true, true, false, DefaultBigFileThreshold, CheckpointDir, DefaultOutputDir)
@@ -670,7 +676,11 @@ func (s *OssutilCommandSuite) TestSetACLProgress(c *C) {
 	// batch set acl list error
 	cfile := configFile
 	configFile = randStr(10)
-	data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n", endpoint, accessKeyID, "")
+	aesKey := AesKey
+	entAccessKeyID, _ := EncryptSecret(strings.TrimSpace(accessKeyID), aesKey)
+	aesKeyBase64 := base64.StdEncoding.EncodeToString([]byte(AesKey))
+	data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\naesKey=%s\n", endpoint, entAccessKeyID, "", aesKeyBase64)
+
 	s.createFile(configFile, data, c)
 
 	err = s.initSetACL(bucketName, "TestSetACLProgress", "private", true, false, true)
@@ -787,7 +797,10 @@ func (s *OssutilCommandSuite) TestSetMetaProgress(c *C) {
 	// batch set acl list error
 	cfile := configFile
 	configFile = randStr(10)
-	data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n", endpoint, accessKeyID, "")
+	aesKey := AesKey
+	entAccessKeyID, _ := EncryptSecret(strings.TrimSpace(accessKeyID), aesKey)
+	aesKeyBase64 := base64.StdEncoding.EncodeToString([]byte(AesKey))
+	data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\naesKey=%s\n", endpoint, entAccessKeyID, "", aesKeyBase64)
 	s.createFile(configFile, data, c)
 
 	err = s.initSetMeta(bucketName, prefix, "x-oss-object-acl:default#X-Oss-Meta-A:A", true, false, true, true, DefaultLanguage)

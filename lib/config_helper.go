@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"encoding/base64"
 	"fmt"
 	"os"
 	"strconv"
@@ -56,6 +57,7 @@ var CredOptionList = []string{
 // name, allow to show in screen
 var CredOptionMap = map[string]configOption{
 	OptionLanguage:        configOption{[]string{"language", "Language"}, false, true, "", ""},
+	OptionAesKey:          configOption{[]string{"aesKey", "aeskey", "aes-key", "aes_key"}, false, true, "", ""},
 	OptionEndpoint:        configOption{[]string{"endpoint", "host"}, true, true, "", ""},
 	OptionAccessKeyID:     configOption{[]string{"accessKeyID", "accessKeyId", "AccessKeyID", "AccessKeyId", "access_key_id", "access_id", "accessid", "access-key-id", "access-id"}, true, false, "", ""},
 	OptionAccessKeySecret: configOption{[]string{"accessKeySecret", "AccessKeySecret", "access_key_secret", "access_key", "accesskey", "access-key-secret", "access-key"}, true, false, "", ""},
@@ -114,6 +116,10 @@ func LoadConfig(configFile string) (OptionMapType, error) {
 func readConfigFromFile(configFile string) (OptionMapType, error) {
 	configFile = DecideConfigFile(configFile)
 
+	aesKeyBase64, _ := readOptionValueFromFile(configFile, OptionAesKey)
+	aesKeyByte, _ := base64.StdEncoding.DecodeString(aesKeyBase64)
+	aesKey := string(aesKeyByte)
+
 	config, err := configparser.Read(configFile)
 	if err != nil {
 		return nil, err
@@ -142,10 +148,21 @@ func readConfigFromFile(configFile string) (OptionMapType, error) {
 
 	//added
 	//configMap[CREDSection] = map[string]string{}
-
 	for name, option := range credOptions {
 		if opName, ok := getOptionNameByStr(strings.TrimSpace(name)); ok {
-			configMap[strings.TrimSpace(opName)] = strings.TrimSpace(option)
+			if opName == OptionAccessKeyID || opName == OptionAccessKeySecret || opName == OptionSTSToken {
+				if aesKey == "" {
+					return nil, fmt.Errorf("aesKey is empty")
+				}
+				decryptStr, _ := DecryptSecret(strings.TrimSpace(option), aesKey)
+				configMap[strings.TrimSpace(opName)] = decryptStr
+			} else {
+				if opName == OptionAesKey {
+					configMap[OptionAesKey] = aesKey
+				} else {
+					configMap[strings.TrimSpace(opName)] = strings.TrimSpace(option)
+				}
+			}
 		} else {
 			configMap[strings.TrimSpace(name)] = strings.TrimSpace(option)
 		}
@@ -184,6 +201,30 @@ func readLoglevelFromFile(configFile string) (string, error) {
 	}
 	sectionNameList := []string{CREDSection, DefaultSection}
 	logConfig := DefaultOptionMap[OptionLogLevel]
+	for _, sectionName := range sectionNameList {
+		section, err := config.Section(sectionName)
+		if err != nil {
+			continue
+		}
+		for _, name := range logConfig.showNames {
+			val := section.ValueOf(name)
+			if val != "" {
+				return val, nil
+			}
+		}
+	}
+	return "", nil
+}
+
+// get option val from config file
+func readOptionValueFromFile(configFile, optionName string) (string, error) {
+	configFile = DecideConfigFile(configFile)
+	config, err := configparser.Read(configFile)
+	if err != nil {
+		return "", err
+	}
+	sectionNameList := []string{CREDSection, DefaultSection}
+	logConfig := CredOptionMap[optionName]
 	for _, sectionName := range sectionNameList {
 		section, err := config.Section(sectionName)
 		if err != nil {

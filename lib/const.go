@@ -104,6 +104,7 @@ const (
 	OptionRegion                     = "region"
 	OptionCloudBoxID                 = "cloudBoxID"
 	OptionQueryParam                 = "queryParam"
+	OptionAesKey                     = "aesKey"
 )
 
 // the elements show in stat object

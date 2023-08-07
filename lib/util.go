@@ -2,8 +2,15 @@ package lib
 
 import (
 	"bytes"
+	"crypto/aes"
+	"crypto/cipher"
+	rd "crypto/rand"
+	"encoding/base64"
 	"fmt"
+	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
+	"golang.org/x/crypto/ssh/terminal"
 	"hash"
+	"io"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -14,9 +21,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
-	"golang.org/x/crypto/ssh/terminal"
 )
 
 var sys_name string
@@ -735,4 +739,205 @@ func AddStringsToOption(params []string, options []oss.Option) ([]oss.Option, er
 		options = append(options, oss.AddParam(key, value))
 	}
 	return options, nil
+}
+
+const (
+	AesKey       = "ossutil-secret"
+	AesBlockSize = 16
+)
+
+func DecryptSecret(encode, aesKey string) (decryptStr string, err error) {
+	decode, err := base64.StdEncoding.DecodeString(encode)
+	if err != nil {
+		return "", err
+	}
+	tool := NewAesTool([]byte(aesKey), AesBlockSize, ECB)
+	decrypt, err := tool.Decrypt(decode)
+	decryptStr = string(decrypt)
+	return decryptStr, err
+}
+
+func EncryptSecret(src, aesKey string) (encode string, err error) {
+	tool := NewAesTool([]byte(aesKey), AesBlockSize, ECB)
+	encrypt, err := tool.Encrypt([]byte(src))
+	encode = base64.StdEncoding.EncodeToString(encrypt)
+	return encode, err
+}
+
+const (
+	ECB = 1
+	CBC = 2
+)
+
+// AesTool AES ECB mode encryption and decryption
+type AesTool struct {
+	Key       []byte
+	BlockSize int
+	Mode      int
+}
+
+func NewAesTool(key []byte, blockSize int, mode int) *AesTool {
+	return &AesTool{Key: key, BlockSize: blockSize, Mode: mode}
+}
+
+/**
+Note: 0 fill mode
+*/
+func (tool *AesTool) padding(src []byte) []byte {
+	paddingCount := aes.BlockSize - len(src)%aes.BlockSize
+	if paddingCount == 0 {
+		return src
+	} else {
+		return append(src, bytes.Repeat([]byte{byte(0)}, paddingCount)...)
+	}
+}
+
+// unPadding
+func (tool *AesTool) unPadding(src []byte) []byte {
+	for i := len(src) - 1; i >= 0; i-- {
+		if src[i] != 0 {
+			return src[:i+1]
+		}
+	}
+	return nil
+}
+
+func (tool *AesTool) Encrypt(src []byte) ([]byte, error) {
+	var encryptData []byte
+	key := tool.padding(tool.Key)
+	block, err := aes.NewCipher([]byte(key))
+	if err != nil {
+		return nil, err
+	}
+	// padding
+	src = tool.padding(src)
+
+	switch tool.Mode {
+	case ECB:
+		encryptData = make([]byte, len(src))
+		mode := NewECBEncrypter(block)
+		mode.CryptBlocks(encryptData, src)
+		break
+	case CBC:
+		// The IV needs to be unique, but not secure. Therefore it's common to
+		// include it at the beginning of the ciphertext.
+		encryptData := make([]byte, aes.BlockSize+len(src))
+		iv := encryptData[:aes.BlockSize]
+		if _, err := io.ReadFull(rd.Reader, iv); err != nil {
+			panic(err)
+		}
+
+		mode := cipher.NewCBCEncrypter(block, iv)
+		mode.CryptBlocks(encryptData[aes.BlockSize:], src)
+		break
+	}
+
+	return encryptData, nil
+
+}
+func (tool *AesTool) Decrypt(src []byte) (res []byte, err error) {
+	defer func() {
+		if err1 := recover(); err1 != nil {
+			err = fmt.Errorf(fmt.Sprintf("%v", err1))
+		}
+	}()
+
+	key := tool.padding(tool.Key)
+	block, err := aes.NewCipher([]byte(key))
+	if err != nil {
+		return nil, err
+	}
+
+	switch tool.Mode {
+	case ECB:
+		mode := NewECBDecrypter(block)
+		// CryptBlocks can work in-place if the two arguments are the same.
+		mode.CryptBlocks(src, src)
+		break
+	case CBC:
+		iv := src[:aes.BlockSize]
+		src = src[aes.BlockSize:]
+		if len(src)%aes.BlockSize != 0 {
+			panic("ciphertext is not a multiple of the block size")
+		}
+
+		mode := cipher.NewCBCDecrypter(block, iv)
+
+		// CryptBlocks can work in-place if the two arguments are the same.
+		mode.CryptBlocks(src, src)
+		break
+	}
+
+	return tool.unPadding(src), nil
+}
+
+// Copyright 2013 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+// Electronic Code Book (ECB) mode.
+
+// ECB provides confidentiality by assigning a fixed ciphertext block to each
+// plaintext block.
+
+// See NIST SP 800-38A, pp 08-09
+
+type ecb struct {
+	b         cipher.Block
+	blockSize int
+}
+
+func newECB(b cipher.Block) *ecb {
+	return &ecb{
+		b:         b,
+		blockSize: b.BlockSize(),
+	}
+}
+
+type ecbEncrypter ecb
+
+// NewECBEncrypter returns a BlockMode which encrypts in electronic code book
+// mode, using the given Block.
+func NewECBEncrypter(b cipher.Block) cipher.BlockMode {
+	return (*ecbEncrypter)(newECB(b))
+}
+
+func (x *ecbEncrypter) BlockSize() int { return x.blockSize }
+
+func (x *ecbEncrypter) CryptBlocks(dst, src []byte) {
+	if len(src)%x.blockSize != 0 {
+		panic("crypto/cipher: input not full blocks")
+	}
+	if len(dst) < len(src) {
+		panic("crypto/cipher: output smaller than input")
+	}
+	for len(src) > 0 {
+		x.b.Encrypt(dst, src[:x.blockSize])
+		src = src[x.blockSize:]
+		dst = dst[x.blockSize:]
+	}
+}
+
+type ecbDecrypter ecb
+
+// NewECBDecrypter returns a BlockMode which decrypts in electronic code book
+// mode, using the given Block.
+func NewECBDecrypter(b cipher.Block) cipher.BlockMode {
+	return (*ecbDecrypter)(newECB(b))
+}
+
+func (x *ecbDecrypter) BlockSize() int { return x.blockSize }
+
+func (x *ecbDecrypter) CryptBlocks(dst, src []byte) {
+	if len(src)%x.blockSize != 0 {
+		panic("crypto/cipher: input not full blocks")
+	}
+	if len(dst) < len(src) {
+		panic("crypto/cipher: output smaller than input")
+	}
+	for len(src) > 0 {
+		x.b.Decrypt(dst, src[:x.blockSize])
+		src = src[x.blockSize:]
+		dst = dst[x.blockSize:]
+	}
 }

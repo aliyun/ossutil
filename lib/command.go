@@ -127,7 +127,7 @@ func (cmd *Command) loadConfig(configFile string, cmder interface{}) error {
 }
 
 func (cmd *Command) needConfigFile() bool {
-	for _, name := range []string{OptionEndpoint, OptionAccessKeyID, OptionAccessKeySecret, OptionSTSToken} {
+	for _, name := range []string{OptionEndpoint, OptionAccessKeyID, OptionAccessKeySecret, OptionSTSToken, OptionAesKey} {
 		val, _ := GetString(name, cmd.options)
 		if val != "" {
 			return false

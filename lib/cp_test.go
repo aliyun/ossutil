@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"encoding/base64"
 	"fmt"
 	"hash/fnv"
 	"io/ioutil"
@@ -1263,7 +1264,12 @@ func (s *OssutilCommandSuite) TestBatchUploadOutputDir(c *C) {
 	// err copy -> outputdir
 	cfile := configFile
 	configFile = randStr(10)
-	data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n", "abc", accessKeyID, accessKeySecret)
+
+	aesKey := AesKey
+	entAccessKeyID, _ := EncryptSecret(strings.TrimSpace(accessKeyID), aesKey)
+	entAccessKeySecret, _ := EncryptSecret(strings.TrimSpace(accessKeySecret), aesKey)
+	aesKeyBase64 := base64.StdEncoding.EncodeToString([]byte(AesKey))
+	data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\naesKey=%s\n", "abc", entAccessKeyID, entAccessKeySecret, aesKeyBase64)
 	s.createFile(configFile, data, c)
 	testResultFile, _ = os.OpenFile(resultPath, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
 	out := os.Stdout
@@ -1343,7 +1349,11 @@ func (s *OssutilCommandSuite) TestDownloadOutputDir(c *C) {
 	// err copy without -r -> no outputdir
 	cfile := configFile
 	configFile = randStr(10)
-	data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Cname]\n%s=%s", endpoint, accessKeyID, accessKeySecret, bucketName, "abc")
+	aesKey := AesKey
+	entAccessKeyID, _ := EncryptSecret(strings.TrimSpace(accessKeyID), aesKey)
+	entAccessKeySecret, _ := EncryptSecret(strings.TrimSpace(accessKeySecret), aesKey)
+	aesKeyBase64 := base64.StdEncoding.EncodeToString([]byte(AesKey))
+	data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\naesKey=%s\n[Bucket-Cname]\n%s=%s", endpoint, entAccessKeyID, entAccessKeySecret, aesKeyBase64, bucketName, "abc")
 	s.createFile(configFile, data, c)
 
 	showElapse, err = s.rawCPWithOutputDir(CloudURLToString(bucketName, object), downloadFileName, false, true, false, 1, dir)
@@ -1406,7 +1416,11 @@ func (s *OssutilCommandSuite) TestCopyOutputDir(c *C) {
 	// list err copy without -r -> no outputdir
 	cfile := configFile
 	configFile = randStr(10)
-	data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Cname]\n%s=%s", endpoint, accessKeyID, accessKeySecret, srcBucket, "abc")
+	aesKey := AesKey
+	entAccessKeyID, _ := EncryptSecret(strings.TrimSpace(accessKeyID), aesKey)
+	entAccessKeySecret, _ := EncryptSecret(strings.TrimSpace(accessKeySecret), aesKey)
+	aesKeyBase64 := base64.StdEncoding.EncodeToString([]byte(AesKey))
+	data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\naesKey=%s\n[Bucket-Cname]\n%s=%s", endpoint, entAccessKeyID, entAccessKeySecret, aesKeyBase64, srcBucket, "abc")
 	s.createFile(configFile, data, c)
 	showElapse, err = s.rawCPWithOutputDir(CloudURLToString(srcBucket, object), CloudURLToString(destBucket, object), false, true, false, 1, dir)
 	c.Assert(err, NotNil)
@@ -1473,6 +1487,7 @@ func (s *OssutilCommandSuite) TestBatchCopyOutputDir(c *C) {
 	cfile := configFile
 	configFile = randStr(10)
 	data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Endpoint]\n%s=%s[Bucket-Cname]\n%s=%s", "abc", "def", "ghi", srcBucket, "abc", srcBucket, "abc")
+
 	s.createFile(configFile, data, c)
 
 	showElapse, err = s.rawCPWithOutputDir(CloudURLToString(srcBucket, ""), CloudURLToString(destBucket, ""), true, true, false, 1, dir)
@@ -1509,7 +1524,12 @@ func (s *OssutilCommandSuite) TestConfigOutputDir(c *C) {
 	// err copy -> outputdir
 	cfile := configFile
 	configFile = randStr(10)
-	data = fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Cname]\n%s=%s", endpoint, accessKeyID, accessKeySecret, bucketName, "abc")
+	aesKey := AesKey
+	entAccessKeyID, _ := EncryptSecret(strings.TrimSpace(accessKeyID), aesKey)
+	entAccessKeySecret, _ := EncryptSecret(strings.TrimSpace(accessKeySecret), aesKey)
+	aesKeyBase64 := base64.StdEncoding.EncodeToString([]byte(AesKey))
+	data = fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\naesKey=%s\n[Bucket-Cname]\n%s=%s", endpoint, entAccessKeyID, entAccessKeySecret, aesKeyBase64, bucketName, "abc")
+
 	s.createFile(configFile, data, c)
 
 	showElapse, err := s.rawCPWithOutputDir(ufile, CloudURLToString(bucketName, object), true, true, false, 1, edir)
@@ -1526,7 +1546,8 @@ func (s *OssutilCommandSuite) TestConfigOutputDir(c *C) {
 	os.RemoveAll(DefaultOutputDir)
 
 	// config outputdir
-	data = fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\noutputDir=%s\n[Bucket-Endpoint]\n%s=%s[Bucket-Cname]\n%s=%s", endpoint, accessKeyID, accessKeySecret, dir, bucketName, endpoint, bucketName, "abc")
+	data = fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naesKey=%s\naccessKeySecret=%s\noutputDir=%s\n[Bucket-Endpoint]\n%s=%s[Bucket-Cname]\n%s=%s", endpoint, entAccessKeyID, aesKeyBase64, entAccessKeySecret, dir, bucketName, endpoint, bucketName, "abc")
+
 	s.createFile(configFile, data, c)
 
 	showElapse, err = s.rawCPWithOutputDir(ufile, CloudURLToString(bucketName, object), true, true, false, 1, "")
