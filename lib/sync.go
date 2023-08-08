@@ -5,9 +5,11 @@ import (
 	"fmt"
 	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -431,6 +433,11 @@ var syncCommand = SyncCommand{
 			// The following options are only supported by sc command, not supported by cp command
 			OptionDelete,
 			OptionBackupDir,
+
+			OptionStartTime,
+			OptionEndTime,
+			OptionMaxSize,
+			OptionMinSize,
 		},
 	},
 }
@@ -543,13 +550,18 @@ func (sc *SyncCommand) RunCommand() error {
 	}
 	opType := sc.getCommandType(srcURL, destURL)
 
+	err = sc.command.checkFilter()
+	if err != nil {
+		return err
+	}
+
 	// get file list or object key list
 	srcKeys := make(map[string]string)
 	destKeys := make(map[string]string)
 	if srcURL.IsFileURL() {
-		err = sc.GetLocalFileKeys(srcURL, srcKeys)
+		err = sc.GetLocalFileKeys(srcURL, srcKeys, true)
 	} else {
-		err = sc.GetOssKeys(srcURL, srcKeys)
+		err = sc.GetOssKeys(srcURL, srcKeys, true)
 	}
 
 	if err != nil {
@@ -557,9 +569,9 @@ func (sc *SyncCommand) RunCommand() error {
 	}
 
 	if destURL.IsFileURL() {
-		err = sc.GetLocalFileKeys(destURL, destKeys)
+		err = sc.GetLocalFileKeys(destURL, destKeys, false)
 	} else {
-		err = sc.GetOssKeys(destURL, destKeys)
+		err = sc.GetOssKeys(destURL, destKeys, false)
 	}
 
 	if err != nil {
@@ -716,7 +728,7 @@ func (sc *SyncCommand) BatchRmObjects(bucket *oss.Bucket, objects []string, opti
 		for _, objectKey := range delRes.DeletedObjects {
 			errMsg += (" " + objectKey)
 		}
-		LogError("delete erro %s\n", errMsg)
+		LogError("delete error %s\n", errMsg)
 		return fmt.Errorf("delete %s error", errMsg)
 	}
 
@@ -737,7 +749,7 @@ func (sc *SyncCommand) getCommandType(srcURL StorageURLer, destURL StorageURLer)
 	return operationTypePut
 }
 
-func (sc *SyncCommand) GetLocalFileKeys(sUrl StorageURLer, keys map[string]string) error {
+func (sc *SyncCommand) GetLocalFileKeys(sUrl StorageURLer, keys map[string]string, isSrc bool) error {
 	strPath := sUrl.ToString()
 	if !strings.HasSuffix(strPath, string(os.PathSeparator)) {
 		// for symlink dir
@@ -747,7 +759,7 @@ func (sc *SyncCommand) GetLocalFileKeys(sUrl StorageURLer, keys map[string]strin
 	chFiles := make(chan fileInfoType, ChannelBuf)
 	chFinish := make(chan error, 2)
 	go sc.ReadLocalFileKeys(chFiles, chFinish, keys)
-	go sc.GetFileList(strPath, chFiles, chFinish)
+	go sc.GetFileList(strPath, chFiles, chFinish, isSrc)
 	select {
 	case err := <-chFinish:
 		if err != nil {
@@ -757,14 +769,139 @@ func (sc *SyncCommand) GetLocalFileKeys(sUrl StorageURLer, keys map[string]strin
 	return nil
 }
 
-func (sc *SyncCommand) GetFileList(strPath string, chFiles chan<- fileInfoType, chFinish chan<- error) {
-	err := getFileListCommon(strPath, chFiles, sc.syncOption.onlyCurrentDir,
-		sc.syncOption.disableAllSymlink, sc.syncOption.enableSymlinkDir, sc.syncOption.filters)
+func (sc *SyncCommand) GetFileList(strPath string, chFiles chan<- fileInfoType, chFinish chan<- error, isSrc bool) {
+	err := sc.getFileListCommon(strPath, chFiles, sc.syncOption.onlyCurrentDir,
+		sc.syncOption.disableAllSymlink, sc.syncOption.enableSymlinkDir, sc.syncOption.filters, isSrc)
 	if err != nil {
 		chFinish <- err
 	}
 }
 
+func (sc *SyncCommand) getFileListCommon(dpath string, chFiles chan<- fileInfoType, onlyCurrentDir bool, disableAllSymlink bool,
+	enableSymlinkDir bool, filters []filterOptionType, isSrc bool) error {
+	defer close(chFiles)
+	if onlyCurrentDir {
+		return sc.getCurrentDirFileListCommon(dpath, chFiles, filters, isSrc)
+	}
+
+	name := dpath
+	symlinkDiretorys := []string{dpath}
+	walkFunc := func(fpath string, f os.FileInfo, err error) error {
+		if f == nil {
+			return err
+		}
+
+		dpath = filepath.Clean(dpath)
+		fpath = filepath.Clean(fpath)
+
+		fileName, err := filepath.Rel(dpath, fpath)
+		if err != nil {
+			return fmt.Errorf("list file error: %s, info: %s", fpath, err.Error())
+		}
+
+		if f.IsDir() {
+			if fpath != dpath {
+				if strings.HasSuffix(fileName, "\\") || strings.HasSuffix(fileName, "/") {
+					chFiles <- fileInfoType{fileName, name}
+				} else {
+					chFiles <- fileInfoType{fileName + string(os.PathSeparator), name}
+				}
+			}
+			return nil
+		} else {
+			if isSrc {
+				next := sc.command.filterLocalFile(f)
+				if !next {
+					return nil
+				}
+			}
+		}
+
+		if disableAllSymlink && (f.Mode()&os.ModeSymlink) != 0 {
+			return nil
+		}
+
+		if enableSymlinkDir && (f.Mode()&os.ModeSymlink) != 0 {
+			// there is difference between os.Stat and os.Lstat in filepath.Walk
+			realInfo, err := os.Stat(fpath)
+			if err != nil {
+				return err
+			}
+
+			if realInfo.IsDir() {
+				// it's symlink dir
+				// if linkDir has suffix os.PathSeparator,os.Lstat determine it is a dir
+				if !strings.HasSuffix(name, string(os.PathSeparator)) {
+					name += string(os.PathSeparator)
+				}
+				linkDir := name + fileName + string(os.PathSeparator)
+				symlinkDiretorys = append(symlinkDiretorys, linkDir)
+				return nil
+			} else {
+				if isSrc {
+					next := sc.command.filterLocalFile(realInfo)
+					if !next {
+						return nil
+					}
+				}
+			}
+		}
+
+		if doesSingleFileMatchPatterns(fileName, filters) {
+			chFiles <- fileInfoType{fileName, name}
+		}
+		return nil
+	}
+
+	var err error
+	for {
+		symlinks := symlinkDiretorys
+		symlinkDiretorys = []string{}
+		for _, v := range symlinks {
+			err = filepath.Walk(v, walkFunc)
+			if err != nil {
+				return err
+			}
+		}
+		if len(symlinkDiretorys) == 0 {
+			break
+		}
+	}
+	return err
+}
+
+func (sc *SyncCommand) getCurrentDirFileListCommon(dpath string, chFiles chan<- fileInfoType, filters []filterOptionType, isSrc bool) error {
+	if !strings.HasSuffix(dpath, string(os.PathSeparator)) {
+		dpath += string(os.PathSeparator)
+	}
+
+	fileList, err := ioutil.ReadDir(dpath)
+	if err != nil {
+		return err
+	}
+
+	for _, fileInfo := range fileList {
+		if !fileInfo.IsDir() {
+			realInfo, errF := os.Stat(dpath + fileInfo.Name())
+			if errF == nil && realInfo.IsDir() {
+				// for symlink
+				continue
+			}
+
+			if isSrc {
+				next := sc.command.filterLocalFile(realInfo)
+				if !next {
+					continue
+				}
+			}
+
+			if doesSingleFileMatchPatterns(fileInfo.Name(), filters) {
+				chFiles <- fileInfoType{fileInfo.Name(), dpath}
+			}
+		}
+	}
+	return nil
+}
 func (sc *SyncCommand) ReadLocalFileKeys(chFiles <-chan fileInfoType, chFinish chan<- error, keys map[string]string) {
 	totalCount := 0
 	fmt.Printf("\n")
@@ -862,7 +999,7 @@ func (sc *SyncCommand) CheckDestBackupDir(sUrl StorageURLer) error {
 	return nil
 }
 
-func (sc *SyncCommand) GetOssKeys(sUrl StorageURLer, keys map[string]string) error {
+func (sc *SyncCommand) GetOssKeys(sUrl StorageURLer, keys map[string]string, isSrc bool) error {
 	bucketName := sUrl.(CloudURL).bucket
 	bucket, err := sc.command.ossBucket(bucketName)
 	if err != nil {
@@ -872,7 +1009,7 @@ func (sc *SyncCommand) GetOssKeys(sUrl StorageURLer, keys map[string]string) err
 	chFiles := make(chan objectInfoType, ChannelBuf)
 	chFinish := make(chan error, 2)
 	go sc.ReadOssKeys(keys, sUrl, chFiles, chFinish)
-	go sc.GetOssKeyList(bucket, sUrl, chFiles, chFinish)
+	go sc.GetOssKeyList(bucket, sUrl, chFiles, chFinish, isSrc)
 	select {
 	case err := <-chFinish:
 		if err != nil {
@@ -882,13 +1019,78 @@ func (sc *SyncCommand) GetOssKeys(sUrl StorageURLer, keys map[string]string) err
 	return nil
 }
 
-func (sc *SyncCommand) GetOssKeyList(bucket *oss.Bucket, sURL StorageURLer, chObjects chan<- objectInfoType, chFinish chan<- error) {
+func (sc *SyncCommand) GetOssKeyList(bucket *oss.Bucket, sURL StorageURLer, chObjects chan<- objectInfoType, chFinish chan<- error, isSrc bool) {
 	cloudURL := sURL.(CloudURL)
-	err := getObjectListCommon(bucket, cloudURL, chObjects, sc.syncOption.onlyCurrentDir,
-		sc.syncOption.filters, sc.syncOption.payerOptions)
+	err := sc.getObjectListCommon(bucket, cloudURL, chObjects, sc.syncOption.onlyCurrentDir,
+		sc.syncOption.filters, sc.syncOption.payerOptions, isSrc)
 	if err != nil {
 		chFinish <- err
 	}
+}
+
+func (sc *SyncCommand) getObjectListCommon(bucket *oss.Bucket, cloudURL CloudURL, chObjects chan<- objectInfoType,
+	onlyCurrentDir bool, filters []filterOptionType, payerOptions []oss.Option, isSrc bool) error {
+	defer close(chObjects)
+	pre := oss.Prefix(cloudURL.object)
+	marker := oss.Marker("")
+	//while the src object is end with "/", use object key as marker, exclude the object itself
+	if strings.HasSuffix(cloudURL.object, "/") {
+		marker = oss.Marker(cloudURL.object)
+	}
+	del := oss.Delimiter("")
+	if onlyCurrentDir {
+		del = oss.Delimiter("/")
+	}
+
+	listOptions := append(payerOptions, pre, marker, del, oss.MaxKeys(1000))
+	for {
+		lor, err := bucket.ListObjects(listOptions...)
+		if err != nil {
+			return err
+		}
+
+		for _, object := range lor.Objects {
+			if isSrc {
+				next := sc.command.filterObject(object)
+				if !next {
+					continue
+				}
+			}
+			prefix := ""
+			relativeKey := object.Key
+			index := strings.LastIndex(cloudURL.object, "/")
+			if index > 0 {
+				prefix = object.Key[:index+1]
+				relativeKey = object.Key[index+1:]
+			}
+
+			if doesSingleObjectMatchPatterns(object.Key, filters) {
+				if strings.ToLower(object.Type) == "symlink" {
+					props, err := bucket.GetObjectDetailedMeta(object.Key, payerOptions...)
+					if err != nil {
+						LogError("ossGetObjectStatRetry error info:%s\n", err.Error())
+						return err
+					}
+					size, err := strconv.ParseInt(props.Get(oss.HTTPHeaderContentLength), 10, 64)
+					if err != nil {
+						LogError("strconv.ParseInt error info:%s\n", err.Error())
+						return err
+
+					}
+					object.Size = size
+				}
+				chObjects <- objectInfoType{prefix, relativeKey, int64(object.Size), object.LastModified}
+			}
+		}
+
+		pre = oss.Prefix(lor.Prefix)
+		marker = oss.Marker(lor.NextMarker)
+		listOptions = append(payerOptions, pre, marker, oss.MaxKeys(1000))
+		if !lor.IsTruncated {
+			break
+		}
+	}
+	return nil
 }
 
 func (sc *SyncCommand) ReadOssKeys(keys map[string]string, sURL StorageURLer, chObjects <-chan objectInfoType, chFinish chan<- error) {
@@ -941,7 +1143,7 @@ func (sc *SyncCommand) readDirLimit(dirName string, limitCount int) ([]os.FileIn
 	return list, nil
 }
 func (sc *SyncCommand) movePath(srcName, destName string) error {
-	err := sc.moveFileToPath(srcName,destName)
+	err := sc.moveFileToPath(srcName, destName)
 	if err != nil {
 		LogError("rename %s %s error,%s\n", srcName, destName, err.Error())
 	} else {
@@ -951,11 +1153,11 @@ func (sc *SyncCommand) movePath(srcName, destName string) error {
 	}
 	return err
 }
-func (sc *SyncCommand)moveFileToPath(srcName, destName string) error {
-	err := os.Rename(srcName,destName)
+func (sc *SyncCommand) moveFileToPath(srcName, destName string) error {
+	err := os.Rename(srcName, destName)
 	if err == nil {
 		return nil
-	}else{
+	} else {
 		inputFile, err := os.Open(srcName)
 		defer inputFile.Close()
 		if err != nil {

@@ -281,6 +281,12 @@ var OptionMap = map[string]Option{
 	OptionQueryParam: Option{"", "--query-param", "", OptionTypeStrings, "", "",
 		"设置请求的query参数",
 		"Set the query parameters for the request"},
+	OptionMaxSize: Option{"", "--max-size", "", OptionTypeInt64, "", "",
+		"文件的最大值",
+		"Maximum file size"},
+	OptionMinSize: Option{"", "--min-size", "", OptionTypeInt64, "", "",
+		"文件的最小值",
+		"Minimum file size"},
 }
 
 func (T *Option) getHelp(language string) string {

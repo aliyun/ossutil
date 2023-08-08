@@ -2928,3 +2928,208 @@ func (s *OssutilCommandSuite) TestCommandObjectProducer(c *C) {
 		c.Assert(true, Equals, false)
 	}
 }
+
+//Test FilterLocalFile
+func (s *OssutilCommandSuite) TestFilterLocalFileWithSizeAndTime(c *C) {
+	str := int64(0)
+	minSize := int64(10)
+	maxSize := int64(20)
+	maxTime := strconv.Itoa(int(time.Now().Unix()))
+	minTime := strconv.Itoa(int(time.Now().Add(-90 * time.Second).Unix()))
+	minSize1 := int64(2)
+	f, _ := os.Stat(uploadFileName)
+	testLogger.Println(f.Size())
+	testLogger.Println(f.ModTime())
+
+	copyCommand.command.options = OptionMapType{
+		OptionMinSize: &minSize,
+	}
+
+	next := copyCommand.command.filterLocalFile(f)
+	c.Assert(next, Equals, false)
+
+	copyCommand.command.options = OptionMapType{
+		OptionMinSize: &minSize1,
+	}
+
+	next = copyCommand.command.filterLocalFile(f)
+	c.Assert(next, Equals, true)
+
+	copyCommand.command.options = OptionMapType{
+		OptionMaxSize: &minSize1,
+		OptionMinSize: &str,
+	}
+
+	next = copyCommand.command.filterLocalFile(f)
+	c.Assert(next, Equals, false)
+
+	copyCommand.command.options = OptionMapType{
+		OptionMaxSize: &minSize,
+		OptionMinSize: &str,
+	}
+
+	next = copyCommand.command.filterLocalFile(f)
+	c.Assert(next, Equals, true)
+
+	copyCommand.command.options = OptionMapType{
+		OptionMinSize: &minSize,
+		OptionMaxSize: &maxSize,
+	}
+
+	next = copyCommand.command.filterLocalFile(f)
+	c.Assert(next, Equals, false)
+
+	copyCommand.command.options = OptionMapType{
+		OptionMinSize: &minSize1,
+		OptionMaxSize: &maxSize,
+	}
+	next = copyCommand.command.filterLocalFile(f)
+	c.Assert(next, Equals, true)
+
+	copyCommand.command.options = OptionMapType{
+		OptionStartTime: &minTime,
+		OptionMinSize:   &str,
+		OptionMaxSize:   &str,
+	}
+	next = copyCommand.command.filterLocalFile(f)
+	c.Assert(next, Equals, true)
+
+	copyCommand.command.options = OptionMapType{
+		OptionStartTime: &maxTime,
+		OptionMinSize:   &str,
+		OptionMaxSize:   &str,
+	}
+	next = copyCommand.command.filterLocalFile(f)
+	c.Assert(next, Equals, false)
+
+	copyCommand.command.options = OptionMapType{
+		OptionEndTime:   &maxTime,
+		OptionMinSize:   &str,
+		OptionMaxSize:   &str,
+		OptionStartTime: &str,
+	}
+	next = copyCommand.command.filterLocalFile(f)
+	c.Assert(next, Equals, true)
+
+	copyCommand.command.options = OptionMapType{
+		OptionEndTime:   &maxTime,
+		OptionStartTime: &minTime,
+		OptionMinSize:   &str,
+		OptionMaxSize:   &str,
+	}
+	next = copyCommand.command.filterLocalFile(f)
+	c.Assert(next, Equals, true)
+
+	copyCommand.command.options = OptionMapType{
+		OptionEndTime:   &maxTime,
+		OptionStartTime: &minTime,
+		OptionMinSize:   &minSize1,
+		OptionMaxSize:   &maxSize,
+	}
+	next = copyCommand.command.filterLocalFile(f)
+	c.Assert(next, Equals, true)
+}
+
+//Test FilterObject
+func (s *OssutilCommandSuite) TestFilterObjectWithSizeAndTime(c *C) {
+	str := int64(0)
+	minSize := int64(10)
+	maxSize := int64(20)
+	maxTime := strconv.Itoa(int(time.Now().Unix()))
+	minTime := strconv.Itoa(int(time.Now().Add(-90 * time.Second).Unix()))
+	minSize1 := int64(2)
+
+	var f oss.ObjectProperties
+	f.Size = 3
+	f.LastModified = time.Now().Add(-50 * time.Second)
+
+	copyCommand.command.options = OptionMapType{
+		OptionMinSize: &minSize,
+	}
+
+	next := copyCommand.command.filterObject(f)
+	c.Assert(next, Equals, false)
+
+	copyCommand.command.options = OptionMapType{
+		OptionMinSize: &minSize1,
+	}
+
+	testLogger.Println(copyCommand.command.options)
+
+	next = copyCommand.command.filterObject(f)
+	c.Assert(next, Equals, true)
+
+	copyCommand.command.options = OptionMapType{
+		OptionMaxSize: &minSize1,
+		OptionMinSize: &str,
+	}
+
+	next = copyCommand.command.filterObject(f)
+	c.Assert(next, Equals, false)
+
+	copyCommand.command.options = OptionMapType{
+		OptionMaxSize: &minSize,
+		OptionMinSize: &str,
+	}
+
+	next = copyCommand.command.filterObject(f)
+	c.Assert(next, Equals, true)
+
+	copyCommand.command.options = OptionMapType{
+		OptionMinSize: &minSize,
+		OptionMaxSize: &maxSize,
+	}
+
+	next = copyCommand.command.filterObject(f)
+	c.Assert(next, Equals, false)
+
+	copyCommand.command.options = OptionMapType{
+		OptionMinSize: &minSize1,
+		OptionMaxSize: &maxSize,
+	}
+	next = copyCommand.command.filterObject(f)
+	c.Assert(next, Equals, true)
+
+	copyCommand.command.options = OptionMapType{
+		OptionStartTime: &minTime,
+		OptionMinSize:   &str,
+		OptionMaxSize:   &str,
+	}
+	next = copyCommand.command.filterObject(f)
+	c.Assert(next, Equals, true)
+
+	copyCommand.command.options = OptionMapType{
+		OptionStartTime: &maxTime,
+		OptionMinSize:   &str,
+		OptionMaxSize:   &str,
+	}
+	next = copyCommand.command.filterObject(f)
+	c.Assert(next, Equals, false)
+
+	copyCommand.command.options = OptionMapType{
+		OptionEndTime:   &maxTime,
+		OptionMinSize:   &str,
+		OptionMaxSize:   &str,
+		OptionStartTime: &str,
+	}
+	next = copyCommand.command.filterObject(f)
+	c.Assert(next, Equals, true)
+
+	copyCommand.command.options = OptionMapType{
+		OptionEndTime:   &maxTime,
+		OptionStartTime: &minTime,
+		OptionMinSize:   &str,
+		OptionMaxSize:   &str,
+	}
+	next = copyCommand.command.filterObject(f)
+	c.Assert(next, Equals, true)
+
+	copyCommand.command.options = OptionMapType{
+		OptionEndTime:   &maxTime,
+		OptionStartTime: &minTime,
+		OptionMinSize:   &minSize1,
+		OptionMaxSize:   &maxSize,
+	}
+	next = copyCommand.command.filterObject(f)
+	c.Assert(next, Equals, true)
+}

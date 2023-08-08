@@ -104,6 +104,8 @@ const (
 	OptionRegion                     = "region"
 	OptionCloudBoxID                 = "cloudBoxID"
 	OptionQueryParam                 = "queryParam"
+	OptionMaxSize                    = "maxSize"
+	OptionMinSize                    = "minSize"
 )
 
 // the elements show in stat object
