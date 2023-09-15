@@ -104,6 +104,7 @@ const (
 	OptionRegion                     = "region"
 	OptionCloudBoxID                 = "cloudBoxID"
 	OptionQueryParam                 = "queryParam"
+	OptionForcePathStyle             = "forcePathStyle"
 )
 
 // the elements show in stat object

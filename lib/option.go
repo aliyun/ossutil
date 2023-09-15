@@ -281,6 +281,9 @@ var OptionMap = map[string]Option{
 	OptionQueryParam: Option{"", "--query-param", "", OptionTypeStrings, "", "",
 		"设置请求的query参数",
 		"Set the query parameters for the request"},
+	OptionForcePathStyle: Option{"", "--force-path-style", "", OptionTypeFlagTrue, "", "",
+		"使用 path style 访问方式",
+		"Use path-style access "},
 }
 
 func (T *Option) getHelp(language string) string {
