@@ -1644,7 +1644,7 @@ func (s *OssutilCommandSuite) TestCopyFunction(c *C) {
 	c.Assert(str, Equals, "a")
 }
 
-//test fileProducer
+// test fileProducer
 func (s *OssutilCommandSuite) TestFileProducer(c *C) {
 	chFiles := make(chan fileInfoType, ChannelBuf)
 	chListError := make(chan error, 1)
@@ -1682,7 +1682,7 @@ func (s *OssutilCommandSuite) TestFileProducer(c *C) {
 	}
 }
 
-//test objectProducer
+// test objectProducer
 func (s *OssutilCommandSuite) TestCpObjectProducer(c *C) {
 	chObjects := make(chan objectInfoType, ChannelBuf)
 	chListError := make(chan error, 1)

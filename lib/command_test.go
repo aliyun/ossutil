@@ -2886,7 +2886,7 @@ func (s *OssutilCommandSuite) TestGetLoglevelFromOptions(c *C) {
 	testLogger.Print("loglevel 5" + strLevel)
 }
 
-//test command objectProducer
+// test command objectProducer
 func (s *OssutilCommandSuite) TestCommandObjectProducer(c *C) {
 	chObjects := make(chan string, ChannelBuf)
 	chListError := make(chan error, 1)
