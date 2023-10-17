@@ -59,9 +59,13 @@ func ParseAndRunCommand() error {
 		LogError("%s.\n", err.Error())
 		return err
 	}
+	onlyShowErrors, _ := GetBool(OptionOnlyShowErrors, options)
 	if showElapse {
-		te := time.Now().UnixNano()
-		fmt.Printf("\n%.6f(s) elapsed\n", float64(te-ts)/1e9)
+		if !onlyShowErrors {
+			te := time.Now().UnixNano()
+			fmt.Printf("\n%.6f(s) elapsed\n", float64(te-ts)/1e9)
+		}
+
 		return nil
 	}
 	return nil

@@ -367,6 +367,7 @@ var setMetaCommand = SetMetaCommand{
 			OptionRegion,
 			OptionCloudBoxID,
 			OptionForcePathStyle,
+			OptionOnlyShowErrors,
 		},
 	},
 }
@@ -399,7 +400,7 @@ func (sc *SetMetaCommand) RunCommand() error {
 	versionId, _ := GetString(OptionVersionId, sc.command.options)
 	objFileXml, _ := GetString(OptionObjectFile, sc.command.options)
 	snapshotPath, _ := GetString(OptionSnapshotPath, sc.command.options)
-
+	sc.smOption.onlyShowErrors, _ = GetBool(OptionOnlyShowErrors, sc.command.options)
 	var err error
 	// load snapshot
 	sc.smOption.snapshotPath = snapshotPath
@@ -760,7 +761,9 @@ func (sc *SetMetaCommand) waitRoutinueComplete(chError, chListError <-chan error
 			} else {
 				ferr = err
 				if !sc.smOption.ctnu {
-					fmt.Printf(sc.monitor.progressBar(true, errExit))
+					if !sc.smOption.onlyShowErrors {
+						fmt.Printf(sc.monitor.progressBar(true, errExit))
+					}
 					return err
 				}
 			}
@@ -770,7 +773,9 @@ func (sc *SetMetaCommand) waitRoutinueComplete(chError, chListError <-chan error
 }
 
 func (sc *SetMetaCommand) formatResultPrompt(err error) error {
-	fmt.Printf(sc.monitor.progressBar(true, normalExit))
+	if !sc.smOption.onlyShowErrors {
+		fmt.Printf(sc.monitor.progressBar(true, errExit))
+	}
 	if err != nil && sc.smOption.ctnu {
 		return nil
 	}

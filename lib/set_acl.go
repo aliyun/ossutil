@@ -263,6 +263,7 @@ var setACLCommand = SetACLCommand{
 			OptionRegion,
 			OptionCloudBoxID,
 			OptionForcePathStyle,
+			OptionOnlyShowErrors,
 		},
 	},
 }
@@ -291,7 +292,7 @@ func (sc *SetACLCommand) RunCommand() error {
 	routines, _ := GetInt(OptionRoutines, sc.command.options)
 	encodingType, _ := GetString(OptionEncodingType, sc.command.options)
 	versionId, _ := GetString(OptionVersionId, sc.command.options)
-
+	sc.saOption.onlyShowErrors, _ = GetBool(OptionOnlyShowErrors, sc.command.options)
 	var res bool
 	res, sc.filters = getFilter(os.Args)
 	if !res {
@@ -515,7 +516,9 @@ func (sc *SetACLCommand) waitRoutinueComplete(chError, chListError <-chan error,
 			} else {
 				ferr = err
 				if !sc.saOption.ctnu {
-					fmt.Printf(sc.monitor.progressBar(true, errExit))
+					if !sc.saOption.onlyShowErrors {
+						fmt.Printf(sc.monitor.progressBar(true, errExit))
+					}
 					return err
 				}
 			}
@@ -525,7 +528,9 @@ func (sc *SetACLCommand) waitRoutinueComplete(chError, chListError <-chan error,
 }
 
 func (sc *SetACLCommand) formatResultPrompt(err error) error {
-	fmt.Printf(sc.monitor.progressBar(true, normalExit))
+	if !sc.saOption.onlyShowErrors {
+		fmt.Printf(sc.monitor.progressBar(true, normalExit))
+	}
 	if err != nil && sc.saOption.ctnu {
 		return nil
 	}

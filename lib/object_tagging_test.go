@@ -366,6 +366,260 @@ func (s *OssutilCommandSuite) TestObjectTaggingPayer(c *C) {
 	os.Remove(fileName)
 }
 
+func (s *OssutilCommandSuite) TestObjectTaggingSingleOperationPutWithOnlyShowErrors(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(12)
+	s.putBucket(bucketName, c)
+
+	fileName := "ossutil-test-file-" + randLowStr(5)
+	textBuffer := randStr(100)
+	s.createFile(fileName, textBuffer, c)
+
+	object := "ossutil-test-object-" + randLowStr(5)
+	s.putObject(bucketName, object, fileName, c)
+
+	// put tag
+	out = os.Stdout
+	ogFile := "ossutil_object_tagging." + randLowStr(5)
+	tagInfo := "key1#value1"
+	os.Args = []string{"", "object-tagging", "--method", "put", CloudURLToString(bucketName, object), tagInfo, "--only-show-errors", "--config-file=" + configFile}
+	var outFile *os.File
+	outFile, _ = os.OpenFile(ogFile, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0660)
+	defer outFile.Close()
+	os.Stdout = outFile
+	err := ParseAndRunCommand()
+	os.Stdout = out
+	c.Assert(err, IsNil)
+	outPut := s.readFile(ogFile, c)
+	testLogger.Println(outPut)
+	c.Assert(outPut == "", Equals, true)
+	os.Remove(ogFile)
+
+	os.Remove(fileName)
+
+	var str string
+	strMethod := "put"
+	recursive := true
+	routines := strconv.Itoa(Routines)
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"stsToken":        &str,
+		"configFile":      &configFile,
+		"method":          &strMethod,
+		"recursive":       &recursive,
+		"routines":        &routines,
+	}
+
+	// get tag
+	resultfileName := "ossutil-test-result-" + randLowStr(5)
+	testResultFile, _ = os.OpenFile(resultfileName, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
+	oldStdout := os.Stdout
+	os.Stdout = testResultFile
+
+	strMethod = "get"
+	tagArgs := []string{CloudURLToString(bucketName, "")}
+	_, err = cm.RunCommand("object-tagging", tagArgs, options)
+	c.Assert(err, IsNil)
+	os.Stdout = oldStdout
+	testResultFile.Close()
+
+	// check file content
+	catBody := s.readFile(resultfileName, c)
+	c.Assert(strings.Contains(catBody, "key1"), Equals, true)
+	c.Assert(strings.Contains(catBody, "value1"), Equals, true)
+
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestObjectTaggingSingleOperationDeleteWithOnlyShowErrors(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(12)
+	s.putBucket(bucketName, c)
+
+	fileName := "ossutil-test-file-" + randLowStr(5)
+	textBuffer := randStr(100)
+	s.createFile(fileName, textBuffer, c)
+
+	object := "ossutil-test-object-" + randLowStr(5)
+	s.putObject(bucketName, object, fileName, c)
+
+	// delete tag
+	out = os.Stdout
+	ogFile := "ossutil_object_tagging." + randLowStr(5)
+	tagInfo := "key1#value1"
+	os.Args = []string{"", "object-tagging", "--method", "delete", CloudURLToString(bucketName, object), tagInfo, "--only-show-errors", "--config-file=" + configFile}
+	var outFile *os.File
+	outFile, _ = os.OpenFile(ogFile, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0660)
+	defer outFile.Close()
+	os.Stdout = outFile
+	err := ParseAndRunCommand()
+	os.Stdout = out
+	c.Assert(err, IsNil)
+	outPut := s.readFile(ogFile, c)
+	testLogger.Println(outPut)
+	c.Assert(outPut == "", Equals, true)
+	os.Remove(ogFile)
+	os.Remove(fileName)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestObjectTaggingBatchOperationPutWithOnlyShowErrors(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	bucketStr := CloudURLToString(bucketName, "")
+
+	dir := "ossutil-test-dir-" + randLowStr(5)
+	subdir := "dir1"
+	contents := map[string]string{}
+	s.createTestFiles(dir, subdir, c, contents)
+
+	// upload files
+	args := []string{dir, bucketStr}
+	cmdline := []string{"ossutil", "cp", dir, bucketStr, "-rf"}
+	showElapse, err := s.rawCPWithFilter(args, true, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	out = os.Stdout
+	ogFile := "ossutil_object_tagging." + randLowStr(5)
+	tagInfo := "key1#value1"
+	os.Args = []string{"", "object-tagging", "--method", "put", CloudURLToString(bucketName, ""), tagInfo, "-r", "--only-show-errors", "--config-file=" + configFile}
+	var outFile *os.File
+	outFile, _ = os.OpenFile(ogFile, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0660)
+	defer outFile.Close()
+	os.Stdout = outFile
+	err = ParseAndRunCommand()
+	os.Stdout = out
+	c.Assert(err, IsNil)
+	outPut := s.readFile(ogFile, c)
+	testLogger.Println(outPut)
+	c.Assert(outPut == "", Equals, true)
+	os.Remove(ogFile)
+	os.RemoveAll(dir)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestObjectTaggingBatchOperationDeleteWithOnlyShowErrors(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	bucketStr := CloudURLToString(bucketName, "")
+
+	dir := "ossutil-test-dir-" + randLowStr(5)
+	subdir := "dir1"
+	contents := map[string]string{}
+	s.createTestFiles(dir, subdir, c, contents)
+
+	// upload files
+	args := []string{dir, bucketStr}
+	cmdline := []string{"ossutil", "cp", dir, bucketStr, "-rf"}
+	showElapse, err := s.rawCPWithFilter(args, true, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	out = os.Stdout
+	ogFile := "ossutil_object_tagging." + randLowStr(5)
+	tagInfo := "key1#value1"
+	os.Args = []string{"", "object-tagging", "--method", "delete", CloudURLToString(bucketName, ""), tagInfo, "-r", "--only-show-errors", "--config-file=" + configFile}
+	var outFile *os.File
+	outFile, _ = os.OpenFile(ogFile, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0660)
+	defer outFile.Close()
+	os.Stdout = outFile
+	err = ParseAndRunCommand()
+	os.Stdout = out
+	c.Assert(err, IsNil)
+	outPut := s.readFile(ogFile, c)
+	testLogger.Println(outPut)
+	c.Assert(outPut == "", Equals, true)
+	os.Remove(ogFile)
+
+	os.RemoveAll(dir)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestObjectTaggingBatchOperationWithOnlyShowErrors(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	bucketStr := CloudURLToString(bucketName, "")
+
+	dir := "ossutil-test-dir-" + randLowStr(5)
+	subdir := "dir1"
+	contents := map[string]string{}
+	s.createTestFiles(dir, subdir, c, contents)
+
+	// upload files
+	args := []string{dir, bucketStr}
+	cmdline := []string{"ossutil", "cp", dir, bucketStr, "-rf"}
+	showElapse, err := s.rawCPWithFilter(args, true, true, false, DefaultBigFileThreshold, CheckpointDir, cmdline, "", "")
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	var str string
+	strMethod := "put"
+	recursive := true
+	routines := strconv.Itoa(Routines)
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"stsToken":        &str,
+		"configFile":      &configFile,
+		"method":          &strMethod,
+		"recursive":       &recursive,
+		"routines":        &routines,
+	}
+	cpFile := "ossutil_object_tagging" + randLowStr(5)
+	// put tag
+	var outFile *os.File
+	outFile, _ = os.OpenFile(cpFile, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0660)
+	defer outFile.Close()
+	os.Stdout = outFile
+	tagInfo := "key1#value1"
+	tagArgs := []string{CloudURLToString(bucketName, ""), tagInfo}
+	_, err = cm.RunCommand("object-tagging", tagArgs, options)
+	os.Stdout = out
+	c.Assert(err, IsNil)
+
+	// get tag
+	resultfileName := "ossutil-test-result-" + randLowStr(5)
+	testResultFile, _ = os.OpenFile(resultfileName, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
+	oldStdout := os.Stdout
+	os.Stdout = testResultFile
+
+	strMethod = "get"
+	options[OptionMethod] = &strMethod
+	tagArgs = []string{CloudURLToString(bucketName, "")}
+	_, err = cm.RunCommand("object-tagging", tagArgs, options)
+	c.Assert(err, IsNil)
+	os.Stdout = oldStdout
+	testResultFile.Close()
+
+	catBody := s.readFile(resultfileName, c)
+	c.Assert(strings.Contains(catBody, "key1"), Equals, true)
+	c.Assert(strings.Contains(catBody, "value1"), Equals, true)
+
+	out = os.Stdout
+	ogFile := "ossutil_object_tagging." + randLowStr(5)
+	strMethod = "delete"
+	options[OptionMethod] = &strMethod
+	options[OptionOnlyShowErrors] = &recursive
+	outFile, _ = os.OpenFile(ogFile, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0660)
+	defer outFile.Close()
+	os.Stdout = outFile
+	tagArgs = []string{CloudURLToString(bucketName, ""), tagInfo}
+	_, err = cm.RunCommand("object-tagging", tagArgs, options)
+	os.Stdout = out
+	c.Assert(err, IsNil)
+	outPut := s.readFile(ogFile, c)
+	testLogger.Println(outPut)
+	c.Assert(outPut == "", Equals, true)
+	os.Remove(ogFile)
+	os.RemoveAll(dir)
+	s.removeBucket(bucketName, true, c)
+}
+
 func (s *OssutilCommandSuite) TestObjectTaggingHelpInfo(c *C) {
 	options := OptionMapType{}
 

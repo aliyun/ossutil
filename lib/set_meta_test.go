@@ -2025,3 +2025,94 @@ func (s *OssutilCommandSuite) TestSetObjectMetaProducer(c *C) {
 
 	os.Remove(emptyContentFileName)
 }
+
+func (s *OssutilCommandSuite) TestSetObjectMetaWithOnlyShowErrors(c *C) {
+	bucketName := bucketNamePrefix + "-set-meta-" + randLowStr(10)
+	objectName := randStr(12)
+
+	s.putBucket(bucketName, c)
+	// put object v1
+	textBufferV1 := randStr(100)
+	s.createFile(uploadFileName, textBufferV1, c)
+	s.putObject(bucketName, objectName, uploadFileName, c)
+	// begin set-meta from v2
+	var str string
+	isTrue := true
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+		"update":          &isTrue,
+	}
+
+	aclFile := "ossutil_set_meta." + randLowStr(5)
+	var outFile *os.File
+
+	args := []string{CloudURLToString(bucketName, objectName), "x-oss-object-acl:public-read-write#X-Oss-Meta-A:123#X-Oss-Meta-C:456"}
+	outFile, _ = os.OpenFile(aclFile, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0660)
+	defer outFile.Close()
+	os.Stdout = outFile
+	_, err := cm.RunCommand("set-meta", args, options)
+	os.Stdout = out
+	c.Assert(err, IsNil)
+	outPut := s.readFile(aclFile, c)
+	testLogger.Println(outPut)
+	c.Assert(outPut == "", Equals, true)
+	os.Remove(aclFile)
+
+	options[OptionRecursion] = &isTrue
+	args = []string{CloudURLToString(bucketName, ""), "x-oss-object-acl:public-read-write#X-Oss-Meta-A:123#X-Oss-Meta-C:456"}
+	outFile, _ = os.OpenFile(aclFile, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0660)
+	defer outFile.Close()
+	os.Stdout = outFile
+	_, err = cm.RunCommand("set-meta", args, options)
+	os.Stdout = out
+	c.Assert(err, IsNil)
+	outPut = s.readFile(aclFile, c)
+	testLogger.Println(outPut)
+	c.Assert(strings.Contains(outPut, "Do you really mean to recursivlly set meta on"), Equals, true)
+	os.Remove(aclFile)
+
+	options[OptionForce] = &isTrue
+	args = []string{CloudURLToString(bucketName, ""), "x-oss-object-acl:public-read-write#X-Oss-Meta-A:123#X-Oss-Meta-C:456"}
+	outFile, _ = os.OpenFile(aclFile, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0660)
+	defer outFile.Close()
+	os.Stdout = outFile
+	_, err = cm.RunCommand("set-meta", args, options)
+	os.Stdout = out
+	c.Assert(err, IsNil)
+	outPut = s.readFile(aclFile, c)
+	testLogger.Println(outPut)
+	c.Assert(strings.Contains(outPut, "Total"), Equals, true)
+	os.Remove(aclFile)
+
+	delete(options, OptionForce)
+	options[OptionOnlyShowErrors] = &isTrue
+	args = []string{CloudURLToString(bucketName, ""), "x-oss-object-acl:public-read-write#X-Oss-Meta-A:123#X-Oss-Meta-C:456"}
+	outFile, _ = os.OpenFile(aclFile, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0660)
+	defer outFile.Close()
+	os.Stdout = outFile
+	_, err = cm.RunCommand("set-meta", args, options)
+	os.Stdout = out
+	c.Assert(err, IsNil)
+	outPut = s.readFile(aclFile, c)
+	testLogger.Println(outPut)
+	c.Assert(strings.Contains(outPut, "Do you really mean to recursivlly set meta on"), Equals, true)
+	os.Remove(aclFile)
+
+	options[OptionForce] = &isTrue
+	args = []string{CloudURLToString(bucketName, ""), "x-oss-object-acl:public-read-write#X-Oss-Meta-A:123#X-Oss-Meta-C:456"}
+	outFile, _ = os.OpenFile(aclFile, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0660)
+	defer outFile.Close()
+	os.Stdout = outFile
+	_, err = cm.RunCommand("set-meta", args, options)
+	os.Stdout = out
+	c.Assert(err, IsNil)
+	outPut = s.readFile(aclFile, c)
+	testLogger.Println(outPut)
+	c.Assert(outPut == "", Equals, true)
+	os.Remove(aclFile)
+
+	s.removeBucket(bucketName, true, c)
+}

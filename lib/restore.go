@@ -15,10 +15,11 @@ import (
 )
 
 type batchOptionType struct {
-	ctnu         bool
-	reporter     *Reporter
-	snapshotPath string
-	snapshotldb  *leveldb.DB
+	ctnu           bool
+	reporter       *Reporter
+	snapshotPath   string
+	snapshotldb    *leveldb.DB
+	onlyShowErrors bool
 }
 
 var specChineseRestore = SpecText{
@@ -237,6 +238,7 @@ var restoreCommand = RestoreCommand{
 			OptionRegion,
 			OptionCloudBoxID,
 			OptionForcePathStyle,
+			OptionOnlyShowErrors,
 		},
 	},
 }
@@ -264,7 +266,7 @@ func (rc *RestoreCommand) RunCommand() error {
 	force, _ := GetBool(OptionForce, rc.command.options)
 	objFileXml, _ := GetString(OptionObjectFile, rc.command.options)
 	snapshotPath, _ := GetString(OptionSnapshotPath, rc.command.options)
-
+	rc.reOption.onlyShowErrors, _ = GetBool(OptionOnlyShowErrors, rc.command.options)
 	payer, _ := GetString(OptionRequestPayer, rc.command.options)
 	if payer != "" {
 		if payer != strings.ToLower(string(oss.Requester)) {
@@ -564,7 +566,9 @@ func (rc *RestoreCommand) waitRoutinueComplete(chError, chListError <-chan error
 			} else {
 				ferr = err
 				if !rc.reOption.ctnu {
-					fmt.Printf(rc.monitor.progressBar(true, errExit))
+					if !rc.reOption.onlyShowErrors {
+						fmt.Printf(rc.monitor.progressBar(true, errExit))
+					}
 					return err
 				}
 			}
@@ -574,7 +578,10 @@ func (rc *RestoreCommand) waitRoutinueComplete(chError, chListError <-chan error
 }
 
 func (rc *RestoreCommand) formatResultPrompt(err error) error {
-	fmt.Printf(rc.monitor.progressBar(true, normalExit))
+	if !rc.reOption.onlyShowErrors {
+		fmt.Printf(rc.monitor.progressBar(true, normalExit))
+	}
+
 	if err != nil && rc.reOption.ctnu {
 		return nil
 	}

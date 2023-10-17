@@ -1303,3 +1303,65 @@ func (s *OssutilCommandSuite) TestSetObjectAclWithInvalidVersionArgs(c *C) {
 	_, err = cm.RunCommand("set-acl", args, options)
 	c.Assert(strings.Contains(err.Error(), "--version-id only work on single object"), Equals, true)
 }
+
+func (s *OssutilCommandSuite) TestSetObjectAclWithOnlyShowErrors(c *C) {
+	bucketName := bucketNamePrefix + "-set-alc-" + randLowStr(10)
+	objectName := randStr(12)
+	s.putBucket(bucketName, c)
+	textBufferV1 := randStr(100)
+	s.createFile(uploadFileName, textBufferV1, c)
+	s.putObject(bucketName, objectName, uploadFileName, c)
+	var str string
+	ok := true
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+	}
+	aclFile := "ossutil_set_acl." + randLowStr(5)
+	var outFile *os.File
+
+	args := []string{CloudURLToString(bucketName, objectName), "private"}
+	outFile, _ = os.OpenFile(aclFile, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0660)
+	defer outFile.Close()
+	os.Stdout = outFile
+	_, err := cm.RunCommand("set-acl", args, options)
+	os.Stdout = out
+	c.Assert(err, IsNil)
+	outPut := s.readFile(aclFile, c)
+	testLogger.Println(outPut)
+	c.Assert(outPut == "", Equals, true)
+	os.Remove(aclFile)
+
+	options[OptionRecursion] = &ok
+	args = []string{CloudURLToString(bucketName, ""), "private"}
+	outFile, _ = os.OpenFile(aclFile, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0660)
+	defer outFile.Close()
+	os.Stdout = outFile
+	_, err = cm.RunCommand("set-acl", args, options)
+	os.Stdout = out
+	c.Assert(err, IsNil)
+	outPut = s.readFile(aclFile, c)
+	testLogger.Println(outPut)
+	c.Assert(strings.Contains(outPut, "Do you really mean to"), Equals, true)
+	os.Remove(aclFile)
+
+	options[OptionOnlyShowErrors] = &ok
+	options[OptionForce] = &ok
+	args = []string{CloudURLToString(bucketName, ""), "private"}
+	outFile, _ = os.OpenFile(aclFile, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0660)
+	defer outFile.Close()
+	os.Stdout = outFile
+	_, err = cm.RunCommand("set-acl", args, options)
+	os.Stdout = out
+	c.Assert(err, IsNil)
+	outPut = s.readFile(aclFile, c)
+	testLogger.Println(outPut)
+	c.Assert(outPut == "", Equals, true)
+	os.Remove(aclFile)
+
+	args = []string{CloudURLToString(bucketName, objectName), "err-private"}
+	_, err = cm.RunCommand("set-acl", args, options)
+	c.Assert(err, NotNil)
+}

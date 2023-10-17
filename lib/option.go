@@ -284,6 +284,9 @@ var OptionMap = map[string]Option{
 	OptionForcePathStyle: Option{"", "--force-path-style", "", OptionTypeFlagTrue, "", "",
 		"使用 path style 访问方式",
 		"Use path-style access "},
+	OptionOnlyShowErrors: Option{"", "--only-show-errors", "", OptionTypeFlagTrue, "", "",
+		"表示仅有错误时才输出",
+		"Indicates output only when there is an error."},
 }
 
 func (T *Option) getHelp(language string) string {

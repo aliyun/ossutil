@@ -61,6 +61,7 @@ type copyOptionType struct {
 	onlyCurrentDir    bool
 	disableDirObject  bool
 	disableAllSymlink bool
+	onlyShowErrors    bool
 	tagging           string
 	opType            operationType
 	bSyncCommand      bool
@@ -1295,6 +1296,7 @@ var copyCommand = CopyCommand{
 			OptionRegion,
 			OptionCloudBoxID,
 			OptionForcePathStyle,
+			OptionOnlyShowErrors,
 		},
 	},
 }
@@ -1340,6 +1342,7 @@ func (cc *CopyCommand) RunCommand() error {
 	cc.cpOption.onlyCurrentDir, _ = GetBool(OptionOnlyCurrentDir, cc.command.options)
 	cc.cpOption.disableDirObject, _ = GetBool(OptionDisableDirObject, cc.command.options)
 	cc.cpOption.disableAllSymlink, _ = GetBool(OptionDisableAllSymlink, cc.command.options)
+	cc.cpOption.onlyShowErrors, _ = GetBool(OptionOnlyShowErrors, cc.command.options)
 
 	if cc.cpOption.enableSymlinkDir && cc.cpOption.disableAllSymlink {
 		return fmt.Errorf("--enable-symlink-dir and --disable-all-symlink can't be both exist")
@@ -1495,7 +1498,9 @@ func (cc *CopyCommand) RunCommand() error {
 	endT := time.Now().UnixNano() / 1000 / 1000
 	if endT-startT > 0 {
 		averSpeed := (cc.monitor.transferSize / (endT - startT)) * 1000
-		fmt.Printf("\naverage speed %d(byte/s)\n", averSpeed)
+		if !cc.cpOption.onlyShowErrors {
+			fmt.Printf("\naverage speed %d(byte/s)\n", averSpeed)
+		}
 		LogInfo("average speed %d(byte/s)\n", averSpeed)
 	}
 
@@ -1593,7 +1598,9 @@ func (cc *CopyCommand) checkCopyOptions(opType operationType) error {
 func (cc *CopyCommand) progressBar() {
 	// fetch all reveal
 	for signal := range chProgressSignal {
-		fmt.Printf(cc.monitor.progressBar(signal.finish, signal.exitStat))
+		if !cc.cpOption.onlyShowErrors {
+			fmt.Printf(cc.monitor.progressBar(signal.finish, signal.exitStat))
+		}
 	}
 }
 
@@ -1651,14 +1658,18 @@ func (cc *CopyCommand) uploadFiles(srcURLList []StorageURLer, destURL CloudURL) 
 			} else {
 				if !cc.cpOption.ctnu {
 					cc.closeProgress()
-					fmt.Printf(cc.monitor.progressBar(true, errExit))
+					if !cc.cpOption.onlyShowErrors {
+						fmt.Printf(cc.monitor.progressBar(true, errExit))
+					}
 					return err
 				}
 			}
 		}
 	}
 	cc.closeProgress()
-	fmt.Printf(cc.monitor.progressBar(true, normalExit))
+	if !cc.cpOption.onlyShowErrors {
+		fmt.Printf(cc.monitor.progressBar(true, normalExit))
+	}
 	return listError
 }
 
@@ -2379,7 +2390,9 @@ func (cc *CopyCommand) downloadFiles(srcURL CloudURL, destURL FileURL) error {
 
 func (cc *CopyCommand) formatResultPrompt(err error) error {
 	cc.closeProgress()
-	fmt.Printf(cc.monitor.progressBar(true, normalExit))
+	if !cc.cpOption.onlyShowErrors {
+		fmt.Printf(cc.monitor.progressBar(true, normalExit))
+	}
 	if err != nil && cc.cpOption.ctnu {
 		return nil
 	}
@@ -2565,8 +2578,10 @@ func (cc *CopyCommand) ossDownloadFileRetry(bucket *oss.Bucket, objectName, file
 	for i := 1; ; i++ {
 		if i > 1 {
 			time.Sleep(time.Duration(3) * time.Second)
-			if int64(i) >= retryTimes {
-				fmt.Printf("\nretry count:%d:get object to file:%s.\n", i-1, fileName)
+			if !cc.cpOption.onlyShowErrors {
+				if int64(i) >= retryTimes {
+					fmt.Printf("\nretry count:%d:get object to file:%s.\n", i-1, fileName)
+				}
 			}
 		}
 
@@ -2595,8 +2610,10 @@ func (cc *CopyCommand) ossResumeDownloadRetry(bucket *oss.Bucket, objectName str
 	for i := 1; ; i++ {
 		if i > 1 {
 			time.Sleep(time.Duration(3) * time.Second)
-			if int64(i) >= retryTimes {
-				fmt.Printf("\nretry count:%d:mulitpart download file:%s.\n", i-1, objectName)
+			if !cc.cpOption.onlyShowErrors {
+				if int64(i) >= retryTimes {
+					fmt.Printf("\nretry count:%d:mulitpart download file:%s.\n", i-1, objectName)
+				}
 			}
 		}
 
@@ -2853,7 +2870,9 @@ func (cc *CopyCommand) waitRoutinueComplete(chError, chListError <-chan error, o
 				ferr = err
 				if !cc.cpOption.ctnu {
 					cc.closeProgress()
-					fmt.Printf(cc.monitor.progressBar(true, errExit))
+					if !cc.cpOption.onlyShowErrors {
+						fmt.Printf(cc.monitor.progressBar(true, errExit))
+					}
 					return err
 				}
 			}
@@ -3018,8 +3037,10 @@ func (cc *CopyCommand) ossCopyObjectRetry(bucket *oss.Bucket, objectName, destBu
 	for i := 1; ; i++ {
 		if i > 1 {
 			time.Sleep(time.Duration(3) * time.Second)
-			if int64(i) >= retryTimes {
-				fmt.Printf("\nretry count:%d,copy object:%s.\n", i-1, objectName)
+			if !cc.cpOption.onlyShowErrors {
+				if int64(i) >= retryTimes {
+					fmt.Printf("\nretry count:%d,copy object:%s.\n", i-1, objectName)
+				}
 			}
 		}
 		_, err := bucket.CopyObjectTo(destBucketName, destObjectName, objectName, options...)
@@ -3045,9 +3066,12 @@ func (cc *CopyCommand) ossResumeCopyRetry(bucketName, objectName, destBucketName
 	for i := 1; ; i++ {
 		if i > 1 {
 			time.Sleep(time.Duration(3) * time.Second)
-			if int64(i) >= retryTimes {
-				fmt.Printf("\nretry count:%d, resume copy object:%s.\n", i-1, objectName)
+			if !cc.cpOption.onlyShowErrors {
+				if int64(i) >= retryTimes {
+					fmt.Printf("\nretry count:%d, resume copy object:%s.\n", i-1, objectName)
+				}
 			}
+
 		}
 
 		err := bucket.CopyFile(bucketName, objectName, destObjectName, partSize, options...)

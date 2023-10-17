@@ -6120,3 +6120,467 @@ func (s *OssutilCommandSuite) TestCloudBoxCreateAndDeleteBucket(c *C) {
 	os.Remove(fileName)
 	s.removeBucket(bucketName, true, c)
 }
+
+func (s *OssutilCommandSuite) TestCpCmdUpload(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	objectContent := randLowStr(1024 * 10)
+	fileName := "ossutil_test." + randLowStr(12)
+	s.createFile(fileName, objectContent, c)
+	cpFile := "ossutil_cp." + randLowStr(5)
+
+	object := randLowStr(12)
+	out = os.Stdout
+
+	os.Args = []string{"", "cp", fileName, CloudURLToString(bucketName, object), "-f", "--config-file=" + configFile}
+	var outFile *os.File
+	outFile, _ = os.OpenFile(cpFile, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0660)
+	defer outFile.Close()
+	os.Stdout = outFile
+	err := ParseAndRunCommand()
+	os.Stdout = out
+	c.Assert(err, IsNil)
+	outPut := s.readFile(cpFile, c)
+	testLogger.Println(outPut)
+	c.Assert(strings.Contains(outPut, "elapsed"), Equals, true)
+	c.Assert(strings.Contains(outPut, "Succeed"), Equals, true)
+	os.Remove(cpFile)
+}
+
+func (s *OssutilCommandSuite) TestCpCmdCpObject(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	objectContent := randLowStr(1024 * 10)
+	fileName := "ossutil_test." + randLowStr(12)
+	s.createFile(fileName, objectContent, c)
+	cpFile := "ossutil_cp." + randLowStr(5)
+	object := randLowStr(12)
+	s.putObject(bucketName, object, fileName, c)
+
+	out = os.Stdout
+	os.Args = []string{"", "cp", CloudURLToString(bucketName, object), CloudURLToString(bucketNameExist, object), "-f", "--config-file=" + configFile}
+	outFile, _ := os.OpenFile(cpFile, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0660)
+	defer outFile.Close()
+	os.Stdout = outFile
+	outFile = os.Stdout
+	err := ParseAndRunCommand()
+	os.Stdout = out
+	c.Assert(err, IsNil)
+	outPut := s.readFile(cpFile, c)
+	testLogger.Println(outPut)
+	c.Assert(strings.Contains(outPut, "elapsed"), Equals, true)
+	c.Assert(strings.Contains(outPut, "Succeed"), Equals, true)
+	os.Remove(cpFile)
+}
+
+func (s *OssutilCommandSuite) TestCpCmdDownload(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	objectContent := randLowStr(1024 * 10)
+	fileName := "ossutil_test." + randLowStr(12)
+	s.createFile(fileName, objectContent, c)
+	cpFile := "ossutil_cp." + randLowStr(5)
+	object := randLowStr(12)
+	s.putObject(bucketName, object, fileName, c)
+
+	out = os.Stdout
+	downloadFileName = "ossutil_test_down." + randLowStr(12)
+	os.Args = []string{"", "cp", CloudURLToString(bucketName, object), downloadFileName, "-f", "--config-file=" + configFile}
+	var outFile *os.File
+	outFile, _ = os.OpenFile(cpFile, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0660)
+	defer outFile.Close()
+	os.Stdout = outFile
+	err := ParseAndRunCommand()
+	os.Stdout = out
+	c.Assert(err, IsNil)
+	outPut := s.readFile(cpFile, c)
+	testLogger.Println(outPut)
+	c.Assert(strings.Contains(outPut, "elapsed"), Equals, true)
+	c.Assert(strings.Contains(outPut, "Succeed"), Equals, true)
+	os.Remove(cpFile)
+}
+
+func (s *OssutilCommandSuite) TestCpCmdError(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	fileName := "not_exist_file"
+	object := randLowStr(12)
+	out = os.Stdout
+
+	os.Args = []string{"", "cp", fileName, CloudURLToString(bucketName, object), "-f", "--config-file=" + configFile}
+	var outFile *os.File
+	os.Stdout = outFile
+	err := ParseAndRunCommand()
+	os.Stdout = out
+	c.Assert(err, NotNil)
+}
+
+func (s *OssutilCommandSuite) TestCpCmdCpObjectError(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	object := "not_exist_object"
+	out = os.Stdout
+	os.Args = []string{"", "cp", CloudURLToString(bucketName, object), CloudURLToString(bucketNameExist, object), "-f", "--config-file=" + configFile}
+	err := ParseAndRunCommand()
+	os.Stdout = out
+	c.Assert(err, NotNil)
+}
+
+func (s *OssutilCommandSuite) TestCpCmdDownloadError(c *C) {
+	downloadFileName = "ossutil_test_down." + randLowStr(12)
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	object := "not_exist_object"
+	out = os.Stdout
+	os.Args = []string{"", "cp", CloudURLToString(bucketName, object), CloudURLToString(bucketNameExist, object), "-f", "--config-file=" + configFile}
+	err := ParseAndRunCommand()
+	os.Stdout = out
+	c.Assert(err, NotNil)
+}
+
+func (s *OssutilCommandSuite) TestCpCmdUploadWithOnlyShowErrors(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	objectContent := randLowStr(1024 * 10)
+	fileName := "ossutil_test." + randLowStr(12)
+	s.createFile(fileName, objectContent, c)
+	cpFile := "ossutil_cp." + randLowStr(5)
+
+	object := randLowStr(12)
+	out = os.Stdout
+
+	os.Args = []string{"", "cp", fileName, CloudURLToString(bucketName, object), "-f", "--only-show-errors", "--config-file=" + configFile}
+	var outFile *os.File
+	outFile, _ = os.OpenFile(cpFile, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0660)
+	defer outFile.Close()
+	os.Stdout = outFile
+	err := ParseAndRunCommand()
+	os.Stdout = out
+	c.Assert(err, IsNil)
+	outPut := s.readFile(cpFile, c)
+	testLogger.Println(outPut)
+	c.Assert(outPut == "", Equals, true)
+	os.Remove(cpFile)
+}
+
+func (s *OssutilCommandSuite) TestCpCmdUploadErrorWithOnlyShowErrors(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	fileName := "not_exist_file"
+	object := randLowStr(12)
+	os.Args = []string{"", "cp", fileName, CloudURLToString(bucketName, object), "-f", "--only-show-errors", "--config-file=" + configFile}
+	err := ParseAndRunCommand()
+	c.Assert(err, NotNil)
+}
+
+func (s *OssutilCommandSuite) TestCpCmdCpObjectWithOnlyShowErrors(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	objectContent := randLowStr(1024 * 10)
+	fileName := "ossutil_test." + randLowStr(12)
+	s.createFile(fileName, objectContent, c)
+	cpFile := "ossutil_cp." + randLowStr(5)
+	object := randLowStr(12)
+	s.putObject(bucketName, object, fileName, c)
+
+	out = os.Stdout
+	os.Args = []string{"", "cp", CloudURLToString(bucketName, object), CloudURLToString(bucketNameExist, object), "-f", "--only-show-errors", "--config-file=" + configFile}
+	outFile, _ := os.OpenFile(cpFile, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0660)
+	defer outFile.Close()
+	os.Stdout = outFile
+	outFile = os.Stdout
+	err := ParseAndRunCommand()
+	os.Stdout = out
+	c.Assert(err, IsNil)
+	outPut := s.readFile(cpFile, c)
+	testLogger.Println(outPut)
+	c.Assert(outPut == "", Equals, true)
+	os.Remove(cpFile)
+}
+
+func (s *OssutilCommandSuite) TestCpCmdDownloadWithOnlyShowErrors(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	objectContent := randLowStr(1024 * 10)
+	fileName := "ossutil_test." + randLowStr(12)
+	s.createFile(fileName, objectContent, c)
+	cpFile := "ossutil_cp." + randLowStr(5)
+	object := randLowStr(12)
+	s.putObject(bucketName, object, fileName, c)
+
+	out = os.Stdout
+	downloadFileName = "ossutil_test_down." + randLowStr(12)
+	os.Args = []string{"", "cp", CloudURLToString(bucketName, object), downloadFileName, "-f", "--only-show-errors", "--config-file=" + configFile}
+	var outFile *os.File
+	outFile, _ = os.OpenFile(cpFile, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0660)
+	defer outFile.Close()
+	os.Stdout = outFile
+	err := ParseAndRunCommand()
+	os.Stdout = out
+	c.Assert(err, IsNil)
+	outPut := s.readFile(cpFile, c)
+	testLogger.Println(outPut)
+	c.Assert(outPut == "", Equals, true)
+	os.Remove(cpFile)
+}
+
+func (s *OssutilCommandSuite) TestCpCmdDownloadWithOnlyShowErrors2(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	objectContent := randLowStr(1024 * 10)
+	fileName := "ossutil_test." + randLowStr(12)
+	s.createFile(fileName, objectContent, c)
+	cpFile := "ossutil_cp." + randLowStr(5)
+	object := randLowStr(12)
+	s.putObject(bucketName, object, fileName, c)
+
+	out = os.Stdout
+	downloadFileName = "ossutil_test_down." + randLowStr(12)
+	os.Args = []string{"", "cp", fileName, CloudURLToString(bucketName, object), "--only-show-errors", "--config-file=" + configFile}
+	var outFile *os.File
+	outFile, _ = os.OpenFile(cpFile, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0660)
+	defer outFile.Close()
+	os.Stdout = outFile
+	err := ParseAndRunCommand()
+	os.Stdout = out
+	c.Assert(err, IsNil)
+	outPut := s.readFile(cpFile, c)
+	testLogger.Println(outPut)
+	//c.Assert(outPut == "", Equals, true)
+	os.Remove(cpFile)
+
+	str := ""
+	cpDir := CheckpointDir
+	isTrue := true
+	routines := strconv.Itoa(Routines)
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+		"checkpointDir":   &cpDir,
+		"routines":        &routines,
+		"skipVerifyCert":  &str,
+	}
+	options[OptionForce] = &isTrue
+	cpArgs := []string{fileName, CloudURLToString(bucketName, object)}
+	outFile, _ = os.OpenFile(cpFile, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0660)
+	defer outFile.Close()
+	os.Stdout = outFile
+	_, err = cm.RunCommand("cp", cpArgs, options)
+	os.Stdout = out
+	c.Assert(err, IsNil)
+	outPut = s.readFile(cpFile, c)
+	testLogger.Println(outPut)
+	c.Assert(strings.Contains(outPut, "Succeed"), Equals, true)
+	os.Remove(cpFile)
+}
+
+func (s *OssutilCommandSuite) TestCpCmdWithOnlyShowErrors(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+	objectContent := randLowStr(10)
+	fileName := "ossutil_test." + randLowStr(12)
+	s.createFile(fileName, objectContent, c)
+	cpFile := "ossutil_cp." + randLowStr(5)
+	object := randLowStr(12)
+
+	str := ""
+	cpDir := CheckpointDir
+	isTrue := true
+	//isFalse := false
+	routines := strconv.Itoa(Routines)
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+		"checkpointDir":   &cpDir,
+		"routines":        &routines,
+		"skipVerifyCert":  &str,
+	}
+
+	cpArgs := []string{fileName, CloudURLToString(bucketName, object)}
+	var outFile *os.File
+	outFile, _ = os.OpenFile(cpFile, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0660)
+	defer outFile.Close()
+	os.Stdout = outFile
+	_, err := cm.RunCommand("cp", cpArgs, options)
+	os.Stdout = out
+	c.Assert(err, IsNil)
+	outPut := s.readFile(cpFile, c)
+	testLogger.Println(outPut)
+	c.Assert(strings.Contains(outPut, "Succeed"), Equals, true)
+	os.Remove(cpFile)
+	s.getObject(bucketName, object, downloadFileName, c)
+	os.Remove(downloadFileName)
+
+	options[OptionForce] = &isTrue
+	options[OptionOnlyShowErrors] = &isTrue
+	cpArgs = []string{fileName, CloudURLToString("demo-walker-6961", object)}
+	outFile, _ = os.OpenFile(cpFile, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0660)
+	defer outFile.Close()
+	os.Stdout = outFile
+
+	_, err = cm.RunCommand("cp", cpArgs, options)
+	os.Stdout = out
+	c.Assert(err, IsNil)
+	outPut = s.readFile(cpFile, c)
+	testLogger.Println(outPut)
+	c.Assert(outPut == "", Equals, true)
+	os.Remove(cpFile)
+	s.getObject(bucketName, object, downloadFileName, c)
+	os.Remove(downloadFileName)
+
+	fileName2 := "ossutil_test2." + randLowStr(12)
+	objectContent2 := randLowStr(1024*10) + "2"
+	s.createFile(fileName2, objectContent2, c)
+	delete(options, OptionForce)
+	cpArgs = []string{fileName2, CloudURLToString(bucketName, object)}
+	outFile, _ = os.OpenFile(cpFile, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0660)
+	defer outFile.Close()
+	os.Stdout = outFile
+	_, err = cm.RunCommand("cp", cpArgs, options)
+	os.Stdout = out
+	c.Assert(err, IsNil)
+	outPut = s.readFile(cpFile, c)
+	testLogger.Println(outPut)
+	c.Assert(strings.Contains(outPut, "cp: overwrite"), Equals, true)
+	os.Remove(cpFile)
+
+	s.getObject(bucketName, object, downloadFileName, c)
+	downloadContent := s.readFile(downloadFileName, c)
+	c.Assert(downloadContent, Equals, objectContent)
+	os.Remove(downloadFileName)
+	os.Remove(fileName2)
+	options[OptionForce] = &isTrue
+	s.createFile(fileName2, objectContent2, c)
+	cpArgs = []string{fileName2, CloudURLToString(bucketName, object)}
+	outFile, _ = os.OpenFile(cpFile, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0660)
+	defer outFile.Close()
+	os.Stdout = outFile
+	_, err = cm.RunCommand("cp", cpArgs, options)
+	os.Stdout = out
+	c.Assert(err, IsNil)
+	outPut = s.readFile(cpFile, c)
+	testLogger.Println(outPut)
+	c.Assert(outPut == "", Equals, true)
+	os.Remove(cpFile)
+
+	s.getObject(bucketName, object, downloadFileName, c)
+	downloadContent = s.readFile(downloadFileName, c)
+	c.Assert(downloadContent, Equals, objectContent2)
+	os.Remove(downloadFileName)
+	os.Remove(fileName2)
+
+	out = os.Stdout
+	downloadFileName = "ossutil_test_down." + randLowStr(12)
+	delete(options, OptionForce)
+	delete(options, OptionOnlyShowErrors)
+	cpArgs = []string{CloudURLToString(bucketName, object), downloadFileName}
+	outFile, _ = os.OpenFile(cpFile, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0660)
+	defer outFile.Close()
+	os.Stdout = outFile
+	_, err = cm.RunCommand("cp", cpArgs, options)
+	os.Stdout = out
+	c.Assert(err, IsNil)
+	outPut = s.readFile(cpFile, c)
+	testLogger.Println(outPut)
+	c.Assert(strings.Contains(outPut, "Succeed"), Equals, true)
+	downloadOut := s.readFile(downloadFileName, c)
+	c.Assert(downloadOut, Equals, objectContent2)
+	os.Remove(cpFile)
+
+	os.Remove(downloadFileName)
+	s.createFile(downloadFileName, content, c)
+	out = os.Stdout
+	options[OptionOnlyShowErrors] = &isTrue
+	cpArgs = []string{CloudURLToString(bucketName, object), downloadFileName}
+	outFile, _ = os.OpenFile(cpFile, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0660)
+	defer outFile.Close()
+	os.Stdout = outFile
+	_, err = cm.RunCommand("cp", cpArgs, options)
+	os.Stdout = out
+	c.Assert(err, IsNil)
+	outPut = s.readFile(cpFile, c)
+	testLogger.Println(outPut)
+	c.Assert(strings.Contains(outPut, "cp: overwrite"), Equals, true)
+	downloadOut = s.readFile(downloadFileName, c)
+	c.Assert(downloadOut, Equals, content)
+	os.Remove(cpFile)
+
+	out = os.Stdout
+	options[OptionForce] = &isTrue
+	cpArgs = []string{CloudURLToString(bucketName, object), downloadFileName}
+	outFile, _ = os.OpenFile(cpFile, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0660)
+	defer outFile.Close()
+	os.Stdout = outFile
+	_, err = cm.RunCommand("cp", cpArgs, options)
+	os.Stdout = out
+	c.Assert(err, IsNil)
+	outPut = s.readFile(cpFile, c)
+	testLogger.Println(outPut)
+	c.Assert(outPut == "", Equals, true)
+	downloadOut = s.readFile(downloadFileName, c)
+	c.Assert(downloadOut, Equals, objectContent2)
+	os.Remove(cpFile)
+
+	out = os.Stdout
+	delete(options, OptionForce)
+	delete(options, OptionOnlyShowErrors)
+	cpArgs = []string{CloudURLToString(bucketName, object), CloudURLToString(bucketNameExist, object)}
+	outFile, _ = os.OpenFile(cpFile, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0660)
+	defer outFile.Close()
+	os.Stdout = outFile
+	_, err = cm.RunCommand("cp", cpArgs, options)
+	os.Stdout = out
+	c.Assert(err, IsNil)
+	outPut = s.readFile(cpFile, c)
+	testLogger.Println(outPut)
+	c.Assert(strings.Contains(outPut, "Succeed"), Equals, true)
+	os.Remove(cpFile)
+
+	out = os.Stdout
+	options[OptionOnlyShowErrors] = &isTrue
+	cpArgs = []string{CloudURLToString(bucketName, object), CloudURLToString(bucketNameExist, object)}
+	outFile, _ = os.OpenFile(cpFile, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0660)
+	defer outFile.Close()
+	os.Stdout = outFile
+	_, err = cm.RunCommand("cp", cpArgs, options)
+	os.Stdout = out
+	c.Assert(err, IsNil)
+	outPut = s.readFile(cpFile, c)
+	testLogger.Println(outPut)
+	c.Assert(strings.Contains(outPut, "cp: overwrite"), Equals, true)
+	os.Remove(cpFile)
+
+	s.getObject(bucketNameExist, object, downloadFileName, c)
+	downloadContent = s.readFile(downloadFileName, c)
+	c.Assert(downloadContent, Equals, objectContent2)
+	os.Remove(downloadFileName)
+
+	s.createFile(downloadFileName, content, c)
+	s.putObject(bucketNameExist, object, uploadFileName, c)
+	out = os.Stdout
+	options[OptionForce] = &isTrue
+	cpArgs = []string{CloudURLToString(bucketName, object), CloudURLToString(bucketNameExist, object)}
+	outFile, _ = os.OpenFile(cpFile, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0660)
+	defer outFile.Close()
+	os.Stdout = outFile
+	_, err = cm.RunCommand("cp", cpArgs, options)
+	os.Stdout = out
+	c.Assert(err, IsNil)
+	outPut = s.readFile(cpFile, c)
+	testLogger.Println(outPut)
+	c.Assert(outPut == "", Equals, true)
+	s.getObject(bucketNameExist, object, downloadFileName, c)
+	downloadContent = s.readFile(downloadFileName, c)
+	c.Assert(downloadContent, Equals, objectContent2)
+	os.Remove(downloadFileName)
+	os.Remove(cpFile)
+}

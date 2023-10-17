@@ -159,6 +159,7 @@ var objectTagCommand = ObjectTagCommand{
 			OptionRegion,
 			OptionCloudBoxID,
 			OptionForcePathStyle,
+			OptionOnlyShowErrors,
 		},
 	},
 }
@@ -186,7 +187,7 @@ func (otc *ObjectTagCommand) RunCommand() error {
 	if err != nil {
 		return err
 	}
-
+	otc.reportOption.onlyShowErrors, _ = GetBool(OptionOnlyShowErrors, otc.command.options)
 	strMethod, _ := GetString(OptionMethod, otc.command.options)
 	if strMethod == "" {
 		return fmt.Errorf("--method value is empty")
@@ -351,7 +352,9 @@ func (otc *ObjectTagCommand) waitRoutinueComplete(chError, chListError <-chan er
 			} else {
 				ferr = err
 				if !otc.reportOption.ctnu {
-					fmt.Printf(otc.monitor.progressBar(true, errExit))
+					if !otc.reportOption.onlyShowErrors {
+						fmt.Printf(otc.monitor.progressBar(true, errExit))
+					}
 					return err
 				}
 			}
@@ -362,7 +365,9 @@ func (otc *ObjectTagCommand) waitRoutinueComplete(chError, chListError <-chan er
 
 func (otc *ObjectTagCommand) formatResultPrompt(err error) error {
 	if otc.method != "get" {
-		fmt.Printf(otc.monitor.progressBar(true, normalExit))
+		if !otc.reportOption.onlyShowErrors {
+			fmt.Printf(otc.monitor.progressBar(true, normalExit))
+		}
 	}
 
 	if err != nil && otc.reportOption.ctnu {

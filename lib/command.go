@@ -772,7 +772,10 @@ func (cmd *Command) updateMonitor(err error, monitor *Monitor) {
 	} else {
 		monitor.updateErrNum(1)
 	}
-	fmt.Printf(monitor.progressBar(false, normalExit))
+	onlyShowErrors, _ := GetBool(OptionOnlyShowErrors, cmd.options)
+	if !onlyShowErrors {
+		fmt.Printf(monitor.progressBar(false, normalExit))
+	}
 }
 
 func (cmd *Command) report(msg string, err error, option *batchOptionType) {

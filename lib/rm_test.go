@@ -1188,3 +1188,79 @@ func (s *OssutilCommandSuite) TestMultipartUploadsProducer(c *C) {
 		c.Assert(true, Equals, false)
 	}
 }
+
+func (s *OssutilCommandSuite) TestRemoveObjectsWithOnlyShowErrors(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	// put object
+	num := 2
+	objectNames := []string{}
+	for i := 0; i < num; i++ {
+		object := fmt.Sprintf("remove%d", i)
+		s.putObject(bucketName, object, uploadFileName, c)
+		objectNames = append(objectNames, object)
+	}
+
+	command := "rm"
+	args := []string{CloudURLToString(bucketName, "")}
+	ok := true
+	str := ""
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+		"recursive":       &ok,
+	}
+	rmFile := "ossutil_rm." + randLowStr(5)
+	var outFile *os.File
+	outFile, _ = os.OpenFile(rmFile, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0660)
+	defer outFile.Close()
+	os.Stdout = outFile
+	_, err := cm.RunCommand(command, args, options)
+	os.Stdout = out
+	c.Assert(err, IsNil)
+	outPut := s.readFile(rmFile, c)
+	testLogger.Println(outPut)
+	c.Assert(strings.Contains(outPut, "Do you really mean to remove recursively objects of"), Equals, true)
+	os.Remove(rmFile)
+
+	options[OptionOnlyShowErrors] = &ok
+	outFile, _ = os.OpenFile(rmFile, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0660)
+	defer outFile.Close()
+	os.Stdout = outFile
+	_, err = cm.RunCommand(command, args, options)
+	os.Stdout = out
+	c.Assert(err, IsNil)
+	outPut = s.readFile(rmFile, c)
+	testLogger.Println(outPut)
+	c.Assert(strings.Contains(outPut, "Do you really mean to remove recursively objects of"), Equals, true)
+	os.Remove(rmFile)
+
+	options[OptionForce] = &ok
+	outFile, _ = os.OpenFile(rmFile, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0660)
+	defer outFile.Close()
+	os.Stdout = outFile
+	_, err = cm.RunCommand(command, args, options)
+	os.Stdout = out
+	c.Assert(err, IsNil)
+	outPut = s.readFile(rmFile, c)
+	testLogger.Println(outPut)
+	c.Assert(outPut == "", Equals, true)
+	os.Remove(rmFile)
+
+	delete(options, OptionOnlyShowErrors)
+	outFile, _ = os.OpenFile(rmFile, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0660)
+	defer outFile.Close()
+	os.Stdout = outFile
+	_, err = cm.RunCommand(command, args, options)
+	os.Stdout = out
+	c.Assert(err, IsNil)
+	outPut = s.readFile(rmFile, c)
+	testLogger.Println(outPut)
+	c.Assert(strings.Contains(outPut, "Succeed"), Equals, true)
+	os.Remove(rmFile)
+
+	s.removeBucket(bucketName, true, c)
+}

@@ -20,8 +20,9 @@ type removeOptionType struct {
 	typeSet   int64
 
 	//version
-	versionId   string
-	allVersions bool
+	versionId      string
+	allVersions    bool
+	onlyShowErrors bool
 }
 
 var specChineseRemove = SpecText{
@@ -343,6 +344,7 @@ var removeCommand = RemoveCommand{
 			OptionRegion,
 			OptionCloudBoxID,
 			OptionForcePathStyle,
+			OptionOnlyShowErrors,
 		},
 	},
 }
@@ -415,7 +417,9 @@ func (rc *RemoveCommand) RunCommand() error {
 	if err = rc.removeEntry(bucket, cloudURL); err != nil {
 		exitStat = errExit
 	}
-	fmt.Printf(rc.monitor.progressBar(true, exitStat))
+	if !rc.rmOption.onlyShowErrors {
+		fmt.Printf(rc.monitor.progressBar(true, exitStat))
+	}
 	return err
 }
 
@@ -427,7 +431,7 @@ func (rc *RemoveCommand) assembleOption(cloudURL CloudURL) error {
 	toBucket, _ := GetBool(OptionBucket, rc.command.options)
 	rc.rmOption.versionId, _ = GetString(OptionVersionId, rc.command.options)
 	rc.rmOption.allVersions, _ = GetBool(OptionAllversions, rc.command.options)
-
+	rc.rmOption.onlyShowErrors, _ = GetBool(OptionOnlyShowErrors, rc.command.options)
 	if err := rc.checkOption(cloudURL, isMultipart, isAllType, toBucket); err != nil {
 		return err
 	}
@@ -720,7 +724,9 @@ func (rc *RemoveCommand) ossDeleteObjectRetry(bucket *oss.Bucket, object string)
 func (rc *RemoveCommand) updateObjectMonitor(okNum, errNum int64) {
 	rc.monitor.updateObjectNum(okNum)
 	rc.monitor.updateErrObjectNum(errNum)
-	fmt.Printf(rc.monitor.progressBar(false, normalExit))
+	if !rc.rmOption.onlyShowErrors {
+		fmt.Printf(rc.monitor.progressBar(false, normalExit))
+	}
 }
 
 func (rc *RemoveCommand) batchDeleteObjects(bucket *oss.Bucket, cloudURL CloudURL) error {
@@ -899,7 +905,9 @@ func (rc *RemoveCommand) updateUploadIdMonitor(err error) {
 	} else {
 		rc.monitor.updateErrUploadIdNum(1)
 	}
-	fmt.Printf(rc.monitor.progressBar(false, normalExit))
+	if !rc.rmOption.onlyShowErrors {
+		fmt.Printf(rc.monitor.progressBar(false, normalExit))
+	}
 }
 
 func (rc *RemoveCommand) ossAbortMultipartUploadRetry(bucket *oss.Bucket, key, uploadId string) error {
