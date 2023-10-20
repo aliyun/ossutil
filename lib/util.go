@@ -4,14 +4,13 @@ import (
 	"bytes"
 	"fmt"
 	"hash"
-	"io/ioutil"
+	"io/fs"
 	"math/rand"
 	"os"
 	"os/exec"
 	"os/user"
 	"path/filepath"
 	"runtime"
-	"strconv"
 	"strings"
 	"time"
 
@@ -533,170 +532,6 @@ func currentHomeDir() string {
 	return homeDir
 }
 
-func getCurrentDirFileListCommon(dpath string, chFiles chan<- fileInfoType, filters []filterOptionType) error {
-	if !strings.HasSuffix(dpath, string(os.PathSeparator)) {
-		dpath += string(os.PathSeparator)
-	}
-
-	fileList, err := ioutil.ReadDir(dpath)
-	if err != nil {
-		return err
-	}
-
-	for _, fileInfo := range fileList {
-		if !fileInfo.IsDir() {
-			realInfo, errF := os.Stat(dpath + fileInfo.Name())
-			if errF == nil && realInfo.IsDir() {
-				// for symlink
-				continue
-			}
-
-			if doesSingleFileMatchPatterns(fileInfo.Name(), filters) {
-				chFiles <- fileInfoType{fileInfo.Name(), dpath}
-			}
-		}
-	}
-	return nil
-}
-
-func getFileListCommon(dpath string, chFiles chan<- fileInfoType, onlyCurrentDir bool, disableAllSymlink bool,
-	enableSymlinkDir bool, filters []filterOptionType) error {
-	defer close(chFiles)
-	if onlyCurrentDir {
-		return getCurrentDirFileListCommon(dpath, chFiles, filters)
-	}
-
-	name := dpath
-	symlinkDiretorys := []string{dpath}
-	walkFunc := func(fpath string, f os.FileInfo, err error) error {
-		if f == nil {
-			return err
-		}
-
-		dpath = filepath.Clean(dpath)
-		fpath = filepath.Clean(fpath)
-
-		fileName, err := filepath.Rel(dpath, fpath)
-		if err != nil {
-			return fmt.Errorf("list file error: %s, info: %s", fpath, err.Error())
-		}
-
-		if f.IsDir() {
-			if fpath != dpath {
-				if strings.HasSuffix(fileName, "\\") || strings.HasSuffix(fileName, "/") {
-					chFiles <- fileInfoType{fileName, name}
-				} else {
-					chFiles <- fileInfoType{fileName + string(os.PathSeparator), name}
-				}
-			}
-			return nil
-		}
-
-		if disableAllSymlink && (f.Mode()&os.ModeSymlink) != 0 {
-			return nil
-		}
-
-		if enableSymlinkDir && (f.Mode()&os.ModeSymlink) != 0 {
-			// there is difference between os.Stat and os.Lstat in filepath.Walk
-			realInfo, err := os.Stat(fpath)
-			if err != nil {
-				return err
-			}
-
-			if realInfo.IsDir() {
-				// it's symlink dir
-				// if linkDir has suffix os.PathSeparator,os.Lstat determine it is a dir
-				if !strings.HasSuffix(name, string(os.PathSeparator)) {
-					name += string(os.PathSeparator)
-				}
-				linkDir := name + fileName + string(os.PathSeparator)
-				symlinkDiretorys = append(symlinkDiretorys, linkDir)
-				return nil
-			}
-		}
-
-		if doesSingleFileMatchPatterns(fileName, filters) {
-			chFiles <- fileInfoType{fileName, name}
-		}
-		return nil
-	}
-
-	var err error
-	for {
-		symlinks := symlinkDiretorys
-		symlinkDiretorys = []string{}
-		for _, v := range symlinks {
-			err = filepath.Walk(v, walkFunc)
-			if err != nil {
-				return err
-			}
-		}
-		if len(symlinkDiretorys) == 0 {
-			break
-		}
-	}
-	return err
-}
-
-func getObjectListCommon(bucket *oss.Bucket, cloudURL CloudURL, chObjects chan<- objectInfoType,
-	onlyCurrentDir bool, filters []filterOptionType, payerOptions []oss.Option) error {
-	defer close(chObjects)
-	pre := oss.Prefix(cloudURL.object)
-	marker := oss.Marker("")
-	//while the src object is end with "/", use object key as marker, exclude the object itself
-	if strings.HasSuffix(cloudURL.object, "/") {
-		marker = oss.Marker(cloudURL.object)
-	}
-	del := oss.Delimiter("")
-	if onlyCurrentDir {
-		del = oss.Delimiter("/")
-	}
-
-	listOptions := append(payerOptions, pre, marker, del, oss.MaxKeys(1000))
-	for {
-		lor, err := bucket.ListObjects(listOptions...)
-		if err != nil {
-			return err
-		}
-
-		for _, object := range lor.Objects {
-			prefix := ""
-			relativeKey := object.Key
-			index := strings.LastIndex(cloudURL.object, "/")
-			if index > 0 {
-				prefix = object.Key[:index+1]
-				relativeKey = object.Key[index+1:]
-			}
-
-			if doesSingleObjectMatchPatterns(object.Key, filters) {
-				if strings.ToLower(object.Type) == "symlink" {
-					props, err := bucket.GetObjectDetailedMeta(object.Key, payerOptions...)
-					if err != nil {
-						LogError("ossGetObjectStatRetry error info:%s\n", err.Error())
-						return err
-					}
-					size, err := strconv.ParseInt(props.Get(oss.HTTPHeaderContentLength), 10, 64)
-					if err != nil {
-						LogError("strconv.ParseInt error info:%s\n", err.Error())
-						return err
-
-					}
-					object.Size = size
-				}
-				chObjects <- objectInfoType{prefix, relativeKey, int64(object.Size), object.LastModified}
-			}
-		}
-
-		pre = oss.Prefix(lor.Prefix)
-		marker = oss.Marker(lor.NextMarker)
-		listOptions = append(payerOptions, pre, marker, oss.MaxKeys(1000))
-		if !lor.IsTruncated {
-			break
-		}
-	}
-	return nil
-}
-
 func GetPassword(prompt string) ([]byte, error) {
 	fd := int(os.Stdin.Fd())
 	if terminal.IsTerminal(fd) {
@@ -735,4 +570,64 @@ func AddStringsToOption(params []string, options []oss.Option) ([]oss.Option, er
 		options = append(options, oss.AddParam(key, value))
 	}
 	return options, nil
+}
+
+// CheckLocalFile check local file
+func CheckLocalFile(filterMap map[string]int64, fileInfo fs.FileInfo) bool {
+	if len(filterMap) == 0 {
+		return true
+	}
+	if filterMap[OptionEndTime] != 0 {
+		t := time.Unix(filterMap[OptionEndTime], 0)
+		if !fileInfo.ModTime().Before(t) {
+			return false
+		}
+	}
+	if filterMap[OptionStartTime] != 0 {
+		t := time.Unix(filterMap[OptionStartTime], 0)
+		if !fileInfo.ModTime().After(t) {
+			return false
+		}
+	}
+	if filterMap[OptionMaxSize] != 0 {
+		if !(fileInfo.Size() < filterMap[OptionMaxSize]) {
+			return false
+		}
+	}
+	if filterMap[OptionMinSize] != 0 {
+		if !(fileInfo.Size() > filterMap[OptionMinSize]) {
+			return false
+		}
+	}
+	return true
+}
+
+// CheckObject check oss object
+func CheckObject(filterMap map[string]int64, fileInfo oss.ObjectProperties) bool {
+	if len(filterMap) == 0 {
+		return true
+	}
+	if filterMap[OptionEndTime] != 0 {
+		t := time.Unix(filterMap[OptionEndTime], 0)
+		if !fileInfo.LastModified.Before(t) {
+			return false
+		}
+	}
+	if filterMap[OptionStartTime] != 0 {
+		t := time.Unix(filterMap[OptionStartTime], 0)
+		if !fileInfo.LastModified.After(t) {
+			return false
+		}
+	}
+	if filterMap[OptionMaxSize] != 0 {
+		if !(fileInfo.Size < filterMap[OptionMaxSize]) {
+			return false
+		}
+	}
+	if filterMap[OptionMinSize] != 0 {
+		if !(fileInfo.Size > filterMap[OptionMinSize]) {
+			return false
+		}
+	}
+	return true
 }

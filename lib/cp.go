@@ -1295,6 +1295,10 @@ var copyCommand = CopyCommand{
 			OptionRegion,
 			OptionCloudBoxID,
 			OptionForcePathStyle,
+			OptionStartTime,
+			OptionEndTime,
+			OptionMaxSize,
+			OptionMinSize,
 		},
 	},
 }
@@ -1472,6 +1476,11 @@ func (cc *CopyCommand) RunCommand() error {
 	} else {
 		cc.cpOption.partitionIndex = 0
 		cc.cpOption.partitionCount = 0
+	}
+
+	err = cc.command.checkFilter()
+	if err != nil {
+		return err
 	}
 
 	cc.monitor.init(opType)
@@ -1708,6 +1717,10 @@ func (cc *CopyCommand) fileStatistic(srcURLList []StorageURLer) {
 				return
 			}
 		} else {
+			next := cc.command.filterLocalFile(f)
+			if !next {
+				continue
+			}
 			if cc.filterPath(name, cc.cpOption.cpDir) {
 				cc.monitor.updateScanSizeNum(f.Size(), 1)
 			}
@@ -1735,6 +1748,10 @@ func (cc *CopyCommand) getCurrentDirFilesStatistic(dpath string) error {
 				// for symlink
 				continue
 			}
+			next := cc.command.filterLocalFile(realInfo)
+			if !next {
+				continue
+			}
 
 			if doesSingleFileMatchPatterns(fileInfo.Name(), cc.cpOption.filters) {
 				cc.monitor.updateScanSizeNum(fileInfo.Size(), 1)
@@ -1759,7 +1776,12 @@ func (cc *CopyCommand) getFileListStatistic(dpath string) error {
 		if !cc.filterPath(fpath, cc.cpOption.cpDir) {
 			return nil
 		}
-
+		if !f.IsDir() {
+			next := cc.command.filterLocalFile(f)
+			if !next {
+				return nil
+			}
+		}
 		realFileSize := f.Size()
 		dpath = filepath.Clean(dpath)
 		fpath = filepath.Clean(fpath)
@@ -1836,6 +1858,7 @@ func (cc *CopyCommand) fileProducer(srcURLList []StorageURLer, chFiles chan<- fi
 			chListError <- err
 			return
 		}
+
 		if f.IsDir() {
 			if !strings.HasSuffix(name, string(os.PathSeparator)) {
 				// for link directory
@@ -1848,6 +1871,10 @@ func (cc *CopyCommand) fileProducer(srcURLList []StorageURLer, chFiles chan<- fi
 				return
 			}
 		} else {
+			next := cc.command.filterLocalFile(f)
+			if !next {
+				continue
+			}
 			dir, fname := filepath.Split(name)
 			chFiles <- fileInfoType{fname, dir}
 		}
@@ -1870,6 +1897,11 @@ func (cc *CopyCommand) getCurrentDirFileList(dpath string, chFiles chan<- fileIn
 			realInfo, errF := os.Stat(dpath + fileInfo.Name())
 			if errF == nil && realInfo.IsDir() {
 				// for symlink
+				continue
+			}
+
+			next := cc.command.filterLocalFile(realInfo)
+			if !next {
 				continue
 			}
 
@@ -1910,6 +1942,11 @@ func (cc *CopyCommand) getFileList(dpath string, chFiles chan<- fileInfoType) er
 				}
 			}
 			return nil
+		} else {
+			next := cc.command.filterLocalFile(f)
+			if !next {
+				return nil
+			}
 		}
 
 		if cc.cpOption.disableAllSymlink && (f.Mode()&os.ModeSymlink) != 0 {
@@ -1932,6 +1969,11 @@ func (cc *CopyCommand) getFileList(dpath string, chFiles chan<- fileInfoType) er
 				linkDir := name + fileName + string(os.PathSeparator)
 				symlinkDiretorys = append(symlinkDiretorys, linkDir)
 				return nil
+			}else{
+				next := cc.command.filterLocalFile(realInfo)
+				if !next {
+					return nil
+				}
 			}
 		}
 
@@ -2369,7 +2411,6 @@ func (cc *CopyCommand) downloadFiles(srcURL CloudURL, destURL FileURL) error {
 			prefix = srcURL.object[:index+1]
 			relativeKey = srcURL.object[index+1:]
 		}
-
 		go cc.objectStatistic(bucket, srcURL)
 		err := cc.downloadSingleFileWithReport(bucket, objectInfoType{prefix, relativeKey, -1, time.Now()}, filePath)
 		return cc.formatResultPrompt(err)
@@ -2445,8 +2486,13 @@ func (cc *CopyCommand) downloadSingleFileWithReport(bucket *oss.Bucket, objectIn
 		LogInfo("download success,object:%s,size:%d,speed:%.2f(KB/s),cost:%d(ms)\n", objectKey, realSize, speed, cost)
 		cc.updateSnapshot(nil, CloudURLToString(bucket.BucketName, objectKey), objectInfo.lastModified.Unix())
 	}
-
-	cc.updateMonitor(skip, err, false, size)
+	if cc.command.isFilter {
+		if !cc.command.bFilter {
+			cc.updateMonitor(skip, err, false, size)
+		}
+	} else {
+		cc.updateMonitor(skip, err, false, size)
+	}
 	cc.report(msg, err)
 	return err
 }
@@ -2475,6 +2521,14 @@ func (cc *CopyCommand) downloadSingleFile(bucket *oss.Bucket, objectInfo objectI
 		}
 		if srct, err = time.Parse(http.TimeFormat, props.Get(oss.HTTPHeaderLastModified)); err != nil {
 			return false, err, size, msg
+		}
+		var ossObjcet oss.ObjectProperties
+		ossObjcet.LastModified = srct
+		ossObjcet.Size = size
+		next := cc.command.filterObject(ossObjcet)
+		if !next {
+			cc.command.bFilter = true
+			return false, nil, size, msg
 		}
 	}
 
@@ -2672,6 +2726,10 @@ func (cc *CopyCommand) objectStatistic(bucket *oss.Bucket, cloudURL CloudURL) {
 			}
 
 			for _, object := range lor.Objects {
+				next := cc.command.filterObject(object)
+				if !next {
+					continue
+				}
 				if doesSingleObjectMatchPatterns(object.Key, cc.cpOption.filters) {
 					if cc.cpOption.partitionIndex == 0 || (cc.cpOption.partitionIndex > 0 && matchHash(fnvIns, object.Key, cc.cpOption.partitionIndex-1, cc.cpOption.partitionCount)) {
 						if strings.ToLower(object.Type) == "symlink" && cc.cpOption.opType == operationTypeGet {
@@ -2709,9 +2767,16 @@ func (cc *CopyCommand) objectStatistic(bucket *oss.Bucket, cloudURL CloudURL) {
 			cc.monitor.setScanError(err)
 			return
 		}
+		var object oss.ObjectProperties
+		object.Size = size
+		LastModified, _ := time.Parse(http.TimeFormat, props.Get(oss.HTTPHeaderLastModified))
+		object.LastModified = LastModified
+		next := cc.command.filterObject(object)
+		if !next {
+			return
+		}
 		cc.monitor.updateScanSizeNum(cc.getRangeSize(size), 1)
 	}
-
 	cc.monitor.setScanEnd()
 	freshProgress()
 }
@@ -2788,6 +2853,10 @@ func (cc *CopyCommand) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, chO
 			return
 		}
 		for _, object := range lor.Objects {
+			next := cc.command.filterObject(object)
+			if !next {
+				continue
+			}
 			prefix := ""
 			relativeKey := object.Key
 			index := strings.LastIndex(cloudURL.object, "/")
@@ -2928,7 +2997,13 @@ func (cc *CopyCommand) checkCopyFileArgs(srcURL, destURL CloudURL) error {
 
 func (cc *CopyCommand) copySingleFileWithReport(bucket *oss.Bucket, objectInfo objectInfoType, srcURL, destURL CloudURL) error {
 	skip, err, size, msg := cc.copySingleFile(bucket, objectInfo, srcURL, destURL)
-	cc.updateMonitor(skip, err, false, size)
+	if cc.command.isFilter {
+		if !cc.command.bFilter {
+			cc.updateMonitor(skip, err, false, size)
+		}
+	} else {
+		cc.updateMonitor(skip, err, false, size)
+	}
 	cc.report(msg, err)
 	return err
 }
@@ -2959,6 +3034,15 @@ func (cc *CopyCommand) copySingleFile(bucket *oss.Bucket, objectInfo objectInfoT
 		}
 		if srct, err = time.Parse(http.TimeFormat, props.Get(oss.HTTPHeaderLastModified)); err != nil {
 			return false, err, size, msg
+		}
+
+		var ossObjcet oss.ObjectProperties
+		ossObjcet.LastModified = srct
+		ossObjcet.Size = size
+		next := cc.command.filterObject(ossObjcet)
+		if !next {
+			cc.command.bFilter = true
+			return false, nil, size, msg
 		}
 	}
 

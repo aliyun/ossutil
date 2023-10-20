@@ -287,6 +287,12 @@ var OptionMap = map[string]Option{
 	OptionRuntime: Option{"", "--runtime", "", OptionTypeInt64, "", "",
 		"设置命令的持续的运行时间",
 		"specifies the max running time of the command."},
+	OptionMaxSize: Option{"", "--max-size", "", OptionTypeInt64, "", "",
+		"文件的最大值",
+		"Maximum file size"},
+	OptionMinSize: Option{"", "--min-size", "", OptionTypeInt64, "", "",
+		"文件的最小值",
+		"Minimum file size"},
 }
 
 func (T *Option) getHelp(language string) string {

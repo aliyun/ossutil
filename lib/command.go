@@ -2,6 +2,7 @@ package lib
 
 import (
 	"fmt"
+	"io/fs"
 	"net"
 	"net/http"
 	"net/url"
@@ -52,6 +53,8 @@ type Command struct {
 	options          OptionMapType
 	configOptions    OptionMapType
 	inputKeySecret   string
+	isFilter         bool
+	bFilter          bool
 }
 
 // Commander is the interface of all commands
@@ -844,6 +847,56 @@ func (cmd *Command) getOSSTagging(strTagging string) ([]oss.Tag, error) {
 		})
 	}
 	return tags, nil
+}
+
+func (cmd *Command) checkFilter() error {
+	startTime, _ := GetInt(OptionStartTime, cmd.options)
+	endTime, _ := GetInt(OptionEndTime, cmd.options)
+	maxSize, _ := GetInt(OptionMaxSize, cmd.options)
+	minSize, _ := GetInt(OptionMinSize, cmd.options)
+
+	if startTime != 0 || endTime != 0 || maxSize != 0 || minSize != 0 {
+		cmd.isFilter = true
+	}
+	if endTime > 0 && startTime > endTime {
+		return fmt.Errorf("--start-time %d is larger than --end-time %d", startTime, endTime)
+	}
+
+	if maxSize > 0 && minSize > maxSize {
+		return fmt.Errorf("--min-size %d is larger than --max-size %d", minSize, maxSize)
+	}
+	return nil
+}
+
+func (cmd *Command) filterLocalFile(fileInfo fs.FileInfo) bool {
+	filterMap := cmd.getFilterMap()
+	return CheckLocalFile(filterMap, fileInfo)
+}
+
+func (cmd *Command) filterObject(object oss.ObjectProperties) bool {
+	filterMap := cmd.getFilterMap()
+	return CheckObject(filterMap, object)
+}
+
+func (cmd *Command) getFilterMap() map[string]int64 {
+	startTime, _ := GetInt(OptionStartTime, cmd.options)
+	endTime, _ := GetInt(OptionEndTime, cmd.options)
+	maxSize, _ := GetInt(OptionMaxSize, cmd.options)
+	minSize, _ := GetInt(OptionMinSize, cmd.options)
+	filterMap := map[string]int64{}
+	if endTime != 0 {
+		filterMap[OptionEndTime] = endTime
+	}
+	if startTime != 0 {
+		filterMap[OptionStartTime] = startTime
+	}
+	if maxSize != 0 {
+		filterMap[OptionMaxSize] = maxSize
+	}
+	if minSize != 0 {
+		filterMap[OptionMinSize] = minSize
+	}
+	return filterMap
 }
 
 // GetAllCommands returns all commands list

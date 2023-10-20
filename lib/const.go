@@ -106,6 +106,8 @@ const (
 	OptionQueryParam                 = "queryParam"
 	OptionForcePathStyle             = "forcePathStyle"
 	OptionRuntime                    = "runtime"
+	OptionMaxSize                    = "maxSize"
+	OptionMinSize                    = "minSize"
 )
 
 // the elements show in stat object

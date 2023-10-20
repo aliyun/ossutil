@@ -2235,3 +2235,159 @@ func (s *OssutilCommandSuite) TestSyncUploadSubSymlinkDir(c *C) {
 	os.RemoveAll(dirName)
 	s.removeBucket(bucketName, true, c)
 }
+
+func (s *OssutilCommandSuite) TestSyncWithSizeTimeFilter(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	text := randLowStr(100)
+	// dir
+	dirName := "testdir1-" + randLowStr(3)
+	fileName := "testfile-" + randLowStr(5)
+
+	testFileName1 := dirName + string(os.PathSeparator) + fileName + ".txt"
+	testFileName2 := dirName + string(os.PathSeparator) + fileName + ".jpg"
+
+	err := os.MkdirAll(dirName, 0755)
+	s.createFile(testFileName1, text, c)
+	s.createFile(testFileName2, randLowStr(150), c)
+
+	testFileName3 := dirName + string(os.PathSeparator) + "dest-" + fileName + ".txt"
+	s.createFile(testFileName3, randLowStr(200), c)
+
+	syncArgs := []string{dirName, CloudURLToString(bucketName, dirName)}
+	str := ""
+	cpDir := CheckpointDir
+	bForce := true
+	bDelete := true
+	backupDir := "test-backup-dir"
+	routines := strconv.Itoa(Routines)
+	minSize := int64(100)
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+		"checkpointDir":   &cpDir,
+		"routines":        &routines,
+		"force":           &bForce,
+		"delete":          &bDelete,
+		"backupDir":       &backupDir,
+		OptionMinSize:     &minSize,
+	}
+
+	_, err = cm.RunCommand("sync", syncArgs, options)
+	c.Assert(err, IsNil)
+
+	//check, txt object not exist
+	_, err = s.rawGetStat(bucketName, strings.Replace(testFileName1, string(os.PathSeparator), "/", -1))
+	c.Assert(err, NotNil)
+
+	//check, jpg object exist
+	objectStat := s.getStat(bucketName, strings.Replace(testFileName2, string(os.PathSeparator), "/", -1), c)
+	etag := objectStat["Etag"]
+	c.Assert(len(etag) > 0, Equals, true)
+
+	objectStat = s.getStat(bucketName, strings.Replace(testFileName3, string(os.PathSeparator), "/", -1), c)
+	etag = objectStat["Etag"]
+	c.Assert(len(etag) > 0, Equals, true)
+
+	syncArgs = []string{CloudURLToString(bucketName, dirName), dirName}
+	_, err = cm.RunCommand("sync", syncArgs, options)
+	c.Assert(err, IsNil)
+
+	//check, jpg file exist
+	_, err = os.Stat(testFileName1)
+	c.Assert(err, NotNil)
+
+	//check, jpg file exist
+	_, err = os.Stat(testFileName2)
+	c.Assert(err, IsNil)
+
+	_, err = os.Stat(testFileName3)
+	c.Assert(err, IsNil)
+
+	backupFile := backupDir + string(os.PathSeparator) + fileName + ".txt"
+	_, err = os.Stat(backupFile)
+	c.Assert(err, IsNil)
+
+	os.RemoveAll(backupDir)
+	s.clearObjects(bucketName, "", c)
+
+	s.createFile(testFileName1, text, c)
+	maxSize := int64(200)
+	options[OptionMaxSize] = &maxSize
+	syncArgs = []string{dirName, CloudURLToString(bucketName, dirName)}
+	_, err = cm.RunCommand("sync", syncArgs, options)
+	c.Assert(err, IsNil)
+
+	//check, txt object not exist
+	_, err = s.rawGetStat(bucketName, strings.Replace(testFileName1, string(os.PathSeparator), "/", -1))
+	c.Assert(err, NotNil)
+
+	objectStat = s.getStat(bucketName, strings.Replace(testFileName2, string(os.PathSeparator), "/", -1), c)
+	etag = objectStat["Etag"]
+	c.Assert(len(etag) > 0, Equals, true)
+
+	_, err = s.rawGetStat(bucketName, strings.Replace(testFileName3, string(os.PathSeparator), "/", -1))
+	c.Assert(err, NotNil)
+
+	maxTime := time.Now().Add(+10 * time.Second).Unix()
+	c.Log(maxTime)
+	minTime := time.Now().Add(-10 * time.Second).Unix()
+
+	options[OptionStartTime] = &minTime
+	options[OptionEndTime] = &maxTime
+
+	syncArgs = []string{CloudURLToString(bucketName, dirName), CloudURLToString(bucketNameDest, dirName)}
+	_, err = cm.RunCommand("sync", syncArgs, options)
+	c.Assert(err, IsNil)
+
+	objectStat = s.getStat(bucketNameDest, strings.Replace(testFileName2, string(os.PathSeparator), "/", -1), c)
+	etag = objectStat["Etag"]
+	c.Assert(len(etag) > 0, Equals, true)
+
+	s.clearObjects(bucketName, "", c)
+	s.clearObjects(testFileName2, "", c)
+
+	delete(options, OptionStartTime)
+	delete(options, OptionEndTime)
+	delete(options, OptionMinSize)
+	delete(options, OptionMaxSize)
+
+	syncArgs = []string{dirName, CloudURLToString(bucketName, dirName)}
+	_, err = cm.RunCommand("sync", syncArgs, options)
+	c.Assert(err, IsNil)
+
+	options[OptionStartTime] = &minTime
+	options[OptionEndTime] = &maxTime
+	options[OptionMinSize] = &minSize
+	options[OptionMaxSize] = &maxSize
+	syncArgs = []string{CloudURLToString(bucketName, dirName), dirName}
+	_, err = cm.RunCommand("sync", syncArgs, options)
+	c.Assert(err, IsNil)
+
+	//check, jpg file exist
+	_, err = os.Stat(testFileName1)
+	c.Assert(err, NotNil)
+
+	//check, jpg file exist
+	_, err = os.Stat(testFileName2)
+	c.Assert(err, IsNil)
+
+	_, err = os.Stat(testFileName3)
+	c.Assert(err, NotNil)
+
+	backupFile3 := backupDir + string(os.PathSeparator) + "dest-" + fileName + ".txt"
+	_, err = os.Stat(backupFile3)
+	c.Assert(err, IsNil)
+
+	backupFile1 := backupDir + string(os.PathSeparator) + fileName + ".txt"
+	_, err = os.Stat(backupFile1)
+	c.Assert(err, IsNil)
+
+	os.RemoveAll(backupDir)
+	s.clearObjects(bucketName, "", c)
+	os.RemoveAll(dirName)
+	s.removeBucket(bucketName, true, c)
+}
