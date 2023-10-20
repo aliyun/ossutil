@@ -1294,6 +1294,7 @@ var copyCommand = CopyCommand{
 			OptionSignVersion,
 			OptionRegion,
 			OptionCloudBoxID,
+			OptionForcePathStyle,
 			OptionStartTime,
 			OptionEndTime,
 			OptionMaxSize,
@@ -1609,7 +1610,7 @@ func (cc *CopyCommand) closeProgress() {
 	signalNum = -1
 }
 
-//function for upload files
+// function for upload files
 func (cc *CopyCommand) uploadFiles(srcURLList []StorageURLer, destURL CloudURL) error {
 	if err := destURL.checkObjectPrefix(); err != nil {
 		return err
@@ -2380,7 +2381,7 @@ func (cc *CopyCommand) filterError(err error) bool {
 	return true
 }
 
-//function for download files
+// function for download files
 func (cc *CopyCommand) downloadFiles(srcURL CloudURL, destURL FileURL) error {
 	bucket, err := cc.command.ossBucket(srcURL.bucket)
 	if err != nil {
@@ -2930,7 +2931,7 @@ func (cc *CopyCommand) waitRoutinueComplete(chError, chListError <-chan error, o
 	return cc.formatResultPrompt(ferr)
 }
 
-//function for copy objects
+// function for copy objects
 func (cc *CopyCommand) copyFiles(srcURL, destURL CloudURL) error {
 	bucket, err := cc.command.ossBucket(srcURL.bucket)
 	if err != nil {
