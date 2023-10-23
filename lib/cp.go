@@ -64,6 +64,8 @@ type copyOptionType struct {
 	tagging           string
 	opType            operationType
 	bSyncCommand      bool
+	startTime         int64
+	endTime           int64
 }
 
 type filterOptionType struct {
@@ -350,6 +352,13 @@ var specChineseCopy = SpecText{
     和-r选项一起使用,表示只操作当前目录下的文件, 会忽略当前目录下的子目录, 如果是下载或者拷贝oss
     的目录，目录后面要加上反斜线/
 
+--start-time
+    时间戳, 既从1970年1月1日(UTC/GMT的午夜)开始所经过的秒数
+    如果输入这个选项, 文件的最后修改时间小于该时间戳将被忽略
+
+--end-time
+    时间戳, 既从1970年1月1日(UTC/GMT的午夜)开始所经过的秒数
+    如果输入这个选项, 文件的最后修改时间大于该时间戳将被忽略
 
 大文件断点续传：
 
@@ -1295,6 +1304,8 @@ var copyCommand = CopyCommand{
 			OptionRegion,
 			OptionCloudBoxID,
 			OptionForcePathStyle,
+			OptionStartTime,
+			OptionEndTime,
 		},
 	},
 }
@@ -1357,6 +1368,12 @@ func (cc *CopyCommand) RunCommand() error {
 
 	for k, v := range cc.cpOption.filters {
 		LogInfo("filter %d,name:%s,pattern:%s\n", k, v.name, v.pattern)
+	}
+
+	cc.cpOption.startTime, _ = GetInt(OptionStartTime, cc.command.options)
+	cc.cpOption.endTime, _ = GetInt(OptionEndTime, cc.command.options)
+	if cc.cpOption.endTime > 0 && cc.cpOption.startTime > cc.cpOption.endTime {
+		return fmt.Errorf("start time %d is larger than end time %d", cc.cpOption.startTime, cc.cpOption.endTime)
 	}
 
 	//get file list
@@ -2113,6 +2130,14 @@ func (cc *CopyCommand) makeObjectName(destURL CloudURL, file fileInfoType) strin
 }
 
 func (cc *CopyCommand) skipUpload(spath string, bucket *oss.Bucket, objectName string, destURL CloudURL, srcModifiedTime int64) (bool, error) {
+	if cc.cpOption.startTime > 0 && srcModifiedTime < cc.cpOption.startTime {
+		return true, nil
+	}
+
+	if cc.cpOption.endTime > 0 && srcModifiedTime > cc.cpOption.endTime {
+		return true, nil
+	}
+
 	if cc.cpOption.snapshotPath != "" || cc.cpOption.update {
 		if cc.cpOption.snapshotPath != "" {
 			tstr, err := cc.cpOption.snapshotldb.Get([]byte(spath), nil)
@@ -2522,6 +2547,14 @@ func (cc *CopyCommand) makeFileName(relativeObject, filePath string) string {
 }
 
 func (cc *CopyCommand) skipDownload(fileName string, srcModifiedTime time.Time, object string) bool {
+	if cc.cpOption.startTime > 0 && srcModifiedTime.Unix() < cc.cpOption.startTime {
+		return true
+	}
+
+	if cc.cpOption.endTime > 0 && srcModifiedTime.Unix() > cc.cpOption.endTime {
+		return true
+	}
+
 	if cc.cpOption.snapshotPath != "" || cc.cpOption.update {
 		if cc.cpOption.snapshotPath != "" {
 			tstr, err := cc.cpOption.snapshotldb.Get([]byte(object), nil)
@@ -2986,6 +3019,14 @@ func (cc *CopyCommand) makeCopyObjectName(srcRelativeObject, destObject string) 
 }
 
 func (cc *CopyCommand) skipCopy(destURL CloudURL, destObject string, srct time.Time) (bool, error) {
+	if cc.cpOption.startTime > 0 && srct.Unix() < cc.cpOption.startTime {
+		return true, nil
+	}
+
+	if cc.cpOption.endTime > 0 && srct.Unix() > cc.cpOption.endTime {
+		return true, nil
+	}
+
 	destBucket, err := cc.command.ossBucket(destURL.bucket)
 	if err != nil {
 		return false, err
