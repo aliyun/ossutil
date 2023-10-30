@@ -112,8 +112,8 @@ var specChineseProbe = SpecText{
         如果输入--addr，工具会探测domain_name, 默认探测 www.aliyun.com
     
     4) ossutil probe --probe-item item_value --bucketname bucket-name [--object=object_name]
-       该功能通过选项--probe-item不同的取值,可以实现不同的探测功能,目前取值有cycle-symlink, upload-speed, download-speed
-    分别表示本地死链检测, 探测上传带宽, 探测下载带宽
+       该功能通过选项--probe-item不同的取值,可以实现不同的探测功能,目前取值有cycle-symlink, upload-speed, download-speed, download-time
+    分别表示本地死链检测, 探测上传带宽, 探测下载带宽, 探测下载时间
 `,
 
 	sampleText: ` 
@@ -251,8 +251,8 @@ Usage:
     
     4) ossutil probe --probe-item item_value --bucketname bucket-name [--object=object_name]
         You can implement different detection functions by using the value of the option --probe-item.
-    The current values ​​are cycle-symlink, upload-speed, download-speed which represents local dead link detection, 
-    probe upload bandwidth, and probe download bandwidth
+    The current values are cycle-symlink, upload-speed, download-speedh and download-time which represents local dead link detection,
+    probe upload bandwidth, probe download bandwidth and probe download time
 `,
 
 	sampleText: ` 
