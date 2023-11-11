@@ -148,6 +148,7 @@ var bucketEncryptionCommand = BucketEncryptionCommand{
 			OptionSignVersion,
 			OptionRegion,
 			OptionCloudBoxID,
+			OptionForcePathStyle,
 		},
 	},
 }
