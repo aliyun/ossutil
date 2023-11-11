@@ -142,6 +142,7 @@ var duSizeCommand = DuCommand{
 			OptionRegion,
 			OptionCloudBoxID,
 			OptionItem,
+			OptionForcePathStyle,
 		},
 	},
 }

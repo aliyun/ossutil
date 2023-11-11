@@ -343,6 +343,7 @@ var removeCommand = RemoveCommand{
 			OptionRegion,
 			OptionCloudBoxID,
 			OptionItem,
+			OptionForcePathStyle,
 		},
 	},
 }
@@ -981,7 +982,7 @@ func (rc *RemoveCommand) ossDeleteBucketRetry(client *oss.Client, bucket string)
 	}
 }
 
-//version
+// version
 func (rc *RemoveCommand) removeObjectVersion(bucket *oss.Bucket, cloudURL CloudURL, versionId string) error {
 	err := rc.deleteObjectWithMonitorVersion(bucket, cloudURL.object, versionId)
 	if err != nil && rc.monitor.op == objectType {

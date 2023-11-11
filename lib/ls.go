@@ -415,6 +415,7 @@ var listCommand = ListCommand{
 			OptionRegion,
 			OptionCloudBoxID,
 			OptionItem,
+			OptionForcePathStyle,
 		},
 	},
 }

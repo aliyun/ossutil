@@ -3,13 +3,14 @@ package lib
 import (
 	"bytes"
 	"fmt"
-	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"io"
 	"os"
 	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
+
+	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
 
 /*
@@ -428,6 +429,7 @@ var syncCommand = SyncCommand{
 			OptionSignVersion,
 			OptionRegion,
 			OptionCloudBoxID,
+			OptionForcePathStyle,
 
 			// The following options are only supported by sc command, not supported by cp command
 			OptionDelete,
