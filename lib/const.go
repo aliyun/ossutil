@@ -106,6 +106,7 @@ const (
 	OptionQueryParam                 = "queryParam"
 	OptionForcePathStyle             = "forcePathStyle"
 	OptionOnlyShowErrors             = "onlyShowErrors"
+	OptionRuntime                    = "runtime"
 )
 
 // the elements show in stat object
@@ -157,7 +158,7 @@ const (
 const (
 	Package                 string = "ossutil"
 	ChannelBuf              int    = 1000
-	Version                 string = "v1.7.17"
+	Version                 string = "v1.7.18"
 	DefaultEndpoint         string = "oss.aliyuncs.com"
 	ChineseLanguage                = "CH"
 	EnglishLanguage                = "EN"

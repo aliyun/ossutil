@@ -287,6 +287,9 @@ var OptionMap = map[string]Option{
 	OptionOnlyShowErrors: Option{"", "--only-show-errors", "", OptionTypeFlagTrue, "", "",
 		"表示仅有错误时才输出",
 		"Indicates output only when there is an error."},
+	OptionRuntime: Option{"", "--runtime", "", OptionTypeInt64, "", "",
+		"设置命令的持续的运行时间",
+		"specifies the max running time of the command."},
 }
 
 func (T *Option) getHelp(language string) string {
