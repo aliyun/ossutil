@@ -284,6 +284,12 @@ var OptionMap = map[string]Option{
 	OptionReservedCapacityInstanceId: Option{"", "--reserved-capacity-id", "", OptionTypeString, "", "",
 		"设置预留空间id",
 		"Set reserved capacity id"},
+	OptionForcePathStyle: Option{"", "--force-path-style", "", OptionTypeFlagTrue, "", "",
+		"使用 path style 访问方式",
+		"Use path-style access "},
+	OptionRuntime: Option{"", "--runtime", "", OptionTypeInt64, "", "",
+		"设置命令的持续的运行时间",
+		"specifies the max running time of the command."},
 }
 
 func (T *Option) getHelp(language string) string {

@@ -1988,3 +1988,40 @@ func (s *OssutilCommandSuite) TestSetObjectMetaSkipUpdate(c *C) {
 
 	s.removeBucket(bucketName, true, c)
 }
+
+// TestSetObjectMetaProducer test setObjectMetaProducer
+func (s *OssutilCommandSuite) TestSetObjectMetaProducer(c *C) {
+	chObjects := make(chan string, ChannelBuf)
+	chListError := make(chan error, 1)
+	var filters []filterOptionType
+	setMetaCommand.setObjectMetaProducer("no_exist_file", chObjects, chListError, filters)
+	err := <-chListError
+	c.Assert(err, NotNil)
+	select {
+	case _, ok := <-chObjects:
+		testLogger.Printf("chObjects channel has closed")
+		c.Assert(ok, Equals, false)
+	default:
+		testLogger.Printf("chObjects no data")
+		c.Assert(true, Equals, false)
+	}
+
+	emptyContentFileName := "empty.txt"
+	os.Remove(emptyContentFileName)
+	s.createFile(emptyContentFileName, "     ", c)
+	chObjects2 := make(chan string, ChannelBuf)
+	chListError2 := make(chan error, 1)
+	setMetaCommand.setObjectMetaProducer(emptyContentFileName, chObjects2, chListError2, filters)
+	err = <-chListError2
+	c.Assert(err, NotNil)
+	select {
+	case _, ok := <-chObjects2:
+		testLogger.Printf("chObjects channel has closed")
+		c.Assert(ok, Equals, false)
+	default:
+		testLogger.Printf("chObjects no data")
+		c.Assert(true, Equals, false)
+	}
+
+	os.Remove(emptyContentFileName)
+}

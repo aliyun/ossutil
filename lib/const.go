@@ -105,6 +105,8 @@ const (
 	OptionCloudBoxID                        = "cloudBoxID"
 	OptionQueryParam                        = "queryParam"
 	OptionReservedCapacityInstanceId        = "reservedCapacityInstanceId"
+  OptionForcePathStyle                    = "forcePathStyle"
+	OptionRuntime                           = "runtime"
 )
 
 // the elements show in stat object
@@ -138,23 +140,26 @@ const (
 )
 
 const (
-	updateEndpoint       string = "oss-cn-hangzhou.aliyuncs.com"
-	updateBucket                = "ossutil-version-update"
-	updateVersionObject         = "ossutilversion"
-	updateBinaryLinux32         = "ossutil32"
-	updateBinaryLinux64         = "ossutil64"
-	updateBinaryWindow32        = "ossutil32.exe"
-	updateBinaryWindow64        = "ossutil64.exe"
-	updateBinaryMac32           = "ossutilmac32"
-	updateBinaryMac64           = "ossutilmac64"
-	updateTmpVersionFile        = ".ossutil_tmp_vsersion"
+	updateEndpoint         string = "oss-cn-hangzhou.aliyuncs.com"
+	updateBucket                  = "ossutil-version-update"
+	updateVersionObject           = "ossutilversion"
+	updateBinaryLinux32           = "ossutil32"
+	updateBinaryLinux64           = "ossutil64"
+	updateBinaryLinuxArm32        = "ossutilarm32"
+	updateBinaryLinuxArm64        = "ossutilarm64"
+	updateBinaryWindow32          = "ossutil32.exe"
+	updateBinaryWindow64          = "ossutil64.exe"
+	updateBinaryMac32             = "ossutilmac32"
+	updateBinaryMac64             = "ossutilmac64"
+	updateBinaryMacArm64          = "ossutilmacarm64"
+	updateTmpVersionFile          = ".ossutil_tmp_vsersion"
 )
 
 // global public variable
 const (
 	Package                 string = "ossutil"
 	ChannelBuf              int    = 1000
-	Version                 string = "v1.7.15"
+	Version                 string = "v1.7.18"
 	DefaultEndpoint         string = "oss.aliyuncs.com"
 	ChineseLanguage                = "CH"
 	EnglishLanguage                = "EN"

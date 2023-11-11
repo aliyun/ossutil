@@ -50,6 +50,15 @@ func (s *OssutilCommandSuite) TestBucketCnameTokenSuccess(c *C) {
 	c.Assert(strings.Contains(outBody, cname), Equals, true)
 
 	os.Remove(outputFile)
+
+	cnameArgs = []string{CloudURLToString(bucketName, ""), cname, outputFile}
+	_, err = cm.RunCommand("bucket-cname", cnameArgs, options)
+	c.Assert(err, IsNil)
+
+	outBody = s.readFile(outputFile, c)
+	c.Assert(strings.Contains(outBody, cname), Equals, true)
+	os.Remove(outputFile)
+
 	s.removeBucket(bucketName, true, c)
 }
 
@@ -109,6 +118,23 @@ func (s *OssutilCommandSuite) TestBucketCnamePutGetDelete(c *C) {
 
 	cnameArgs := []string{CloudURLToString(bucketName, ""), cname}
 	_, err := cm.RunCommand("bucket-cname", cnameArgs, options)
+	c.Assert(err, NotNil)
+	c.Assert(strings.Contains(err.Error(), "ErrorCode=NeedVerifyDomainOwnership"), Equals, true)
+
+	localFile := "test-ossutil-cname-" + randLowStr(5) + ".xml"
+	xmlContent := "<BucketCnameConfiguration>\n  <Cname>\n    <Domain>" + cname + "</Domain>\n    <CertificateConfiguration>\n      <CertId>493****-cn-hangzhou</CertId>\n      <Certificate>-----BEGIN CERTIFICATE----- MIIDhDCCAmwCCQCFs8ixARsyrDANBgkqhkiG9w0BAQsFADCBgzELMAkGA1UEBhMC **** -----END CERTIFICATE-----</Certificate>\n      <PrivateKey>-----BEGIN CERTIFICATE----- MIIDhDCCAmwCCQCFs8ixARsyrDANBgkqhkiG9w0BAQsFADCBgzELMAkGA1UEBhMC **** -----END CERTIFICATE-----</PrivateKey>\n      <PreviousCertId>493****-cn-hangzhou</PreviousCertId>\n      <Force>true</Force>\n    </CertificateConfiguration>\n  </Cname>\n</BucketCnameConfiguration>"
+	s.createFile(localFile, xmlContent, c)
+	cnameArgs = []string{CloudURLToString(bucketName, ""), cname}
+	_, err = cm.RunCommand("bucket-cname", cnameArgs, options)
+	c.Assert(err, NotNil)
+	c.Assert(strings.Contains(err.Error(), "ErrorCode=NeedVerifyDomainOwnership"), Equals, true)
+
+	os.Remove(localFile)
+	localFile = "test-ossutil-cname-" + randLowStr(5) + ".xml"
+	xmlContent = "<BucketCnameConfiguration>\n  <Cname>\n    <Domain>" + cname + "</Domain>\n    <CertificateConfiguration>\n      <DeleteCertificate>True</DeleteCertificate>\n    </CertificateConfiguration></Cname>\n</BucketCnameConfiguration>"
+	s.createFile(localFile, xmlContent, c)
+	cnameArgs = []string{CloudURLToString(bucketName, ""), cname}
+	_, err = cm.RunCommand("bucket-cname", cnameArgs, options)
 	c.Assert(err, NotNil)
 	c.Assert(strings.Contains(err.Error(), "ErrorCode=NeedVerifyDomainOwnership"), Equals, true)
 
@@ -205,7 +231,6 @@ func (s *OssutilCommandSuite) TestBucketCnameError(c *C) {
 func (s *OssutilCommandSuite) TestBucketCnameNotConfirm(c *C) {
 	bucketName := bucketNamePrefix + randLowStr(12)
 	s.putBucket(bucketName, c)
-
 	// get cname
 	cnameDownName := "test-ossutil-cname-" + randLowStr(5)
 	strMethod := "get"
@@ -219,18 +244,17 @@ func (s *OssutilCommandSuite) TestBucketCnameNotConfirm(c *C) {
 		"method":          &strMethod,
 	}
 
-	// create file cnameDownName
-	s.createFile(cnameDownName, "", c)
-
 	cnameArgs := []string{CloudURLToString(bucketName, ""), cnameDownName}
 	_, err := cm.RunCommand("bucket-cname", cnameArgs, options)
 	c.Assert(err, IsNil)
-
 	xmlBody, err := ioutil.ReadFile(cnameDownName)
+	testLogger.Println(string(xmlBody))
 	c.Assert(err, IsNil)
-	c.Assert(len(xmlBody) == 0, Equals, true)
+	c.Assert(strings.Contains(string(xmlBody), "ListCnameResult"), Equals, true)
+	c.Assert(strings.Contains(string(xmlBody), bucketName), Equals, true)
 
 	os.Remove(cnameDownName)
+
 	s.removeBucket(bucketName, true, c)
 }
 
