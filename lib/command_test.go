@@ -453,6 +453,7 @@ func (s *OssutilCommandSuite) getBucketResults(c *C) []string {
 	c.Assert(len(result) >= 1, Equals, true)
 	buckets := []string{}
 	shortEndpoint := strings.TrimRight(endpoint, ".aliyuncs.com")
+	shortEndpoint = strings.TrimRight(shortEndpoint, "-internal")
 	for _, str := range result {
 		pos := strings.Index(str, SchemePrefix)
 		if pos != -1 && strings.Contains(str, shortEndpoint) {
@@ -3254,4 +3255,140 @@ func (s *OssutilCommandSuite) TestFilterObjectFromChanWithPatternsDir(c *C) {
 	dstObjects3 := make(chan objectInfoType, ChannelBuf)
 	filterObjectsFromChanWithPatterns(chObjects, fts, dstObjects3)
 	c.Assert(len(dstObjects3), Equals, 2)
+}
+func (s *OssutilCommandSuite) TestCommandLoglevel(c *C) {
+	cfile := "ossutil-config" + randLowStr(8)
+	level := "info"
+	data := "[Credentials]" + "\n" + "language=" + DefaultLanguage + "\n" + "accessKeyID=" + accessKeyID + "\n" + "accessKeySecret=" + accessKeySecret + "\n" + "endpoint=" +
+		endpoint + "\n" + "[Default]" + "\n" + "loglevel=" + level + "\n"
+	s.createFile(cfile, data, c)
+
+	f, err := os.Stat(cfile)
+	c.Assert(err, IsNil)
+	c.Assert(f.Size() > 0, Equals, true)
+	os.Args = []string{"ossutil", "ls", "oss://", "--config-file=" + cfile}
+	os.Remove(logName)
+	err = ParseAndRunCommand()
+	c.Assert(err, IsNil)
+	f, err = os.Stat(logName)
+	c.Assert(err, IsNil)
+	c.Assert(f.Size() > 0, Equals, true)
+	strContent := s.readFile(logName, c)
+	c.Assert(strings.Contains(strContent, "[info]"), Equals, true)
+
+	os.Remove(logName)
+	os.Remove(cfile)
+}
+
+func (s *OssutilCommandSuite) TestGetLoglevelFromOptions(c *C) {
+	level := "info"
+	level2 := "debug"
+	str := ""
+	data := "[Credentials]" + "\n" + "language=" + DefaultLanguage + "\n" + "accessKeyID=" + accessKeyID + "\n" + "accessKeySecret=" + accessKeySecret + "\n" + "endpoint=" +
+		endpoint + "\n" + "[Default]" + "\n" + "loglevel=" + level + "\n"
+	s.createFile(configFile, data, c)
+	options := OptionMapType{
+		"loglevel": &level,
+	}
+
+	strLevel, err := getLoglevelFromOptions(options)
+	c.Assert(err, IsNil)
+	c.Assert(strLevel, Equals, level)
+	testLogger.Print("loglevel 1" + strLevel)
+
+	options = OptionMapType{
+		"configFile": &configFile,
+		"loglevel":   &level,
+	}
+	strLevel, err = getLoglevelFromOptions(options)
+	c.Assert(err, IsNil)
+	c.Assert(strLevel, Equals, level)
+	testLogger.Print("loglevel 2" + strLevel)
+
+	options = OptionMapType{
+		"configFile": &configFile,
+		"loglevel":   &level2,
+	}
+	strLevel, err = getLoglevelFromOptions(options)
+	c.Assert(err, IsNil)
+	c.Assert(strLevel, Equals, level2)
+	testLogger.Print("loglevel 3" + strLevel)
+
+	options = OptionMapType{
+		"configFile": &configFile,
+		"loglevel":   &str,
+	}
+	strLevel, err = getLoglevelFromOptions(options)
+	c.Assert(err, IsNil)
+	c.Assert(strLevel, Equals, level)
+	testLogger.Print("loglevel 4" + strLevel)
+
+	os.Remove(configFile)
+	data = "[Credentials]" + "\n" + "language=" + DefaultLanguage + "\n" + "accessKeyID=" + accessKeyID + "\n" + "accessKeySecret=" + accessKeySecret + "\n" + "endpoint=" +
+		endpoint + "\n" + "loglevel=" + level2 + "\n" + "[Default]" + "\n" + "loglevel=" + level + "\n"
+	s.createFile(configFile, data, c)
+	options = OptionMapType{
+		"configFile": &configFile,
+		"loglevel":   &str,
+	}
+	strLevel, err = getLoglevelFromOptions(options)
+	c.Assert(err, IsNil)
+	c.Assert(strLevel, Equals, level2)
+	testLogger.Print("loglevel 5" + strLevel)
+
+	os.Remove(configFile)
+	data = "[Credentials]" + "\n" + "language=" + DefaultLanguage + "\n" + "accessKeyID=" + accessKeyID + "\n" + "accessKeySecret=" + accessKeySecret + "\n" + "endpoint=" +
+		endpoint + "\n" + "log-level=" + level2 + "\n" + "[Default]" + "\n" + "loglevel=" + level + "\n"
+	s.createFile(configFile, data, c)
+	options = OptionMapType{
+		"configFile": &configFile,
+		"loglevel":   &str,
+	}
+	strLevel, err = getLoglevelFromOptions(options)
+	c.Assert(err, IsNil)
+	c.Assert(strLevel, Equals, level2)
+	testLogger.Print("loglevel 5" + strLevel)
+}
+
+// test command objectProducer
+func (s *OssutilCommandSuite) TestCommandObjectProducer(c *C) {
+	chObjects := make(chan string, ChannelBuf)
+	chListError := make(chan error, 1)
+	cloudURL, err := CloudURLFromString(CloudURLToString(bucketNameNotExist, "demo.txt"), "")
+	c.Assert(err, IsNil)
+	client, err := oss.New(endpoint, accessKeyID, accessKeySecret)
+	c.Assert(err, IsNil)
+	bucket, err := client.Bucket(bucketNameNotExist)
+	c.Assert(err, IsNil)
+	var filters []filterOptionType
+	command := Command{}
+	command.objectProducer(bucket, cloudURL, chObjects, chListError, filters)
+	err = <-chListError
+	c.Assert(err, NotNil)
+	select {
+	case _, ok := <-chObjects:
+		testLogger.Printf("chObjects channel has closed")
+		c.Assert(ok, Equals, false)
+	default:
+		testLogger.Printf("chObjects no data")
+		c.Assert(true, Equals, false)
+	}
+
+	chObjects2 := make(chan string, ChannelBuf)
+	chListError2 := make(chan error, 1)
+	storageURL2, err := CloudURLFromString(CloudURLToString(bucketNameExist, ""), "")
+	c.Assert(err, IsNil)
+	bucket2, err := client.Bucket(bucketNameExist)
+	c.Assert(err, IsNil)
+	command.objectProducer(bucket2, storageURL2, chObjects2, chListError2, filters)
+	err = <-chListError2
+	c.Assert(err, IsNil)
+	select {
+	case _, ok := <-chObjects2:
+		testLogger.Printf("chObjects channel has closed")
+		c.Assert(ok, Equals, false)
+	default:
+		testLogger.Printf("chObjects no data")
+		c.Assert(true, Equals, false)
+	}
 }

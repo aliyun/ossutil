@@ -146,6 +146,12 @@ func (cmd *Command) checkOptions() error {
 					return CommandError{cmd.name, msg}
 				}
 			}
+		case OptionTypeStrings:
+			if val, _ := GetStrings(name, cmd.options); len(val) > 0 {
+				if FindPos(name, cmd.validOptionNames) == -1 {
+					return CommandError{cmd.name, msg}
+				}
+			}
 		default:
 			if val, _ := GetString(name, cmd.options); val != "" {
 				if FindPos(name, cmd.validOptionNames) == -1 {
@@ -311,6 +317,7 @@ func (cmd *Command) ossClient(bucket string) (*oss.Client, error) {
 	cloudBoxID, _ := GetString(OptionCloudBoxID, cmd.options)
 
 	bPassword, _ := GetBool(OptionPassword, cmd.options)
+	bForcePathStyle, _ := GetBool(OptionForcePathStyle, cmd.options)
 
 	if bPassword {
 		if cmd.inputKeySecret == "" {
@@ -482,6 +489,11 @@ func (cmd *Command) ossClient(bucket string) (*oss.Client, error) {
 	if bSkipVerifyCert {
 		LogInfo("skip verify oss server's tls certificate\n")
 		options = append(options, oss.InsecureSkipVerify(true))
+	}
+
+	if bForcePathStyle {
+		LogInfo("use path-style access instead of virtual hosted-style access.\n")
+		options = append(options, oss.ForcePathStyle(true))
 	}
 
 	client, err := oss.New(endpoint, accessKeyID, accessKeySecret, options...)
@@ -714,6 +726,7 @@ func (cmd *Command) objectStatistic(bucket *oss.Bucket, cloudURL CloudURL, monit
 }
 
 func (cmd *Command) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, chObjects chan<- string, chError chan<- error, filters []filterOptionType, options ...oss.Option) {
+	defer close(chObjects)
 	pre := oss.Prefix(cloudURL.object)
 	marker := oss.Marker("")
 	for {
@@ -721,9 +734,8 @@ func (cmd *Command) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, chObje
 		lor, err := cmd.ossListObjectsRetry(bucket, listOptions...)
 		if err != nil {
 			chError <- err
-			break
+			return
 		}
-
 		for _, object := range lor.Objects {
 			if doesSingleObjectMatchPatterns(object.Key, filters) {
 				chObjects <- object.Key
@@ -736,7 +748,6 @@ func (cmd *Command) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, chObje
 			break
 		}
 	}
-	defer close(chObjects)
 	chError <- nil
 }
 
@@ -865,6 +876,7 @@ func GetAllCommands() []interface{} {
 		&bucketTagCommand,
 		&bucketEncryptionCommand,
 		&corsOptionsCommand,
+		&bucketStyleCommand,
 		&bucketLifeCycleCommand,
 		&bucketWebsiteCommand,
 		&bucketQosCommand,
@@ -882,5 +894,7 @@ func GetAllCommands() []interface{} {
 		&replicationCommand,
 		&bucketCnameCommand,
 		&lcbCommand,
+		&bucketAccessMonitorCommand,
+		&bucketResourceGroupCommand,
 	}
 }

@@ -946,8 +946,80 @@ func (s *OssutilCommandSuite) TestSignWithUserAgent(c *C) {
 	c.Assert(err, IsNil)
 	str = s.readFile(downFileName, c)
 	c.Assert(str, Equals, objectContext)
-
 	os.Remove(downFileName)
 	os.Remove(fileName)
 	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestSignUrlWithQueryProcess(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	data := randLowStr(1024)
+	uploadFileName := "ossutil-test-file-" + randLowStr(5)
+	s.createFile(uploadFileName, data, c)
+
+	object := randStr(10)
+	s.putObject(bucketName, object, uploadFileName, c)
+
+	command := "sign"
+	query := []string{
+		"x-oss-traffic-limit:800000",
+	}
+	timeOut := strconv.FormatInt(600, 10)
+	options := OptionMapType{
+		"endpoint":        &endpoint,
+		"accessKeyID":     &accessKeyID,
+		"accessKeySecret": &accessKeySecret,
+		"queryParam":      &query,
+		"timeout":         &timeOut,
+	}
+	srcUrl := CloudURLToString(bucketName, object)
+	args := []string{srcUrl}
+	_, err := cm.RunCommand(command, args, options)
+	c.Assert(err, IsNil)
+
+	signUrl, err := url.QueryUnescape(signURLCommand.signUrl)
+	testLogger.Print(signUrl)
+	c.Assert(err, IsNil)
+	c.Assert(strings.Contains(signUrl, "x-oss-traffic-limit=800000"), Equals, true)
+
+	bucket, err := signURLCommand.command.ossBucket(bucketName)
+	c.Assert(err, IsNil)
+
+	// get object with url
+	downFileName := "ossutil-test-file" + randStr(5) + ".txt"
+	err = bucket.GetObjectToFileWithURL(signURLCommand.signUrl, downFileName)
+	c.Assert(err, IsNil)
+	str := s.readFile(downFileName, c)
+	c.Assert(str != "", Equals, true)
+	os.Remove(downFileName)
+
+	// test many query
+	query = []string{
+		"x-oss-traffic-limit:2160000",
+		"response-content-type:text/txt",
+	}
+	options = OptionMapType{
+		"endpoint":        &endpoint,
+		"accessKeyID":     &accessKeyID,
+		"accessKeySecret": &accessKeySecret,
+		"queryParam":      &query,
+		"timeout":         &timeOut,
+	}
+	srcUrl = CloudURLToString(bucketName, object)
+	args = []string{srcUrl}
+	_, err = cm.RunCommand(command, args, options)
+	c.Assert(err, IsNil)
+
+	signUrl, err = url.QueryUnescape(signURLCommand.signUrl)
+	c.Assert(err, IsNil)
+	c.Assert(strings.Contains(signUrl, "x-oss-traffic-limit=2160000"), Equals, true)
+	c.Assert(strings.Contains(signUrl, "response-content-type=text/txt"), Equals, true)
+	downFileName = "ossutil-test-file" + randStr(5) + ".txt"
+	err = bucket.GetObjectToFileWithURL(signURLCommand.signUrl, downFileName)
+	c.Assert(err, IsNil)
+	str = s.readFile(downFileName, c)
+	c.Assert(str != "", Equals, true)
+	os.Remove(downFileName)
 }
