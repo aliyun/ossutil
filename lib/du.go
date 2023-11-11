@@ -141,6 +141,7 @@ var duSizeCommand = DuCommand{
 			OptionSignVersion,
 			OptionRegion,
 			OptionCloudBoxID,
+			OptionForcePathStyle,
 		},
 	},
 }
@@ -408,7 +409,8 @@ func (duc *DuCommand) statPartSize(bucket *oss.Bucket, object MultiPartObject) e
 	return nil
 }
 
-func (duc *DuCommand) uploadIdProducer(bucket *oss.Bucket, chObjects chan MultiPartObject, chListError chan error) error {
+func (duc *DuCommand) uploadIdProducer(bucket *oss.Bucket, chObjects chan MultiPartObject, chListError chan error) {
+	defer close(chObjects)
 	prefix := duc.duOption.object
 	keyMarker := ""
 	uploadIdMarker := ""
@@ -425,7 +427,7 @@ func (duc *DuCommand) uploadIdProducer(bucket *oss.Bucket, chObjects chan MultiP
 		lpRes, err := bucket.ListMultipartUploads(lpOptions...)
 		if err != nil {
 			chListError <- err
-			return err
+			return
 		}
 
 		for _, v := range lpRes.Uploads {
@@ -433,7 +435,6 @@ func (duc *DuCommand) uploadIdProducer(bucket *oss.Bucket, chObjects chan MultiP
 			object.objectName = v.Key
 			object.uploadId = v.UploadID
 			chObjects <- object
-
 		}
 
 		if lpRes.IsTruncated {
@@ -443,10 +444,7 @@ func (duc *DuCommand) uploadIdProducer(bucket *oss.Bucket, chObjects chan MultiP
 			break
 		}
 	}
-
-	defer close(chObjects)
 	chListError <- nil
-	return nil
 }
 
 func (duc *DuCommand) waitRoutinueComplete(chError, chListError <-chan error, routineCount int) error {

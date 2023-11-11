@@ -342,6 +342,7 @@ var removeCommand = RemoveCommand{
 			OptionSignVersion,
 			OptionRegion,
 			OptionCloudBoxID,
+			OptionForcePathStyle,
 		},
 	},
 }
@@ -848,6 +849,7 @@ func (rc *RemoveCommand) removeMultipartUploadsEntry(bucket *oss.Bucket, cloudUR
 }
 
 func (rc *RemoveCommand) multipartUploadsProducer(bucket *oss.Bucket, cloudURL CloudURL, chUploadIds chan<- uploadIdInfoType, chListError chan<- error) {
+	defer close(chUploadIds)
 	pre := oss.Prefix(cloudURL.object)
 	keyMarker := oss.KeyMarker("")
 	uploadIdMarker := oss.UploadIDMarker("")
@@ -856,7 +858,7 @@ func (rc *RemoveCommand) multipartUploadsProducer(bucket *oss.Bucket, cloudURL C
 		lmr, err := rc.command.ossListMultipartUploadsRetry(bucket, listOptions...)
 		if err != nil {
 			chListError <- err
-			break
+			return
 		}
 
 		for _, uploadId := range lmr.Uploads {
@@ -875,7 +877,6 @@ func (rc *RemoveCommand) multipartUploadsProducer(bucket *oss.Bucket, cloudURL C
 			break
 		}
 	}
-	defer close(chUploadIds)
 	chListError <- nil
 }
 
@@ -973,7 +974,7 @@ func (rc *RemoveCommand) ossDeleteBucketRetry(client *oss.Client, bucket string)
 	}
 }
 
-//version
+// version
 func (rc *RemoveCommand) removeObjectVersion(bucket *oss.Bucket, cloudURL CloudURL, versionId string) error {
 	err := rc.deleteObjectWithMonitorVersion(bucket, cloudURL.object, versionId)
 	if err != nil && rc.monitor.op == objectType {
