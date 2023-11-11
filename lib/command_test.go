@@ -463,6 +463,7 @@ func (s *OssutilCommandSuite) getBucketResults(c *C) []string {
 	c.Assert(len(result) >= 1, Equals, true)
 	buckets := []string{}
 	shortEndpoint := strings.TrimRight(endpoint, ".aliyuncs.com")
+	shortEndpoint = strings.TrimRight(shortEndpoint, "-internal")
 	for _, str := range result {
 		pos := strings.Index(str, SchemePrefix)
 		if pos != -1 && strings.Contains(str, shortEndpoint) {
@@ -2901,7 +2902,7 @@ func (s *OssutilCommandSuite) TestGetLoglevelFromOptions(c *C) {
 	testLogger.Print("loglevel 5" + strLevel)
 }
 
-//test command objectProducer
+// test command objectProducer
 func (s *OssutilCommandSuite) TestCommandObjectProducer(c *C) {
 	chObjects := make(chan string, ChannelBuf)
 	chListError := make(chan error, 1)

@@ -284,6 +284,12 @@ var OptionMap = map[string]Option{
 	OptionAesKey: Option{"", "--aes-key", "", OptionTypeString, "", "",
 		"加密ak/sk的公钥",
 		" the AES key of encrypt ak/sk"},
+	OptionForcePathStyle: Option{"", "--force-path-style", "", OptionTypeFlagTrue, "", "",
+		"使用 path style 访问方式",
+		"Use path-style access "},
+	OptionRuntime: Option{"", "--runtime", "", OptionTypeInt64, "", "",
+		"设置命令的持续的运行时间",
+		"specifies the max running time of the command."},
 }
 
 func (T *Option) getHelp(language string) string {
