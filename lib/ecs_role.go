@@ -60,7 +60,7 @@ type EcsRoleAKBuild struct {
 	LastUpDated     string
 }
 
-func (roleBuild *EcsRoleAKBuild) GetCredentials() oss.Credentials {
+func (roleBuild *EcsRoleAKBuild) GetCredentials() (oss.Credentials, error) {
 	roleBuild.lock.Lock()
 	defer roleBuild.lock.Unlock()
 
@@ -79,7 +79,9 @@ func (roleBuild *EcsRoleAKBuild) GetCredentials() oss.Credentials {
 		akJson, err = roleBuild.HttpReqAk()
 		tEnd := time.Now().UnixNano() / 1000 / 1000
 
-		if err == nil {
+		if err != nil {
+			return &EcsRoleAK{}, err
+		} else {
 			roleBuild.AccessKeyId = akJson.AccessKeyId
 			roleBuild.AccessKeySecret = akJson.AccessKeySecret
 			roleBuild.SecurityToken = akJson.SecurityToken
@@ -87,16 +89,11 @@ func (roleBuild *EcsRoleAKBuild) GetCredentials() oss.Credentials {
 			LogInfo("get sts ak success,%s,cost:%d(ms)\n", akJson.String(), tEnd-tStart)
 		}
 	}
-
-	if err != nil {
-		return &EcsRoleAK{}
-	}
-
 	return &EcsRoleAK{
 		AccessKeyId:     roleBuild.AccessKeyId,
 		AccessKeySecret: roleBuild.AccessKeySecret,
 		SecurityToken:   roleBuild.SecurityToken,
-	}
+	}, nil
 }
 
 func (roleBuild *EcsRoleAKBuild) IsTimeOut() bool {
