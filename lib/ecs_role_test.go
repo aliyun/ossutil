@@ -134,7 +134,7 @@ func (s *OssutilCommandSuite) TestEcsRoleAkTimeout(c *C) {
 	time.Sleep(time.Duration(1) * time.Second)
 
 	ecsRole := EcsRoleAKBuild{url: "http://127.0.0.1:32915/latest/meta-data/Ram/security-credentials/EcsRamRoleTesting"}
-	cred, err := ecsRole.GetCredentials()
+	cred, err := ecsRole.GetCredentialsE()
 	c.Assert(err, IsNil)
 	strKeyId1 := cred.GetAccessKeyID()
 	c.Assert(strKeyId1 == "", Equals, false)
@@ -143,7 +143,7 @@ func (s *OssutilCommandSuite) TestEcsRoleAkTimeout(c *C) {
 	// wait Ak timeout
 	time.Sleep(time.Duration(1+TestEcsTimeout) * time.Second)
 
-	cred, err = ecsRole.GetCredentials()
+	cred, err = ecsRole.GetCredentialsE()
 	c.Assert(err, IsNil)
 	strKeyId2 := cred.GetAccessKeyID()
 	c.Assert(strKeyId2 == "", Equals, false)
