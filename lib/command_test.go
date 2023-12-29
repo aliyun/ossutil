@@ -44,6 +44,7 @@ var (
 	payerAccessKeyID     = ""
 	payerAccessKeySecret = ""
 	payerAccountID       = ""
+	region               = ""
 )
 
 var (
@@ -158,6 +159,9 @@ func SetUpCredential() {
 	}
 	if payerAccountID == "" {
 		payerAccountID = os.Getenv("OSS_TEST_PAYER_UID")
+	}
+	if region == "" {
+		region = os.Getenv("OSS_TEST_REGION")
 	}
 }
 

@@ -145,6 +145,8 @@ var signURLCommand = SignurlCommand{
 			OptionSTSRegion,
 			OptionUserAgent,
 			OptionQueryParam,
+			OptionSignVersion,
+			OptionRegion,
 		},
 	},
 }
