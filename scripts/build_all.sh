@@ -137,3 +137,9 @@ zip -r ossutil-linux-arm64.zip ossutil-linux-arm64
 rm -rf ossutil-linux-arm64
 
 echo "ossutil for linux on arm64 built successfully"
+
+#calc hash for zip files
+cd $output
+for file in $(ls *.zip); do
+    sha256sum $file >> sha256sum.log
+done
