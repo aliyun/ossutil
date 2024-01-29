@@ -17,8 +17,8 @@ var specChineseWorm = SpecText{
     ossutil worm init  oss://bucket days
     ossutil worm abort oss://bucket
     ossutil worm complete oss://bucket wormId
-    ossuitl worm extend oss://bucket days wormId
-    ossuitl worm get oss://bucket
+    ossutil worm extend oss://bucket days wormId
+    ossutil worm get oss://bucket
 
 `,
 	detailHelpText: ` 
@@ -56,8 +56,8 @@ var specEnglishWorm = SpecText{
     ossutil worm init  oss://bucket days
     ossutil worm abort oss://bucket
     ossutil worm complete oss://bucket wormId
-    ossuitl worm extend oss://bucket days wormId
-    ossuitl worm get oss://bucket
+    ossutil worm extend oss://bucket days wormId
+    ossutil worm get oss://bucket
 
 `,
 	detailHelpText: ` 
