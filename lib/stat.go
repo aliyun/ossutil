@@ -209,6 +209,9 @@ func (sc *StatCommand) bucketStat(bucket *oss.Bucket, cloudURL CloudURL) error {
 	if len(gbar.BucketInfo.AccessMonitor) > 0 {
 		fmt.Printf("%-22s: %s\n", StatAccessMonitor, gbar.BucketInfo.AccessMonitor)
 	}
+	if len(gbar.BucketInfo.ReservedCapacityInstanceId) > 0 {
+		fmt.Printf("%-22s: %s\n", StatReservedCapacityInstanceId, gbar.BucketInfo.ReservedCapacityInstanceId)
+	}
 
 	return nil
 }

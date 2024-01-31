@@ -9,17 +9,6 @@ import (
 	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
 
-var storageClassList = []string{
-	StorageStandard,
-	StorageIA,
-	StorageArchive,
-	StorageColdArchive,
-}
-
-func formatStorageClassString(sep string) string {
-	return strings.Join(storageClassList, sep)
-}
-
 var specChineseMakeBucket = SpecText{
 
 	synopsisText: "创建Bucket",
@@ -27,7 +16,7 @@ var specChineseMakeBucket = SpecText{
 	paramText: "cloud_url [options]",
 
 	syntaxText: ` 
-    ossutil mb oss://bucket [--acl acl] [--storage-class class] [-c file] [--meta meta]
+    ossutil mb oss://bucket [--acl acl] [--storage-class class] [--reserved-capacity-id id] [-c file] [--meta meta]
 `,
 
 	detailHelpText: ` 
@@ -48,9 +37,6 @@ ACL：
     关于acl的更多信息请参考help set-acl。
 
 StorageClass:
-    
-    bucket的StorageClass有四种：
-        ` + formatStorageClassString("\n        ") + `
 
     关于StorageClass的更多信息请参考：https://help.aliyun.com/document_detail/31959.html?spm=5176.doc31957.6.839.E1ifnh
 
@@ -76,7 +62,8 @@ RedundancyType:
     3)ossutil mb oss://bucket1 --storage-class IA 
     4)ossutil mb oss://bucket1 --acl=public-read-write --storage-class IA
     5)ossutil mb oss://bucket1 --redundancy-type ZRS
-    6)ossutil mb oss://bucket1 --meta X-Oss-Server-Side-Encryption:KMS#X-Oss-Server-Side-Data-Encryption:SM4
+	  6)ossutil mb oss://bucket1 --redundancy-type ZRS --storage-class DeepColdArchive --reserved-capacity-id Reserved-Capacity-Instance-Id 
+    7)ossutil mb oss://bucket1 --meta X-Oss-Server-Side-Encryption:KMS#X-Oss-Server-Side-Data-Encryption:SM4
 `,
 }
 
@@ -87,7 +74,7 @@ var specEnglishMakeBucket = SpecText{
 	paramText: "cloud_url [options]",
 
 	syntaxText: ` 
-    ossutil mb oss://bucket [--acl acl] [--storage-class class] [--redundancy-type type] [-c file] 
+    ossutil mb oss://bucket [--acl acl] [--storage-class class] [--redundancy-type type] [--reserved-capacity-id id] [-c file]
 `,
 
 	detailHelpText: ` 
@@ -108,9 +95,6 @@ ACL:
     More information about acl, see help set-acl.
 
 StorageClass:
-
-    There are four kinds of StorageClass:
-        ` + formatStorageClassString("\n        ") + `
 
     More information about StorageClass see: https://help.aliyun.com/document_detail/31959.html?spm=5176.doc31957.6.839.E1ifnh
 
@@ -139,7 +123,8 @@ Usage:
     3)ossutil mb oss://bucket1 --storage-class IA 
     4)ossutil mb oss://bucket1 --acl=public-read-write --storage-class IA 
     5)ossutil mb oss://bucket1 --redundancy-type ZRS
-    6)ossutil mb oss://bucket1 --meta X-Oss-Server-Side-Encryption:KMS#X-Oss-Server-Side-Data-Encryption:SM4
+    6)ossutil mb oss://bucket1 --redundancy-type ZRS --storage-class DeepColdArchive --reserved-capacity-id Reserved-Capacity-Instance-Id 
+    7)ossutil mb oss://bucket1 --meta X-Oss-Server-Side-Encryption:KMS#X-Oss-Server-Side-Data-Encryption:SM4
 `,
 }
 
@@ -192,6 +177,7 @@ var makeBucketCommand = MakeBucketCommand{
 			OptionSignVersion,
 			OptionRegion,
 			OptionCloudBoxID,
+			OptionReservedCapacityInstanceId,
 			OptionForcePathStyle,
 		},
 	},
@@ -252,6 +238,9 @@ func (mc *MakeBucketCommand) RunCommand() error {
 	language, _ := GetString(OptionLanguage, mc.command.options)
 	language = strings.ToLower(language)
 	strRedundancy, _ := GetString(OptionRedundancyType, mc.command.options)
+	storageClass, _ := GetString(OptionStorageClass, mc.command.options)
+	strReservedCapacityInstanceId, _ := GetString(OptionReservedCapacityInstanceId, mc.command.options)
+	var op []oss.Option
 
 	if aclStr != "" {
 		acl, err := mc.getACL(aclStr, language)
@@ -267,6 +256,14 @@ func (mc *MakeBucketCommand) RunCommand() error {
 		}
 		redundancyType := oss.DataRedundancyType(strings.ToUpper(strRedundancy))
 		op = append(op, oss.RedundancyType(redundancyType))
+	}
+
+	if oss.StorageClassType(storageClass) != oss.StorageStandard {
+		op = append(op, oss.StorageClass(oss.StorageClassType(storageClass)))
+	}
+
+	if strReservedCapacityInstanceId != "" {
+		op = append(op, oss.ReservedCapacityInstanceId(strReservedCapacityInstanceId))
 	}
 
 	return mc.ossCreateBucketRetry(client, cloudURL.bucket, op...)
@@ -309,10 +306,6 @@ func (mc *MakeBucketCommand) getACL(aclStr, language string) (oss.ACLType, error
 }
 
 func (mc *MakeBucketCommand) ossCreateBucketRetry(client *oss.Client, bucket string, options ...oss.Option) error {
-	storageClass := mc.getStorageClass()
-	if storageClass != oss.StorageStandard {
-		options = append(options, oss.StorageClass(storageClass))
-	}
 	retryTimes, _ := GetInt(OptionRetryTimes, mc.command.options)
 	for i := 1; ; i++ {
 		err := client.CreateBucket(bucket, options...)
@@ -323,18 +316,4 @@ func (mc *MakeBucketCommand) ossCreateBucketRetry(client *oss.Client, bucket str
 			return BucketError{err, bucket}
 		}
 	}
-}
-
-func (mc *MakeBucketCommand) getStorageClass() oss.StorageClassType {
-	storageClass, _ := GetString(OptionStorageClass, mc.command.options)
-	if strings.EqualFold(storageClass, StorageIA) {
-		return oss.StorageIA
-	}
-	if strings.EqualFold(storageClass, StorageArchive) {
-		return oss.StorageArchive
-	}
-	if strings.EqualFold(storageClass, StorageColdArchive) {
-		return oss.StorageColdArchive
-	}
-	return oss.StorageStandard
 }
