@@ -419,6 +419,10 @@ var listCommand = ListCommand{
 	},
 }
 
+func (lc *ListCommand) GetCommand() *Command {
+	return &lc.command
+}
+
 // function for FormatHelper interface
 func (lc *ListCommand) formatHelpForWhole() string {
 	return lc.command.formatHelpForWhole()

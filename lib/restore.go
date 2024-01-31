@@ -241,6 +241,10 @@ var restoreCommand = RestoreCommand{
 	},
 }
 
+func (rc *RestoreCommand) GetCommand() *Command {
+	return &rc.command
+}
+
 // function for FormatHelper interface
 func (rc *RestoreCommand) formatHelpForWhole() string {
 	return rc.command.formatHelpForWhole()

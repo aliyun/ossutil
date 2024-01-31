@@ -131,6 +131,10 @@ var statCommand = StatCommand{
 	},
 }
 
+func (sc *StatCommand) GetCommand() *Command {
+	return &sc.command
+}
+
 // function for FormatHelper interface
 func (sc *StatCommand) formatHelpForWhole() string {
 	return sc.command.formatHelpForWhole()
