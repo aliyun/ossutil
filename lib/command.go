@@ -602,21 +602,38 @@ func (cmd *Command) ossBucket(bucketName string) (*oss.Bucket, error) {
 	return bucket, nil
 }
 
-func (cmd *Command) ossListObjectsRetry(bucket *oss.Bucket, options ...oss.Option) (oss.ListObjectsResult, error) {
+func (cmd *Command) ossListObjectsRetry(bucket *oss.Bucket, options ...oss.Option) (ListObjectsResultMix, error) {
 	retryTimes, _ := GetInt(OptionRetryTimes, cmd.options)
+	strItem, _ := GetString(OptionItem, cmd.options)
 	for i := 1; ; i++ {
-		lor, err := bucket.ListObjects(options...)
-		if err == nil {
-			return lor, err
-		}
+		var lor ListObjectsResultMix
+		var lorV2 oss.ListObjectsResultV2
+		var lorV1 oss.ListObjectsResult
+		var err error
+		switch strItem {
+		case "v2":
+			options = oss.DeleteOption(options, OptionMarker)
+			lorV2, err = bucket.ListObjectsV2(options...)
+			if err == nil {
+				lor = ConvertListObjectsResultV2ToListObjectsResultMix(lorV2)
+				return lor, err
+			}
+		default:
+			options = oss.DeleteOption(options, "start-after")
+			options = oss.DeleteOption(options, "continuation-token")
+			lorV1, err = bucket.ListObjects(options...)
+			if err == nil {
+				lor = ConvertListObjectsResultToListObjectsResultMix(lorV1)
+				return lor, err
+			}
 
+		}
 		// http 4XX error no need to retry
 		// only network error or internal error need to retry
 		serviceError, noNeedRetry := err.(oss.ServiceError)
 		if int64(i) >= retryTimes || (noNeedRetry && serviceError.StatusCode < 500) {
 			return lor, ObjectError{err, bucket.BucketName, ""}
 		}
-
 		// wait 1 second
 		time.Sleep(time.Duration(1) * time.Second)
 	}
@@ -702,8 +719,9 @@ func (cmd *Command) objectStatistic(bucket *oss.Bucket, cloudURL CloudURL, monit
 
 	pre := oss.Prefix(cloudURL.object)
 	marker := oss.Marker("")
+	token := oss.ContinuationToken("")
 	for {
-		listOptions := append(options, marker, pre)
+		listOptions := append(options, marker, pre, token)
 		lor, err := cmd.ossListObjectsRetry(bucket, listOptions...)
 		if err != nil {
 			monitor.setScanError(err)
@@ -717,6 +735,7 @@ func (cmd *Command) objectStatistic(bucket *oss.Bucket, cloudURL CloudURL, monit
 		}
 
 		marker = oss.Marker(lor.NextMarker)
+		token = oss.ContinuationToken(lor.NextContinuationToken)
 		if !lor.IsTruncated {
 			break
 		}
@@ -729,8 +748,9 @@ func (cmd *Command) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, chObje
 	defer close(chObjects)
 	pre := oss.Prefix(cloudURL.object)
 	marker := oss.Marker("")
+	token := oss.ContinuationToken("")
 	for {
-		listOptions := append(options, marker, pre)
+		listOptions := append(options, marker, pre, token)
 		lor, err := cmd.ossListObjectsRetry(bucket, listOptions...)
 		if err != nil {
 			chError <- err
@@ -744,6 +764,7 @@ func (cmd *Command) objectProducer(bucket *oss.Bucket, cloudURL CloudURL, chObje
 
 		pre = oss.Prefix(lor.Prefix)
 		marker = oss.Marker(lor.NextMarker)
+		token = oss.ContinuationToken(lor.NextContinuationToken)
 		if !lor.IsTruncated {
 			break
 		}

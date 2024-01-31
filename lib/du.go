@@ -141,6 +141,7 @@ var duSizeCommand = DuCommand{
 			OptionSignVersion,
 			OptionRegion,
 			OptionCloudBoxID,
+			OptionItem,
 			OptionForcePathStyle,
 		},
 	},
@@ -289,7 +290,8 @@ func (duc *DuCommand) getAllObjectSize(bucket *oss.Bucket) error {
 
 		pre = oss.Prefix(lor.Prefix)
 		marker = oss.Marker(lor.NextMarker)
-		listOptions = []oss.Option{pre, marker, oss.MaxKeys(1000)}
+		token := oss.ContinuationToken(lor.NextContinuationToken)
+		listOptions = []oss.Option{pre, marker, oss.MaxKeys(1000), token}
 		if duc.duOption.payer != "" {
 			listOptions = append(listOptions, oss.RequestPayer(oss.PayerType(duc.duOption.payer)))
 		}

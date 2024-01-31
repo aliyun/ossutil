@@ -403,6 +403,12 @@ func (s *OssutilCommandSuite) rawListLimitedMarker(args []string, cmdline string
 		array[1] = array[1][0:pos] + array[1][pos+len("--encoding-type url"):]
 	}
 
+	item := ""
+	if pos := strings.Index(array[1], "--item v2"); pos != -1 {
+		item = "v2"
+		array[1] = array[1][0:pos] + array[1][pos+len("--item v2"):]
+	}
+
 	parameter := strings.Split(array[1], "-")
 	sf := false
 	d := false
@@ -431,6 +437,7 @@ func (s *OssutilCommandSuite) rawListLimitedMarker(args []string, cmdline string
 		"marker":          &marker,
 		"uploadIDMarker":  &uploadIDMarker,
 		"encodingType":    &encodingType,
+		"item":            &item,
 	}
 	showElapse, err := cm.RunCommand(command, args, options)
 	return showElapse, err
@@ -525,6 +532,25 @@ func (s *OssutilCommandSuite) rawRemove(args []string, recursive, force, bucket 
 		"recursive":       &recursive,
 		"force":           &force,
 		"bucket":          &bucket,
+	}
+	showElapse, err := cm.RunCommand(command, args, options)
+	return showElapse, err
+}
+
+func (s *OssutilCommandSuite) rawRemoveV2(args []string, recursive, force, bucket bool) (bool, error) {
+	command := "rm"
+	str := ""
+	item := "v2"
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"stsToken":        &str,
+		"configFile":      &configFile,
+		"recursive":       &recursive,
+		"force":           &force,
+		"bucket":          &bucket,
+		OptionItem:        &item,
 	}
 	showElapse, err := cm.RunCommand(command, args, options)
 	return showElapse, err
@@ -632,6 +658,13 @@ func (s *OssutilCommandSuite) initRemove(bucket string, object string, cmdline s
 func (s *OssutilCommandSuite) removeObjects(bucket, prefix string, recursive, force bool, c *C) {
 	args := []string{CloudURLToString(bucket, prefix)}
 	showElapse, err := s.rawRemove(args, recursive, force, false)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+}
+
+func (s *OssutilCommandSuite) removeObjectsV2(bucket, prefix string, recursive, force bool, c *C) {
+	args := []string{CloudURLToString(bucket, prefix)}
+	showElapse, err := s.rawRemoveV2(args, recursive, force, false)
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
 }
@@ -811,6 +844,12 @@ func (s *OssutilCommandSuite) rawCP(srcURL, destURL string, recursive, force, up
 	return showElapse, err
 }
 
+func (s *OssutilCommandSuite) rawCPV2(srcURL, destURL string, recursive, force, update bool, threshold int64, cpDir string) (bool, error) {
+	args := []string{srcURL, destURL}
+	showElapse, err := s.rawCPWithArgsV2(args, recursive, force, update, threshold, cpDir)
+	return showElapse, err
+}
+
 func (s *OssutilCommandSuite) rawCPWithArgs(args []string, recursive, force, update bool, threshold int64, cpDir string) (bool, error) {
 	command := "cp"
 	str := ""
@@ -830,6 +869,32 @@ func (s *OssutilCommandSuite) rawCPWithArgs(args []string, recursive, force, upd
 		"checkpointDir":    &cpDir,
 		"routines":         &routines,
 		"partSize":         &partSize,
+	}
+	showElapse, err := cm.RunCommand(command, args, options)
+	return showElapse, err
+}
+
+func (s *OssutilCommandSuite) rawCPWithArgsV2(args []string, recursive, force, update bool, threshold int64, cpDir string) (bool, error) {
+	command := "cp"
+	str := ""
+	thre := strconv.FormatInt(threshold, 10)
+	routines := strconv.Itoa(Routines)
+	partSize := strconv.FormatInt(DefaultPartSize, 10)
+	item := "v2"
+	options := OptionMapType{
+		"endpoint":         &str,
+		"accessKeyID":      &str,
+		"accessKeySecret":  &str,
+		"stsToken":         &str,
+		"configFile":       &configFile,
+		"recursive":        &recursive,
+		"force":            &force,
+		"update":           &update,
+		"bigfileThreshold": &thre,
+		"checkpointDir":    &cpDir,
+		"routines":         &routines,
+		"partSize":         &partSize,
+		OptionItem:         &item,
 	}
 	showElapse, err := cm.RunCommand(command, args, options)
 	return showElapse, err

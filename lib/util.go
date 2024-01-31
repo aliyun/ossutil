@@ -11,7 +11,6 @@ import (
 	"os/user"
 	"path/filepath"
 	"runtime"
-	"strconv"
 	"strings"
 	"time"
 
@@ -638,65 +637,6 @@ func getFileListCommon(dpath string, chFiles chan<- fileInfoType, onlyCurrentDir
 	return err
 }
 
-func getObjectListCommon(bucket *oss.Bucket, cloudURL CloudURL, chObjects chan<- objectInfoType,
-	onlyCurrentDir bool, filters []filterOptionType, payerOptions []oss.Option) error {
-	defer close(chObjects)
-	pre := oss.Prefix(cloudURL.object)
-	marker := oss.Marker("")
-	//while the src object is end with "/", use object key as marker, exclude the object itself
-	if strings.HasSuffix(cloudURL.object, "/") {
-		marker = oss.Marker(cloudURL.object)
-	}
-	del := oss.Delimiter("")
-	if onlyCurrentDir {
-		del = oss.Delimiter("/")
-	}
-
-	listOptions := append(payerOptions, pre, marker, del, oss.MaxKeys(1000))
-	for {
-		lor, err := bucket.ListObjects(listOptions...)
-		if err != nil {
-			return err
-		}
-
-		for _, object := range lor.Objects {
-			prefix := ""
-			relativeKey := object.Key
-			index := strings.LastIndex(cloudURL.object, "/")
-			if index > 0 {
-				prefix = object.Key[:index+1]
-				relativeKey = object.Key[index+1:]
-			}
-
-			if doesSingleObjectMatchPatterns(object.Key, filters) {
-				if strings.ToLower(object.Type) == "symlink" {
-					props, err := bucket.GetObjectDetailedMeta(object.Key, payerOptions...)
-					if err != nil {
-						LogError("ossGetObjectStatRetry error info:%s\n", err.Error())
-						return err
-					}
-					size, err := strconv.ParseInt(props.Get(oss.HTTPHeaderContentLength), 10, 64)
-					if err != nil {
-						LogError("strconv.ParseInt error info:%s\n", err.Error())
-						return err
-
-					}
-					object.Size = size
-				}
-				chObjects <- objectInfoType{prefix, relativeKey, int64(object.Size), object.LastModified}
-			}
-		}
-
-		pre = oss.Prefix(lor.Prefix)
-		marker = oss.Marker(lor.NextMarker)
-		listOptions = append(payerOptions, pre, marker, oss.MaxKeys(1000))
-		if !lor.IsTruncated {
-			break
-		}
-	}
-	return nil
-}
-
 func GetPassword(prompt string) ([]byte, error) {
 	fd := int(os.Stdin.Fd())
 	if terminal.IsTerminal(fd) {
@@ -735,4 +675,61 @@ func AddStringsToOption(params []string, options []oss.Option) ([]oss.Option, er
 		options = append(options, oss.AddParam(key, value))
 	}
 	return options, nil
+}
+
+type ListObjectsResultMix struct {
+	Prefix                string                 `xml:"Prefix"`            // The object prefix
+	Marker                string                 `xml:"Marker"`            // The marker filter.
+	MaxKeys               int                    `xml:"MaxKeys"`           // Max keys to return
+	Delimiter             string                 `xml:"Delimiter"`         // The delimiter for grouping objects' name
+	IsTruncated           bool                   `xml:"IsTruncated"`       // Flag indicates if all results are returned (when it's false)
+	NextMarker            string                 `xml:"NextMarker"`        // The start point of the next query
+	StartAfter            string                 `xml:"StartAfter"`        // the input StartAfter
+	ContinuationToken     string                 `xml:"ContinuationToken"` // the input ContinuationToken
+	NextContinuationToken string                 `xml:"NextContinuationToken"`
+	Objects               []oss.ObjectProperties `xml:"Contents"`              // Object list
+	CommonPrefixes        []string               `xml:"CommonPrefixes>Prefix"` // You can think of commonprefixes as "folders" whose names end with the delimiter
+}
+
+// ConvertListObjectsResultV2ToListObjectsResultMix Convert ListObjectsResultV2 To ListObjectsResultMix
+func ConvertListObjectsResultV2ToListObjectsResultMix(resultV2 oss.ListObjectsResultV2) ListObjectsResultMix {
+	result := ListObjectsResultMix{}
+	result.Prefix = resultV2.Prefix
+	result.StartAfter = resultV2.StartAfter
+	result.IsTruncated = resultV2.IsTruncated
+	result.MaxKeys = resultV2.MaxKeys
+	result.NextContinuationToken = resultV2.NextContinuationToken
+	result.ContinuationToken = resultV2.ContinuationToken
+	result.Objects = resultV2.Objects
+	result.Delimiter = resultV2.Delimiter
+	result.CommonPrefixes = resultV2.CommonPrefixes
+	return result
+}
+
+// ConvertListObjectsResultToListObjectsResultMix Convert ListObjectsResultV2 To ListObjectsResultMix
+func ConvertListObjectsResultToListObjectsResultMix(resultV1 oss.ListObjectsResult) ListObjectsResultMix {
+	result := ListObjectsResultMix{}
+	result.Prefix = resultV1.Prefix
+	result.Marker = resultV1.Marker
+	result.IsTruncated = resultV1.IsTruncated
+	result.MaxKeys = resultV1.MaxKeys
+	result.NextMarker = resultV1.NextMarker
+	result.Objects = resultV1.Objects
+	result.Delimiter = resultV1.Delimiter
+	result.CommonPrefixes = resultV1.CommonPrefixes
+	return result
+}
+
+// ConvertListObjectsResultMixToListObjectsResult Convert ListObjectsResultMix To ListObjectsResult
+func ConvertListObjectsResultMixToListObjectsResult(mix ListObjectsResultMix) oss.ListObjectsResult {
+	result := oss.ListObjectsResult{}
+	result.Prefix = mix.Prefix
+	result.Marker = mix.Marker
+	result.IsTruncated = mix.IsTruncated
+	result.MaxKeys = mix.MaxKeys
+	result.NextMarker = mix.NextMarker
+	result.Objects = mix.Objects
+	result.Delimiter = mix.Delimiter
+	result.CommonPrefixes = mix.CommonPrefixes
+	return result
 }

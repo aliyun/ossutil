@@ -342,6 +342,7 @@ var removeCommand = RemoveCommand{
 			OptionSignVersion,
 			OptionRegion,
 			OptionCloudBoxID,
+			OptionItem,
 			OptionForcePathStyle,
 		},
 	},
@@ -558,8 +559,9 @@ func (rc *RemoveCommand) ossIsObjectExistRetry(bucket *oss.Bucket, object string
 func (rc *RemoveCommand) batchObjectStatistic(bucket *oss.Bucket, cloudURL CloudURL) error {
 	pre := oss.Prefix(cloudURL.object)
 	marker := oss.Marker("")
+	token := oss.ContinuationToken("")
 	for {
-		listOptions := append(rc.commonOptions, marker, pre, oss.MaxKeys(1000))
+		listOptions := append(rc.commonOptions, marker, pre, oss.MaxKeys(1000), token)
 		lor, err := rc.command.ossListObjectsRetry(bucket, listOptions...)
 		if err != nil {
 			rc.monitor.setScanError(err)
@@ -578,6 +580,7 @@ func (rc *RemoveCommand) batchObjectStatistic(bucket *oss.Bucket, cloudURL Cloud
 
 		pre = oss.Prefix(lor.Prefix)
 		marker = oss.Marker(lor.NextMarker)
+		token = oss.ContinuationToken(lor.NextContinuationToken)
 		if !lor.IsTruncated {
 			break
 		}
@@ -727,13 +730,15 @@ func (rc *RemoveCommand) batchDeleteObjects(bucket *oss.Bucket, cloudURL CloudUR
 	// list objects
 	pre := oss.Prefix(cloudURL.object)
 	marker := oss.Marker("")
+	token := oss.ContinuationToken("")
 	for {
-		listOptions := append(rc.commonOptions, marker, pre, oss.MaxKeys(1000))
-		lor, err := rc.command.ossListObjectsRetry(bucket, listOptions...)
+		listOptions := append(rc.commonOptions, marker, pre, oss.MaxKeys(1000), token)
+		lorMix, err := rc.command.ossListObjectsRetry(bucket, listOptions...)
 		if err != nil {
 			return err
 		}
 
+		lor := ConvertListObjectsResultMixToListObjectsResult(lorMix)
 		// batch delete
 		skipLor := rc.getObjectsFromListResult(lor)
 		delNum, err := rc.ossBatchDeleteObjectsRetry(bucket, skipLor)
@@ -744,6 +749,7 @@ func (rc *RemoveCommand) batchDeleteObjects(bucket *oss.Bucket, cloudURL CloudUR
 
 		pre = oss.Prefix(lor.Prefix)
 		marker = oss.Marker(lor.NextMarker)
+		token = oss.ContinuationToken(lorMix.NextContinuationToken)
 		if !lor.IsTruncated {
 			break
 		}
@@ -788,8 +794,9 @@ func (rc *RemoveCommand) ossBatchDeleteObjectsRetry(bucket *oss.Bucket, objects 
 func (rc *RemoveCommand) removeSpecialCharacterObjects(bucket *oss.Bucket, cloudURL CloudURL) error {
 	pre := oss.Prefix(cloudURL.object)
 	marker := oss.Marker("")
+	token := oss.ContinuationToken("")
 	for {
-		listOptions := append(rc.commonOptions, marker, pre, oss.MaxKeys(1000))
+		listOptions := append(rc.commonOptions, marker, pre, oss.MaxKeys(1000), token)
 		lor, err := rc.command.ossListObjectsRetry(bucket, listOptions...)
 		if err != nil {
 			return err
@@ -803,6 +810,7 @@ func (rc *RemoveCommand) removeSpecialCharacterObjects(bucket *oss.Bucket, cloud
 
 		pre = oss.Prefix(lor.Prefix)
 		marker = oss.Marker(lor.NextMarker)
+		token = oss.ContinuationToken(lor.NextContinuationToken)
 		if !lor.IsTruncated {
 			break
 		}

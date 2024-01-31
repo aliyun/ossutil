@@ -414,6 +414,7 @@ var listCommand = ListCommand{
 			OptionSignVersion,
 			OptionRegion,
 			OptionCloudBoxID,
+			OptionItem,
 			OptionForcePathStyle,
 		},
 	},
@@ -594,23 +595,31 @@ func (lc *ListCommand) listObjects(bucket *oss.Bucket, cloudURL CloudURL, shortF
 		return num, fmt.Errorf("invalid marker: %s, marker is not url encoded, %s", vmarker, err.Error())
 	}
 	marker := oss.Marker(vmarker)
+	startAfter := oss.StartAfter(vmarker)
 	del := oss.Delimiter("")
 	if directory {
 		del = oss.Delimiter("/")
 	}
+	token := oss.ContinuationToken("")
 	payer := lc.payerOption
-
+	options := []oss.Option{
+		del, payer, oss.MaxKeys(1000),
+	}
+	listOptions := append(options, pre, marker, startAfter, token)
 	var i int64
 	for i = 0; ; i++ {
 		if *limitedNum == 0 {
 			break
 		}
-		lor, err := lc.command.ossListObjectsRetry(bucket, marker, pre, del, payer, oss.MaxKeys(1000))
+		lorMix, err := lc.command.ossListObjectsRetry(bucket, listOptions...)
 		if err != nil {
 			return num, err
 		}
-		pre = oss.Prefix(lor.Prefix)
-		marker = oss.Marker(lor.NextMarker)
+		pre = oss.Prefix(lorMix.Prefix)
+		marker = oss.Marker(lorMix.NextMarker)
+		token = oss.ContinuationToken(lorMix.NextContinuationToken)
+		lor := ConvertListObjectsResultMixToListObjectsResult(lorMix)
+		listOptions = append(options, pre, marker, token)
 		num += lc.displayObjectsResult(lor, cloudURL.bucket, shortFormat, directory, i, limitedNum)
 		if !lor.IsTruncated {
 			break

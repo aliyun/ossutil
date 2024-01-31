@@ -2,15 +2,14 @@ package lib
 
 import (
 	"fmt"
+	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
+	. "gopkg.in/check.v1"
 	"io/ioutil"
 	"net/url"
 	"os"
 	"sort"
 	"strconv"
 	"strings"
-
-	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
-	. "gopkg.in/check.v1"
 )
 
 // test list buckets
@@ -382,6 +381,19 @@ func (s *OssutilCommandSuite) TestListBucketIDKey(c *C) {
 	showElapse, err = cm.RunCommand(command, args, options)
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
+
+	options = OptionMapType{
+		"endpoint":        &endpoint,
+		"accessKeyID":     &accessKeyID,
+		"accessKeySecret": &accessKeySecret,
+		"stsToken":        &str,
+		"configFile":      &cfile,
+		"limitedNum":      &limitedNum,
+		"item":            "v2",
+	}
+	showElapse, err = cm.RunCommand(command, args, options)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
 }
 
 // list multipart
@@ -543,35 +555,69 @@ func (s *OssutilCommandSuite) TestListLimitedMarker(c *C) {
 	objects := s.listLimitedMarker(bucketName, "", "ls ", -1, "", "", c)
 	c.Assert(len(objects), Equals, 5)
 
+	objects = s.listLimitedMarker(bucketName, "", "ls --item v2 ", -1, "", "", c)
+	c.Assert(len(objects), Equals, 5)
+
 	objects = s.listLimitedMarker(bucketName, "", "ls -a ", -1, "", "", c)
 	c.Assert(len(objects), Equals, 10)
 
+	objects = s.listLimitedMarker(bucketName, "", "ls -a --item v2 ", -1, "", "", c)
+	c.Assert(len(objects), Equals, 10)
+
 	objects = s.listLimitedMarker(bucketName, "", "ls -m ", -1, "", "", c)
+	c.Assert(len(objects), Equals, 5)
+
+	objects = s.listLimitedMarker(bucketName, "", "ls -m --item v2", -1, "", "", c)
 	c.Assert(len(objects), Equals, 5)
 
 	// normal list
 	objects = s.listLimitedMarker(bucketName, "", "ls ", 6, "", "", c)
 	c.Assert(len(objects), Equals, 5)
 
+	objects = s.listLimitedMarker(bucketName, "", "ls --item v2 ", 6, "", "", c)
+	c.Assert(len(objects), Equals, 5)
+
 	objects = s.listLimitedMarker(bucketName, "", "ls -d", 6, "", "", c)
+	c.Assert(len(objects), Equals, 5)
+
+	objects = s.listLimitedMarker(bucketName, "", "ls -d --item v2", 6, "", "", c)
 	c.Assert(len(objects), Equals, 5)
 
 	objects = s.listLimitedMarker(bucketName, "", "ls ", 2, "", "", c)
 	c.Assert(len(objects), Equals, 2)
 
+	objects = s.listLimitedMarker(bucketName, "", "ls --item v2", 2, "", "", c)
+	c.Assert(len(objects), Equals, 2)
+
 	objects = s.listLimitedMarker(bucketName, "", "ls -d", 2, "", "", c)
+	c.Assert(len(objects), Equals, 2)
+
+	objects = s.listLimitedMarker(bucketName, "", "ls -d --item v2", 2, "", "", c)
 	c.Assert(len(objects), Equals, 2)
 
 	objects = s.listLimitedMarker(bucketName, "", "ls ", 0, "", "", c)
 	c.Assert(len(objects), Equals, 0)
 
+	objects = s.listLimitedMarker(bucketName, "", "ls --item v2", 0, "", "", c)
+	c.Assert(len(objects), Equals, 0)
+
 	objects = s.listLimitedMarker(bucketName, "", "ls ", 2, fmt.Sprintf("%s%d", objectPrefix, 1), "", c)
+	c.Assert(len(objects), Equals, 2)
+
+	objects = s.listLimitedMarker(bucketName, "", "ls --item v2", 2, fmt.Sprintf("%s%d", objectPrefix, 1), "", c)
 	c.Assert(len(objects), Equals, 2)
 
 	objects = s.listLimitedMarker(bucketName, "", "ls ", 2, fmt.Sprintf("%s%d", objectPrefix, 3), "", c)
 	c.Assert(len(objects), Equals, 1)
 
+	objects = s.listLimitedMarker(bucketName, "", "ls --item v2", 2, fmt.Sprintf("%s%d", objectPrefix, 3), "", c)
+	c.Assert(len(objects), Equals, 1)
+
 	objects = s.listLimitedMarker(bucketName, "", "ls ", 2, fmt.Sprintf("%s%d", objectPrefix, 3), "t", c)
+	c.Assert(len(objects), Equals, 1)
+	c.Assert(objects[0], Equals, fmt.Sprintf("%s%d", objectPrefix, 4))
+
+	objects = s.listLimitedMarker(bucketName, "", "ls --item v2", 2, fmt.Sprintf("%s%d", objectPrefix, 3), "t", c)
 	c.Assert(len(objects), Equals, 1)
 	c.Assert(objects[0], Equals, fmt.Sprintf("%s%d", objectPrefix, 4))
 
@@ -579,7 +625,13 @@ func (s *OssutilCommandSuite) TestListLimitedMarker(c *C) {
 	objects = s.listLimitedMarker(bucketName, "", "ls -m", 6, "", "", c)
 	c.Assert(len(objects), Equals, 5)
 
+	objects = s.listLimitedMarker(bucketName, "", "ls -m --item v2", 6, "", "", c)
+	c.Assert(len(objects), Equals, 5)
+
 	objects = s.listLimitedMarker(bucketName, "", "ls -m", 2, "", "", c)
+	c.Assert(len(objects), Equals, 2)
+
+	objects = s.listLimitedMarker(bucketName, "", "ls -m --item v2", 2, "", "", c)
 	c.Assert(len(objects), Equals, 2)
 
 	objects = s.listLimitedMarker(bucketName, "", "ls -m", 2, "", uploadIDs[0], c)
@@ -626,6 +678,9 @@ func (s *OssutilCommandSuite) TestListLimitedMarker(c *C) {
 	c.Assert(len(objects), Equals, 1)
 
 	objects = s.listLimitedMarker(bucketName, "", "ls -a", 4, fmt.Sprintf("%s%d", objectPrefix, 0), uploadIDs[0], c)
+	c.Assert(len(objects), Equals, 4)
+
+	objects = s.listLimitedMarker(bucketName, "", "ls --item v2 -a", 4, fmt.Sprintf("%s%d", objectPrefix, 0), uploadIDs[0], c)
 	c.Assert(len(objects), Equals, 4)
 
 	objects = s.listLimitedMarker(bucketName, "", "ls -a --encoding-type url", 4, url.QueryEscape(fmt.Sprintf("%s%d", objectPrefix, 0)), url.QueryEscape(uploadIDs[0]), c)
@@ -707,6 +762,9 @@ func (s *OssutilCommandSuite) TestListURLEncoding(c *C) {
 	_, err = s.rawListLimitedMarker([]string{"oss://" + bucketName}, "ls --encoding-type url", -1, "", "")
 	c.Assert(err, IsNil)
 
+	_, err = s.rawListLimitedMarker([]string{"oss://" + bucketName}, "ls --item v2 --encoding-type url", -1, "", "")
+	c.Assert(err, IsNil)
+
 	s.removeBucket(bucketName, true, c)
 }
 
@@ -774,6 +832,42 @@ func (s *OssutilCommandSuite) TestListObjectfilterInclude(c *C) {
 	// cleanup
 	os.Remove(testOutFileName)
 	os.RemoveAll(dir)
+
+	options["item"] = "v2"
+
+	testOutFile, _ = os.OpenFile(testOutFileName, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
+	oldStdout = os.Stdout
+	os.Stdout = testOutFile
+	os.Args = cmdline
+	_, err = cm.RunCommand("ls", lsArgs, options)
+	c.Assert(err, IsNil)
+	testOutFile.Close()
+	os.Stdout = oldStdout
+	os.Args = []string{}
+
+	fileBody, err = ioutil.ReadFile(testOutFileName)
+	c.Assert(err, IsNil)
+
+	// Verify
+	files = filterStrsWithInclude(filenames, "*.jpg")
+	for _, filename := range files {
+		c.Assert(strings.Contains(string(fileBody), filename), Equals, true)
+	}
+
+	files = filterStrsWithInclude(filenames, "*.txt")
+	for _, filename := range files {
+		c.Assert(strings.Contains(string(fileBody), filename), Equals, true)
+	}
+
+	files = filterStrsWithInclude(filenames, "*.rtf")
+	for _, filename := range files {
+		c.Assert(strings.Contains(string(fileBody), filename), Equals, false)
+	}
+
+	// cleanup
+	os.Remove(testOutFileName)
+	os.RemoveAll(dir)
+
 	s.removeBucket(bucketName, true, c)
 }
 
@@ -840,6 +934,42 @@ func (s *OssutilCommandSuite) TestListObjectfilterExclude(c *C) {
 	// cleanup
 	os.Remove(testOutFileName)
 	os.RemoveAll(dir)
+
+	options["item"] = "v2"
+
+	testOutFile, _ = os.OpenFile(testOutFileName, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
+	oldStdout = os.Stdout
+	os.Stdout = testOutFile
+	os.Args = cmdline
+	_, err = cm.RunCommand("ls", lsArgs, options)
+	c.Assert(err, IsNil)
+	testOutFile.Close()
+	os.Stdout = oldStdout
+	os.Args = []string{}
+
+	fileBody, err = ioutil.ReadFile(testOutFileName)
+	c.Assert(err, IsNil)
+
+	// Verify
+	files = filterStrsWithInclude(filenames, "*.jpg")
+	for _, filename := range files {
+		c.Assert(strings.Contains(string(fileBody), filename), Equals, false)
+	}
+
+	files = filterStrsWithInclude(filenames, "*.txt")
+	for _, filename := range files {
+		c.Assert(strings.Contains(string(fileBody), filename), Equals, true)
+	}
+
+	files = filterStrsWithInclude(filenames, "*.rtf")
+	for _, filename := range files {
+		c.Assert(strings.Contains(string(fileBody), filename), Equals, true)
+	}
+
+	// cleanup
+	os.Remove(testOutFileName)
+	os.RemoveAll(dir)
+
 	s.removeBucket(bucketName, true, c)
 }
 
@@ -922,6 +1052,39 @@ func (s *OssutilCommandSuite) TestListDirectoryfilterInclude(c *C) {
 	os.Remove(testOutFileName)
 	os.RemoveAll(dir1)
 	os.RemoveAll(dir2)
+
+	options["item"] = "v2"
+
+	testOutFileName = "ossutil-test-outfile-" + randLowStr(5)
+	testOutFile, _ = os.OpenFile(testOutFileName, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
+	oldStdout = os.Stdout
+	os.Stdout = testOutFile
+	os.Args = cmdline
+	_, err = cm.RunCommand("ls", lsArgs, options)
+	c.Assert(err, IsNil)
+	testOutFile.Close()
+	os.Stdout = oldStdout
+	os.Args = []string{}
+
+	fileBody, err = ioutil.ReadFile(testOutFileName)
+	c.Assert(err, IsNil)
+
+	// Verify
+	c.Assert(strings.Contains(string(fileBody), dir1), Equals, true)
+	for _, filename := range filenames1 {
+		c.Assert(strings.Contains(string(fileBody), filename), Equals, false)
+	}
+
+	c.Assert(strings.Contains(string(fileBody), dir2), Equals, false)
+	for _, filename := range filenames2 {
+		c.Assert(strings.Contains(string(fileBody), filename), Equals, false)
+	}
+
+	// cleanup
+	os.Remove(testOutFileName)
+	os.RemoveAll(dir1)
+	os.RemoveAll(dir2)
+
 	s.removeBucket(bucketName, true, c)
 }
 
@@ -1000,6 +1163,36 @@ func (s *OssutilCommandSuite) TestListDirectoryfilterExclude(c *C) {
 		c.Assert(strings.Contains(string(fileBody), filename), Equals, false)
 	}
 
+	// cleanup
+	os.Remove(testOutFileName)
+	os.RemoveAll(dir1)
+	os.RemoveAll(dir2)
+
+	options["item"] = "v2"
+
+	testOutFile, _ = os.OpenFile(testOutFileName, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
+	oldStdout = os.Stdout
+	os.Stdout = testOutFile
+	os.Args = cmdline
+	_, err = cm.RunCommand("ls", lsArgs, options)
+	c.Assert(err, IsNil)
+	testOutFile.Close()
+	os.Stdout = oldStdout
+	os.Args = []string{}
+
+	fileBody, err = ioutil.ReadFile(testOutFileName)
+	c.Assert(err, IsNil)
+
+	// Verify
+	c.Assert(strings.Contains(string(fileBody), dir1), Equals, false)
+	for _, filename := range filenames1 {
+		c.Assert(strings.Contains(string(fileBody), filename), Equals, false)
+	}
+
+	c.Assert(strings.Contains(string(fileBody), dir2), Equals, true)
+	for _, filename := range filenames2 {
+		c.Assert(strings.Contains(string(fileBody), filename), Equals, false)
+	}
 	// cleanup
 	os.Remove(testOutFileName)
 	os.RemoveAll(dir1)
@@ -1482,5 +1675,44 @@ func (s *OssutilCommandSuite) TestListDirectoryfilterIncludeVersions(c *C) {
 	os.Remove(testOutFileName)
 	os.RemoveAll(dir1)
 	os.RemoveAll(dir2)
+
+	bDirectory = true
+	allVersions = true
+	options["directory"] = &bDirectory
+	options["allVersions"] = &allVersions
+	options[OptionItem] = "v2"
+
+	testOutFileName = "ossutil-test-outfile-" + randLowStr(5)
+	testOutFile, _ = os.OpenFile(testOutFileName, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0664)
+	oldStdout = os.Stdout
+	os.Stdout = testOutFile
+	os.Args = cmdline
+	_, err = cm.RunCommand("ls", lsArgs, options)
+	c.Assert(err, IsNil)
+	testOutFile.Close()
+	os.Stdout = oldStdout
+	os.Args = []string{}
+
+	fileBody2, err := ioutil.ReadFile(testOutFileName)
+	c.Assert(err, IsNil)
+
+	// Verify
+	c.Assert(strings.Contains(string(fileBody2), dir1), Equals, true)
+	for _, filename := range filenames1 {
+		c.Assert(strings.Contains(string(fileBody2), filename), Equals, false)
+	}
+
+	c.Assert(strings.Contains(string(fileBody), dir2), Equals, false)
+	for _, filename := range filenames2 {
+		c.Assert(strings.Contains(string(fileBody), filename), Equals, false)
+	}
+
+	c.Assert(string(fileBody2),Equals,string(fileBody))
+
+	// cleanup
+	os.Remove(testOutFileName)
+	os.RemoveAll(dir1)
+	os.RemoveAll(dir2)
+
 	s.removeBucket(bucketName, true, c)
 }
