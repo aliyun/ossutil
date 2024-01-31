@@ -39,7 +39,6 @@ var specChineseList = SpecText{
     ?：匹配单个字符
     [sequence]：匹配sequence的任意字符
     [!sequence]：匹配不在sequence的任意字符
-    注意：规则不支持带目录的格式，e.g.，--include "/usr/*/test/*.jpg"。
 
     --include和--exclude可以出现多次。当多个规则出现时，这些规则按从左往右的顺序应用
 
@@ -169,10 +168,10 @@ var specChineseList = SpecText{
         Object Number is: 1
         0.066567(s) elapsed
     
-    14) ossutil ls oss://bucket --include "*.avi" --include "*.mp4" --exclude "*.png" --exclude "*.jpg"
+    14) ossutil ls oss://bucket --include "*.avi" --include "dir1/*" --exclude "*.png" --exclude "*.jpg"
         LastModifiedTime                   Size(B)  StorageClass   ETAG                                  ObjectName
-        2019-05-30 14:23:51 +0800 CST         1030      Standard   4A902D176BE0EE4224BC196BBB8CCC69      oss://bucket/test.avi
-        2019-05-30 14:24:05 +0800 CST         1030      Standard   4A902D176BE0EE4224BC196BBB8CCC69      oss://bucket/test.mp4
+        2019-05-30 14:23:51 +0800 CST         1030      Standard   4A902D176BE0EE4224BC196BBB8CCC69      oss://bucket/dir1/test.avi
+        2019-05-30 14:24:05 +0800 CST         1030      Standard   4A902D176BE0EE4224BC196BBB8CCC69      oss://bucket/dir1/test.mp4
         Object Number is: 2
 
     15) ossutil ls oss://bucket --all-versions
@@ -214,7 +213,6 @@ var specEnglishList = SpecText{
     ?: Matches any single character
     [sequence]: Matches any character in sequence
     [!sequence]: Matches any character not in sequence
-    Note: does not support patterns containing directory info. e.g., --include "/usr/*/test/*.jpg" 
 
     Any number of these parameters can be passed to a command. You can do this by providing an --exclude
     or --include argument multiple times, e.g.,
@@ -351,10 +349,10 @@ Usage:
         Object Number is: 1
         0.066567(s) elapsed
     
-    14) ossutil ls oss://bucket --include "*.avi" --include "*.mp4" --exclude "*.png" --exclude "*.jpg"
+    14) ossutil ls oss://bucket --include "*.avi" --include "dir1/*" --exclude "*.png" --exclude "*.jpg"
         LastModifiedTime                   Size(B)  StorageClass   ETAG                                  ObjectName
-        2019-05-30 14:23:51 +0800 CST         1030      Standard   4A902D176BE0EE4224BC196BBB8CCC69      oss://bucket/test.avi
-        2019-05-30 14:24:05 +0800 CST         1030      Standard   4A902D176BE0EE4224BC196BBB8CCC69      oss://bucket/test.mp4
+        2019-05-30 14:23:51 +0800 CST         1030      Standard   4A902D176BE0EE4224BC196BBB8CCC69      oss://bucket/dir1/test.avi
+        2019-05-30 14:24:05 +0800 CST         1030      Standard   4A902D176BE0EE4224BC196BBB8CCC69      oss://bucket/dir1/test.mp4
         Object Number is: 2
     15) ossutil ls oss://bucket[/prefix] --all-versions
 `,

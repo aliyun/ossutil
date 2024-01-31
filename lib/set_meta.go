@@ -160,11 +160,11 @@ Headers:
     (2)ossutil set-meta oss://bucket1/o X-Oss-Meta-empty:#Content-Type:plain/text --update -r
         批量更新以o开头的objects的X-Oss-Meta-empty和Content-Type头域
 
-    (3)ossutil set-meta oss://bucket1/ X-Oss-Meta-empty:#Content-Type:plain/text --update -r --include "*.jpg"
-        批量更新后缀为.jpg的objects的X-Oss-Meta-empty和Content-Type头域
+    (3)ossutil set-meta oss://bucket1/ X-Oss-Meta-empty:#Content-Type:plain/text --update -r --include "dir1/*" --include "*.jpg"
+        批量更新dir1目录下且后缀为.jpg的objects的X-Oss-Meta-empty和Content-Type头域
 
-    (4)ossutil set-meta oss://bucket1/o X-Oss-Meta-empty:#Content-Type:plain/text --update -r --exclude "*.jpg"
-        批量更新以o开头后缀为.jpg的objects的X-Oss-Meta-empty和Content-Type头域
+    (4)ossutil set-meta oss://bucket1/o X-Oss-Meta-empty:#Content-Type:plain/text --update -r --exclude "*.jpg" --exclude "oss/*"
+        批量更新以o开头排除oss目录且后缀不为.jpg的objects的X-Oss-Meta-empty和Content-Type头域
 
     (5)ossutil set-meta oss://bucket1/obj1 X-Oss-Meta-delete --delete
         删除obj1的X-Oss-Meta-delete头域
@@ -281,11 +281,11 @@ Usage:
     (2)ossutil set-meta oss://bucket1/o X-Oss-Meta-empty:#Content-Type:plain/text -u -r
         Batch update X-Oss-Meta-empty and Content-Type header on objects that start with o
 
-    (3)ossutil set-meta oss://bucket1/ X-Oss-Meta-empty:#Content-Type:plain/text --update -r --include "*.jpg"
-        Batch update X-Oss-Meta-empty and Content-Type header on objects ending with .jpg
+    (3)ossutil set-meta oss://bucket1/ X-Oss-Meta-empty:#Content-Type:plain/text --update -r --include "dir1/*" --include "*.jpg"
+        Batch update X-Oss-Meta-empty and Content-Type header on objects in dir1 directory ending with .jpg
 
-    (4)ossutil set-meta oss://bucket1/o X-Oss-Meta-empty:#Content-Type:plain/text --update -r --exclude ".jpg"
-        Batch update X-Oss-Meta-empty and Content-Type header on objects starting with o and ending with .jpg
+    (4)ossutil set-meta oss://bucket1/o X-Oss-Meta-empty:#Content-Type:plain/text --update -r --exclude ".jpg" --exclude "oss/*"
+        Batch update X-Oss-Meta-empty and Content-Type header on objects starting with o,exclude oss directory  and ending not with .jpg
 
     (5)ossutil set-meta oss://bucket1/obj1 X-Oss-Meta-delete -d
         Delete X-Oss-Meta-delete header of obj1 
