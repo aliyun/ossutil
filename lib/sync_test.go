@@ -2235,3 +2235,85 @@ func (s *OssutilCommandSuite) TestSyncUploadSubSymlinkDir(c *C) {
 	os.RemoveAll(dirName)
 	s.removeBucket(bucketName, true, c)
 }
+
+func (s *OssutilCommandSuite) TestSyncWithOnlyShowErrors(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	// dir1
+	dirName := "testdir1-" + randLowStr(3)
+	fileName1 := "test-ossutil-file-" + randStr(3)
+	subDirName := "subdir1-" + randLowStr(4)
+	os.MkdirAll(dirName+string(os.PathSeparator)+subDirName+string(os.PathSeparator), 0755)
+	s.createFile(dirName+string(os.PathSeparator)+fileName1, "123", c)
+
+	dirName2 := "dest-" + dirName
+	fileName2 := "test-ossutil-file-" + randStr(5)
+	os.MkdirAll(dirName2, 0755)
+	s.createFile(dirName2+string(os.PathSeparator)+fileName2, "123", c)
+
+	// upload dir
+	syncArgs := []string{dirName2, CloudURLToString(bucketName, "")}
+	str := ""
+	cpDir := CheckpointDir
+	bForce := true
+	routines := strconv.Itoa(Routines)
+	options := OptionMapType{
+		"endpoint":           &str,
+		"accessKeyID":        &str,
+		"accessKeySecret":    &str,
+		"configFile":         &configFile,
+		"checkpointDir":      &cpDir,
+		"routines":           &routines,
+		"force":              &bForce,
+		OptionOnlyShowErrors: &bForce,
+	}
+
+	syncFile := "ossutil_sync." + randLowStr(5)
+	var outFile *os.File
+	outFile, _ = os.OpenFile(syncFile, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0660)
+	defer outFile.Close()
+	os.Stdout = outFile
+	_, err := cm.RunCommand("sync", syncArgs, options)
+	os.Stdout = out
+	c.Assert(err, IsNil)
+	outPut := s.readFile(syncFile, c)
+	testLogger.Println(outPut)
+	c.Assert(outPut == "", Equals, true)
+	os.Remove(syncFile)
+
+	// download
+	backupDir := "test-backup-dir" + randLowStr(3)
+	options["backupDir"] = &backupDir
+	syncArgs = []string{CloudURLToString(bucketName, ""), dirName}
+	outFile, _ = os.OpenFile(syncFile, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0660)
+	defer outFile.Close()
+	os.Stdout = outFile
+	_, err = cm.RunCommand("sync", syncArgs, options)
+	os.Stdout = out
+	c.Assert(err, IsNil)
+	outPut = s.readFile(syncFile, c)
+	testLogger.Println(outPut)
+	c.Assert(outPut == "", Equals, true)
+	os.Remove(syncFile)
+
+	os.RemoveAll(backupDir)
+	options[OptionDelete] = &bForce
+	options["backupDir"] = &backupDir
+	syncArgs = []string{CloudURLToString(bucketName, ""), dirName}
+	outFile, _ = os.OpenFile(syncFile, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0660)
+	defer outFile.Close()
+	os.Stdout = outFile
+	_, err = cm.RunCommand("sync", syncArgs, options)
+	os.Stdout = out
+	c.Assert(err, IsNil)
+	outPut = s.readFile(syncFile, c)
+	testLogger.Println(outPut)
+	c.Assert(strings.Contains(outPut, "object"), Equals, true)
+	os.Remove(syncFile)
+
+	os.RemoveAll(dirName)
+	os.RemoveAll(dirName2)
+	os.RemoveAll(backupDir)
+	s.removeBucket(bucketName, true, c)
+}

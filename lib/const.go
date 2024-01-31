@@ -105,6 +105,7 @@ const (
 	OptionCloudBoxID                 = "cloudBoxID"
 	OptionQueryParam                 = "queryParam"
 	OptionForcePathStyle             = "forcePathStyle"
+	OptionOnlyShowErrors             = "onlyShowErrors"
 	OptionRuntime                    = "runtime"
 )
 

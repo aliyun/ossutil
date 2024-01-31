@@ -429,7 +429,7 @@ var syncCommand = SyncCommand{
 			OptionRegion,
 			OptionCloudBoxID,
 			OptionForcePathStyle,
-
+			OptionOnlyShowErrors,
 			// The following options are only supported by sc command, not supported by cp command
 			OptionDelete,
 			OptionBackupDir,

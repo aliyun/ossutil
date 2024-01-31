@@ -1289,3 +1289,210 @@ func (s *OssutilCommandSuite) TestRestoreProducer(c *C) {
 
 	os.Remove(emptyContentFileName)
 }
+
+func (s *OssutilCommandSuite) TestRestoreObjectWithOnlyShowError(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucketWithStorageClass(bucketName, StorageArchive, c)
+
+	//put object to archive bucket
+	object := "恢复文件" + randStr(5)
+	data := randStr(20)
+	s.createFile(uploadFileName, data, c)
+	s.putObject(bucketName, object, uploadFileName, c)
+
+	// get object status
+	objectStat := s.getStat(bucketName, object, c)
+	c.Assert(objectStat["X-Oss-Storage-Class"], Equals, StorageArchive)
+	_, ok := objectStat["X-Oss-Restore"]
+	c.Assert(ok, Equals, false)
+
+	out = os.Stdout
+	cpFile := "ossutil_restore." + randLowStr(5)
+	os.Args = []string{"", "restore", CloudURLToString(bucketName, object), "--only-show-errors", "--config-file=" + configFile}
+	var outFile *os.File
+	outFile, _ = os.OpenFile(cpFile, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0660)
+	defer outFile.Close()
+	os.Stdout = outFile
+	err := ParseAndRunCommand()
+	os.Stdout = out
+	c.Assert(err, IsNil)
+	outPut := s.readFile(cpFile, c)
+	testLogger.Println(outPut)
+	c.Assert(outPut == "", Equals, true)
+	os.Remove(cpFile)
+
+	// get object status
+	objectStat = s.getStat(bucketName, object, c)
+	c.Assert(objectStat["X-Oss-Storage-Class"], Equals, StorageArchive)
+	c.Assert(objectStat["X-Oss-Restore"], Equals, "ongoing-request=\"true\"")
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestRestoreObjectFileBasicWithOnlyShowErrors(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucketWithStorageClass(bucketName, StorageArchive, c)
+
+	data := randStr(20)
+	s.createFile(uploadFileName, data, c)
+	object1 := "restore" + randStr(5)
+	object2 := "restore" + randStr(5)
+	object3 := "restore" + randStr(5)
+	object4 := "restore" + randStr(5)
+	s.putObject(bucketName, object1, uploadFileName, c)
+	s.putObject(bucketName, object2, uploadFileName, c)
+	s.putObject(bucketName, object3, uploadFileName, c)
+	s.putObject(bucketName, object4, uploadFileName, c)
+
+	objectStat := s.getStat(bucketName, object1, c)
+	c.Assert(objectStat["X-Oss-Storage-Class"], Equals, StorageArchive)
+	_, ok := objectStat["X-Oss-Restore"]
+	c.Assert(ok, Equals, false)
+
+	objectStat = s.getStat(bucketName, object2, c)
+	c.Assert(objectStat["X-Oss-Storage-Class"], Equals, StorageArchive)
+	_, ok = objectStat["X-Oss-Restore"]
+	c.Assert(ok, Equals, false)
+
+	content := object1 + "\n" + object2 + "\n" + object3 + "\n" + object4
+	s.createFile(objectFileName, content, c)
+
+	out = os.Stdout
+	cpFile := "ossutil_restore." + randLowStr(5)
+	os.Args = []string{"", "restore", CloudURLToString(bucketName, ""), fmt.Sprintf("--object-file=%s", objectFileName), "-f", "--only-show-errors", "--config-file=" + configFile}
+	var outFile *os.File
+	outFile, _ = os.OpenFile(cpFile, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0660)
+	defer outFile.Close()
+	os.Stdout = outFile
+	err := ParseAndRunCommand()
+	os.Stdout = out
+	c.Assert(err, IsNil)
+	outPut := s.readFile(cpFile, c)
+	testLogger.Println(outPut)
+	c.Assert(outPut == "", Equals, true)
+	os.Remove(cpFile)
+
+	objectStat = s.getStat(bucketName, object1, c)
+	c.Assert(objectStat["X-Oss-Storage-Class"], Equals, StorageArchive)
+	c.Assert(objectStat["X-Oss-Restore"], Equals, "ongoing-request=\"true\"")
+
+	objectStat = s.getStat(bucketName, object2, c)
+	c.Assert(objectStat["X-Oss-Storage-Class"], Equals, StorageArchive)
+	c.Assert(objectStat["X-Oss-Restore"], Equals, "ongoing-request=\"true\"")
+
+	objectStat = s.getStat(bucketName, object3, c)
+	c.Assert(objectStat["X-Oss-Storage-Class"], Equals, StorageArchive)
+	c.Assert(objectStat["X-Oss-Restore"], Equals, "ongoing-request=\"true\"")
+
+	objectStat = s.getStat(bucketName, object4, c)
+	c.Assert(objectStat["X-Oss-Storage-Class"], Equals, StorageArchive)
+	c.Assert(objectStat["X-Oss-Restore"], Equals, "ongoing-request=\"true\"")
+
+	os.Remove(objectFileName)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestRestoreObjectFileBasicWithOnlyShowErrorsAndForce(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucketWithStorageClass(bucketName, StorageArchive, c)
+
+	data := randStr(20)
+	s.createFile(uploadFileName, data, c)
+	object1 := "restore" + randStr(5)
+	object2 := "restore" + randStr(5)
+	object3 := "restore" + randStr(5)
+	object4 := "restore" + randStr(5)
+	s.putObject(bucketName, object1, uploadFileName, c)
+	s.putObject(bucketName, object2, uploadFileName, c)
+	s.putObject(bucketName, object3, uploadFileName, c)
+	s.putObject(bucketName, object4, uploadFileName, c)
+
+	objectStat := s.getStat(bucketName, object1, c)
+	c.Assert(objectStat["X-Oss-Storage-Class"], Equals, StorageArchive)
+	_, ok := objectStat["X-Oss-Restore"]
+	c.Assert(ok, Equals, false)
+
+	objectStat = s.getStat(bucketName, object2, c)
+	c.Assert(objectStat["X-Oss-Storage-Class"], Equals, StorageArchive)
+	_, ok = objectStat["X-Oss-Restore"]
+	c.Assert(ok, Equals, false)
+
+	content := object1 + "\n" + object2 + "\n" + object3 + "\n" + object4
+	s.createFile(objectFileName, content, c)
+
+	str := ""
+	routines := strconv.Itoa(Routines)
+	isTrue := true
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"stsToken":        &str,
+		"configFile":      &configFile,
+		"recursive":       &isTrue,
+		"routines":        &routines,
+		"objectFile":      &objectFileName,
+	}
+
+	out = os.Stdout
+	rpFile := "ossutil_restore." + randLowStr(5)
+	var outFile *os.File
+	outFile, _ = os.OpenFile(rpFile, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0660)
+	defer outFile.Close()
+	os.Stdout = outFile
+	args := []string{CloudURLToString(bucketName, "")}
+	_, err := cm.RunCommand("restore", args, options)
+	c.Assert(err, IsNil)
+	os.Stdout = out
+	c.Assert(err, IsNil)
+	outPut := s.readFile(rpFile, c)
+	testLogger.Println(outPut)
+	c.Assert(strings.Contains(outPut, "Do you really "), Equals, true)
+	os.Remove(rpFile)
+
+	outFile, _ = os.OpenFile(rpFile, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0660)
+	defer outFile.Close()
+	os.Stdout = outFile
+	args = []string{CloudURLToString(bucketName, "")}
+	_, err = cm.RunCommand("restore", args, options)
+	c.Assert(err, IsNil)
+	os.Stdout = out
+	c.Assert(err, IsNil)
+	outPut = s.readFile(rpFile, c)
+	testLogger.Println(outPut)
+	c.Assert(strings.Contains(outPut, "Succeed"), Equals, true)
+	os.Remove(rpFile)
+
+	objectStat = s.getStat(bucketName, object1, c)
+	c.Assert(objectStat["X-Oss-Storage-Class"], Equals, StorageArchive)
+	c.Assert(objectStat["X-Oss-Restore"], Equals, "ongoing-request=\"true\"")
+
+	objectStat = s.getStat(bucketName, object2, c)
+	c.Assert(objectStat["X-Oss-Storage-Class"], Equals, StorageArchive)
+	c.Assert(objectStat["X-Oss-Restore"], Equals, "ongoing-request=\"true\"")
+
+	objectStat = s.getStat(bucketName, object3, c)
+	c.Assert(objectStat["X-Oss-Storage-Class"], Equals, StorageArchive)
+	c.Assert(objectStat["X-Oss-Restore"], Equals, "ongoing-request=\"true\"")
+
+	objectStat = s.getStat(bucketName, object4, c)
+	c.Assert(objectStat["X-Oss-Storage-Class"], Equals, StorageArchive)
+	c.Assert(objectStat["X-Oss-Restore"], Equals, "ongoing-request=\"true\"")
+
+	outFile, _ = os.OpenFile(rpFile, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0660)
+	defer outFile.Close()
+	os.Stdout = outFile
+	options[OptionOnlyShowErrors] = &isTrue
+	options[OptionForce] = &isTrue
+	args = []string{CloudURLToString(bucketName, "")}
+	_, err = cm.RunCommand("restore", args, options)
+	c.Assert(err, IsNil)
+	os.Stdout = out
+	c.Assert(err, IsNil)
+	outPut = s.readFile(rpFile, c)
+	testLogger.Println(outPut)
+	c.Assert(outPut == "", Equals, true)
+	os.Remove(rpFile)
+
+	os.Remove(objectFileName)
+	s.removeBucket(bucketName, true, c)
+}
