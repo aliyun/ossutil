@@ -2,6 +2,7 @@ package lib
 
 import (
 	"bufio"
+	"encoding/base64"
 	"fmt"
 	"os"
 	"runtime"
@@ -323,9 +324,12 @@ var configCommand = ConfigCommand{
 			OptionSTSToken,
 			OptionOutputDir,
 			OptionLanguage,
+			OptionAesKey,
 		},
 	},
 }
+
+var strArray = []string{OptionAccessKeyID, OptionAccessKeySecret, OptionSTSToken}
 
 // function for RewriteLoadConfiger interface
 func (cc *ConfigCommand) rewriteLoadConfig(configFile string) error {
@@ -375,14 +379,17 @@ func (cc *ConfigCommand) RunCommand() error {
 	language, _ := GetString(OptionLanguage, cc.command.options)
 	delete(cc.command.options, OptionLanguage)
 
+	aesKey, _ := GetString(OptionAesKey, cc.command.options)
+	delete(cc.command.options, OptionAesKey)
+
 	// filter user input options
 	cc.filterNonInputOptions()
 
 	var err error
 	if len(cc.command.options) == 0 {
-		err = cc.runCommandInteractive(configFile, language)
+		err = cc.runCommandInteractive(configFile, language, aesKey)
 	} else {
-		err = cc.runCommandNonInteractive(configFile, language)
+		err = cc.runCommandNonInteractive(configFile, language, aesKey)
 	}
 	return err
 }
@@ -395,7 +402,7 @@ func (cc *ConfigCommand) filterNonInputOptions() {
 	}
 }
 
-func (cc *ConfigCommand) runCommandInteractive(configFile, language string) error {
+func (cc *ConfigCommand) runCommandInteractive(configFile, language, aesKey string) error {
 	llanguage := strings.ToLower(language)
 	if llanguage == LEnglishLanguage {
 		fmt.Println("The command creates a configuration file and stores credentials.")
@@ -419,6 +426,21 @@ func (cc *ConfigCommand) runCommandInteractive(configFile, language string) erro
 		}
 	}
 
+	if aesKey == "" {
+		if llanguage == LEnglishLanguage {
+			fmt.Printf("\nPlease enter the AES key of encrypt ak/sk:")
+		} else {
+			fmt.Printf("\n请输入加密ak/sk的公钥：")
+		}
+		if _, err := fmt.Scanln(&aesKey); err != nil {
+			if llanguage == LEnglishLanguage {
+				fmt.Println("No aes key entered, will use the default value " + AesKey + ".")
+			} else {
+				fmt.Println("未输入加密ak/sk的公钥，将使用默认值：" + AesKey + "。")
+			}
+		}
+	}
+
 	configFile = DecideConfigFile(configFile)
 	if llanguage == LEnglishLanguage {
 		fmt.Println("For the following settings, carriage return means skip the configuration. Please try \"help config\" to see the meaning of the settings")
@@ -426,20 +448,24 @@ func (cc *ConfigCommand) runCommandInteractive(configFile, language string) erro
 		fmt.Println("对于下述配置，回车将跳过相关配置项的设置，配置项的具体含义，请使用\"help config\"命令查看。")
 	}
 
-	if err := cc.configInteractive(configFile, language); err != nil {
+	if aesKey == "" {
+		aesKey = AesKey
+	}
+
+	if err := cc.configInteractive(configFile, language, aesKey); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (cc *ConfigCommand) configInteractive(configFile, language string) error {
+func (cc *ConfigCommand) configInteractive(configFile, language, aesKey string) error {
 	var val string
 	config := configparser.NewConfiguration()
 	section := config.NewSection(CREDSection)
-
 	// if config file not exist, config Language
 	llanguage := strings.ToLower(language)
 	section.Add(OptionLanguage, language)
+	section.Add(OptionAesKey, base64.StdEncoding.EncodeToString([]byte(aesKey)))
 	if _, err := os.Stat(configFile); err != nil {
 		if llanguage == LEnglishLanguage {
 			fmt.Printf("Please enter language(%s, default is:%s, the configuration will go into effect after the command successfully executed):", OptionMap[OptionLanguage].minVal, DefaultLanguage)
@@ -483,7 +509,12 @@ func (cc *ConfigCommand) configInteractive(configFile, language string) error {
 		}
 
 		if len(val) > 0 {
-			section.Add(name, val)
+			if name == OptionAccessKeyID || name == OptionAccessKeySecret || name == OptionSTSToken {
+				encryptStr, _ := EncryptSecret(val, aesKey)
+				section.Add(name, encryptStr)
+			} else {
+				section.Add(name, val)
+			}
 		} else if OptionMap[name].def != "" {
 			section.Add(name, OptionMap[name].def)
 		}
@@ -495,14 +526,23 @@ func (cc *ConfigCommand) configInteractive(configFile, language string) error {
 	return nil
 }
 
-func (cc *ConfigCommand) runCommandNonInteractive(configFile, language string) error {
+func (cc *ConfigCommand) runCommandNonInteractive(configFile, language, aesKey string) error {
 	configFile = DecideConfigFile(configFile)
 	config := configparser.NewConfiguration()
 	section := config.NewSection(CREDSection)
 	section.Add(OptionLanguage, language)
+	if aesKey == "" {
+		aesKey = AesKey
+	}
+	section.Add(OptionAesKey, base64.StdEncoding.EncodeToString([]byte(aesKey)))
 	for name := range CredOptionMap {
 		if val, _ := GetString(name, cc.command.options); val != "" {
-			section.Add(name, val)
+			if name == OptionAccessKeyID || name == OptionAccessKeySecret || name == OptionSTSToken {
+				encryptStr, _ := EncryptSecret(strings.TrimSpace(val), aesKey)
+				section.Add(name, encryptStr)
+			} else {
+				section.Add(name, val)
+			}
 		}
 	}
 	if err := configparser.Save(config, configFile); err != nil {

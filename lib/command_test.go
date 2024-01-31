@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"encoding/base64"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -190,8 +191,13 @@ func (s *OssutilCommandSuite) SetUpPayerEnv(c *C) {
 	}`
 	s.putBucketPolicy(payerBucket, policy, c)
 
+	aesKey := AesKey
+	entAccessKeyID, _ := EncryptSecret(strings.TrimSpace(payerAccessKeyID), aesKey)
+	entAccessKeySecret, _ := EncryptSecret(strings.TrimSpace(payerAccessKeySecret), aesKey)
+	aesKeyBase64 := base64.StdEncoding.EncodeToString([]byte(AesKey))
+
 	//set payerConfigfile
-	data := fmt.Sprintf("[Credentials]\nlanguage=EN\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n", payerBucketEndPoint, payerAccessKeyID, payerAccessKeySecret)
+	data := fmt.Sprintf("[Credentials]\nlanguage=EN\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\naesKey=%s\n", payerBucketEndPoint, entAccessKeyID, entAccessKeySecret, aesKeyBase64)
 	s.createFile(payerConfigFile, data, c)
 }
 
@@ -282,10 +288,13 @@ func (s *OssutilCommandSuite) AppendObject(bucketName string, object string, bod
 func (s *OssutilCommandSuite) configNonInteractive(c *C) {
 	command := "config"
 	var args []string
+	aesKey := AesKey
+
 	options := OptionMapType{
 		"endpoint":        &endpoint,
 		"accessKeyID":     &accessKeyID,
 		"accessKeySecret": &accessKeySecret,
+		"aesKey":          &aesKey,
 		"configFile":      &configFile,
 	}
 	showElapse, err := cm.RunCommand(command, args, options)
@@ -294,11 +303,12 @@ func (s *OssutilCommandSuite) configNonInteractive(c *C) {
 
 	opts, err := LoadConfig(configFile)
 	c.Assert(err, IsNil)
-	c.Assert(len(opts), Equals, 4)
+	c.Assert(len(opts), Equals, 5)
 	c.Assert(opts[OptionLanguage], Equals, DefaultLanguage)
 	c.Assert(opts[OptionEndpoint], Equals, endpoint)
 	c.Assert(opts[OptionAccessKeyID], Equals, accessKeyID)
 	c.Assert(opts[OptionAccessKeySecret], Equals, accessKeySecret)
+	c.Assert(opts[OptionAesKey], Equals, aesKey)
 }
 
 func (s *OssutilCommandSuite) createFile(fileName, content string, c *C) {
@@ -2800,8 +2810,13 @@ func (s *OssutilCommandSuite) TestFilterObjectFromChanWithPatterns(c *C) {
 func (s *OssutilCommandSuite) TestCommandLoglevel(c *C) {
 	cfile := "ossutil-config" + randLowStr(8)
 	level := "info"
-	data := "[Credentials]" + "\n" + "language=" + DefaultLanguage + "\n" + "accessKeyID=" + accessKeyID + "\n" + "accessKeySecret=" + accessKeySecret + "\n" + "endpoint=" +
-		endpoint + "\n" + "[Default]" + "\n" + "loglevel=" + level + "\n"
+	aesKey := AesKey
+	entAccessKeyID, _ := EncryptSecret(strings.TrimSpace(accessKeyID), aesKey)
+	entAccessKeySecret, _ := EncryptSecret(strings.TrimSpace(accessKeySecret), aesKey)
+	aesKeyBase64 := base64.StdEncoding.EncodeToString([]byte(AesKey))
+	data := "[Credentials]" + "\n" + "language=" + DefaultLanguage + "\n" + "accessKeyID=" + entAccessKeyID + "\n" + "accessKeySecret=" + entAccessKeySecret + "\n" + "endpoint=" +
+		endpoint + "\n" + "aesKey=" +
+		aesKeyBase64 + "\n" + "[Default]" + "\n" + "loglevel=" + level + "\n"
 	s.createFile(cfile, data, c)
 
 	f, err := os.Stat(cfile)

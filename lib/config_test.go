@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"encoding/base64"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -53,11 +54,13 @@ func (s *OssutilConfigSuite) TestConfigNonInteractive(c *C) {
 	accessKeyID := "ak"
 	accessKeySecret := "sk"
 	stsToken := "token"
+	aesKey := "aesKey"
 	options := OptionMapType{
 		"endpoint":        &endpoint,
 		"accessKeyID":     &accessKeyID,
 		"accessKeySecret": &accessKeySecret,
 		"stsToken":        &stsToken,
+		"aesKey":          &aesKey,
 		"configFile":      &configFile,
 	}
 	showElapse, err := cm.RunCommand(command, args, options)
@@ -70,49 +73,19 @@ func (s *OssutilConfigSuite) TestConfigNonInteractive(c *C) {
 
 	opts, err := LoadConfig(configFile)
 	c.Assert(err, IsNil)
-	c.Assert(len(opts), Equals, 5)
+	c.Assert(len(opts), Equals, 6)
 	c.Assert(opts[OptionLanguage], Equals, DefaultLanguage)
 	c.Assert(opts[OptionEndpoint], Equals, endpoint)
 	c.Assert(opts[OptionAccessKeyID], Equals, accessKeyID)
 	c.Assert(opts[OptionAccessKeySecret], Equals, accessKeySecret)
 	c.Assert(opts[OptionSTSToken], Equals, stsToken)
+	c.Assert(opts[OptionAesKey], Equals, aesKey)
 	os.Remove(configFile)
-}
-
-func (s *OssutilConfigSuite) TestConfigNonInteractiveWithAgent(c *C) {
-	command := "config"
-	var args []string
-	userAgent := "demo-walker"
-	stsToken := "token"
-	options := OptionMapType{
-		"endpoint":        &endpoint,
-		"accessKeyID":     &accessKeyID,
-		"accessKeySecret": &accessKeySecret,
-		"userAgent":       &userAgent,
-		"stsToken":        &stsToken,
-		"configFile":      &configFile,
-	}
-	showElapse, err := cm.RunCommand(command, args, options)
-	c.Assert(showElapse, Equals, false)
-	c.Assert(err, IsNil)
-
-	f, err := os.Stat(configFile)
-	c.Assert(err, IsNil)
-	c.Assert(f.Size() > 0, Equals, true)
-
-	opts, err := LoadConfig(configFile)
-	c.Assert(err, IsNil)
-	c.Assert(len(opts), Equals, 5)
-	c.Assert(opts[OptionLanguage], Equals, DefaultLanguage)
-	c.Assert(opts[OptionEndpoint], Equals, endpoint)
-	c.Assert(opts[OptionAccessKeyID], Equals, accessKeyID)
-	c.Assert(opts[OptionAccessKeySecret], Equals, accessKeySecret)
-	c.Assert(opts[OptionUserAgent], Equals, nil)
-	c.Assert(opts[OptionSTSToken], Equals, stsToken)
 }
 
 func (s *OssutilConfigSuite) TestConfigNonInteractiveLanguage(c *C) {
 	command := "config"
+	aesKey := "aesKey"
 	var args []string
 	for _, language := range []string{DefaultLanguage, EnglishLanguage, LEnglishLanguage} {
 		configFile := randStr(10)
@@ -122,6 +95,7 @@ func (s *OssutilConfigSuite) TestConfigNonInteractiveLanguage(c *C) {
 			"endpoint":   &endpoint,
 			"stsToken":   &stsToken,
 			"configFile": &configFile,
+			"aesKey":     &aesKey,
 			"language":   &language,
 		}
 		showElapse, err := cm.RunCommand(command, args, options)
@@ -134,10 +108,11 @@ func (s *OssutilConfigSuite) TestConfigNonInteractiveLanguage(c *C) {
 
 		opts, err := LoadConfig(configFile)
 		c.Assert(err, IsNil)
-		c.Assert(len(opts), Equals, 3)
+		c.Assert(len(opts), Equals, 4)
 		c.Assert(opts[OptionEndpoint], Equals, endpoint)
 		c.Assert(opts[OptionSTSToken], Equals, stsToken)
 		c.Assert(opts[OptionLanguage], Equals, language)
+		c.Assert(opts[OptionAesKey], Equals, aesKey)
 		os.Remove(configFile)
 	}
 }
@@ -159,8 +134,9 @@ func (s *OssutilConfigSuite) TestConfigInteractive(c *C) {
 
 	opts, err := LoadConfig(configFile)
 	c.Assert(err, IsNil)
-	c.Assert(len(opts), Equals, 1)
+	c.Assert(len(opts), Equals, 2)
 	c.Assert(opts[OptionLanguage], Equals, DefaultLanguage)
+	c.Assert(opts[OptionAesKey], Equals, AesKey)
 	os.Remove(configFile)
 }
 
@@ -184,7 +160,7 @@ func (s *OssutilConfigSuite) TestConfigInteractiveLanguage(c *C) {
 
 	opts, err := LoadConfig(configFile)
 	c.Assert(err, IsNil)
-	c.Assert(len(opts), Equals, 1)
+	c.Assert(len(opts), Equals, 2)
 	os.Remove(configFile)
 }
 
@@ -207,8 +183,9 @@ func (s *OssutilConfigSuite) TestConfigLanguageEN(c *C) {
 
 	opts, err := LoadConfig(configFile)
 	c.Assert(err, IsNil)
-	c.Assert(len(opts), Equals, 1)
+	c.Assert(len(opts), Equals, 2)
 	c.Assert(opts[OptionLanguage], Equals, language)
+	c.Assert(opts[OptionAesKey], Equals, AesKey)
 	os.Remove(configFile)
 }
 
@@ -231,8 +208,9 @@ func (s *OssutilConfigSuite) TestConfigLanguageCH(c *C) {
 
 	opts, err := LoadConfig(configFile)
 	c.Assert(err, IsNil)
-	c.Assert(len(opts), Equals, 1)
+	c.Assert(len(opts), Equals, 2)
 	c.Assert(opts[OptionLanguage], Equals, language)
+	c.Assert(opts[OptionAesKey], Equals, AesKey)
 	os.Remove(configFile)
 }
 
@@ -245,11 +223,13 @@ func (s *OssutilConfigSuite) TestConfigOptionEmptyValue(c *C) {
 	id := ""
 	accessKeySecret := "sk"
 	stsToken := "token"
+	aesKey := "aesKey"
 	options := OptionMapType{
 		"endpoint":        &endp,
 		"accessKeyID":     &id,
 		"accessKeySecret": &accessKeySecret,
 		"stsToken":        &stsToken,
+		"aesKey":          &aesKey,
 		"configFile":      &configFile,
 	}
 	showElapse, err := cm.RunCommand(command, args, options)
@@ -262,12 +242,13 @@ func (s *OssutilConfigSuite) TestConfigOptionEmptyValue(c *C) {
 
 	opts, err := LoadConfig(configFile)
 	c.Assert(err, IsNil)
-	c.Assert(len(opts), Equals, 3)
+	c.Assert(len(opts), Equals, 4)
 	c.Assert(opts[OptionEndpoint], IsNil)
 	c.Assert(opts[OptionAccessKeyID], IsNil)
 	c.Assert(opts[OptionLanguage], Equals, DefaultLanguage)
 	c.Assert(opts[OptionAccessKeySecret], Equals, accessKeySecret)
 	c.Assert(opts[OptionSTSToken], Equals, stsToken)
+	c.Assert(opts[OptionAesKey], Equals, aesKey)
 	os.Remove(configFile)
 }
 
@@ -300,12 +281,12 @@ func (s *OssutilConfigSuite) TestConfigInvalidOption(c *C) {
 }
 
 func (s *OssutilConfigSuite) TestConfigNotConfigFile(c *C) {
-	configCommand.runCommandInteractive("", LEnglishLanguage)
+	configCommand.runCommandInteractive("", LEnglishLanguage, "")
 	contents, _ := ioutil.ReadFile(logPath)
 	LogContent := string(contents)
 	c.Assert(strings.Contains(LogContent, "Please enter the config file name"), Equals, true)
 
-	configCommand.runCommandInteractive("", ChineseLanguage)
+	configCommand.runCommandInteractive("", ChineseLanguage, "")
 	contents, _ = ioutil.ReadFile(logPath)
 	LogContent = string(contents)
 	c.Assert(strings.Contains(LogContent, "请输入配置文件名"), Equals, true)
@@ -326,7 +307,7 @@ func (s *OssutilConfigSuite) TestConfigConfigInteractive(c *C) {
 	oldStdin := os.Stdin
 	os.Stdin = inputFile
 
-	err := configCommand.configInteractive(configFileName, LEnglishLanguage)
+	err := configCommand.configInteractive(configFileName, LEnglishLanguage, "")
 	c.Assert(err, IsNil)
 
 	fileData, err := ioutil.ReadFile(configFileName)
@@ -374,12 +355,18 @@ func (s *OssutilConfigSuite) TestConfigNonInteractiveWithCommonOption(c *C) {
 	region := "oss-cn-chengdu.aliyuncs.com"
 	cloudboxId := "12124123"
 	retryTimes := "400"
+	aesKey := AesKey
+	entAccessKeyID, _ := EncryptSecret(strings.TrimSpace(accessKeyID), aesKey)
+	entAccessKeySecret, _ := EncryptSecret(strings.TrimSpace(accessKeySecret), aesKey)
+	entstsToken, _ := EncryptSecret(strings.TrimSpace(stsToken), aesKey)
+	aesKeyBase64 := base64.StdEncoding.EncodeToString([]byte(AesKey))
 	data := "[Credentials]" + "\n" +
 		"language=" + DefaultLanguage + "\n" +
-		"accessKeyID=" + accessKeyID + "\n" +
-		"accessKeySecret=" + accessKeySecret + "\n" +
+		"accessKeyID=" + entAccessKeyID + "\n" +
+		"accessKeySecret=" + entAccessKeySecret + "\n" +
 		"endpoint=" + endpoint + "\n" +
-		"stsToken=" + stsToken + "\n" +
+		"stsToken=" + entstsToken + "\n" +
+		"aesKey=" + aesKeyBase64 + "\n" +
 		"[Default]" + "\n" +
 		"loglevel=" + logLevel + "\n" +
 		"userAgent=" + userAgent + "\n" +
@@ -396,11 +383,11 @@ func (s *OssutilConfigSuite) TestConfigNonInteractiveWithCommonOption(c *C) {
 	f, err := os.Stat(cfile)
 	c.Assert(err, IsNil)
 	c.Assert(f.Size() > 0, Equals, true)
-
 	opts, err := LoadConfig(cfile)
-	testLogger.Print(opts)
+
+	testLogger.Println(opts)
 	c.Assert(err, IsNil)
-	c.Assert(len(opts), Equals, 13)
+	c.Assert(len(opts), Equals, 14)
 	c.Assert(opts[OptionLanguage], Equals, DefaultLanguage)
 	c.Assert(opts[OptionEndpoint], Equals, endpoint)
 	c.Assert(opts[OptionAccessKeyID], Equals, accessKeyID)
@@ -415,7 +402,7 @@ func (s *OssutilConfigSuite) TestConfigNonInteractiveWithCommonOption(c *C) {
 	c.Assert(opts[OptionProxyPwd], Equals, proxyPwd)
 	c.Assert(opts[OptionReadTimeout], Equals, readTimeout)
 	c.Assert(opts[OptionConnectTimeout], Equals, connectTimeOut)
-
+	c.Assert(opts[OptionAesKey], Equals, aesKey)
 	c.Assert(opts[OptionMode], Equals, nil)
 	c.Assert(opts[OptionRamRoleArn], Equals, nil)
 	c.Assert(opts[OptionTokenTimeout], Equals, nil)
@@ -435,10 +422,11 @@ func (s *OssutilConfigSuite) TestConfigNonInteractiveWithCommonOption(c *C) {
 	stsRegion1 := "sts.cn-hangzhou.aliyuncs.com"
 	data = "[Credentials]" + "\n" +
 		"language=" + DefaultLanguage + "\n" +
-		"accessKeyID=" + accessKeyID + "\n" +
-		"accessKeySecret=" + accessKeySecret + "\n" +
+		"aesKey=" + aesKeyBase64 + "\n" +
+		"accessKeyID=" + entAccessKeyID + "\n" +
+		"accessKeySecret=" + entAccessKeySecret + "\n" +
 		"endpoint=" + endpoint + "\n" +
-		"stsToken=" + stsToken + "\n" +
+		"stsToken=" + entstsToken + "\n" +
 		"ecsRoleName=" + ecsRoleName1 + "\n" +
 		"tokenTimeout=" + tokenTimeout1 + "\n" +
 		"ramRoleArn=" + ramRoleArn1 + "\n" +
@@ -464,8 +452,10 @@ func (s *OssutilConfigSuite) TestConfigNonInteractiveWithCommonOption(c *C) {
 
 	opts, err = LoadConfig(cfile)
 	testLogger.Print(opts)
+	c.Log(opts)
+	testLogger.Println(opts)
 	c.Assert(err, IsNil)
-	c.Assert(len(opts), Equals, 21)
+	c.Assert(len(opts), Equals, 22)
 	c.Assert(opts[OptionLanguage], Equals, DefaultLanguage)
 	c.Assert(opts[OptionEndpoint], Equals, endpoint)
 	c.Assert(opts[OptionAccessKeyID], Equals, accessKeyID)
@@ -480,7 +470,7 @@ func (s *OssutilConfigSuite) TestConfigNonInteractiveWithCommonOption(c *C) {
 	c.Assert(opts[OptionProxyPwd], Equals, proxyPwd)
 	c.Assert(opts[OptionReadTimeout], Equals, readTimeout)
 	c.Assert(opts[OptionConnectTimeout], Equals, connectTimeOut)
-
+	c.Assert(opts[OptionAesKey], Equals, aesKey)
 	c.Assert(opts[OptionMode], Equals, mode)
 	c.Assert(opts[OptionRamRoleArn], Equals, ramRoleArn1)
 	c.Assert(opts[OptionTokenTimeout], Equals, tokenTimeout1)

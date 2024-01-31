@@ -104,6 +104,7 @@ const (
 	OptionRegion                     = "region"
 	OptionCloudBoxID                 = "cloudBoxID"
 	OptionQueryParam                 = "queryParam"
+	OptionAesKey                     = "aesKey"
 	OptionForcePathStyle             = "forcePathStyle"
 	OptionRuntime                    = "runtime"
 )
