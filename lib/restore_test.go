@@ -1289,3 +1289,85 @@ func (s *OssutilCommandSuite) TestRestoreProducer(c *C) {
 
 	os.Remove(emptyContentFileName)
 }
+
+//TestOssRestoreObject test ossRestoreObject
+func (s *OssutilCommandSuite) TestOssRestoreObject(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucketWithStorageClass(bucketName, StorageColdArchive, c)
+
+	// put object to archive bucket
+	objectName := "ossutil_test_object" + randStr(5)
+	testFileName := "ossutil_test_file" + randStr(5)
+
+	data := randStr(20)
+	s.createFile(testFileName, data, c)
+
+	client, err := oss.New(endpoint, accessKeyID, accessKeySecret)
+	c.Assert(err, IsNil)
+
+	bucket, err := client.Bucket(bucketName)
+	c.Assert(err, IsNil)
+
+	bucket.PutObjectFromFile(objectName, testFileName, oss.ObjectStorageClass(oss.StorageIA))
+
+	restoreCommand.ossRestoreObject(bucket, objectName, "", false)
+
+	stat := s.getStat(bucketName, objectName, c)
+	c.Assert(stat["X-Oss-Storage-Class"], Equals, string(oss.StorageIA))
+	testLogger.Println(stat)
+	objectName1 := "ossutil_Standard_object" + randStr(5)
+
+	bucket.PutObjectFromFile(objectName1, testFileName, oss.ObjectStorageClass(oss.StorageStandard))
+	stat1 := s.getStat(bucketName, objectName1, c)
+	testLogger.Println(stat1)
+	c.Assert(stat1["X-Oss-Storage-Class"], Equals, string(oss.StorageStandard))
+	os.Remove(testFileName)
+}
+
+//TestOssRestoreObjects test ossRestoreObjects
+func (s *OssutilCommandSuite) TestOssRestoreObjects(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucketWithStorageClass(bucketName, StorageColdArchive, c)
+
+	// put object to archive bucket
+	objectAi := "ossutil_IA_object" + randStr(5)
+	objectStandard := "ossutil_Standard_object" + randStr(5)
+	objectArchive := "ossutil_Archive_file" + randStr(5)
+	objectColdArchive := "ossutil_ColdArchive_file" + randStr(5)
+
+	testFileName := "ossutil_test_file" + randStr(5)
+
+	data := randStr(20)
+	s.createFile(testFileName, data, c)
+	client, err := oss.New(endpoint, accessKeyID, accessKeySecret)
+	c.Assert(err, IsNil)
+	bucket, err := client.Bucket(bucketName)
+	c.Assert(err, IsNil)
+
+	bucket.PutObjectFromFile(objectAi, testFileName, oss.ObjectStorageClass(oss.StorageIA))
+	bucket.PutObjectFromFile(objectStandard, testFileName, oss.ObjectStorageClass(oss.StorageStandard))
+	bucket.PutObjectFromFile(objectArchive, testFileName, oss.ObjectStorageClass(oss.StorageArchive))
+	bucket.PutObjectFromFile(objectColdArchive, testFileName, oss.ObjectStorageClass(oss.StorageColdArchive))
+
+	err = s.initRestoreObject([]string{CloudURLToString(bucketName, "")}, "-rf", DefaultOutputDir)
+	c.Assert(err, IsNil)
+	err = restoreCommand.RunCommand()
+	c.Assert(err, IsNil)
+
+	stat := s.getStat(bucketName, objectAi, c)
+	c.Assert(stat["X-Oss-Storage-Class"], Equals, string(oss.StorageIA))
+	testLogger.Println(stat)
+
+	stat1 := s.getStat(bucketName, objectStandard, c)
+	c.Assert(stat1["X-Oss-Storage-Class"], Equals, string(oss.StorageStandard))
+	testLogger.Println(stat1)
+
+	stat2 := s.getStat(bucketName, objectArchive, c)
+	c.Assert(stat2["X-Oss-Storage-Class"], Equals, string(oss.StorageArchive))
+	c.Assert(stat2["X-Oss-Restore"], Equals, "ongoing-request=\"true\"")
+	stat3 := s.getStat(bucketName, objectColdArchive, c)
+	c.Assert(stat3["X-Oss-Storage-Class"], Equals, string(oss.StorageColdArchive))
+	c.Assert(stat3["X-Oss-Restore"], Equals, "ongoing-request=\"true\"")
+
+	os.Remove(testFileName)
+}
