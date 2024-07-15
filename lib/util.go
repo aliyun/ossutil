@@ -219,12 +219,12 @@ func getFilter(cmdline []string) (bool, []filterOptionType) {
 			filter.pattern = strings.Replace(strArg, "[!", "[^", -1)
 			dir, _ := filepath.Split(filter.pattern)
 			if dir != "" {
-				return false, filters
+				filter.isDir = true
+				filter.pattern = strArg
 			}
 			filters = append(filters, filter)
 		}
 	}
-
 	return true, filters
 }
 
@@ -242,21 +242,35 @@ func containsInStrsSlice(vs []string, t string) bool {
 }
 
 func filterSingleStr(v, p string, include bool) bool {
-	_, name := filepath.Split(v)
-	res, _ := filepath.Match(p, name)
-
+	res := filterObject(p, v, false)
 	if include {
 		return res
 	} else {
 		return !res
 	}
 }
-
+func filterSingleDir(v, p string, include bool) bool {
+	res := filterObject(p, v, true)
+	if include {
+		return res
+	} else {
+		return !res
+	}
+}
+func filterObject(p, v string, isDir bool) bool {
+	res := false
+	if isDir {
+		res, _ = filepath.Match(p, v)
+	} else {
+		_, name := filepath.Split(v)
+		res, _ = filepath.Match(p, name)
+	}
+	return res
+}
 func filterStrsWithInclude(vs []string, p string) []string {
 	vsf := make([]string, 0)
 	for _, v := range vs {
-		_, name := filepath.Split(v)
-		res, _ := filepath.Match(p, name)
+		res := filterSingleStr(v, p, true)
 		if res {
 			vsf = append(vsf, v)
 		}
@@ -264,12 +278,32 @@ func filterStrsWithInclude(vs []string, p string) []string {
 	}
 	return vsf
 }
+func filterDirsWithInclude(vs []string, p string) []string {
+	vsf := make([]string, 0)
+	for _, v := range vs {
+		res := filterSingleDir(v, p, true)
+		if res {
+			vsf = append(vsf, v)
+		}
 
+	}
+	return vsf
+}
 func filterStrsWithExclude(vs []string, p string) []string {
 	vsf := make([]string, 0)
 	for _, v := range vs {
-		_, name := filepath.Split(v)
-		res, _ := filepath.Match(p, name)
+		res := filterObject(p, v, false)
+		if !res {
+			vsf = append(vsf, v)
+		}
+
+	}
+	return vsf
+}
+func filterDirsWithExclude(vs []string, p string) []string {
+	vsf := make([]string, 0)
+	for _, v := range vs {
+		res := filterObject(p, v, true)
 		if !res {
 			vsf = append(vsf, v)
 		}
@@ -285,16 +319,33 @@ func matchFiltersForStr(str string, filters []filterOptionType) bool {
 
 	var res bool
 	if filters[0].name == IncludePrompt {
-		res = filterSingleStr(str, filters[0].pattern, true)
+		if filters[0].isDir {
+			res = filterSingleDir(str, filters[0].pattern, true)
+		} else {
+			res = filterSingleStr(str, filters[0].pattern, true)
+		}
 	} else {
-		res = filterSingleStr(str, filters[0].pattern, false)
+		if filters[0].isDir {
+			res = filterSingleDir(str, filters[0].pattern, false)
+		} else {
+			res = filterSingleStr(str, filters[0].pattern, false)
+		}
+
 	}
 
 	for _, filter := range filters[1:] {
 		if filter.name == IncludePrompt {
-			res = res || filterSingleStr(str, filter.pattern, true)
+			if filter.isDir {
+				res = res || filterSingleDir(str, filter.pattern, true)
+			} else {
+				res = res || filterSingleStr(str, filter.pattern, true)
+			}
 		} else {
-			res = res && filterSingleStr(str, filter.pattern, false)
+			if filter.isDir {
+				res = res && filterSingleDir(str, filter.pattern, false)
+			} else {
+				res = res && filterSingleStr(str, filter.pattern, false)
+			}
 		}
 	}
 
@@ -324,16 +375,32 @@ func matchFiltersForStrsInArray(strs []string, filters []filterOptionType) []str
 	vsf := make([]string, 0)
 
 	if filters[0].name == IncludePrompt {
-		vsf = append(vsf, filterStrsWithInclude(strs, filters[0].pattern)...)
+		if filters[0].isDir {
+			vsf = append(vsf, filterDirsWithInclude(strs, filters[0].pattern)...)
+		} else {
+			vsf = append(vsf, filterStrsWithInclude(strs, filters[0].pattern)...)
+		}
 	} else {
-		vsf = append(vsf, filterStrsWithExclude(strs, filters[0].pattern)...)
+		if filters[0].isDir {
+			vsf = append(vsf, filterDirsWithExclude(strs, filters[0].pattern)...)
+		} else {
+			vsf = append(vsf, filterStrsWithExclude(strs, filters[0].pattern)...)
+		}
 	}
 
 	for _, filter := range filters[1:] {
 		if filter.name == IncludePrompt {
-			vsf = append(vsf, filterStrsWithInclude(strs, filter.pattern)...)
+			if filter.isDir {
+				vsf = append(vsf, filterDirsWithInclude(strs, filter.pattern)...)
+			} else {
+				vsf = append(vsf, filterStrsWithInclude(strs, filter.pattern)...)
+			}
 		} else {
-			vsf = filterStrsWithExclude(vsf, filter.pattern)
+			if filter.isDir {
+				vsf = filterDirsWithExclude(vsf, filter.pattern)
+			} else {
+				vsf = filterStrsWithExclude(vsf, filter.pattern)
+			}
 		}
 	}
 
@@ -341,8 +408,8 @@ func matchFiltersForStrsInArray(strs []string, filters []filterOptionType) []str
 }
 
 // Following for files
-
 func doesSingleFileMatchPatterns(filename string, filters []filterOptionType) bool {
+	filename = toLinux(filename)
 	if len(filters) == 0 {
 		return true
 	}
@@ -356,6 +423,26 @@ func doesSingleFileMatchPatterns(filename string, filters []filterOptionType) bo
 	return false
 }
 
+// toLinux windows "\\" turn to "/"
+func toLinux(filename string) string {
+	if strings.Contains(filename, "\\") {
+		filename = strings.ReplaceAll(filename, "\\", "/")
+	}
+	return filename
+}
+
+// getFullFilePath from fileInfoType get the full file name
+func getFullFilePath(v fileInfoType) string {
+	fullFilePath := v.dir + v.filePath
+	fullFilePath = toLinux(fullFilePath)
+	return fullFilePath
+}
+
+// getFullObjectKey from objectInfoType get the full object name
+func getFullObjectKey(v objectInfoType) string {
+	objectKey := v.prefix + v.relativeKey
+	return objectKey
+}
 func containsInFileSlice(vs []fileInfoType, t fileInfoType) bool {
 	if len(vs) == 0 {
 		return false
@@ -372,9 +459,20 @@ func containsInFileSlice(vs []fileInfoType, t fileInfoType) bool {
 func filterFilesWithInclude(vs []fileInfoType, p string) []fileInfoType {
 	vsf := make([]fileInfoType, 0)
 	for _, v := range vs {
-		_, filename := filepath.Split(v.filePath)
-		res, _ := filepath.Match(p, filename)
+		res := filterObject(p, v.filePath, false)
+		if res {
+			vsf = append(vsf, v)
+		}
 
+	}
+	return vsf
+}
+
+func filterFilesDirWithInclude(vs []fileInfoType, p string) []fileInfoType {
+	vsf := make([]fileInfoType, 0)
+	for _, v := range vs {
+		name := getFullFilePath(v)
+		res := filterObject(p, name, true)
 		if res {
 			vsf = append(vsf, v)
 		}
@@ -386,8 +484,19 @@ func filterFilesWithInclude(vs []fileInfoType, p string) []fileInfoType {
 func filterFilesWithExclude(vs []fileInfoType, p string) []fileInfoType {
 	vsf := make([]fileInfoType, 0)
 	for _, v := range vs {
-		_, filename := filepath.Split(v.filePath)
-		res, _ := filepath.Match(p, filename)
+		res := filterObject(p, v.filePath, false)
+		if !res {
+			vsf = append(vsf, v)
+		}
+
+	}
+	return vsf
+}
+func filterFilesDirWithExclude(vs []fileInfoType, p string) []fileInfoType {
+	vsf := make([]fileInfoType, 0)
+	for _, v := range vs {
+		name := getFullFilePath(v)
+		res := filterObject(p, name, true)
 		if !res {
 			vsf = append(vsf, v)
 		}
@@ -418,7 +527,17 @@ func filterObjectsWithInclude(vs []objectInfoType, p string) []objectInfoType {
 	vsf := make([]objectInfoType, 0)
 	for _, v := range vs {
 		_, key := filepath.Split(v.relativeKey)
-		//_, key := filepath.Split(v.key)
+		res, _ := filepath.Match(p, key)
+		if res {
+			vsf = append(vsf, v)
+		}
+	}
+	return vsf
+}
+func filterObjectsWithIncludeDir(vs []objectInfoType, p string) []objectInfoType {
+	vsf := make([]objectInfoType, 0)
+	for _, v := range vs {
+		key := getFullObjectKey(v)
 		res, _ := filepath.Match(p, key)
 		if res {
 			vsf = append(vsf, v)
@@ -430,10 +549,19 @@ func filterObjectsWithInclude(vs []objectInfoType, p string) []objectInfoType {
 func filterObjectsWithExclude(vs []objectInfoType, p string) []objectInfoType {
 	vsf := make([]objectInfoType, 0)
 	for _, v := range vs {
-		_, key := filepath.Split(v.relativeKey)
-		//_, key := filepath.Split(v.key)
-		res, _ := filepath.Match(p, key)
-		if !res {
+		res := filterSingleStr(v.relativeKey, p, false)
+		if res {
+			vsf = append(vsf, v)
+		}
+	}
+	return vsf
+}
+func filterObjectsWithExcludeDir(vs []objectInfoType, p string) []objectInfoType {
+	vsf := make([]objectInfoType, 0)
+	for _, v := range vs {
+		key := getFullObjectKey(v)
+		res := filterSingleDir(key, p, false)
+		if res {
 			vsf = append(vsf, v)
 		}
 	}
@@ -449,13 +577,27 @@ func matchFiltersForObjects(objects []objectInfoType, filters []filterOptionType
 
 	for i, filter := range filters {
 		if filter.name == IncludePrompt {
-			vsf = append(vsf, filterObjectsWithInclude(objects, filter.pattern)...)
-		} else {
-			if i == 0 {
-				vsf = append(vsf, filterObjectsWithExclude(objects, filter.pattern)...)
+			if filter.isDir {
+				vsf = append(vsf, filterObjectsWithIncludeDir(objects, filter.pattern)...)
 			} else {
-				vsf = filterObjectsWithExclude(vsf, filter.pattern)
+				vsf = append(vsf, filterObjectsWithInclude(objects, filter.pattern)...)
 			}
+
+		} else {
+			if filter.isDir {
+				if i == 0 {
+					vsf = append(vsf, filterObjectsWithExcludeDir(objects, filter.pattern)...)
+				} else {
+					vsf = filterObjectsWithExcludeDir(vsf, filter.pattern)
+				}
+			} else {
+				if i == 0 {
+					vsf = append(vsf, filterObjectsWithExclude(objects, filter.pattern)...)
+				} else {
+					vsf = filterObjectsWithExclude(vsf, filter.pattern)
+				}
+			}
+
 		}
 	}
 
@@ -533,7 +675,7 @@ func currentHomeDir() string {
 	return homeDir
 }
 
-func getCurrentDirFileListCommon(dpath string, chFiles chan<- fileInfoType, filters []filterOptionType) error {
+func getCurrentDirFileListCommon(dpath string, chFiles chan<- fileInfoType, filters []filterOptionType, dest bool) error {
 	if !strings.HasSuffix(dpath, string(os.PathSeparator)) {
 		dpath += string(os.PathSeparator)
 	}
@@ -550,20 +692,24 @@ func getCurrentDirFileListCommon(dpath string, chFiles chan<- fileInfoType, filt
 				// for symlink
 				continue
 			}
-
-			if doesSingleFileMatchPatterns(fileInfo.Name(), filters) {
+			if dest {
 				chFiles <- fileInfoType{fileInfo.Name(), dpath}
+			} else {
+				if doesSingleFileMatchPatterns(fileInfo.Name(), filters) {
+					chFiles <- fileInfoType{fileInfo.Name(), dpath}
+				}
 			}
+
 		}
 	}
 	return nil
 }
 
 func getFileListCommon(dpath string, chFiles chan<- fileInfoType, onlyCurrentDir bool, disableAllSymlink bool,
-	enableSymlinkDir bool, filters []filterOptionType) error {
+	enableSymlinkDir bool, filters []filterOptionType, dest bool) error {
 	defer close(chFiles)
 	if onlyCurrentDir {
-		return getCurrentDirFileListCommon(dpath, chFiles, filters)
+		return getCurrentDirFileListCommon(dpath, chFiles, filters, dest)
 	}
 
 	name := dpath
@@ -583,11 +729,16 @@ func getFileListCommon(dpath string, chFiles chan<- fileInfoType, onlyCurrentDir
 
 		if f.IsDir() {
 			if fpath != dpath {
-				if strings.HasSuffix(fileName, "\\") || strings.HasSuffix(fileName, "/") {
-					chFiles <- fileInfoType{fileName, name}
-				} else {
-					chFiles <- fileInfoType{fileName + string(os.PathSeparator), name}
+				if !dest {
+					if doesSingleFileMatchPatterns(fpath, filters) {
+						if strings.HasSuffix(fileName, "\\") || strings.HasSuffix(fileName, "/") {
+							chFiles <- fileInfoType{fileName, name}
+						} else {
+							chFiles <- fileInfoType{fileName + string(os.PathSeparator), name}
+						}
+					}
 				}
+
 			}
 			return nil
 		}
@@ -614,9 +765,12 @@ func getFileListCommon(dpath string, chFiles chan<- fileInfoType, onlyCurrentDir
 				return nil
 			}
 		}
-
-		if doesSingleFileMatchPatterns(fileName, filters) {
+		if dest {
 			chFiles <- fileInfoType{fileName, name}
+		} else {
+			if doesSingleFileMatchPatterns(fpath, filters) {
+				chFiles <- fileInfoType{fileName, name}
+			}
 		}
 		return nil
 	}
@@ -639,7 +793,7 @@ func getFileListCommon(dpath string, chFiles chan<- fileInfoType, onlyCurrentDir
 }
 
 func getObjectListCommon(bucket *oss.Bucket, cloudURL CloudURL, chObjects chan<- objectInfoType,
-	onlyCurrentDir bool, filters []filterOptionType, payerOptions []oss.Option) error {
+	onlyCurrentDir bool, filters []filterOptionType, payerOptions []oss.Option, dest bool) error {
 	defer close(chObjects)
 	pre := oss.Prefix(cloudURL.object)
 	marker := oss.Marker("")
@@ -667,8 +821,7 @@ func getObjectListCommon(bucket *oss.Bucket, cloudURL CloudURL, chObjects chan<-
 				prefix = object.Key[:index+1]
 				relativeKey = object.Key[index+1:]
 			}
-
-			if doesSingleObjectMatchPatterns(object.Key, filters) {
+			if dest {
 				if strings.ToLower(object.Type) == "symlink" {
 					props, err := bucket.GetObjectDetailedMeta(object.Key, payerOptions...)
 					if err != nil {
@@ -684,6 +837,24 @@ func getObjectListCommon(bucket *oss.Bucket, cloudURL CloudURL, chObjects chan<-
 					object.Size = size
 				}
 				chObjects <- objectInfoType{prefix, relativeKey, int64(object.Size), object.LastModified}
+			} else {
+				if doesSingleObjectMatchPatterns(object.Key, filters) {
+					if strings.ToLower(object.Type) == "symlink" {
+						props, err := bucket.GetObjectDetailedMeta(object.Key, payerOptions...)
+						if err != nil {
+							LogError("ossGetObjectStatRetry error info:%s\n", err.Error())
+							return err
+						}
+						size, err := strconv.ParseInt(props.Get(oss.HTTPHeaderContentLength), 10, 64)
+						if err != nil {
+							LogError("strconv.ParseInt error info:%s\n", err.Error())
+							return err
+
+						}
+						object.Size = size
+					}
+					chObjects <- objectInfoType{prefix, relativeKey, int64(object.Size), object.LastModified}
+				}
 			}
 		}
 

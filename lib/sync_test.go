@@ -848,6 +848,59 @@ func (s *OssutilCommandSuite) TestSyncUploadIncludeFilterSuccess(c *C) {
 	s.removeBucket(bucketName, true, c)
 }
 
+func (s *OssutilCommandSuite) TestSyncUploadIncludeDirFilterSuccess(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	text := randLowStr(100)
+	// dir
+	dirName := "testdir1-" + randLowStr(3)
+	fileName := "testfile-" + randLowStr(5)
+
+	testFileName1 := dirName + string(os.PathSeparator) + fileName + ".txt"
+	object1 := fileName + ".txt"
+	testFileName2 := dirName + string(os.PathSeparator) + fileName + ".jpg"
+	object2 := fileName + ".jpg"
+
+	err := os.MkdirAll(dirName, 0755)
+	s.createFile(testFileName1, text, c)
+	s.createFile(testFileName2, text, c)
+
+	// sync dir to oss
+	syncArgs := []string{dirName, CloudURLToString(bucketName, "")}
+	cmdline := []string{"ossutil", "sync", dirName, CloudURLToString(bucketName, ""), "-f", "--include", dirName + "/*"}
+	str := ""
+	cpDir := CheckpointDir
+	bForce := true
+	routines := strconv.Itoa(Routines)
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+		"checkpointDir":   &cpDir,
+		"routines":        &routines,
+		"force":           &bForce,
+	}
+
+	os.Args = cmdline
+	_, err = cm.RunCommand("sync", syncArgs, options)
+	os.Args = []string{}
+	c.Assert(err, IsNil)
+
+	//check, get stat
+	objectStat := s.getStat(bucketName, object1, c)
+	etag := objectStat["Etag"]
+	c.Assert(len(etag) > 0, Equals, true)
+
+	objectStat = s.getStat(bucketName, object2, c)
+	etag = objectStat["Etag"]
+	c.Assert(len(etag) > 0, Equals, true)
+
+	os.RemoveAll(dirName)
+	s.removeBucket(bucketName, true, c)
+}
+
 func (s *OssutilCommandSuite) TestSyncDownloadIncludeFilter(c *C) {
 	bucketName := bucketNamePrefix + randLowStr(10)
 	s.putBucket(bucketName, c)
@@ -875,6 +928,88 @@ func (s *OssutilCommandSuite) TestSyncDownloadIncludeFilter(c *C) {
 
 	syncArgs := []string{CloudURLToString(bucketName, ""), dirName}
 	cmdline := []string{"ossutil", "sync", CloudURLToString(bucketName, ""), dirName, "-f", "--include", "*.txt"}
+	str := ""
+	cpDir := CheckpointDir
+	bForce := true
+	bDelete := true
+	backupDir := "test-backup-dir"
+	routines := strconv.Itoa(Routines)
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+		"checkpointDir":   &cpDir,
+		"routines":        &routines,
+		"force":           &bForce,
+		"delete":          &bDelete,
+		"backupDir":       &backupDir,
+	}
+
+	os.Args = cmdline
+	_, err = cm.RunCommand("sync", syncArgs, options)
+	os.Args = []string{}
+	c.Assert(err, IsNil)
+
+	//check, txt object exist
+	objectStat := s.getStat(bucketName, object1, c)
+	etag := objectStat["Etag"]
+	c.Assert(len(etag) > 0, Equals, true)
+
+	//check, jpg object exist
+	objectStat = s.getStat(bucketName, object2, c)
+	etag = objectStat["Etag"]
+	c.Assert(len(etag) > 0, Equals, true)
+
+	//check, jpg file exist
+	_, err = os.Stat(testFileName1)
+	c.Assert(err, IsNil)
+
+	//check, jpg file exist
+	_, err = os.Stat(testFileName2)
+	c.Assert(err, IsNil)
+
+	//check, file not exist
+	_, err = os.Stat(testFileName3)
+	c.Assert(err, NotNil)
+
+	//check, backup file exist
+	backupFile := backupDir + string(os.PathSeparator) + "dest-" + fileName + ".txt"
+	_, err = os.Stat(backupFile)
+	c.Assert(err, IsNil)
+
+	os.RemoveAll(dirName)
+	os.RemoveAll(backupDir)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestSyncDownloadIncludeDirFilter(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	text := randLowStr(100)
+	// dir
+	dirName := "testdir1-" + randLowStr(3)
+	fileName := "testfile-" + randLowStr(5)
+
+	testFileName1 := dirName + string(os.PathSeparator) + fileName + ".txt"
+	object1 := dirName + "/" + fileName + ".txt"
+	testFileName2 := dirName + string(os.PathSeparator) + fileName + ".jpg"
+	object2 := dirName + "/" + fileName + ".jpg"
+
+	err := os.MkdirAll(dirName, 0755)
+	s.createFile(testFileName1, text, c)
+	s.createFile(testFileName2, text, c)
+
+	// raw cp to oss
+	_, err = s.rawCP(dirName, CloudURLToString(bucketName, dirName), true, true, false, DefaultBigFileThreshold, CheckpointDir)
+	c.Assert(err, IsNil)
+
+	testFileName3 := dirName + string(os.PathSeparator) + "dest-" + fileName + ".txt"
+	s.createFile(testFileName3, text, c)
+
+	syncArgs := []string{CloudURLToString(bucketName, dirName), dirName}
+	cmdline := []string{"ossutil", "sync", CloudURLToString(bucketName, ""), dirName, "-f", "--include", dirName + "/*"}
 	str := ""
 	cpDir := CheckpointDir
 	bForce := true
@@ -997,6 +1132,534 @@ func (s *OssutilCommandSuite) TestSyncCopyIncludeFilter(c *C) {
 
 	os.RemoveAll(dirName)
 	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestSyncCopyIncludeDirFilter(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	text := randLowStr(100)
+	// dir
+	dirName := "testdir1-" + randLowStr(3)
+	fileName := "testfile-" + randLowStr(5)
+
+	testFileName1 := dirName + string(os.PathSeparator) + fileName + ".txt"
+	object1 := fileName + ".txt"
+	testFileName2 := dirName + string(os.PathSeparator) + fileName + ".jpg"
+	object2 := fileName + ".jpg"
+
+	err := os.MkdirAll(dirName, 0755)
+	s.createFile(testFileName1, text, c)
+	s.createFile(testFileName2, text, c)
+
+	prefix1 := "prefix1"
+	prefix2 := "prefix2"
+
+	// raw cp to oss
+	_, err = s.rawCP(dirName, CloudURLToString(bucketName, prefix1), true, true, false, DefaultBigFileThreshold, CheckpointDir)
+	c.Assert(err, IsNil)
+
+	syncArgs := []string{CloudURLToString(bucketName, prefix1), CloudURLToString(bucketName, prefix2)}
+	cmdline := []string{"ossutil", "sync", CloudURLToString(bucketName, prefix1), CloudURLToString(bucketName, prefix2), "-f", "--include", prefix1 + "/*"}
+	str := ""
+	cpDir := CheckpointDir
+	bForce := true
+	routines := strconv.Itoa(Routines)
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+		"checkpointDir":   &cpDir,
+		"routines":        &routines,
+		"force":           &bForce,
+	}
+
+	os.Args = cmdline
+	_, err = cm.RunCommand("sync", syncArgs, options)
+	os.Args = []string{}
+	c.Assert(err, IsNil)
+
+	//check, txt object exist
+	objectStat := s.getStat(bucketName, prefix1+"/"+object1, c)
+	etag := objectStat["Etag"]
+	c.Assert(len(etag) > 0, Equals, true)
+
+	//check, jpg object exist
+	objectStat = s.getStat(bucketName, prefix1+"/"+object2, c)
+	etag = objectStat["Etag"]
+	c.Assert(len(etag) > 0, Equals, true)
+
+	//check, txt object exist
+	objectStat = s.getStat(bucketName, prefix2+"/"+object1, c)
+	etag = objectStat["Etag"]
+	c.Assert(len(etag) > 0, Equals, true)
+
+	//check, jpg object exist
+	objectStat = s.getStat(bucketName, prefix2+"/"+object2, c)
+	etag = objectStat["Etag"]
+	c.Assert(len(etag) > 0, Equals, true)
+
+	os.RemoveAll(dirName)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestSyncUploadExcludeFilterSuccess(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	text := randLowStr(100)
+	// dir
+	dirName := "testdir1-" + randLowStr(3)
+	fileName := "testfile-" + randLowStr(5)
+
+	testFileName1 := dirName + string(os.PathSeparator) + fileName + ".txt"
+	object1 := fileName + ".txt"
+	testFileName2 := dirName + string(os.PathSeparator) + fileName + ".jpg"
+	object2 := fileName + ".jpg"
+
+	err := os.MkdirAll(dirName, 0755)
+	s.createFile(testFileName1, text, c)
+	s.createFile(testFileName2, text, c)
+
+	// sync dir to oss
+	syncArgs := []string{dirName, CloudURLToString(bucketName, "")}
+	cmdline := []string{"ossutil", "sync", dirName, CloudURLToString(bucketName, ""), "-f", "--exclude", "*.txt"}
+	str := ""
+	cpDir := CheckpointDir
+	bForce := true
+	routines := strconv.Itoa(Routines)
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+		"checkpointDir":   &cpDir,
+		"routines":        &routines,
+		"force":           &bForce,
+	}
+
+	os.Args = cmdline
+	_, err = cm.RunCommand("sync", syncArgs, options)
+	os.Args = []string{}
+	c.Assert(err, IsNil)
+
+	//check, get stat
+	objectStat := s.getStat(bucketName, object2, c)
+	etag := objectStat["Etag"]
+	c.Assert(len(etag) > 0, Equals, true)
+
+	_, err = s.rawGetStat(bucketName, object1)
+	c.Assert(err, NotNil)
+
+	os.RemoveAll(dirName)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestSyncUploadExcludeDirFilterSuccess(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	text := randLowStr(100)
+	// dir
+	dirName := "testdir1-" + randLowStr(3)
+	fileName := "testfile-" + randLowStr(5)
+
+	testFileName1 := dirName + string(os.PathSeparator) + fileName + ".txt"
+	object1 := fileName + ".txt"
+	testFileName2 := dirName + string(os.PathSeparator) + fileName + ".jpg"
+	object2 := fileName + ".jpg"
+
+	err := os.MkdirAll(dirName, 0755)
+	s.createFile(testFileName1, text, c)
+	s.createFile(testFileName2, text, c)
+
+	// sync dir to oss
+	syncArgs := []string{dirName, CloudURLToString(bucketName, "")}
+	cmdline := []string{"ossutil", "sync", dirName, CloudURLToString(bucketName, ""), "-f", "--exclude", dirName + "/*"}
+	str := ""
+	cpDir := CheckpointDir
+	bForce := true
+	routines := strconv.Itoa(Routines)
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+		"checkpointDir":   &cpDir,
+		"routines":        &routines,
+		"force":           &bForce,
+	}
+
+	os.Args = cmdline
+	_, err = cm.RunCommand("sync", syncArgs, options)
+	os.Args = []string{}
+	c.Assert(err, IsNil)
+
+	//check, get stat
+	_, err = s.rawGetStat(bucketName, object1)
+	c.Assert(err, NotNil)
+
+	_, err = s.rawGetStat(bucketName, object2)
+	c.Assert(err, NotNil)
+
+	os.RemoveAll(dirName)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestSyncDownloadExcludeFilter(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	text := randLowStr(100)
+	// dir
+	dirName := "testdir1-" + randLowStr(3)
+	fileName := "testfile-" + randLowStr(5)
+
+	testFileName1 := dirName + string(os.PathSeparator) + fileName + ".txt"
+	object1 := fileName + ".txt"
+	testFileName2 := dirName + string(os.PathSeparator) + fileName + ".jpg"
+	object2 := fileName + ".jpg"
+
+	err := os.MkdirAll(dirName, 0755)
+	s.createFile(testFileName1, text, c)
+	s.createFile(testFileName2, text, c)
+
+	// raw cp to oss
+	_, err = s.rawCP(dirName, CloudURLToString(bucketName, ""), true, true, false, DefaultBigFileThreshold, CheckpointDir)
+	c.Assert(err, IsNil)
+
+	testFileName3 := dirName + string(os.PathSeparator) + "dest-" + fileName + ".txt"
+	s.createFile(testFileName3, text, c)
+
+	syncArgs := []string{CloudURLToString(bucketName, ""), dirName}
+	cmdline := []string{"ossutil", "sync", CloudURLToString(bucketName, ""), dirName, "-f", "--exclude", "*.txt"}
+	str := ""
+	cpDir := CheckpointDir
+	bForce := true
+	bDelete := true
+	backupDir := "test-backup-dir"
+	routines := strconv.Itoa(Routines)
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+		"checkpointDir":   &cpDir,
+		"routines":        &routines,
+		"force":           &bForce,
+		"delete":          &bDelete,
+		"backupDir":       &backupDir,
+	}
+
+	os.Args = cmdline
+	_, err = cm.RunCommand("sync", syncArgs, options)
+	os.Args = []string{}
+	c.Assert(err, IsNil)
+
+	//check, txt object exist
+	objectStat := s.getStat(bucketName, object1, c)
+	etag := objectStat["Etag"]
+	c.Assert(len(etag) > 0, Equals, true)
+
+	//check, jpg object exist
+	objectStat = s.getStat(bucketName, object2, c)
+	etag = objectStat["Etag"]
+	c.Assert(len(etag) > 0, Equals, true)
+
+	//check, jpg file exist
+	_, err = os.Stat(testFileName1)
+	c.Assert(err, NotNil)
+
+	//check, jpg file exist
+	_, err = os.Stat(testFileName2)
+	c.Assert(err, IsNil)
+
+	//check, file not exist
+	_, err = os.Stat(testFileName3)
+	c.Assert(err, NotNil)
+
+	//check, backup file exist
+	backupFile := backupDir + string(os.PathSeparator) + "dest-" + fileName + ".txt"
+	_, err = os.Stat(backupFile)
+	c.Assert(err, IsNil)
+
+	os.RemoveAll(dirName)
+	os.RemoveAll(backupDir)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestSyncDownloadExcludeDirFilter(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	text := randLowStr(100)
+	// dir
+	dirName := "testdir1-" + randLowStr(3)
+	fileName := "testfile-" + randLowStr(5)
+
+	testFileName1 := dirName + string(os.PathSeparator) + fileName + ".txt"
+	object1 := dirName + "/" + fileName + ".txt"
+	testFileName2 := dirName + string(os.PathSeparator) + fileName + ".jpg"
+	object2 := dirName + "/" + fileName + ".jpg"
+
+	err := os.MkdirAll(dirName, 0755)
+	s.createFile(testFileName1, text, c)
+	s.createFile(testFileName2, text, c)
+
+	// raw cp to oss
+	_, err = s.rawCP(dirName, CloudURLToString(bucketName, dirName), true, true, false, DefaultBigFileThreshold, CheckpointDir)
+	c.Assert(err, IsNil)
+
+	testFileName3 := dirName + string(os.PathSeparator) + "dest-" + fileName + ".txt"
+	s.createFile(testFileName3, text, c)
+
+	syncArgs := []string{CloudURLToString(bucketName, dirName), dirName}
+	cmdline := []string{"ossutil", "sync", CloudURLToString(bucketName, ""), dirName, "-f", "--exclude", dirName + "/*"}
+	str := ""
+	cpDir := CheckpointDir
+	bForce := true
+	bDelete := true
+	backupDir := "test-backup-dir"
+	routines := strconv.Itoa(Routines)
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+		"checkpointDir":   &cpDir,
+		"routines":        &routines,
+		"force":           &bForce,
+		"delete":          &bDelete,
+		"backupDir":       &backupDir,
+	}
+
+	os.Args = cmdline
+	_, err = cm.RunCommand("sync", syncArgs, options)
+	os.Args = []string{}
+	c.Assert(err, IsNil)
+
+	//check, txt object exist
+	objectStat := s.getStat(bucketName, object1, c)
+	etag := objectStat["Etag"]
+	c.Assert(len(etag) > 0, Equals, true)
+
+	//check, jpg object exist
+	objectStat = s.getStat(bucketName, object2, c)
+	etag = objectStat["Etag"]
+	c.Assert(len(etag) > 0, Equals, true)
+
+	//check, jpg file exist
+	_, err = os.Stat(testFileName1)
+	c.Assert(err, NotNil)
+
+	//check, jpg file exist
+	_, err = os.Stat(testFileName2)
+	c.Assert(err, NotNil)
+
+	//check, file not exist
+	_, err = os.Stat(testFileName3)
+	c.Assert(err, NotNil)
+
+	//check, backup file exist
+	backupFile := backupDir + string(os.PathSeparator) + "dest-" + fileName + ".txt"
+	_, err = os.Stat(backupFile)
+	c.Assert(err, IsNil)
+
+	os.RemoveAll(dirName)
+	os.RemoveAll(backupDir)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestSyncCopyExcludeFilter(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	text := randLowStr(100)
+	// dir
+	dirName := "testdir1-" + randLowStr(3)
+	fileName := "testfile-" + randLowStr(5)
+
+	testFileName1 := dirName + string(os.PathSeparator) + fileName + ".txt"
+	object1 := fileName + ".txt"
+	testFileName2 := dirName + string(os.PathSeparator) + fileName + ".jpg"
+	object2 := fileName + ".jpg"
+
+	err := os.MkdirAll(dirName, 0755)
+	s.createFile(testFileName1, text, c)
+	s.createFile(testFileName2, text, c)
+
+	prefix1 := "prefix1"
+	prefix2 := "prefix2"
+
+	// raw cp to oss
+	_, err = s.rawCP(dirName, CloudURLToString(bucketName, prefix1), true, true, false, DefaultBigFileThreshold, CheckpointDir)
+	c.Assert(err, IsNil)
+
+	syncArgs := []string{CloudURLToString(bucketName, prefix1), CloudURLToString(bucketName, prefix2)}
+	cmdline := []string{"ossutil", "sync", CloudURLToString(bucketName, prefix1), CloudURLToString(bucketName, prefix2), "-f", "--exclude", "*.txt"}
+	str := ""
+	cpDir := CheckpointDir
+	bForce := true
+	routines := strconv.Itoa(Routines)
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+		"checkpointDir":   &cpDir,
+		"routines":        &routines,
+		"force":           &bForce,
+	}
+
+	os.Args = cmdline
+	_, err = cm.RunCommand("sync", syncArgs, options)
+	os.Args = []string{}
+	c.Assert(err, IsNil)
+
+	//check, txt object exist
+	objectStat := s.getStat(bucketName, prefix1+"/"+object1, c)
+	etag := objectStat["Etag"]
+	c.Assert(len(etag) > 0, Equals, true)
+
+	//check, jpg object exist
+	objectStat = s.getStat(bucketName, prefix1+"/"+object2, c)
+	etag = objectStat["Etag"]
+	c.Assert(len(etag) > 0, Equals, true)
+
+	//check, txt object exist
+	objectStat = s.getStat(bucketName, prefix2+"/"+object2, c)
+	etag = objectStat["Etag"]
+	c.Assert(len(etag) > 0, Equals, true)
+
+	//check, jpg object exist
+	_, err = s.rawGetStat(bucketName, prefix2+"/"+object1)
+	c.Assert(err, NotNil)
+
+	os.RemoveAll(dirName)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestSyncCopyExcludeDirFilter(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	text := randLowStr(100)
+	// dir
+	dirName := "testdir1-" + randLowStr(3)
+	fileName := "testfile-" + randLowStr(5)
+
+	testFileName1 := dirName + string(os.PathSeparator) + fileName + ".txt"
+	object1 := fileName + ".txt"
+	testFileName2 := dirName + string(os.PathSeparator) + fileName + ".jpg"
+	object2 := fileName + ".jpg"
+
+	err := os.MkdirAll(dirName, 0755)
+	s.createFile(testFileName1, text, c)
+	s.createFile(testFileName2, text, c)
+
+	prefix1 := "prefix1"
+	prefix2 := "prefix2"
+
+	// raw cp to oss
+	_, err = s.rawCP(dirName, CloudURLToString(bucketName, prefix1), true, true, false, DefaultBigFileThreshold, CheckpointDir)
+	c.Assert(err, IsNil)
+
+	syncArgs := []string{CloudURLToString(bucketName, prefix1), CloudURLToString(bucketName, prefix2)}
+	cmdline := []string{"ossutil", "sync", CloudURLToString(bucketName, prefix1), CloudURLToString(bucketName, prefix2), "-f", "--exclude", prefix1 + "/*"}
+	str := ""
+	cpDir := CheckpointDir
+	bForce := true
+	routines := strconv.Itoa(Routines)
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+		"checkpointDir":   &cpDir,
+		"routines":        &routines,
+		"force":           &bForce,
+	}
+
+	os.Args = cmdline
+	_, err = cm.RunCommand("sync", syncArgs, options)
+	os.Args = []string{}
+	c.Assert(err, IsNil)
+
+	//check, txt object exist
+	objectStat := s.getStat(bucketName, prefix1+"/"+object1, c)
+	etag := objectStat["Etag"]
+	c.Assert(len(etag) > 0, Equals, true)
+
+	//check, jpg object exist
+	objectStat = s.getStat(bucketName, prefix1+"/"+object2, c)
+	etag = objectStat["Etag"]
+	c.Assert(len(etag) > 0, Equals, true)
+
+	//check, txt object not exist
+	_, err = s.rawGetStat(bucketName, prefix2+"/"+object1)
+	c.Assert(err, NotNil)
+	_, err = s.rawGetStat(bucketName, prefix2+"/"+object2)
+	c.Assert(err, NotNil)
+
+	os.RemoveAll(dirName)
+	s.removeBucket(bucketName, true, c)
+}
+
+func (s *OssutilCommandSuite) TestSyncCopyExcludeDirAndIncludeDirFilter(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	destBucketName := bucketName + "-dest"
+	s.putBucket(destBucketName, c)
+	// dir1
+	dirName1 := "testdir1-" + randLowStr(3)
+	subDirName1 := "subdir1-" + randLowStr(4)
+	filePrefix1 := "prefix1"
+	fileNameList1 := s.prepareTestFiles(dirName1, subDirName1, filePrefix1, "", 3, c)
+
+	// upload dir2 without prefix on destBucket
+	_, err := s.rawCP(dirName1, CloudURLToString(bucketName, dirName1), true, true, false, DefaultBigFileThreshold, CheckpointDir)
+	c.Assert(err, IsNil)
+	// sync to dest bucket
+	syncArgs := []string{CloudURLToString(bucketName, ""), CloudURLToString(destBucketName, "")}
+	cmdline := []string{"ossutil", "sync", CloudURLToString(bucketName, ""), CloudURLToString(destBucketName, ""), "-f", "--include", dirName1 + "/*", "--exclude", "*/" + subDirName1 + "/*"}
+	str := ""
+	cpDir := CheckpointDir
+	bDelete := true
+	bForce := true
+	routines := strconv.Itoa(Routines)
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"configFile":      &configFile,
+		"checkpointDir":   &cpDir,
+		"routines":        &routines,
+		"force":           &bForce,
+		"delete":          &bDelete,
+	}
+	os.Args = cmdline
+	_, err = cm.RunCommand("sync", syncArgs, options)
+	os.Args = []string{}
+	c.Assert(err, IsNil)
+
+	// check dest bucketname, fileNameList1,not exist, are deleted
+	for _, v := range fileNameList1 {
+		object := dirName1 + "/" + strings.Replace(v, string(os.PathSeparator), "/", -1)
+		if strings.Contains(v, subDirName1) {
+			_, err = s.rawGetStat(destBucketName, object)
+			c.Assert(err, NotNil)
+		} else {
+			objectStat := s.getStat(destBucketName, object, c)
+			etag := objectStat["Etag"]
+			c.Assert(len(etag) > 0, Equals, true)
+		}
+	}
+
+	os.RemoveAll(dirName1)
+	s.removeBucket(bucketName, true, c)
+	s.removeBucket(destBucketName, true, c)
 }
 
 func (s *OssutilCommandSuite) TestSyncWithPayerSucess(c *C) {

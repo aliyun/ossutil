@@ -121,6 +121,8 @@ ACL：
     (3)ossutil set-acl oss://bucket1/obj default -r
        ossutil set-acl oss://bucket1/obj default -r --include "*.jpg"
        ossutil set-acl oss://bucket1/obj default -r --exclude "*.jpg"
+       ossutil set-acl oss://bucket1 default -r --include "dir1/*"
+	   ossutil set-acl oss://bucket1 default -r --exclude "dir1/*"
 
     (4)ossutil set-acl oss://bucket1/%e4%b8%ad%e6%96%87 default --encoding-type url
 
@@ -204,6 +206,8 @@ Usage：
     (3)ossutil set-acl oss://bucket1/obj default -r
        ossutil set-acl oss://bucket1/obj default -r --include "*.jpg"
        ossutil set-acl oss://bucket1/obj default -r --exclude "*.jpg"
+	   ossutil set-acl oss://bucket1 default -r --include "dir1/*"
+	   ossutil set-acl oss://bucket1 default -r --exclude "dir1/*"
 
     (4)ossutil set-acl oss://bucket1/%e4%b8%ad%e6%96%87 default --encoding-type url
 
