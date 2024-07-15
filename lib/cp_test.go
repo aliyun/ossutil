@@ -705,6 +705,116 @@ func (s *OssutilCommandSuite) TestBatchCPObject(c *C) {
 	s.removeBucket(destBucket, true, c)
 }
 
+func (s *OssutilCommandSuite) TestBatchCPObjectV2(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	// create local dir
+	dir := randStr(10)
+	err := os.MkdirAll(dir, 0755)
+	c.Assert(err, IsNil)
+
+	// upload empty dir miss recursive
+	showElapse, err := s.rawCPV2(dir, CloudURLToString(bucketName, ""), false, true, false, DefaultBigFileThreshold, CheckpointDir)
+	c.Assert(err, NotNil)
+	c.Assert(showElapse, Equals, false)
+
+	// upload empty dir
+	showElapse, err = s.rawCPV2(dir, CloudURLToString(bucketName, ""), true, true, false, DefaultBigFileThreshold, CheckpointDir)
+	c.Assert(err, IsNil)
+
+	// head object
+	showElapse, err = s.rawGetStat(bucketName, dir)
+	c.Assert(err, NotNil)
+	c.Assert(showElapse, Equals, false)
+
+	showElapse, err = s.rawGetStat(bucketName, dir+"/")
+	c.Assert(err, NotNil)
+	c.Assert(showElapse, Equals, false)
+
+	os.RemoveAll(dir)
+
+	// create dir in dir
+	dir = randStr(10)
+	subdir := randStr(10)
+	err = os.MkdirAll(dir+string(os.PathSeparator)+subdir, 0755)
+	c.Assert(err, IsNil)
+
+	// upload dir
+	showElapse, err = s.rawCPV2(dir, CloudURLToString(bucketName, ""), true, true, false, DefaultBigFileThreshold, CheckpointDir)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	// remove object
+	s.removeObjects(bucketName, subdir+"/", false, true, c)
+
+	// create file in dir
+	num := 3
+	filePaths := []string{subdir + "/"}
+	for i := 0; i < num; i++ {
+		filePath := fmt.Sprintf("TestBatchCPObject_%d", i)
+		s.createFile(dir+"/"+filePath, fmt.Sprintf("测试文件：%d内容", i), c)
+		filePaths = append(filePaths, filePath)
+	}
+
+	// upload files
+	showElapse, err = s.rawCPV2(dir, CloudURLToString(bucketName, ""), true, true, false, DefaultBigFileThreshold, CheckpointDir)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	// get files
+	downDir := "下载目录"
+	showElapse, err = s.rawCPV2(CloudURLToString(bucketName, ""), downDir, true, true, false, DefaultBigFileThreshold, CheckpointDir)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	for _, filePath := range filePaths {
+		_, err := os.Stat(downDir + "/" + filePath)
+		c.Assert(err, IsNil)
+	}
+
+	_, err = os.Stat(downDir)
+	c.Assert(err, IsNil)
+
+	// get to exist files
+	showElapse, err = s.rawCPV2(CloudURLToString(bucketName, ""), downDir, true, false, false, DefaultBigFileThreshold, CheckpointDir)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	_, err = os.Stat(downDir)
+	c.Assert(err, IsNil)
+
+	showElapse, err = s.rawCPV2(CloudURLToString(bucketName, ""), downDir, true, false, true, DefaultBigFileThreshold, CheckpointDir)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	_, err = os.Stat(downDir)
+	c.Assert(err, IsNil)
+
+	// copy files
+	destBucket := bucketName + "-" + randLowStr(4)
+	showElapse, err = s.rawCPV2(CloudURLToString(bucketName, ""), CloudURLToString(destBucket, "123"), true, true, false, DefaultBigFileThreshold, CheckpointDir)
+	c.Assert(err, NotNil)
+	c.Assert(showElapse, Equals, false)
+
+	s.putBucket(destBucket, c)
+
+	showElapse, err = s.rawCPV2(CloudURLToString(bucketName, ""), CloudURLToString(destBucket, "123"), true, true, false, DefaultBigFileThreshold, CheckpointDir)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	for _, filePath := range filePaths {
+		s.getStat(destBucket, "123/"+filePath, c)
+	}
+
+	// remove dir
+	os.RemoveAll(dir)
+	os.RemoveAll(downDir)
+
+	s.removeBucket(bucketName, true, c)
+	s.removeBucket(destBucket, true, c)
+}
+
 func (s *OssutilCommandSuite) TestCPObjectUpdate(c *C) {
 	bucketName := bucketNamePrefix + randLowStr(10)
 	s.putBucket(bucketName, c)
@@ -808,6 +918,120 @@ func (s *OssutilCommandSuite) TestCPObjectUpdate(c *C) {
 	c.Assert(showElapse, Equals, true)
 
 	showElapse, err = s.rawCP(CloudURLToString(bucketName, ""), CloudURLToString(destBucket, ""), true, false, false, DefaultBigFileThreshold, CheckpointDir)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	os.Remove(oldFile)
+	os.Remove(newFile)
+	os.Remove(destFile)
+
+	s.removeBucket(bucketName, true, c)
+	s.removeBucket(destBucket, true, c)
+}
+
+func (s *OssutilCommandSuite) TestCPObjectUpdateV2(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	// create older file and newer file
+	oldData := "old data"
+	oldFile := "oldFile" + randStr(5)
+	newData := "new data"
+	newFile := "newFile" + randStr(5)
+	s.createFile(oldFile, oldData, c)
+	s.createFile(newFile, newData, c)
+
+	// put newer object
+	object := "testobject"
+	s.putObject(bucketName, object, newFile, c)
+
+	// get object
+	s.getObject(bucketName, object, downloadFileName, c)
+	str := s.readFile(downloadFileName, c)
+	c.Assert(str, Equals, newData)
+
+	// put old object with update
+	showElapse, err := s.rawCPV2(oldFile, CloudURLToString(bucketName, object), false, false, true, DefaultBigFileThreshold, CheckpointDir)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	s.getObject(bucketName, object, downloadFileName, c)
+	str = s.readFile(downloadFileName, c)
+	c.Assert(str, Equals, newData)
+
+	showElapse, err = s.rawCPV2(oldFile, CloudURLToString(bucketName, object), false, true, true, DefaultBigFileThreshold, CheckpointDir)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	s.getObject(bucketName, object, downloadFileName, c)
+	str = s.readFile(downloadFileName, c)
+	c.Assert(str, Equals, newData)
+
+	showElapse, err = s.rawCPV2(oldFile, CloudURLToString(bucketName, object), false, false, false, DefaultBigFileThreshold, CheckpointDir)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	s.getObject(bucketName, object, downloadFileName, c)
+	str = s.readFile(downloadFileName, c)
+	c.Assert(str, Equals, newData)
+
+	// get object with update
+	// modify downloadFile
+	time.Sleep(time.Second * 1)
+	downData := "download file has been modified locally"
+	s.createFile(downloadFileName, downData, c)
+
+	showElapse, err = s.rawCPV2(CloudURLToString(bucketName, object), downloadFileName, false, false, true, DefaultBigFileThreshold, CheckpointDir)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	str = s.readFile(downloadFileName, c)
+	c.Assert(str, Equals, downData)
+
+	showElapse, err = s.rawCPV2(CloudURLToString(bucketName, object), downloadFileName, false, true, true, DefaultBigFileThreshold, CheckpointDir)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	str = s.readFile(downloadFileName, c)
+	c.Assert(str, Equals, downData)
+
+	showElapse, err = s.rawCPV2(CloudURLToString(bucketName, object), downloadFileName, false, false, false, DefaultBigFileThreshold, CheckpointDir)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	str = s.readFile(downloadFileName, c)
+	c.Assert(str, Equals, downData)
+
+	// copy object with update
+	destBucket := bucketNamePrefix + randLowStr(10)
+	s.putBucket(destBucket, c)
+
+	destData := "data for dest bucket"
+	destFile := "destFile" + randStr(5)
+	s.createFile(destFile, destData, c)
+	s.putObject(destBucket, object, destFile, c)
+
+	showElapse, err = s.rawCPV2(CloudURLToString(bucketName, object), CloudURLToString(destBucket, object), false, false, true, DefaultBigFileThreshold, CheckpointDir)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	s.getObject(destBucket, object, downloadFileName, c)
+	str = s.readFile(downloadFileName, c)
+	c.Assert(str, Equals, destData)
+
+	showElapse, err = s.rawCPV2(CloudURLToString(bucketName, object), CloudURLToString(destBucket, object), false, true, true, DefaultBigFileThreshold, CheckpointDir)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	s.getObject(destBucket, object, downloadFileName, c)
+	str = s.readFile(downloadFileName, c)
+	c.Assert(str, Equals, destData)
+
+	showElapse, err = s.rawCPV2(CloudURLToString(bucketName, object), CloudURLToString(destBucket, object), false, false, false, DefaultBigFileThreshold, CheckpointDir)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	showElapse, err = s.rawCPV2(CloudURLToString(bucketName, ""), CloudURLToString(destBucket, ""), true, false, false, DefaultBigFileThreshold, CheckpointDir)
 	c.Assert(err, IsNil)
 	c.Assert(showElapse, Equals, true)
 

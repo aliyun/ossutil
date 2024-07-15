@@ -136,6 +136,95 @@ func (s *OssutilCommandSuite) TestRemoveObjects(c *C) {
 	s.removeBucket(bucketName, true, c)
 }
 
+func (s *OssutilCommandSuite) TestRemoveObjectsV2(c *C) {
+	bucketName := bucketNamePrefix + randLowStr(10)
+	s.putBucket(bucketName, c)
+
+	// put object
+	num := 2
+	objectNames := []string{}
+	for i := 0; i < num; i++ {
+		object := fmt.Sprintf("remove%d", i)
+		s.putObject(bucketName, object, uploadFileName, c)
+		objectNames = append(objectNames, object)
+	}
+
+	// list object
+	objects := s.listObjects(bucketName, "", "ls - ", c)
+	c.Assert(len(objects), Equals, num)
+
+	s.removeObjectsV2(bucketName, "", true, false, c)
+
+	objects = s.listObjects(bucketName, "", "ls - ", c)
+	c.Assert(len(objects), Equals, num)
+
+	// "rm oss://bucket/prefix -r -f --item v2"
+	// remove object
+	s.removeObjectsV2(bucketName, "re", true, true, c)
+
+	// list object
+	objects = s.listObjects(bucketName, "", "ls - ", c)
+	c.Assert(len(objects), Equals, 0)
+
+	//reput objects and delete bucket
+	for i := 0; i < num; i++ {
+		object := fmt.Sprintf("remove%d", i)
+		s.putObject(bucketName, object, uploadFileName, c)
+	}
+
+	// list buckets
+	bucketNames := s.listBuckets(false, c)
+	c.Assert(FindPos(bucketName, bucketNames) != -1, Equals, true)
+
+	// error remove bucket with config
+	cfile := randStr(10)
+	data := fmt.Sprintf("[Credentials]\nendpoint=%s\naccessKeyID=%s\naccessKeySecret=%s\n[Bucket-Endpoint]\n%s=%s[Bucket-Cname]\n%s=%s", "abc", "def", "ghi", bucketName, "abc", bucketName, "abc")
+	s.createFile(cfile, data, c)
+	command := "rm"
+	args := []string{CloudURLToString(bucketName, "")}
+	str := ""
+	ok := true
+	item := "v2"
+	options := OptionMapType{
+		"endpoint":        &str,
+		"accessKeyID":     &str,
+		"accessKeySecret": &str,
+		"stsToken":        &str,
+		"configFile":      &cfile,
+		"recursive":       &ok,
+		"bucket":          &ok,
+		"allType":         &ok,
+		"force":           &ok,
+		OptionItem:        &item,
+	}
+	showElapse, err := cm.RunCommand(command, args, options)
+	c.Assert(err, NotNil)
+
+	options = OptionMapType{
+		"endpoint":        &endpoint,
+		"accessKeyID":     &accessKeyID,
+		"accessKeySecret": &accessKeySecret,
+		"stsToken":        &str,
+		"configFile":      &cfile,
+		"recursive":       &ok,
+		"bucket":          &ok,
+		"allType":         &ok,
+		"force":           &ok,
+		OptionItem:        &item,
+	}
+	showElapse, err = cm.RunCommand(command, args, options)
+	c.Assert(err, IsNil)
+	c.Assert(showElapse, Equals, true)
+
+	os.Remove(cfile)
+
+	// list buckets
+	bucketNames = s.listBuckets(false, c)
+	c.Assert(FindPos(bucketName, bucketNames) == -1, Equals, true)
+
+	s.removeBucket(bucketName, true, c)
+}
+
 func (s *OssutilCommandSuite) TestRemoveObjectBucketOption(c *C) {
 	bucketName := bucketNamePrefix + randLowStr(10)
 	s.putBucket(bucketName, c)

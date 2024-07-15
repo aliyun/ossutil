@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 
 	oss "github.com/aliyun/aliyun-oss-go-sdk/oss"
@@ -433,6 +434,7 @@ var syncCommand = SyncCommand{
 			// The following options are only supported by sc command, not supported by cp command
 			OptionDelete,
 			OptionBackupDir,
+			OptionItem,
 		},
 	},
 }
@@ -886,11 +888,73 @@ func (sc *SyncCommand) GetOssKeys(sUrl StorageURLer, keys map[string]string) err
 
 func (sc *SyncCommand) GetOssKeyList(bucket *oss.Bucket, sURL StorageURLer, chObjects chan<- objectInfoType, chFinish chan<- error) {
 	cloudURL := sURL.(CloudURL)
-	err := getObjectListCommon(bucket, cloudURL, chObjects, sc.syncOption.onlyCurrentDir,
+	err := sc.getObjectListCommon(bucket, cloudURL, chObjects, sc.syncOption.onlyCurrentDir,
 		sc.syncOption.filters, sc.syncOption.payerOptions)
 	if err != nil {
 		chFinish <- err
 	}
+}
+
+func (sc *SyncCommand) getObjectListCommon(bucket *oss.Bucket, cloudURL CloudURL, chObjects chan<- objectInfoType,
+	onlyCurrentDir bool, filters []filterOptionType, payerOptions []oss.Option) error {
+	defer close(chObjects)
+	pre := oss.Prefix(cloudURL.object)
+	marker := oss.Marker("")
+	startAfter := oss.StartAfter("")
+	//while the src object is end with "/", use object key as marker, exclude the object itself
+	if strings.HasSuffix(cloudURL.object, "/") {
+		marker = oss.Marker(cloudURL.object)
+		startAfter = oss.StartAfter(cloudURL.object)
+	}
+	del := oss.Delimiter("")
+	if onlyCurrentDir {
+		del = oss.Delimiter("/")
+	}
+
+	listOptions := append(payerOptions, pre, marker, del, oss.MaxKeys(1000), startAfter)
+	for {
+		lor, err := sc.command.ossListObjectsRetry(bucket, listOptions...)
+		if err != nil {
+			return err
+		}
+
+		for _, object := range lor.Objects {
+			prefix := ""
+			relativeKey := object.Key
+			index := strings.LastIndex(cloudURL.object, "/")
+			if index > 0 {
+				prefix = object.Key[:index+1]
+				relativeKey = object.Key[index+1:]
+			}
+
+			if doesSingleObjectMatchPatterns(object.Key, filters) {
+				if strings.ToLower(object.Type) == "symlink" {
+					props, err := bucket.GetObjectDetailedMeta(object.Key, payerOptions...)
+					if err != nil {
+						LogError("ossGetObjectStatRetry error info:%s\n", err.Error())
+						return err
+					}
+					size, err := strconv.ParseInt(props.Get(oss.HTTPHeaderContentLength), 10, 64)
+					if err != nil {
+						LogError("strconv.ParseInt error info:%s\n", err.Error())
+						return err
+
+					}
+					object.Size = size
+				}
+				chObjects <- objectInfoType{prefix, relativeKey, int64(object.Size), object.LastModified}
+			}
+		}
+
+		pre = oss.Prefix(lor.Prefix)
+		marker = oss.Marker(lor.NextMarker)
+		token := oss.ContinuationToken(lor.NextContinuationToken)
+		listOptions = append(payerOptions, pre, marker, oss.MaxKeys(1000), token)
+		if !lor.IsTruncated {
+			break
+		}
+	}
+	return nil
 }
 
 func (sc *SyncCommand) ReadOssKeys(keys map[string]string, sURL StorageURLer, chObjects <-chan objectInfoType, chFinish chan<- error) {
