@@ -2415,9 +2415,6 @@ func (cc *CopyCommand) downloadFiles(srcURL CloudURL, destURL FileURL) error {
 func (cc *CopyCommand) formatResultPrompt(err error) error {
 	cc.closeProgress()
 	fmt.Printf(cc.monitor.progressBar(true, normalExit))
-	if err != nil && cc.cpOption.ctnu {
-		return nil
-	}
 	return err
 }
 

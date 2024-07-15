@@ -4665,7 +4665,7 @@ func (s *OssutilCommandSuite) TestDownLoadWithoutDisableIgnoreError(c *C) {
 
 	// download
 	_, err = cm.RunCommand("cp", cpArgs, options)
-	c.Assert(err, IsNil)
+	c.Assert(err, NotNil)
 
 	// check,success download 2 file
 	// exist
