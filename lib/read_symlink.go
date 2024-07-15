@@ -134,6 +134,10 @@ var readSymlinkCommand = ReadSymlinkCommand{
 	},
 }
 
+func (rc *ReadSymlinkCommand) GetCommand() *Command {
+	return &rc.command
+}
+
 // function for FormatHelper interface
 func (rc *ReadSymlinkCommand) formatHelpForWhole() string {
 	return rc.command.formatHelpForWhole()

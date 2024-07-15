@@ -306,6 +306,10 @@ type ConfigCommand struct {
 	command Command
 }
 
+func (cc *ConfigCommand) GetCommand() (*Command) {
+	return &cc.command
+}
+
 var configCommand = ConfigCommand{
 	command: Command{
 		name:        "config",

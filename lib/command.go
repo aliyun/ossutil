@@ -57,6 +57,7 @@ type Command struct {
 // Commander is the interface of all commands
 type Commander interface {
 	RunCommand() error
+	GetCommand() *Command
 	Init(args []string, options OptionMapType) error
 }
 

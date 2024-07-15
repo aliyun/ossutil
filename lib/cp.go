@@ -1320,6 +1320,10 @@ var copyCommand = CopyCommand{
 	},
 }
 
+func (cc *CopyCommand) GetCommand() *Command {
+	return &cc.command
+}
+
 // function for FormatHelper interface
 func (cc *CopyCommand) formatHelpForWhole() string {
 	return cc.command.formatHelpForWhole()
